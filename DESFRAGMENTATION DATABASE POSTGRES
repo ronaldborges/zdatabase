@@ -1,0 +1,36 @@
++++++++++++++++++++++++++++++++++++++++++
++  DESFRAGMENTATION DATABASE POSTGRES   +
++++++++++++++++++++++++++++++++++++++++++
+
+#CRONTAB
+50 23 1 * * $path/desfrag.sh > $path/desfrag.log 2>&1
+
+vi $path/desfrag.sh
+#/bin/bash
+$path/bin/pg_isready
+export ISREADY=`echo $?`
+if [ $ISREADY -eq 0 ]; then
+
+or
+
+#/bin/bash
+export ISREADY=`ps aux | grep "$path/bin/postgres -D $path/data" | grep -v grep | wc -l`
+if [ $ISREADY -eq 1 ]; then
+
+for dbname in $($path/bin/psql -U postgres -p 5432 -t -c "SELECT datname FROM pg_database where datname not in ('template0','template1')"); do
+        echo ${dbname}
+        for tablename in $($path/bin/psql -U postgres -d ${dbname} -p 5432 -t -c "SELECT DISTINCT table_schema || '.' || table_name AS _table FROM information_schema.tables t inner join pg_class c on c.relname=t.table_name WHERE table_type='BASE TABLE' AND table_schema<>'pg_catalog' ORDER BY 1 desc"); do
+        echo ${dbname}${tablename}
+        $path/bin/psql -U postgres -d ${dbname} -p 5432 -c "vacuum full analyze verbose ${tablename};"
+        $path/bin/psql -U postgres -d ${dbname} -p 5432 -c "reindex table ${tablename};"
+        done
+done
+export RESVACUUM=`echo -e "OK"`
+export SAIDABOT=`echo -e "Desfrag DB :" $RESVACUUM`
+curl -s -X POST https://api.telegram.org/bot$:$/sendMessage -d chat_id=$chatid -d text="$SAIDABOT"
+else
+export RESVACUUM=`echo -e "FALHA"`
+export SAIDABOT=`echo -e "Desfrag DB :" $RESVACUUM`
+curl -s -X POST https://api.telegram.org/bot$:$/sendMessage -d chat_id=$chatid -d text="$SAIDABOT"
+fi
+
