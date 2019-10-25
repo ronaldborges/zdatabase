@@ -7,6 +7,10 @@ touch ~/.config/gnome-initial-setup-done
 vi /etc/xdg/autostart/gnome-initial-setup-first-login.desktop
 X-GNOME-Autostart-enabled=false
 
+#SUBSCRIPTION
+subscription-manager register --username () --password () --auto-attach
+subscription-manager repos --enable codeready-builder-for-rhel-8-x86_64-rpms
+
 #DISABLE FIREWALL
 systemctl stop firewalld
 systemctl status firewalld
