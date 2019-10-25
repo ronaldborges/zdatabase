@@ -1,0 +1,30 @@
++++++++++++++++++++++++++++++++++++++++++
++     DUMP BACKUP DATABASE POSTGRES     +
++++++++++++++++++++++++++++++++++++++++++
+
+#CRONTAB
+00 02 * * * $path/backup_dump.sh > $path/backup_dump.log 2>&1
+
+#SCRIPT
+vi $path/desfrag.sh
+#/bin/bash
+$path/bin/pg_isready
+export ISREADY=`echo $?`
+if [ $ISREADY -eq 0 ]; then
+
+or
+
+#/bin/bash
+export ISREADY=`ps aux | grep "$path/bin/postgres -D $path/data" | grep -v grep | wc -l`
+if [ $ISREADY -eq 1 ]; then
+
+for dbname in $($path/bin/psql -U postgres -p 5432 -t -c "SELECT datname FROM pg_database where datname not in ('template1','template0')"); do
+echo $dbname
+$path/bin/pg_dump ${dbname} -p 5432 | gzip > $path/dump/${dbname}_`date +%d%m%y_%H%M`.sql.gz
+find $path/dump/ -name "${dbname}_*" -mtime +2 -exec rm -vf {} \;
+done
+else
+        export BKP_LOGICO=`echo -e "FALHA"`
+        export SAIDABOT=`echo -e "BACKUP DUMP DB :" $BKP_LOGICO`
+#       curl -s -X POST https://api.telegram.org/$:$/sendMessage -d chat_id=$chatid -d text="$SAIDABOT"
+fi
