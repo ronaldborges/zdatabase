@@ -1,0 +1,107 @@
++++++++++++++++++++++++++++++++++++++++++
++    ENABLE STANDBY DATABASE POSTGRES   +
++++++++++++++++++++++++++++++++++++++++++
+
+# Adjust parameters in postgresql.conf and pg_hba.conf files on master database 
+
+##create directory to keep wals files
+mkdir -p /$path/wals/
+chown postgres:postgres -R /$path/wals/
+
+##modify the parameter in postgresql.conf :
+listen_addresses = '*'
+
+##enable postgres logging
+log_directory = 'pg_log'
+log_filename = 'postgresql-%Y-%m-%d_%H%M%S.log'
+
+## enable wals and backup via pg_basebackup
+wal_level = hot_standby                                 #static, and depending on version can be replication
+max_wal_senders = 5                                     #static
+wal_keep_segments = 32                                  #dynamic
+archive_mode = on                                       #static
+archive_command = 'gzip -c %p > /$path/wals/%f.gz'   #static
+
+## enable lines in pg_hab.conf
+host    replication     postgres        127.0.0.1/32            trust
+host    replication     postgres        ::1/128                 trust
+host    replication     postgres        $IP_SLAVE/24            md5
+host    replication     replication     $IP_SLAVE/24            md5
+
+#CRONTAB MASTER DATABASE MACHINE
+*/5 * * * * $path/wal_sync.sh > $path/wal_sync.log 2>&1
+* */2 * * * $path/wal_purge.sh > $path/wal_purge.log 2>&1
+
+#COPY WALS TO STANDBY DATABASE MACHINE
+##exchange ssh keys between master and slave
+Perform steps on primary and slave servers
+su - postgres
+ssh-keygen -t rsa
+chmod 600 ~/.ssh/authorized_keys
+
+## copy content from file ~/.ssh/id_rsa.pub and paste into slave's ~ / .ssh / authorized_keys file, repeat for master
+## edit /etc/ssh/sshd_config file and uncomment the following line, perform step on primary and slave
+RSAAuthentication yes
+PubkeyAuthentication yes
+AuthorizedKeysFile      .ssh/authorized_keys
+##restart sshd service, perform step on primary and slave
+/bin/systemctl restart sshd.service or service sshd restart
+
+vi $path/wal_sync.sh
+#!/bin/sh
+RESULT=`ps aux | grep rsync | wc -l`
+if [ $RESULT -le 1 ];then
+    echo "rsync copy attempt"
+    rsync -av -e 'ssh -p 22' $path/wals/ postgres@172.29.2.36:/backup/wall-replication/STDBHGF/
+    exit
+fi
+    echo "still copying!"
+    exit
+ 
+ #PURGE WAL FILES MASTER DATABASE
+ vi $path/wal_purge.sh
+ #!/bin/sh
+ find $path/wals/ -name "*.gz" -mmin +1440 -exec rm -vf {} \;
+ 
+# CREATE ROLE MASTER
+
+##connect to primary database
+$path/psql -U postgres -p 5432
+CREATE ROLE replication WITH REPLICATION PASSWORD 'replication' LOGIN;
+##list if the role was created successfully!
+\du
+ 
+#GENERATE BACKUP AND COPY DATABASE FILES TO SLAVE DATABASE MACHINE 
+
+#CONFIGURE SLAVE DATABASE MACHINE
+# Adjust parameters in postgresql.conf, pg_hba.conf and recovery.conf files on slave database 
+
+##modify the parameter in postgresql.conf :
+hot_standby = on
+
+##create parameter file recovery.conf:
+restore_command = 'gunzip -c /$path/wals/%f > %p'
+standby_mode = 'on'
+primary_conninfo = 'host = $IP_MASTER port = 5432 user = replication password = replication'
+
+## enable lines in pg_hab.conf
+host    replication     postgres        127.0.0.1/32            trust
+host    replication     postgres        ::1/128                 trust
+host    replication     postgres        $IP_MASTER/24            md5
+host    replication     replication     $IP_MASTER/24            md5
+
+#START SLAVE DATABASE!
+
+#CRONTAB SLAVE DATABASE MACHINE
+* 01 * * * $path/wal_purge.sh > $path/wal_purge.log 2>&1
+
+#PURGE WAL FILES MASTER DATABASE
+vi $path/wal_purge.sh
+#!/bin/sh
+find $path/wals/ -name "*.gz" -mmin +1440 -exec rm -vf {} \;
+
+#END
+
+
+ 
+    
