@@ -1,0 +1,21 @@
++++++++++++++++++++++++++++++++++++++++++
++    ENABLE FEATURE DATABASE POSTGRES   +
++++++++++++++++++++++++++++++++++++++++++
+
+#EXAMPLE DATABASE LINK
+# DB_LINK
+
+#as root:
+cd $sfw_directory/contrib/
+make
+make install
+
+#as postgres
+su - postgres
+$path/psql -U postgres -p 5432
+CREATE EXTENSION dblink;
+\q
+
+##to enable other extensions follow the same process
+
+##Just compile the content of the contrib directory only once
