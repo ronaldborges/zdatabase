@@ -1,0 +1,54 @@
++++++++++++++++++++++++++++++++++++++
++     POSTGRES SINGLE REDHATEL8     +
++++++++++++++++++++++++++++++++++++++
+
+#DISABLE INITIAL SCREEM REDHAT 8
+touch ~/.config/gnome-initial-setup-done
+vi /etc/xdg/autostart/gnome-initial-setup-first-login.desktop
+X-GNOME-Autostart-enabled=false
+
+#SUBSCRIPTION
+subscription-manager register --username () --password () --auto-attach
+subscription-manager repos --enable codeready-builder-for-rhel-8-x86_64-rpms
+
+#DISABLE FIREWALL
+systemctl stop firewalld
+systemctl status firewalld
+systemctl disable firewalld
+
+#INSTALL PRE-REQUIRES
+yum groupinstall "Development tools" -y
+yum install libtermcap-devel readline-devel -y
+yum install zlib jzlib zlib-devel -y
+
+#GET SFW DATABASE POSTGRES
+wget https://ftp.postgresql.org/pub/source/$VERSION/postgresql-$VERSION.tar.gz
+tar xvfz postgresql-$VERSION.tar.gz
+cd postgresql-$VERSION
+
+#INSTALL SFW DATABASE POSTGRES
+## install in default path /usr/local/pgsql using port 5432
+./configure   --optional [./configure --prefix=$path/pgsql-$VERSION]
+make
+make install
+ls -l /usr/local/pgsql/
+
+#INIT/CREATE INSTANCE 
+/usr/local/pgsql/bin/initdb -D /usr/local/pgsql/data/       --optional [/usr/local/pgsql/bin/initdb -D $pathdata/data/
+ls -ltrh /usr/local/pgsql/data/
+
+##start instance postgres
+/usr/local/pgsql/bin/pg_ctl -D /usr/local/pgsql/data/ -l logfile start
+
+##stop instance postgres
+/usr/local/pgsql/bin/pg_ctl -D /usr/local/pgsql/data/ -l logfile stop
+
+##reload instance configuration files
+/usr/local/pgsql/bin/pg_ctl -D /usr/local/pgsql/data/ reload
+
+
+su - postgres
+psql
+postgres=# CREATE DATABASE TESTE;
+postgres=# \q
+
