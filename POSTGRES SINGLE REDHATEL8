@@ -31,6 +31,9 @@ cd postgresql-$VERSION
 ./configure   --optional [./configure --prefix=$path/pgsql-$VERSION]
 make
 make install
+cd contrib/
+make
+make install
 ls -l /usr/local/pgsql/
 
 #INIT/CREATE INSTANCE 
