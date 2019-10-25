@@ -15,7 +15,11 @@ pgdg-redhat-repo-latest.noarch.rpm
 ##as root:
 yum install --nogpgcheck $REPOSITORY/pgdg-redhat-repo-latest.noarch.rpm
 yum install pgagent_$VERSION.$SOVERSION.x86_64.rpm
-$path/psql -U postgres -f pgagent.sql
+$path/psql -U postgres -f pgagent.sql 
+or
+$path/psql -U postgres -c "CREATE EXTENSION pgagent;"
+$path/psql -U postgres -c "CREATE LANGUAGE plpgsql;"
+
 pgagent_$VERSION hostaddr=127.0.0.1 dbname=postgres user=postgres
 
 #ENABLE START ON BOOT
