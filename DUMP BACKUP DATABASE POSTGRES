@@ -6,7 +6,7 @@
 00 02 * * * $path/backup_dump.sh > $path/backup_dump.log 2>&1
 
 #SCRIPT
-vi $path/desfrag.sh
+vi $path/backup_dump.sh
 #/bin/bash
 $path/bin/pg_isready
 export ISREADY=`echo $?`
