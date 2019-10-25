@@ -1,0 +1,15 @@
++++++++++++++++++++++++++++++++++++++++++
++      USING TELEGRAM BOT ON LINUX      +
++++++++++++++++++++++++++++++++++++++++++
+
+#ON LINUX
+
+yum install python-pip
+pip install pyTelegramBotAPI
+pip install --upgrade pip
+
+#CREATE TELEGRAM BOT
+https://core.telegram.org/bots
+
+#USE TELEGRAM BOT TO NOTIFY IN SHELL SCRIPT
+curl -s -X POST https://api.telegram.org/bot$:$/sendMessage -d chat_id=$chatid -d text="$SAIDABOT"
