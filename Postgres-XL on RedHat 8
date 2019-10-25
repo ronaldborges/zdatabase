@@ -1,0 +1,1413 @@
++++++++++++++++++++++++++++++++++++++
++     POSTGRES-XL ON REDHATEL8      +
++++++++++++++++++++++++++++++++++++++
+
+#CREATE AND INSTALL CLUSTER POSTGRES-XL ON VIRTUALBOX (REDHATEL8)
+
+#CONFIGURE GTM MACHINE
+#NETWORK 
+vi /etc/hosts
+echo "192.168.56.108    GTM" >> /etc/hosts
+echo "192.168.56.109    DATANODE0" >> /etc/hosts
+echo "192.168.56.110    DATANODE1" >> /etc/hosts
+echo "192.168.56.111    DATANODE2" >> /etc/hosts
+echo "192.168.56.112    DATANODE3" >> /etc/hosts
+echo "192.168.56.113    DATANODE4" >> /etc/hosts
+
+#SUBSCRIPTION
+subscription-manager register --username () --password () --auto-attach
+subscription-manager repos --enable codeready-builder-for-rhel-8-x86_64-rpms
+
+#DISABLE SELINUX AND FIREWALLD
+sed -i 's/SELINUX=.*/SELINUX=disabled/' /etc/sysconfig/selinux && setenforce 0
+systemctl stop firewalld && systemctl disable firewalld
+
+#INSTALL PACKAGES
+yum install gcc                            
+yum install bison                             
+yum install flex                             
+yum install perl-ExtUtils-Embed         
+yum install perl                         
+yum install python-devel                 
+yum install tcl-devel                     
+yum install readline-devel                 
+yum install openssl-devel                 
+yum install krb5-devel                     
+yum install e2fsprogs-devel                 
+yum install libxml2-devel               
+yum install libxslt-devel               
+yum install pam-devel                   
+yum install libuuid-devel               
+yum install openldap-devel              
+yum install sgml-common                    
+yum install libnsl                        
+yum install openjade                     
+yum install opensp                         
+yum install docbook-dtds                 
+yum install libicu-devel                 
+yum install gettext                     
+yum install systemd-devel 
+yum install autoconf
+yum install automake
+yum install libtool
+yum install patch
+yum install rpm-build
+yum install rpm-sign
+yum install python36 
+yum install python36-devel
+pip3 install ansible --user  
+
+#CREATE GROUP/USER POSTGRES
+groupadd  postgres
+useradd -rmg postgres postgres
+passwd postgres                
+
+#GENERATE CLONE OF GTM MACHINE 
+CLONE GTM TO DATANODE0
+CLONE GTM TO DATANODE1
+CLONE GTM TO DATANODE2
+CLONE GTM TO DATANODE3
+CLONE GTM TO DATANODE4
+
+#CHANGE STATIC IP IN CLONE MACHINES 
+cp /etc/sysconfig/network-scripts/ifcfg-enp0s8 /etc/sysconfig/network-scripts/ifcfg-enp0s8-bkp
+vi /etc/sysconfig/network-scripts/ifcfg-enp0s8
+TYPE=Ethernet
+PROXY_METHOD=none
+BROWSER_ONLY=no
+BOOTPROTO=none
+DEFROUTE=yes
+IPV4_FAILURE_FATAL=no
+IPV6INIT=no
+IPV6_AUTOCONF=yes
+IPV6_DEFROUTE=yes
+IPV6_FAILURE_FATAL=no
+IPV6_ADDR_GEN_MODE=stable-privacy
+NAME=enp0s8
+UUID=d4638581-c50c-43ee-800e-fbecfd122a22
+DEVICE=enp0s8
+ONBOOT=yes
+IPADDR=192.168.56.108
+PREFIX=24
+GATEWAY=192.168.56.1
+
+nmcli connection down enp0s8 && nmcli connection up enp0s8
+ip addr|grep enp0s8|grep inet
+
+#CONFIGURE HOSTNAME IN MACHINES OF CLUSTER
+hostnamectl 
+hostnamectl set-hostname (GTM/DATANODE0/DATANODE1/DATANODE2/DATANODE3/DATANODE4)
+hostnamectl --static 
+
+#CHANGE SSH KEYS AMONG MACHINES
+ssh-keygen -t rsa
+vi authorized_keys
+ssh-rsa ... postgres@GTM
+ssh-rsa ... postgres@COORDENATOR
+ssh-rsa ... postgres@DATANODE0
+ssh-rsa ... postgres@DATANODE1
+ssh-rsa ... postgres@DATANODE2
+ssh-rsa ... postgres@DATANODE3
+ssh-rsa ... postgres@DATANODE4
+chmod 755 /home/postgres
+chmod 700 /home/postgres/.ssh
+chmod 644 /home/postgres/.ssh/authorized_keys
+ssh postgres@(GTM/COORDENATOR/DATANODE1/DATANODE2/DATANODE3)
+
+#DOWNLOAD SOFTWARE POSTGRES-XL ON ALL MACHINES
+wget https://www.postgres-xl.org/downloads/postgres-xl-10r1.1.tar.gz
+
+#COMPILE AND INSTALL SOFTWARE ON ALL MACHINES
+tar -vzxf postgres-xl-10r1.1.tar.gz
+mkdir -p /usr/local/pgsql-10
+cd postgres-xl-10r1.1
+ln -s /usr/bin/python3 /usr/bin/python
+./configure --prefix=/usr/local/pgsql-10 --with-icu --with-tcl --with-perl --with-python --with-gssapi --with-pam --with-ldap --with-openssl --with-systemd --with-libxml --with-libxslt 
+make -j4 world
+make install-world
+
+mkdir -p /data
+chown postgres:postgres -R /data/
+
+#CONFIGURE POSTGRES ENVORIMENTS
+su - postgres
+vi .bash_profile
+export PGHOME=/home/postgres/pgxl
+export LD_LIBRARY_PATH=$PGHOME/lib:$LD_LIBRARY_PATH
+export PATH=$PGHOME/bin:$PATH
+source ~/.bash_profile
+
+scp .bash_profile postgres@DATANODE0:/home/postgres/.bash_profile                                                                         
+scp .bash_profile postgres@DATANODE1:/home/postgres/.bash_profile                                                                          
+scp .bash_profile postgres@DATANODE2:/home/postgres/.bash_profile                                                                          
+scp .bash_profile postgres@DATANODE3:/home/postgres/.bash_profile                                                                          
+scp .bash_profile postgres@DATANODE4:/home/postgres/.bash_profile
+
+#VALIDATE SOFTWARE
+pg_ctl --version
+
+#GENERATE FILE CONFIGURATION
+pgxc_ctl 
+# prepare config empty
+# quit
+
+#EDIT CONFIGURATION FILE 
+cat /home/postgres/pgxc_ctl/pgxc_ctl.conf
+#!/usr/bin/env bash
+#
+# Postgres-XC Configuration file for pgxc_ctl utility.
+#
+# Configuration file can be specified as -c option from pgxc_ctl command.   Default is
+# $PGXC_CTL_HOME/pgxc_ctl.org.
+#
+# This is bash script so you can make any addition for your convenience to configure
+# your Postgres-XC cluster.
+#
+# Please understand that pgxc_ctl provides only a subset of configuration which pgxc_ctl
+# provide.  Here's several several assumptions/restrictions pgxc_ctl depends on.
+#
+# 1) All the resources of pgxc nodes has to be owned by the same user.   Same user means
+#    user with the same user name.  User ID may be different from server to server.
+#    This must be specified as a variable $pgxcOwner.
+#
+# 2) All the servers must be reacheable via ssh without password.   It is highly recommended
+#    to setup key-based authentication among all the servers.
+#
+# 3) All the databases in coordinator/datanode has at least one same superuser.  Pgxc_ctl
+#    uses this user to connect to coordinators and datanodes.   Again, no password should
+#    be used to connect.  You have many options to do this, pg_hba.conf, pg_ident.conf and
+#    others.  Pgxc_ctl provides a way to configure pg_hba.conf but not pg_ident.conf.   This
+#    will be implemented in the later releases.
+#
+# 4) Gtm master and slave can have different port to listen, while coordinator and datanode
+#    slave should be assigned the same port number as master.
+#
+# 5) Port nuber of a coordinator slave must be the same as its master.
+#
+# 6) Master and slave are connected using synchronous replication.  Asynchronous replication
+#    have slight (almost none) chance to bring total cluster into inconsistent state.
+#    This chance is very low and may be negligible.  Support of asynchronous replication
+#    may be supported in the later release.
+#
+# 7) Each coordinator and datanode can have only one slave each.  Cascaded replication and
+#    multiple slave are not supported in the current pgxc_ctl.
+#
+# 8) Killing nodes may end up with IPC resource leak, such as semafor and shared memory.
+#    Only listening port (socket) will be cleaned with clean command.
+#
+# 9) Backup and restore are not supported in pgxc_ctl at present.   This is a big task and
+#    may need considerable resource.
+#
+#========================================================================================
+#
+#
+# pgxcInstallDir variable is needed if you invoke "deploy" command from pgxc_ctl utility.
+# If don't you don't need this variable.
+pgxcInstallDir=$HOME/pgxc
+#---- OVERALL -----------------------------------------------------------------------------
+#
+pgxcOwner=postgres              # owner of the Postgres-XC databaseo cluster.  Here, we use this
+                                                # both as linus user and database user.  This must be
+                                                # the super user of each coordinator and datanode.
+pgxcUser=$pgxcOwner             # OS user of Postgres-XC owner
+
+tmpDir=/tmp                                     # temporary dir used in XC servers
+localTmpDir=$tmpDir                     # temporary dir used here locally
+
+configBackup=n                                  # If you want config file backup, specify y to this value.
+configBackupHost=pgxc-linker    # host to backup config file
+configBackupDir=$HOME/pgxc              # Backup directory
+configBackupFile=pgxc_ctl.bak   # Backup file name --> Need to synchronize when original changed.
+
+dataDirRoot=/data/pgxl/nodes
+
+#---- GTM ------------------------------------------------------------------------------------
+
+# GTM is mandatory.  You must have at least (and only) one GTM master in your Postgres-XC cluster.
+# If GTM crashes and you need to reconfigure it, you can do it by pgxc_update_gtm command to update
+# GTM master with others.   Of course, we provide pgxc_remove_gtm command to remove it.  This command
+# will not stop the current GTM.  It is up to the operator.
+
+#---- Overall -------
+gtmName=GTM
+
+#---- GTM Master -----------------------------------------------
+
+#---- Overall ----
+gtmMasterServer=GTM
+gtmMasterPort=6666
+gtmMasterDir=/data/pgxl/nodes/gtm
+
+#---- Configuration ---
+gtmExtraConfig=() # Will be added gtm.conf for both Master and Slave (done at initilization only)
+gtmMasterSpecificExtraConfig=() # Will be added to Master's gtm.conf (done at initialization only)
+
+#---- GTM Slave -----------------------------------------------
+
+# Because GTM is a key component to maintain database consistency, you may want to configure GTM slave
+# for backup.
+
+#---- Overall ------
+gtmSlave=n                                      # Specify y if you configure GTM Slave.   Otherwise, GTM slave will not be configured and
+                                                        # all the following variables will be reset.
+gtmSlaveName=()
+gtmSlaveServer=()               # value none means GTM slave is not available.  Give none if you don't configure GTM Slave.
+gtmSlavePort=()                 # Not used if you don't configure GTM slave.
+gtmSlaveDir=()  # Not used if you don't configure GTM slave.
+# Please note that when you have GTM failover, then there will be no slave available until you configure the slave
+# again. (pgxc_add_gtm_slave function will handle it)
+
+#---- Configuration ----
+gtmSlaveSpecificExtraConfig=() # Will be added to Slave's gtm.conf (done at initialization only)
+
+#---- GTM Proxy -------------------------------------------------------------------------------------------------------
+# GTM proxy will be selected based upon which server each component runs on.
+# When fails over to the slave, the slave inherits its master's gtm proxy.  It should be
+# reconfigured based upon the new location.
+#
+# To do so, slave should be restarted.   So pg_ctl promote -> (edit postgresql.conf and recovery.conf) -> pg_ctl restart
+#
+# You don't have to configure GTM Proxy if you dont' configure GTM slave or you are happy if every component connects
+# to GTM Master directly.  If you configure GTL slave, you must configure GTM proxy too.
+
+#---- Shortcuts ------
+gtmProxyDir=/data/pgxl/nodes/gtm_proxy
+
+#---- Overall -------
+gtmProxy=y                              # Specify y if you conifugre at least one GTM proxy.   You may not configure gtm proxies
+                                                # only when you dont' configure GTM slaves.
+                                                # If you specify this value not to y, the following parameters will be set to default empty values.
+                                                # If we find there're no valid Proxy server names (means, every servers are specified
+                                                # as none), then gtmProxy value will be set to "n" and all the entries will be set to
+                                                # empty values.
+gtmProxyNames=(gtm_pxy1 gtm_pxy2 gtm_pxy3 gtm_pxy4 gtm_pxy5)    # No used if it is not configured
+gtmProxyServers=(DATANODE0 DATANODE1 DATANODE2 DATANODE3 DATANODE4)                     # Specify none if you dont' configure it.
+gtmProxyPorts=(6666 6666 6666 6666 6666)                                # Not used if it is not configured.
+gtmProxyDirs=($gtmProxyDir $gtmProxyDir $gtmProxyDir $gtmProxyDir $gtmProxyDir) # Not used if it is not configured.
+
+#---- Configuration ----
+gtmPxyExtraConfig=none          # Extra configuration parameter for gtm_proxy.  Coordinator section has an example.
+
+#---- Coordinators ----------------------------------------------------------------------------------------------------
+
+#---- shortcuts ----------
+coordMasterDir=/data/pgxl/nodes/coord
+coordSlaveDir=$HOME/coord_slave
+coordArchLogDir=$HOME/coord_archlog
+
+#---- Overall ------------
+coordNames=(coord1 coord2 coord3 coord4 coord5)         # Master and slave use the same name
+coordPorts=(5432 5432 5432 5432 5432)                   # Master server listening ports
+poolerPorts=(6667 6667 6667 6667 6667)                  # Master pooler ports
+coordPgHbaEntries=(0.0.0.0/0)   # Assumes that all the coordinator (master/slave) accepts
+                                                                                                # the same connection
+                                                                                                # This entry allows only $pgxcOwner to connect.
+                                                                                                # If you'd like to setup another connection, you should
+                                                                                                # supply these entries through files specified below.
+#coordPgHbaEntries=(127.0.0.1/32)       # Same as above but for IPv4 connections
+
+#---- Master -------------
+coordMasterServers=(DATANODE0 DATANODE1 DATANODE2 DATANODE3 DATANODE4)          # none means this master is not available
+coordMasterDirs=($coordMasterDir $coordMasterDir $coordMasterDir $coordMasterDir $coordMasterDir)
+coordMaxWALsender=0     # max_wal_senders: needed to configure slave. If zero value is specified,
+                                                # it is expected to supply this parameter explicitly by external files
+                                                # specified in the following.   If you don't configure slaves, leave this value to zero.
+coordMaxWALSenders=($coordMaxWALsender $coordMaxWALsender $coordMaxWALsender $coordMaxWALsender $coordMaxWALsender)
+                                                # max_wal_senders configuration for each coordinator.
+
+#---- Slave -------------
+coordSlave=n                    # Specify y if you configure at least one coordiantor slave.  Otherwise, the following
+                                                # configuration parameters will be set to empty values.
+                                                # If no effective server names are found (that is, every servers are specified as none),
+                                                # then coordSlave value will be set to n and all the following values will be set to
+                                                # empty values.
+coordSlaveSync=n                # Specify to connect with synchronized mode.
+
+coordUserDefinedBackupSettings=n        # Specify whether to update backup/recovery
+                                                                        # settings during standby addition/removal.
+
+coordSlaveServers=()                    # none means this slave is not available
+coordSlavePorts=()                      # coordinator slave listening ports
+coordSlavePoolerPorts=()                        # coordinator slave pooler ports
+coordSlaveDirs=()
+coordArchLogDirs=()
+
+#---- Configuration files---
+# Need these when you'd like setup specific non-default configuration
+# These files will go to corresponding files for the master.
+# You may supply your bash script to setup extra config lines and extra pg_hba.conf entries
+# Or you may supply these files manually.
+coordExtraConfig=coordExtraConfig       # Extra configuration file for coordinators.
+                                                # This file will be added to all the coordinators'
+                                                # postgresql.conf
+# Pleae note that the following sets up minimum parameters which you may want to change.
+# You can put your postgresql.conf lines here.
+cat > $coordExtraConfig <<EOF
+#================================================
+# Added to all the coordinator postgresql.conf
+# Original: $coordExtraConfig
+log_destination = 'stderr'
+logging_collector = on
+log_directory = 'pg_log'
+listen_addresses = '*'
+max_connections = 100
+hot_standby = off
+EOF
+
+# Additional Configuration file for specific coordinator master.
+# You can define each setting by similar means as above.
+coordSpecificExtraConfig=()
+coordSpecificExtraPgHba=()
+
+#---- Datanodes -------------------------------------------------------------------------------------------------------
+
+#---- Shortcuts --------------
+datanodeMasterDir=/data/pgxl/nodes/dn_master
+datanodeSlaveDir=/data/pgxl/nodes/dn_slave
+datanodeArchLogDir=/data/pgxl/nodes/datanode_archlog
+
+#---- Overall ---------------
+primaryDatanode=node1
+datanodeNames=(node1 node2 node3 node4 node5)
+datanodePorts=(5433 5433 5433 5433 5433)        # Master and slave use the same port!
+datanodePoolerPorts=(6668 6668 6668 6668 6668)  # Master and slave use the same port!
+datanodePgHbaEntries=(0.0.0.0/0)        # Assumes that all the coordinator (master/slave) accepts
+                                                                                # the same connection
+                                                                                # This list sets up pg_hba.conf for $pgxcOwner user.
+                                                                                # If you'd like to setup other entries, supply them
+                                                                                # through extra configuration files specified below.
+#datanodePgHbaEntries=(127.0.0.1/32)    # Same as above but for IPv4 connections
+
+#---- Master ----------------
+datanodeMasterServers=(DATANODE0 DATANODE1 DATANODE2 DATANODE3 DATANODE4)       # none means this master is not available.
+                                                                                                        # This means that there should be the master but is down.
+                                                                                                        # The cluster is not operational until the master is
+                                                                                                        # recovered and ready to run.
+datanodeMasterDirs=($datanodeMasterDir $datanodeMasterDir $datanodeMasterDir $datanodeMasterDir $datanodeMasterDir)
+datanodeMaxWalSender=5                                                          # max_wal_senders: needed to configure slave. If zero value is
+                                                                                                        # specified, it is expected this parameter is explicitly supplied
+                                                                                                        # by external configuration files.
+                                                                                                        # If you don't configure slaves, leave this value zero.
+datanodeMaxWALSenders=($datanodeMaxWalSender $datanodeMaxWalSender $datanodeMaxWalSender $datanodeMaxWalSender $datanodeMaxWalSender)
+                                                # max_wal_senders configuration for each datanode
+
+#---- Slave -----------------
+datanodeSlave=n                 # Specify y if you configure at least one coordiantor slave.  Otherwise, the following
+                                                # configuration parameters will be set to empty values.
+                                                # If no effective server names are found (that is, every servers are specified as none),
+                                                # then datanodeSlave value will be set to n and all the following values will be set to
+                                                # empty values.
+
+datanodeUserDefinedBackupSettings=n     # Specify whether to update backup/recovery
+                                                                        # settings during standby addition/removal.
+                                                                        #
+datanodeSlaveServers=(DATANODE4 DATANODE3 DATANODE2 DATANODE1 DATANODE0)        # value none means this slave is not available
+datanodeSlavePorts=(15433 15433 15433 15433 15433)      # Master and slave use the same port!
+datanodeSlavePoolerPorts=(20012 20012 20012 20012 20012)        # Master and slave use the same port!
+datanodeSlaveSync=y             # If datanode slave is connected in synchronized mode
+datanodeSlaveDirs=($datanodeSlaveDir $datanodeSlaveDir $datanodeSlaveDir $datanodeSlaveDir $datanodeSlaveDir)
+datanodeArchLogDirs=($datanodeArchLogDir $datanodeArchLogDir $datanodeArchLogDir $datanodeArchLogDir $datanodeArchLogDir)
+
+# ---- Configuration files ---
+# You may supply your bash script to setup extra config lines and extra pg_hba.conf entries here.
+# These files will go to corresponding files for the master.
+# Or you may supply these files manually.
+datanodeExtraConfig=datanodeExtraConfig
+cat > $datanodeExtraConfig <<EOF
+#================================================
+# Added to all the datanode postgresql.conf
+# Original: $datanodeExtraConfig
+log_destination = 'stderr'
+logging_collector = on
+log_directory = 'pg_log'
+listen_addresses = '*'
+max_connections = 100
+hot_standby = off
+EOF
+# Additional Configuration file for specific datanode master.
+# You can define each setting by similar means as above.
+datanodeSpecificExtraConfig=()
+datanodeSpecificExtraPgHba=()
+
+
+#COPY CONFIGURATION FILES FOR DATANODES
+scp pgxc_ctl/pgxc_ctl.conf postgres@DATANODE0:/home/postgres/pgxc_ctl/pgxc_ctl.conf                                                                         
+scp pgxc_ctl/pgxc_ctl.conf postgres@DATANODE1:/home/postgres/pgxc_ctl/pgxc_ctl.conf                                                                          
+scp pgxc_ctl/pgxc_ctl.conf postgres@DATANODE2:/home/postgres/pgxc_ctl/pgxc_ctl.conf                                                                          
+scp pgxc_ctl/pgxc_ctl.conf postgres@DATANODE3:/home/postgres/pgxc_ctl/pgxc_ctl.conf                                                                          
+scp pgxc_ctl/pgxc_ctl.conf postgres@DATANODE4:/home/postgres/pgxc_ctl/pgxc_ctl.conf
+
+#INIT CLUSTER (ONLY USED IN FIRST CONFIGURATION)
+pgxc_ctl -c /home/postgres/pgxc_ctl/pgxc_ctl.conf init all
+/usr/bin/bash
+Installing pgxc_ctl_bash script as /home/postgres/pgxc_ctl/pgxc_ctl_bash.
+Installing pgxc_ctl_bash script as /home/postgres/pgxc_ctl/pgxc_ctl_bash.
+Reading configuration using /home/postgres/pgxc_ctl/pgxc_ctl_bash --home /home/postgres/pgxc_ctl --configuration /home/postgres/pgxc_ctl/pgxc_ctl.conf
+Finished reading configuration.
+   ******** PGXC_CTL START ***************
+
+Current directory: /home/postgres/pgxc_ctl
+Initialize GTM master
+The files belonging to this GTM system will be owned by user "postgres".
+This user must also own the server process.
+
+
+fixing permissions on existing directory /data/pgxl/nodes/gtm ... ok
+creating configuration files ... ok
+creating control file ... ok
+
+Success.
+Done.
+Start GTM master
+server starting
+Initialize all the gtm proxies.
+Initializing gtm proxy gtm_pxy1.
+Initializing gtm proxy gtm_pxy2.
+Initializing gtm proxy gtm_pxy3.
+Initializing gtm proxy gtm_pxy4.
+Initializing gtm proxy gtm_pxy5.
+The files belonging to this GTM system will be owned by user "postgres".
+This user must also own the server process.
+
+
+fixing permissions on existing directory /data/pgxl/nodes/gtm_proxy ... ok
+creating configuration files ... ok
+
+Success.
+The files belonging to this GTM system will be owned by user "postgres".
+This user must also own the server process.
+
+
+fixing permissions on existing directory /data/pgxl/nodes/gtm_proxy ... ok
+creating configuration files ... ok
+
+Success.
+The files belonging to this GTM system will be owned by user "postgres".
+This user must also own the server process.
+
+
+fixing permissions on existing directory /data/pgxl/nodes/gtm_proxy ... ok
+creating configuration files ... ok
+
+Success.
+The files belonging to this GTM system will be owned by user "postgres".
+This user must also own the server process.
+
+
+fixing permissions on existing directory /data/pgxl/nodes/gtm_proxy ... ok
+creating configuration files ... ok
+
+Success.
+The files belonging to this GTM system will be owned by user "postgres".
+This user must also own the server process.
+
+
+fixing permissions on existing directory /data/pgxl/nodes/gtm_proxy ... ok
+creating configuration files ... ok
+
+Success.
+Done.
+Starting all the gtm proxies.
+Starting gtm proxy gtm_pxy1.
+Starting gtm proxy gtm_pxy2.
+Starting gtm proxy gtm_pxy3.
+Starting gtm proxy gtm_pxy4.
+Starting gtm proxy gtm_pxy5.
+server starting
+server starting
+server starting
+server starting
+server starting
+Done.
+Initialize all the coordinator masters.
+Initialize coordinator master coord1.
+Initialize coordinator master coord2.
+Initialize coordinator master coord3.
+Initialize coordinator master coord4.
+Initialize coordinator master coord5.
+The files belonging to this database system will be owned by user "postgres".
+This user must also own the server process.
+
+The database cluster will be initialized with locale "en_US.UTF-8".
+The default database encoding has accordingly been set to "UTF8".
+The default text search configuration will be set to "english".
+
+Data page checksums are disabled.
+
+fixing permissions on existing directory /data/pgxl/nodes/coord ... ok
+creating subdirectories ... ok
+selecting default max_connections ... 100
+selecting default shared_buffers ... 128MB
+selecting dynamic shared memory implementation ... posix
+creating configuration files ... ok
+running bootstrap script ... ok
+performing post-bootstrap initialization ... creating cluster information ... ok
+syncing data to disk ... ok
+freezing database template0 ... ok
+freezing database template1 ... ok
+freezing database postgres ... ok
+
+WARNING: enabling "trust" authentication for local connections
+You can change this by editing pg_hba.conf or using the option -A, or
+--auth-local and --auth-host, the next time you run initdb.
+
+Success.
+The files belonging to this database system will be owned by user "postgres".
+This user must also own the server process.
+
+The database cluster will be initialized with locale "en_US.UTF-8".
+The default database encoding has accordingly been set to "UTF8".
+The default text search configuration will be set to "english".
+
+Data page checksums are disabled.
+
+fixing permissions on existing directory /data/pgxl/nodes/coord ... ok
+creating subdirectories ... ok
+selecting default max_connections ... 100
+selecting default shared_buffers ... 128MB
+selecting dynamic shared memory implementation ... posix
+creating configuration files ... ok
+running bootstrap script ... ok
+performing post-bootstrap initialization ... creating cluster information ... ok
+syncing data to disk ... ok
+freezing database template0 ... ok
+freezing database template1 ... ok
+freezing database postgres ... ok
+
+WARNING: enabling "trust" authentication for local connections
+You can change this by editing pg_hba.conf or using the option -A, or
+--auth-local and --auth-host, the next time you run initdb.
+
+Success.
+The files belonging to this database system will be owned by user "postgres".
+This user must also own the server process.
+
+The database cluster will be initialized with locale "en_US.UTF-8".
+The default database encoding has accordingly been set to "UTF8".
+The default text search configuration will be set to "english".
+
+Data page checksums are disabled.
+
+fixing permissions on existing directory /data/pgxl/nodes/coord ... ok
+creating subdirectories ... ok
+selecting default max_connections ... 100
+selecting default shared_buffers ... 128MB
+selecting dynamic shared memory implementation ... posix
+creating configuration files ... ok
+running bootstrap script ... ok
+performing post-bootstrap initialization ... creating cluster information ... ok
+syncing data to disk ... ok
+freezing database template0 ... ok
+freezing database template1 ... ok
+freezing database postgres ... ok
+
+WARNING: enabling "trust" authentication for local connections
+You can change this by editing pg_hba.conf or using the option -A, or
+--auth-local and --auth-host, the next time you run initdb.
+
+Success.
+The files belonging to this database system will be owned by user "postgres".
+This user must also own the server process.
+
+The database cluster will be initialized with locale "en_US.UTF-8".
+The default database encoding has accordingly been set to "UTF8".
+The default text search configuration will be set to "english".
+
+Data page checksums are disabled.
+
+fixing permissions on existing directory /data/pgxl/nodes/coord ... ok
+creating subdirectories ... ok
+selecting default max_connections ... 100
+selecting default shared_buffers ... 128MB
+selecting dynamic shared memory implementation ... posix
+creating configuration files ... ok
+running bootstrap script ... ok
+performing post-bootstrap initialization ... creating cluster information ... ok
+syncing data to disk ... ok
+freezing database template0 ... ok
+freezing database template1 ... ok
+freezing database postgres ... ok
+
+WARNING: enabling "trust" authentication for local connections
+You can change this by editing pg_hba.conf or using the option -A, or
+--auth-local and --auth-host, the next time you run initdb.
+
+Success.
+The files belonging to this database system will be owned by user "postgres".
+This user must also own the server process.
+
+The database cluster will be initialized with locale "en_US.UTF-8".
+The default database encoding has accordingly been set to "UTF8".
+The default text search configuration will be set to "english".
+
+Data page checksums are disabled.
+
+fixing permissions on existing directory /data/pgxl/nodes/coord ... ok
+creating subdirectories ... ok
+selecting default max_connections ... 100
+selecting default shared_buffers ... 128MB
+selecting dynamic shared memory implementation ... posix
+creating configuration files ... ok
+running bootstrap script ... ok
+performing post-bootstrap initialization ... creating cluster information ... ok
+syncing data to disk ... ok
+freezing database template0 ... ok
+freezing database template1 ... ok
+freezing database postgres ... ok
+
+WARNING: enabling "trust" authentication for local connections
+You can change this by editing pg_hba.conf or using the option -A, or
+--auth-local and --auth-host, the next time you run initdb.
+
+Success.
+Done.
+Starting coordinator master.
+Starting coordinator master coord1
+Starting coordinator master coord2
+Starting coordinator master coord3
+Starting coordinator master coord4
+Starting coordinator master coord5
+2019-09-12 11:19:00.914 -03 [30612] LOG:  listening on IPv4 address "0.0.0.0", port 5432
+2019-09-12 11:19:00.914 -03 [30612] LOG:  listening on IPv6 address "::", port 5432
+2019-09-12 11:19:00.916 -03 [30612] LOG:  listening on Unix socket "/tmp/.s.PGSQL.5432"
+2019-09-12 11:19:00.924 -03 [30612] LOG:  redirecting log output to logging collector process
+2019-09-12 11:19:00.924 -03 [30612] HINT:  Future log output will appear in directory "pg_log".
+2019-09-12 11:19:00.477 -03 [30451] LOG:  listening on IPv4 address "0.0.0.0", port 5432
+2019-09-12 11:19:00.478 -03 [30451] LOG:  listening on IPv6 address "::", port 5432
+2019-09-12 11:19:00.480 -03 [30451] LOG:  listening on Unix socket "/tmp/.s.PGSQL.5432"
+2019-09-12 11:19:00.490 -03 [30451] LOG:  redirecting log output to logging collector process
+2019-09-12 11:19:00.490 -03 [30451] HINT:  Future log output will appear in directory "pg_log".
+2019-09-12 11:19:00.468 -03 [30507] LOG:  listening on IPv4 address "0.0.0.0", port 5432
+2019-09-12 11:19:00.468 -03 [30507] LOG:  listening on IPv6 address "::", port 5432
+2019-09-12 11:19:00.472 -03 [30507] LOG:  listening on Unix socket "/tmp/.s.PGSQL.5432"
+2019-09-12 11:19:00.481 -03 [30507] LOG:  redirecting log output to logging collector process
+2019-09-12 11:19:00.481 -03 [30507] HINT:  Future log output will appear in directory "pg_log".
+2019-09-12 11:19:00.606 -03 [30725] LOG:  listening on IPv4 address "0.0.0.0", port 5432
+2019-09-12 11:19:00.606 -03 [30725] LOG:  listening on IPv6 address "::", port 5432
+2019-09-12 11:19:00.608 -03 [30725] LOG:  listening on Unix socket "/tmp/.s.PGSQL.5432"
+2019-09-12 11:19:00.618 -03 [30725] LOG:  redirecting log output to logging collector process
+2019-09-12 11:19:00.618 -03 [30725] HINT:  Future log output will appear in directory "pg_log".
+2019-09-12 11:19:01.290 -03 [30508] LOG:  listening on IPv4 address "0.0.0.0", port 5432
+2019-09-12 11:19:01.290 -03 [30508] LOG:  listening on IPv6 address "::", port 5432
+2019-09-12 11:19:01.293 -03 [30508] LOG:  listening on Unix socket "/tmp/.s.PGSQL.5432"
+2019-09-12 11:19:01.301 -03 [30508] LOG:  redirecting log output to logging collector process
+2019-09-12 11:19:01.301 -03 [30508] HINT:  Future log output will appear in directory "pg_log".
+Done.
+Initialize all the datanode masters.
+Initialize the datanode master node1.
+Initialize the datanode master node2.
+Initialize the datanode master node3.
+Initialize the datanode master node4.
+Initialize the datanode master node5.
+The files belonging to this database system will be owned by user "postgres".
+This user must also own the server process.
+
+The database cluster will be initialized with locale "en_US.UTF-8".
+The default database encoding has accordingly been set to "UTF8".
+The default text search configuration will be set to "english".
+
+Data page checksums are disabled.
+
+fixing permissions on existing directory /data/pgxl/nodes/dn_master ... ok
+creating subdirectories ... ok
+selecting default max_connections ... 100
+selecting default shared_buffers ... 128MB
+selecting dynamic shared memory implementation ... posix
+creating configuration files ... ok
+running bootstrap script ... ok
+performing post-bootstrap initialization ... creating cluster information ... ok
+syncing data to disk ... ok
+freezing database template0 ... ok
+freezing database template1 ... ok
+freezing database postgres ... ok
+
+WARNING: enabling "trust" authentication for local connections
+You can change this by editing pg_hba.conf or using the option -A, or
+--auth-local and --auth-host, the next time you run initdb.
+
+Success.
+The files belonging to this database system will be owned by user "postgres".
+This user must also own the server process.
+
+The database cluster will be initialized with locale "en_US.UTF-8".
+The default database encoding has accordingly been set to "UTF8".
+The default text search configuration will be set to "english".
+
+Data page checksums are disabled.
+
+fixing permissions on existing directory /data/pgxl/nodes/dn_master ... ok
+creating subdirectories ... ok
+selecting default max_connections ... 100
+selecting default shared_buffers ... 128MB
+selecting dynamic shared memory implementation ... posix
+creating configuration files ... ok
+running bootstrap script ... ok
+performing post-bootstrap initialization ... creating cluster information ... ok
+syncing data to disk ... ok
+freezing database template0 ... ok
+freezing database template1 ... ok
+freezing database postgres ... ok
+
+WARNING: enabling "trust" authentication for local connections
+You can change this by editing pg_hba.conf or using the option -A, or
+--auth-local and --auth-host, the next time you run initdb.
+
+Success.
+The files belonging to this database system will be owned by user "postgres".
+This user must also own the server process.
+
+The database cluster will be initialized with locale "en_US.UTF-8".
+The default database encoding has accordingly been set to "UTF8".
+The default text search configuration will be set to "english".
+
+Data page checksums are disabled.
+
+fixing permissions on existing directory /data/pgxl/nodes/dn_master ... ok
+creating subdirectories ... ok
+selecting default max_connections ... 100
+selecting default shared_buffers ... 128MB
+selecting dynamic shared memory implementation ... posix
+creating configuration files ... ok
+running bootstrap script ... ok
+performing post-bootstrap initialization ... creating cluster information ... ok
+syncing data to disk ... ok
+freezing database template0 ... ok
+freezing database template1 ... ok
+freezing database postgres ... ok
+
+WARNING: enabling "trust" authentication for local connections
+You can change this by editing pg_hba.conf or using the option -A, or
+--auth-local and --auth-host, the next time you run initdb.
+
+Success.
+The files belonging to this database system will be owned by user "postgres".
+This user must also own the server process.
+
+The database cluster will be initialized with locale "en_US.UTF-8".
+The default database encoding has accordingly been set to "UTF8".
+The default text search configuration will be set to "english".
+
+Data page checksums are disabled.
+
+fixing permissions on existing directory /data/pgxl/nodes/dn_master ... ok
+creating subdirectories ... ok
+selecting default max_connections ... 100
+selecting default shared_buffers ... 128MB
+selecting dynamic shared memory implementation ... posix
+creating configuration files ... ok
+running bootstrap script ... ok
+performing post-bootstrap initialization ... creating cluster information ... ok
+syncing data to disk ... ok
+freezing database template0 ... ok
+freezing database template1 ... ok
+freezing database postgres ... ok
+
+WARNING: enabling "trust" authentication for local connections
+You can change this by editing pg_hba.conf or using the option -A, or
+--auth-local and --auth-host, the next time you run initdb.
+
+Success.
+The files belonging to this database system will be owned by user "postgres".
+This user must also own the server process.
+
+The database cluster will be initialized with locale "en_US.UTF-8".
+The default database encoding has accordingly been set to "UTF8".
+The default text search configuration will be set to "english".
+
+Data page checksums are disabled.
+
+fixing permissions on existing directory /data/pgxl/nodes/dn_master ... ok
+creating subdirectories ... ok
+selecting default max_connections ... 100
+selecting default shared_buffers ... 128MB
+selecting dynamic shared memory implementation ... posix
+creating configuration files ... ok
+running bootstrap script ... ok
+performing post-bootstrap initialization ... creating cluster information ... ok
+syncing data to disk ... ok
+freezing database template0 ... ok
+freezing database template1 ... ok
+freezing database postgres ... ok
+
+WARNING: enabling "trust" authentication for local connections
+You can change this by editing pg_hba.conf or using the option -A, or
+--auth-local and --auth-host, the next time you run initdb.
+
+Success.
+Done.
+Starting all the datanode masters.
+Starting datanode master node1.
+Starting datanode master node2.
+Starting datanode master node3.
+Starting datanode master node4.
+Starting datanode master node5.
+2019-09-12 11:19:11.230 -03 [31220] LOG:  listening on IPv4 address "0.0.0.0", port 5433
+2019-09-12 11:19:11.230 -03 [31220] LOG:  listening on IPv6 address "::", port 5433
+2019-09-12 11:19:11.231 -03 [31220] LOG:  listening on Unix socket "/tmp/.s.PGSQL.5433"
+2019-09-12 11:19:11.240 -03 [31220] LOG:  redirecting log output to logging collector process
+2019-09-12 11:19:11.240 -03 [31220] HINT:  Future log output will appear in directory "pg_log".
+2019-09-12 11:19:10.801 -03 [31059] LOG:  listening on IPv4 address "0.0.0.0", port 5433
+2019-09-12 11:19:10.801 -03 [31059] LOG:  listening on IPv6 address "::", port 5433
+2019-09-12 11:19:10.803 -03 [31059] LOG:  listening on Unix socket "/tmp/.s.PGSQL.5433"
+2019-09-12 11:19:10.812 -03 [31059] LOG:  redirecting log output to logging collector process
+2019-09-12 11:19:10.812 -03 [31059] HINT:  Future log output will appear in directory "pg_log".
+2019-09-12 11:19:10.793 -03 [31115] LOG:  listening on IPv4 address "0.0.0.0", port 5433
+2019-09-12 11:19:10.793 -03 [31115] LOG:  listening on IPv6 address "::", port 5433
+2019-09-12 11:19:10.796 -03 [31115] LOG:  listening on Unix socket "/tmp/.s.PGSQL.5433"
+2019-09-12 11:19:10.806 -03 [31115] LOG:  redirecting log output to logging collector process
+2019-09-12 11:19:10.806 -03 [31115] HINT:  Future log output will appear in directory "pg_log".
+2019-09-12 11:19:10.922 -03 [31341] LOG:  listening on IPv4 address "0.0.0.0", port 5433
+2019-09-12 11:19:10.922 -03 [31341] LOG:  listening on IPv6 address "::", port 5433
+2019-09-12 11:19:10.924 -03 [31341] LOG:  listening on Unix socket "/tmp/.s.PGSQL.5433"
+2019-09-12 11:19:10.933 -03 [31341] LOG:  redirecting log output to logging collector process
+2019-09-12 11:19:10.933 -03 [31341] HINT:  Future log output will appear in directory "pg_log".
+2019-09-12 11:19:11.607 -03 [31124] LOG:  listening on IPv4 address "0.0.0.0", port 5433
+2019-09-12 11:19:11.607 -03 [31124] LOG:  listening on IPv6 address "::", port 5433
+2019-09-12 11:19:11.610 -03 [31124] LOG:  listening on Unix socket "/tmp/.s.PGSQL.5433"
+2019-09-12 11:19:11.619 -03 [31124] LOG:  redirecting log output to logging collector process
+2019-09-12 11:19:11.619 -03 [31124] HINT:  Future log output will appear in directory "pg_log".
+Done.
+ALTER NODE coord1 WITH (HOST='DATANODE0', PORT=5432);
+ALTER NODE
+CREATE NODE coord2 WITH (TYPE='coordinator', HOST='DATANODE1', PORT=5432);
+CREATE NODE
+CREATE NODE coord3 WITH (TYPE='coordinator', HOST='DATANODE2', PORT=5432);
+CREATE NODE
+CREATE NODE coord4 WITH (TYPE='coordinator', HOST='DATANODE3', PORT=5432);
+CREATE NODE
+CREATE NODE coord5 WITH (TYPE='coordinator', HOST='DATANODE4', PORT=5432);
+CREATE NODE
+CREATE NODE node1 WITH (TYPE='datanode', HOST='DATANODE0', PORT=5433, PRIMARY, PREFERRED);
+CREATE NODE
+CREATE NODE node2 WITH (TYPE='datanode', HOST='DATANODE1', PORT=5433);
+CREATE NODE
+CREATE NODE node3 WITH (TYPE='datanode', HOST='DATANODE2', PORT=5433);
+CREATE NODE
+CREATE NODE node4 WITH (TYPE='datanode', HOST='DATANODE3', PORT=5433);
+CREATE NODE
+CREATE NODE node5 WITH (TYPE='datanode', HOST='DATANODE4', PORT=5433);
+CREATE NODE
+SELECT pgxc_pool_reload();
+ pgxc_pool_reload
+------------------
+ t
+(1 row)
+
+CREATE NODE coord1 WITH (TYPE='coordinator', HOST='DATANODE0', PORT=5432);
+CREATE NODE
+ALTER NODE coord2 WITH (HOST='DATANODE1', PORT=5432);
+ALTER NODE
+CREATE NODE coord3 WITH (TYPE='coordinator', HOST='DATANODE2', PORT=5432);
+CREATE NODE
+CREATE NODE coord4 WITH (TYPE='coordinator', HOST='DATANODE3', PORT=5432);
+CREATE NODE
+CREATE NODE coord5 WITH (TYPE='coordinator', HOST='DATANODE4', PORT=5432);
+CREATE NODE
+CREATE NODE node1 WITH (TYPE='datanode', HOST='DATANODE0', PORT=5433, PRIMARY);
+CREATE NODE
+CREATE NODE node2 WITH (TYPE='datanode', HOST='DATANODE1', PORT=5433, PREFERRED);
+CREATE NODE
+CREATE NODE node3 WITH (TYPE='datanode', HOST='DATANODE2', PORT=5433);
+CREATE NODE
+CREATE NODE node4 WITH (TYPE='datanode', HOST='DATANODE3', PORT=5433);
+CREATE NODE
+CREATE NODE node5 WITH (TYPE='datanode', HOST='DATANODE4', PORT=5433);
+CREATE NODE
+SELECT pgxc_pool_reload();
+ pgxc_pool_reload
+------------------
+ t
+(1 row)
+
+CREATE NODE coord1 WITH (TYPE='coordinator', HOST='DATANODE0', PORT=5432);
+CREATE NODE
+CREATE NODE coord2 WITH (TYPE='coordinator', HOST='DATANODE1', PORT=5432);
+CREATE NODE
+ALTER NODE coord3 WITH (HOST='DATANODE2', PORT=5432);
+ALTER NODE
+CREATE NODE coord4 WITH (TYPE='coordinator', HOST='DATANODE3', PORT=5432);
+CREATE NODE
+CREATE NODE coord5 WITH (TYPE='coordinator', HOST='DATANODE4', PORT=5432);
+CREATE NODE
+CREATE NODE node1 WITH (TYPE='datanode', HOST='DATANODE0', PORT=5433, PRIMARY);
+CREATE NODE
+CREATE NODE node2 WITH (TYPE='datanode', HOST='DATANODE1', PORT=5433);
+CREATE NODE
+CREATE NODE node3 WITH (TYPE='datanode', HOST='DATANODE2', PORT=5433, PREFERRED);
+CREATE NODE
+CREATE NODE node4 WITH (TYPE='datanode', HOST='DATANODE3', PORT=5433);
+CREATE NODE
+CREATE NODE node5 WITH (TYPE='datanode', HOST='DATANODE4', PORT=5433);
+CREATE NODE
+SELECT pgxc_pool_reload();
+ pgxc_pool_reload
+------------------
+ t
+(1 row)
+
+CREATE NODE coord1 WITH (TYPE='coordinator', HOST='DATANODE0', PORT=5432);
+CREATE NODE
+CREATE NODE coord2 WITH (TYPE='coordinator', HOST='DATANODE1', PORT=5432);
+CREATE NODE
+CREATE NODE coord3 WITH (TYPE='coordinator', HOST='DATANODE2', PORT=5432);
+CREATE NODE
+ALTER NODE coord4 WITH (HOST='DATANODE3', PORT=5432);
+ALTER NODE
+CREATE NODE coord5 WITH (TYPE='coordinator', HOST='DATANODE4', PORT=5432);
+CREATE NODE
+CREATE NODE node1 WITH (TYPE='datanode', HOST='DATANODE0', PORT=5433, PRIMARY);
+CREATE NODE
+CREATE NODE node2 WITH (TYPE='datanode', HOST='DATANODE1', PORT=5433);
+CREATE NODE
+CREATE NODE node3 WITH (TYPE='datanode', HOST='DATANODE2', PORT=5433);
+CREATE NODE
+CREATE NODE node4 WITH (TYPE='datanode', HOST='DATANODE3', PORT=5433, PREFERRED);
+CREATE NODE
+CREATE NODE node5 WITH (TYPE='datanode', HOST='DATANODE4', PORT=5433);
+CREATE NODE
+SELECT pgxc_pool_reload();
+ pgxc_pool_reload
+------------------
+ t
+(1 row)
+
+CREATE NODE coord1 WITH (TYPE='coordinator', HOST='DATANODE0', PORT=5432);
+CREATE NODE
+CREATE NODE coord2 WITH (TYPE='coordinator', HOST='DATANODE1', PORT=5432);
+CREATE NODE
+CREATE NODE coord3 WITH (TYPE='coordinator', HOST='DATANODE2', PORT=5432);
+CREATE NODE
+CREATE NODE coord4 WITH (TYPE='coordinator', HOST='DATANODE3', PORT=5432);
+CREATE NODE
+ALTER NODE coord5 WITH (HOST='DATANODE4', PORT=5432);
+ALTER NODE
+CREATE NODE node1 WITH (TYPE='datanode', HOST='DATANODE0', PORT=5433, PRIMARY);
+CREATE NODE
+CREATE NODE node2 WITH (TYPE='datanode', HOST='DATANODE1', PORT=5433);
+CREATE NODE
+CREATE NODE node3 WITH (TYPE='datanode', HOST='DATANODE2', PORT=5433);
+CREATE NODE
+CREATE NODE node4 WITH (TYPE='datanode', HOST='DATANODE3', PORT=5433);
+CREATE NODE
+CREATE NODE node5 WITH (TYPE='datanode', HOST='DATANODE4', PORT=5433, PREFERRED);
+CREATE NODE
+SELECT pgxc_pool_reload();
+ pgxc_pool_reload
+------------------
+ t
+(1 row)
+
+Done.
+EXECUTE DIRECT ON (node1) 'CREATE NODE coord1 WITH (TYPE=''coordinator'', HOST=''DATANODE0'', PORT=5432)';
+EXECUTE DIRECT
+EXECUTE DIRECT ON (node1) 'CREATE NODE coord2 WITH (TYPE=''coordinator'', HOST=''DATANODE1'', PORT=5432)';
+EXECUTE DIRECT
+EXECUTE DIRECT ON (node1) 'CREATE NODE coord3 WITH (TYPE=''coordinator'', HOST=''DATANODE2'', PORT=5432)';
+EXECUTE DIRECT
+EXECUTE DIRECT ON (node1) 'CREATE NODE coord4 WITH (TYPE=''coordinator'', HOST=''DATANODE3'', PORT=5432)';
+EXECUTE DIRECT
+EXECUTE DIRECT ON (node1) 'CREATE NODE coord5 WITH (TYPE=''coordinator'', HOST=''DATANODE4'', PORT=5432)';
+EXECUTE DIRECT
+EXECUTE DIRECT ON (node1) 'ALTER NODE node1 WITH (TYPE=''datanode'', HOST=''DATANODE0'', PORT=5433, PRIMARY, PREFERRED)';
+EXECUTE DIRECT
+EXECUTE DIRECT ON (node1) 'CREATE NODE node2 WITH (TYPE=''datanode'', HOST=''DATANODE1'', PORT=5433, PREFERRED)';
+EXECUTE DIRECT
+EXECUTE DIRECT ON (node1) 'CREATE NODE node3 WITH (TYPE=''datanode'', HOST=''DATANODE2'', PORT=5433, PREFERRED)';
+EXECUTE DIRECT
+EXECUTE DIRECT ON (node1) 'CREATE NODE node4 WITH (TYPE=''datanode'', HOST=''DATANODE3'', PORT=5433, PREFERRED)';
+EXECUTE DIRECT
+EXECUTE DIRECT ON (node1) 'CREATE NODE node5 WITH (TYPE=''datanode'', HOST=''DATANODE4'', PORT=5433, PREFERRED)';
+EXECUTE DIRECT
+EXECUTE DIRECT ON (node1) 'SELECT pgxc_pool_reload()';
+ pgxc_pool_reload
+------------------
+ t
+(1 row)
+
+EXECUTE DIRECT ON (node2) 'CREATE NODE coord1 WITH (TYPE=''coordinator'', HOST=''DATANODE0'', PORT=5432)';
+EXECUTE DIRECT
+EXECUTE DIRECT ON (node2) 'CREATE NODE coord2 WITH (TYPE=''coordinator'', HOST=''DATANODE1'', PORT=5432)';
+EXECUTE DIRECT
+EXECUTE DIRECT ON (node2) 'CREATE NODE coord3 WITH (TYPE=''coordinator'', HOST=''DATANODE2'', PORT=5432)';
+EXECUTE DIRECT
+EXECUTE DIRECT ON (node2) 'CREATE NODE coord4 WITH (TYPE=''coordinator'', HOST=''DATANODE3'', PORT=5432)';
+EXECUTE DIRECT
+EXECUTE DIRECT ON (node2) 'CREATE NODE coord5 WITH (TYPE=''coordinator'', HOST=''DATANODE4'', PORT=5432)';
+EXECUTE DIRECT
+EXECUTE DIRECT ON (node2) 'CREATE NODE node1 WITH (TYPE=''datanode'', HOST=''DATANODE0'', PORT=5433, PRIMARY, PREFERRED)';
+EXECUTE DIRECT
+EXECUTE DIRECT ON (node2) 'ALTER NODE node2 WITH (TYPE=''datanode'', HOST=''DATANODE1'', PORT=5433, PREFERRED)';
+EXECUTE DIRECT
+EXECUTE DIRECT ON (node2) 'CREATE NODE node3 WITH (TYPE=''datanode'', HOST=''DATANODE2'', PORT=5433, PREFERRED)';
+EXECUTE DIRECT
+EXECUTE DIRECT ON (node2) 'CREATE NODE node4 WITH (TYPE=''datanode'', HOST=''DATANODE3'', PORT=5433, PREFERRED)';
+EXECUTE DIRECT
+EXECUTE DIRECT ON (node2) 'CREATE NODE node5 WITH (TYPE=''datanode'', HOST=''DATANODE4'', PORT=5433, PREFERRED)';
+EXECUTE DIRECT
+EXECUTE DIRECT ON (node2) 'SELECT pgxc_pool_reload()';
+ pgxc_pool_reload
+------------------
+ t
+(1 row)
+
+EXECUTE DIRECT ON (node3) 'CREATE NODE coord1 WITH (TYPE=''coordinator'', HOST=''DATANODE0'', PORT=5432)';
+EXECUTE DIRECT
+EXECUTE DIRECT ON (node3) 'CREATE NODE coord2 WITH (TYPE=''coordinator'', HOST=''DATANODE1'', PORT=5432)';
+EXECUTE DIRECT
+EXECUTE DIRECT ON (node3) 'CREATE NODE coord3 WITH (TYPE=''coordinator'', HOST=''DATANODE2'', PORT=5432)';
+EXECUTE DIRECT
+EXECUTE DIRECT ON (node3) 'CREATE NODE coord4 WITH (TYPE=''coordinator'', HOST=''DATANODE3'', PORT=5432)';
+EXECUTE DIRECT
+EXECUTE DIRECT ON (node3) 'CREATE NODE coord5 WITH (TYPE=''coordinator'', HOST=''DATANODE4'', PORT=5432)';
+EXECUTE DIRECT
+EXECUTE DIRECT ON (node3) 'CREATE NODE node1 WITH (TYPE=''datanode'', HOST=''DATANODE0'', PORT=5433, PRIMARY, PREFERRED)';
+EXECUTE DIRECT
+EXECUTE DIRECT ON (node3) 'CREATE NODE node2 WITH (TYPE=''datanode'', HOST=''DATANODE1'', PORT=5433, PREFERRED)';
+EXECUTE DIRECT
+EXECUTE DIRECT ON (node3) 'ALTER NODE node3 WITH (TYPE=''datanode'', HOST=''DATANODE2'', PORT=5433, PREFERRED)';
+EXECUTE DIRECT
+EXECUTE DIRECT ON (node3) 'CREATE NODE node4 WITH (TYPE=''datanode'', HOST=''DATANODE3'', PORT=5433, PREFERRED)';
+EXECUTE DIRECT
+EXECUTE DIRECT ON (node3) 'CREATE NODE node5 WITH (TYPE=''datanode'', HOST=''DATANODE4'', PORT=5433, PREFERRED)';
+EXECUTE DIRECT
+EXECUTE DIRECT ON (node3) 'SELECT pgxc_pool_reload()';
+ pgxc_pool_reload
+------------------
+ t
+(1 row)
+
+EXECUTE DIRECT ON (node4) 'CREATE NODE coord1 WITH (TYPE=''coordinator'', HOST=''DATANODE0'', PORT=5432)';
+EXECUTE DIRECT
+EXECUTE DIRECT ON (node4) 'CREATE NODE coord2 WITH (TYPE=''coordinator'', HOST=''DATANODE1'', PORT=5432)';
+EXECUTE DIRECT
+EXECUTE DIRECT ON (node4) 'CREATE NODE coord3 WITH (TYPE=''coordinator'', HOST=''DATANODE2'', PORT=5432)';
+EXECUTE DIRECT
+EXECUTE DIRECT ON (node4) 'CREATE NODE coord4 WITH (TYPE=''coordinator'', HOST=''DATANODE3'', PORT=5432)';
+EXECUTE DIRECT
+EXECUTE DIRECT ON (node4) 'CREATE NODE coord5 WITH (TYPE=''coordinator'', HOST=''DATANODE4'', PORT=5432)';
+EXECUTE DIRECT
+EXECUTE DIRECT ON (node4) 'CREATE NODE node1 WITH (TYPE=''datanode'', HOST=''DATANODE0'', PORT=5433, PRIMARY, PREFERRED)';
+EXECUTE DIRECT
+EXECUTE DIRECT ON (node4) 'CREATE NODE node2 WITH (TYPE=''datanode'', HOST=''DATANODE1'', PORT=5433, PREFERRED)';
+EXECUTE DIRECT
+EXECUTE DIRECT ON (node4) 'CREATE NODE node3 WITH (TYPE=''datanode'', HOST=''DATANODE2'', PORT=5433, PREFERRED)';
+EXECUTE DIRECT
+EXECUTE DIRECT ON (node4) 'ALTER NODE node4 WITH (TYPE=''datanode'', HOST=''DATANODE3'', PORT=5433, PREFERRED)';
+EXECUTE DIRECT
+EXECUTE DIRECT ON (node4) 'CREATE NODE node5 WITH (TYPE=''datanode'', HOST=''DATANODE4'', PORT=5433, PREFERRED)';
+EXECUTE DIRECT
+EXECUTE DIRECT ON (node4) 'SELECT pgxc_pool_reload()';
+ pgxc_pool_reload
+------------------
+ t
+(1 row)
+
+EXECUTE DIRECT ON (node5) 'CREATE NODE coord1 WITH (TYPE=''coordinator'', HOST=''DATANODE0'', PORT=5432)';
+EXECUTE DIRECT
+EXECUTE DIRECT ON (node5) 'CREATE NODE coord2 WITH (TYPE=''coordinator'', HOST=''DATANODE1'', PORT=5432)';
+EXECUTE DIRECT
+EXECUTE DIRECT ON (node5) 'CREATE NODE coord3 WITH (TYPE=''coordinator'', HOST=''DATANODE2'', PORT=5432)';
+EXECUTE DIRECT
+EXECUTE DIRECT ON (node5) 'CREATE NODE coord4 WITH (TYPE=''coordinator'', HOST=''DATANODE3'', PORT=5432)';
+EXECUTE DIRECT
+EXECUTE DIRECT ON (node5) 'CREATE NODE coord5 WITH (TYPE=''coordinator'', HOST=''DATANODE4'', PORT=5432)';
+EXECUTE DIRECT
+EXECUTE DIRECT ON (node5) 'CREATE NODE node1 WITH (TYPE=''datanode'', HOST=''DATANODE0'', PORT=5433, PRIMARY, PREFERRED)';
+EXECUTE DIRECT
+EXECUTE DIRECT ON (node5) 'CREATE NODE node2 WITH (TYPE=''datanode'', HOST=''DATANODE1'', PORT=5433, PREFERRED)';
+EXECUTE DIRECT
+EXECUTE DIRECT ON (node5) 'CREATE NODE node3 WITH (TYPE=''datanode'', HOST=''DATANODE2'', PORT=5433, PREFERRED)';
+EXECUTE DIRECT
+EXECUTE DIRECT ON (node5) 'CREATE NODE node4 WITH (TYPE=''datanode'', HOST=''DATANODE3'', PORT=5433, PREFERRED)';
+EXECUTE DIRECT
+EXECUTE DIRECT ON (node5) 'ALTER NODE node5 WITH (TYPE=''datanode'', HOST=''DATANODE4'', PORT=5433, PREFERRED)';
+EXECUTE DIRECT
+EXECUTE DIRECT ON (node5) 'SELECT pgxc_pool_reload()';
+ pgxc_pool_reload
+------------------
+ t
+(1 row)
+
+Done.
+
+#START CLUSTER
+pgxc_ctl -c /home/postgres/pgxc_ctl/pgxc_ctl.conf start all
+/usr/bin/bash
+Installing pgxc_ctl_bash script as /home/postgres/pgxc_ctl/pgxc_ctl_bash.
+Installing pgxc_ctl_bash script as /home/postgres/pgxc_ctl/pgxc_ctl_bash.
+Reading configuration using /home/postgres/pgxc_ctl/pgxc_ctl_bash --home /home/postgres/pgxc_ctl --configuration /home/postgres/pgxc_ctl/pgxc_ctl.conf
+Finished reading configuration.
+   ******** PGXC_CTL START ***************
+
+Current directory: /home/postgres/pgxc_ctl
+Start GTM master
+waiting for server to shut down.... done
+server stopped
+server starting
+Starting all the gtm proxies.
+Starting gtm proxy gtm_pxy1.
+Starting gtm proxy gtm_pxy2.
+Starting gtm proxy gtm_pxy3.
+Starting gtm proxy gtm_pxy4.
+Starting gtm proxy gtm_pxy5.
+waiting for server to shut down.... done
+server stopped
+server starting
+waiting for server to shut down.... done
+server stopped
+server starting
+waiting for server to shut down.... done
+server stopped
+server starting
+waiting for server to shut down.... done
+server stopped
+server starting
+waiting for server to shut down.... done
+server stopped
+server starting
+Done.
+Starting coordinator master.
+Starting coordinator master coord1
+ERROR: target coordinator master coord1 is already running now.   Skip initialization.
+Starting coordinator master coord2
+ERROR: target coordinator master coord2 is already running now.   Skip initialization.
+Starting coordinator master coord3
+ERROR: target coordinator master coord3 is already running now.   Skip initialization.
+Starting coordinator master coord4
+ERROR: target coordinator master coord4 is already running now.   Skip initialization.
+Starting coordinator master coord5
+ERROR: target coordinator master coord5 is already running now.   Skip initialization.
+Done.
+Starting all the datanode masters.
+Starting datanode master node1.
+WARNING: datanode master node1 is running now. Skipping.
+Starting datanode master node2.
+WARNING: datanode master node2 is running now. Skipping.
+Starting datanode master node3.
+WARNING: datanode master node3 is running now. Skipping.
+Starting datanode master node4.
+WARNING: datanode master node4 is running now. Skipping.
+Starting datanode master node5.
+WARNING: datanode master node5 is running now. Skipping.
+Done.
+
+
+#STOP CLUSTER
+pgxc_ctl -c /home/postgres/pgxc_ctl/pgxc_ctl.conf stop all
+/usr/bin/bash
+Installing pgxc_ctl_bash script as /home/postgres/pgxc_ctl/pgxc_ctl_bash.
+Installing pgxc_ctl_bash script as /home/postgres/pgxc_ctl/pgxc_ctl_bash.
+Reading configuration using /home/postgres/pgxc_ctl/pgxc_ctl_bash --home /home/postgres/pgxc_ctl --configuration /home/postgres/pgxc_ctl/pgxc_ctl.conf
+Finished reading configuration.
+   ******** PGXC_CTL START ***************
+
+Current directory: /home/postgres/pgxc_ctl
+Stopping all the coordinator masters.
+Stopping coordinator master coord1.
+Stopping coordinator master coord2.
+Stopping coordinator master coord3.
+Stopping coordinator master coord4.
+Stopping coordinator master coord5.
+Done.
+Stopping all the datanode masters.
+Stopping datanode master node1.
+Stopping datanode master node2.
+Stopping datanode master node3.
+Stopping datanode master node4.
+Stopping datanode master node5.
+Done.
+Stopping all the gtm proxies.
+Stopping gtm proxy gtm_pxy1.
+Stopping gtm proxy gtm_pxy2.
+Stopping gtm proxy gtm_pxy3.
+Stopping gtm proxy gtm_pxy4.
+Stopping gtm proxy gtm_pxy5.
+waiting for server to shut down.... done
+server stopped
+waiting for server to shut down.... done
+server stopped
+waiting for server to shut down.... done
+server stopped
+waiting for server to shut down.... done
+server stopped
+waiting for server to shut down.... done
+server stopped
+Done.
+Stop GTM master
+waiting for server to shut down.... done
+server stopped
+
+
+#DELETE CLUSTER FILES AND CONFIGURATION
+-- After stop cluster!!
+-- Remove directory on all cluster machines
+rm -Rvf /data/pgxl
+
+#DELETE PID LOCK
+/data/pgxl/nodes/coord/postmaster.pid
+/data/pgxl/nodes/dn_master/postmaster.pid
+/data/pgxl/nodes/gtm_proxy/gtm_proxy.pid
+/data/pgxl/nodes/gtm/gtm.pid
+
+#HELP COMMANDS OF CLUSTER
+pgxc_ctl - help
+/usr/bin/bash
+Installing pgxc_ctl_bash script as /home/postgres/pgxc_ctl/pgxc_ctl_bash.
+Installing pgxc_ctl_bash script as /home/postgres/pgxc_ctl/pgxc_ctl_bash.
+Reading configuration using /home/postgres/pgxc_ctl/pgxc_ctl_bash --home /home/postgres/pgxc_ctl --configuration /home/postgres/pgxc_ctl/pgxc_ctl.conf
+Finished reading configuration.
+   ******** PGXC_CTL START ***************
+
+Current directory: /home/postgres/pgxc_ctl
+sh: - : invalid option
+Usage:  sh [GNU long option] [option] ...
+        sh [GNU long option] [option] script-file ...
+GNU long options:
+        --debug
+        --debugger
+        --dump-po-strings
+        --dump-strings
+        --help
+        --init-file
+        --login
+        --noediting
+        --noprofile
+        --norc
+        --posix
+        --rcfile
+        --rpm-requires
+        --restricted
+        --verbose
+        --version
+Shell options:
+        -ilrsD or -c command or -O shopt_option         (invocation only)
+        -abefhkmnptuvxBCHP or -o option
+
+#PGBENCH TEST PERFORMANCE POSTGRES
+#INSERT 5 MILIONS ROWS 
+date; pgbench -p 5432 -i -s 50 example; date
+Thu Sep 12 15:43:49 -03 2019
+NOTICE:  table "pgbench_history" does not exist, skipping
+NOTICE:  table "pgbench_tellers" does not exist, skipping
+NOTICE:  table "pgbench_accounts" does not exist, skipping
+NOTICE:  table "pgbench_branches" does not exist, skipping
+creating tables...
+100000 of 5000000 tuples (2%) done (elapsed 0.14 s, remaining 6.78 s)
+200000 of 5000000 tuples (4%) done (elapsed 0.28 s, remaining 6.62 s)
+300000 of 5000000 tuples (6%) done (elapsed 0.44 s, remaining 6.83 s)
+400000 of 5000000 tuples (8%) done (elapsed 0.57 s, remaining 6.60 s)
+500000 of 5000000 tuples (10%) done (elapsed 0.73 s, remaining 6.55 s)
+600000 of 5000000 tuples (12%) done (elapsed 0.88 s, remaining 6.49 s)
+700000 of 5000000 tuples (14%) done (elapsed 1.02 s, remaining 6.26 s)
+800000 of 5000000 tuples (16%) done (elapsed 1.17 s, remaining 6.16 s)
+900000 of 5000000 tuples (18%) done (elapsed 1.32 s, remaining 6.02 s)
+1000000 of 5000000 tuples (20%) done (elapsed 1.47 s, remaining 5.89 s)
+1100000 of 5000000 tuples (22%) done (elapsed 1.65 s, remaining 5.84 s)
+1200000 of 5000000 tuples (24%) done (elapsed 1.80 s, remaining 5.70 s)
+1300000 of 5000000 tuples (26%) done (elapsed 1.95 s, remaining 5.56 s)
+1400000 of 5000000 tuples (28%) done (elapsed 2.13 s, remaining 5.48 s)
+1500000 of 5000000 tuples (30%) done (elapsed 2.28 s, remaining 5.33 s)
+1600000 of 5000000 tuples (32%) done (elapsed 2.44 s, remaining 5.19 s)
+1700000 of 5000000 tuples (34%) done (elapsed 2.60 s, remaining 5.04 s)
+1800000 of 5000000 tuples (36%) done (elapsed 2.75 s, remaining 4.89 s)
+1900000 of 5000000 tuples (38%) done (elapsed 2.91 s, remaining 4.75 s)
+2000000 of 5000000 tuples (40%) done (elapsed 3.07 s, remaining 4.61 s)
+2100000 of 5000000 tuples (42%) done (elapsed 3.22 s, remaining 4.44 s)
+2200000 of 5000000 tuples (44%) done (elapsed 3.38 s, remaining 4.30 s)
+2300000 of 5000000 tuples (46%) done (elapsed 3.54 s, remaining 4.15 s)
+2400000 of 5000000 tuples (48%) done (elapsed 3.71 s, remaining 4.02 s)
+2500000 of 5000000 tuples (50%) done (elapsed 3.87 s, remaining 3.87 s)
+2600000 of 5000000 tuples (52%) done (elapsed 4.07 s, remaining 3.76 s)
+2700000 of 5000000 tuples (54%) done (elapsed 4.22 s, remaining 3.60 s)
+2800000 of 5000000 tuples (56%) done (elapsed 4.39 s, remaining 3.45 s)
+2900000 of 5000000 tuples (58%) done (elapsed 4.60 s, remaining 3.33 s)
+3000000 of 5000000 tuples (60%) done (elapsed 4.84 s, remaining 3.23 s)
+3100000 of 5000000 tuples (62%) done (elapsed 5.00 s, remaining 3.07 s)
+3200000 of 5000000 tuples (64%) done (elapsed 5.16 s, remaining 2.90 s)
+3300000 of 5000000 tuples (66%) done (elapsed 5.32 s, remaining 2.74 s)
+3400000 of 5000000 tuples (68%) done (elapsed 5.47 s, remaining 2.58 s)
+3500000 of 5000000 tuples (70%) done (elapsed 5.64 s, remaining 2.42 s)
+3600000 of 5000000 tuples (72%) done (elapsed 5.78 s, remaining 2.25 s)
+3700000 of 5000000 tuples (74%) done (elapsed 5.94 s, remaining 2.09 s)
+3800000 of 5000000 tuples (76%) done (elapsed 6.09 s, remaining 1.92 s)
+3900000 of 5000000 tuples (78%) done (elapsed 6.24 s, remaining 1.76 s)
+4000000 of 5000000 tuples (80%) done (elapsed 6.40 s, remaining 1.60 s)
+4100000 of 5000000 tuples (82%) done (elapsed 6.56 s, remaining 1.44 s)
+4200000 of 5000000 tuples (84%) done (elapsed 6.71 s, remaining 1.28 s)
+4300000 of 5000000 tuples (86%) done (elapsed 6.87 s, remaining 1.12 s)
+4400000 of 5000000 tuples (88%) done (elapsed 7.03 s, remaining 0.96 s)
+4500000 of 5000000 tuples (90%) done (elapsed 7.18 s, remaining 0.80 s)
+4600000 of 5000000 tuples (92%) done (elapsed 7.36 s, remaining 0.64 s)
+4700000 of 5000000 tuples (94%) done (elapsed 7.51 s, remaining 0.48 s)
+4800000 of 5000000 tuples (96%) done (elapsed 7.67 s, remaining 0.32 s)
+4900000 of 5000000 tuples (98%) done (elapsed 7.81 s, remaining 0.16 s)
+5000000 of 5000000 tuples (100%) done (elapsed 7.94 s, remaining 0.00 s)
+vacuum...
+set primary key...
+done.
+Thu Sep 12 15:44:10 -03 2019
+
+#RUN 100000 TRANSACTIONS WITH 2 THREADS
+#RESULT 213 TRANSACTIONS PER SECOND IN DATABASE
+date; pgbench -p 5432 -c 10 -j 2 -t 10000 example; date
+Thu Sep 12 15:18:01 -03 2019
+starting vacuum...end.
+transaction type: <builtin: TPC-B (sort of)>
+scaling factor: 50
+query mode: simple
+number of clients: 10
+number of threads: 2
+number of transactions per client: 10000
+number of transactions actually processed: 100000/100000
+latency average = 46.942 ms
+tps = 213.027825 (including connections establishing)
+tps = 213.037645 (excluding connections establishing)
+Thu Sep 12 15:25:50 -03 2019
+
+#ADJUSTE SHARED_BUFFERS
+psql -p 5432
+postgres=# ALTER SYSTEM SET shared_buffers TO '512MB';
+psql -p 5433
+postgres=# ALTER SYSTEM SET shared_buffers TO '512MB';
+#RESTART CLUSTER
+
+date; pgbench -p 5432 -c 10 -j 2 -t 10000 example; date
+Thu Sep 12 16:12:33 -03 2019
+starting vacuum...end.
+transaction type: <builtin: TPC-B (sort of)>
+scaling factor: 50
+query mode: simple
+number of clients: 10
+number of threads: 2
+number of transactions per client: 10000
+number of transactions actually processed: 100000/100000
+latency average = 44.360 ms
+tps = 225.425818 (including connections establishing)
+tps = 225.434135 (excluding connections establishing)
+Thu Sep 12 16:19:56 -03 2019
+
+#RUN 100000 SELECT TRANSACTIONS
+date; pgbench -p 5432 -S -c 10 -t 10000 example; date
+Thu Sep 12 16:41:33 -03 2019
+starting vacuum...end.
+transaction type: <builtin: select only>
+scaling factor: 50
+query mode: simple
+number of clients: 10
+number of threads: 1
+number of transactions per client: 10000
+number of transactions actually processed: 100000/100000
+latency average = 5.067 ms
+tps = 1973.637089 (including connections establishing)
+tps = 1974.158915 (excluding connections establishing)
+Thu Sep 12 16:42:24 -03 2019
+
+
+
+
+
+
+
+
+
+
