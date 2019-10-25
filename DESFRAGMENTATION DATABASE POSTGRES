@@ -5,6 +5,7 @@
 #CRONTAB
 50 23 1 * * $path/desfrag.sh > $path/desfrag.log 2>&1
 
+#SCRIPT
 vi $path/desfrag.sh
 #/bin/bash
 $path/bin/pg_isready
