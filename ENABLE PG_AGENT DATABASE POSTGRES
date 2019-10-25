@@ -8,22 +8,45 @@
 https://download.postgresql.org/pub/repos/yum/
 
 #RPM
-pgdg-redhat-repo-42.0-5.noarch.rpm
 pgdg-redhat-repo-latest.noarch.rpm
 
-# PG_AGENT
+#PG_AGENT
 
 ##as root:
 yum install --nogpgcheck $REPOSITORY/pgdg-redhat-repo-latest.noarch.rpm
 yum install pgagent_$VERSION.$SOVERSION.x86_64.rpm
+$path/psql -U postgres -f pgagent.sql
+pgagent_$VERSION hostaddr=127.0.0.1 dbname=postgres user=postgres
 
-pgagent_95 hostaddr=127.0.0.1 dbname=postgres user=postgres
+#ENABLE START ON BOOT
+vi /etc/systemd/system/pgagent
+[Unit]
+Description = making network connection up
+After = network.target
+
+[Service]
+ExecStart = $path/start_pgagent.sh
+
+[Install]
+WantedBy = multi-user.target
+
+vi $path/start_pgagent.sh
+#/bin/bash
+su - postgres -c "$path/pg_isready"
+export ISREADY=`echo $?`
+if [ $ISREADY -eq 0 ]; then
+su - postgres -c "pgagent_$VERSION hostaddr=127.0.0.1 dbname=postgres user=postgres"
+else
+exit
+
+systemctl daemon-reload
+systemctl enable pgagent
 
 ##as postgres:
 su - postgres
 ls -ltrh /home/postgres/*.sql
 -rw-rw-r--. 1 postgres postgres 28K Apr 20 15:37 /home/postgres/pgagent.sql
-$path/psql -U postgres -f pgagent.sql
+
 
 $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$ SCRIPT $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
 
