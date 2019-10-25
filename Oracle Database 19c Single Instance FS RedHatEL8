@@ -1,0 +1,196 @@
++++++++++++++++++++++++++++++++++++++
++   ORACLE 19C SI FS ON REDHATEL8   +
++++++++++++++++++++++++++++++++++++++
+
+#DISABLE INITIAL SCREEM REDHAT 8
+touch ~/.config/gnome-initial-setup-done
+vi /etc/xdg/autostart/gnome-initial-setup-first-login.desktop
+X-GNOME-Autostart-enabled=false
+
+#DISABLE FIREWALL
+systemctl stop firewalld
+systemctl status firewalld
+systemctl disable firewalld
+
+#INSTALL VNC-SERVER
+dnf install tigervnc-server xterm
+vncpasswd 
+vi /etc/sysconfig/vncservers
+VNCSERVERS="2:root 3:oracle"
+VNCSERVERARGS[2]="-geometry 1280x1024 -nolisten tcp -localhost"
+VNCSERVERARGS[3]="-geometry 1280x1024"
+/bin/systemctl start vncservers  
+/bin/systemctl enable vncservers  
+
+#CONFIGURE AND INSTALL ORACLE PRE-REQUIRES
+vi /etc/security/limits.d/oracle-database-preinstall-19c.conf
+
+oracle   soft   nofile     1024
+oracle   hard   nofile     65536
+oracle   soft   nproc      16384
+oracle   hard   nproc      16384
+oracle   soft   stack      10240
+oracle   hard   stack      32768
+oracle   hard   memlock    134217728
+oracle   soft   memlock    134217728
+
+vi /etc/sysctl.d/98-oracle.conf
+
+fs.file-max = 6815744
+kernel.sem = 250 32000 100 128
+kernel.shmmni = 4096
+kernel.shmall = 1073741824
+kernel.shmmax = 4398046511104
+kernel.panic_on_oops = 1
+net.core.rmem_default = 262144
+net.core.rmem_max = 4194304
+net.core.wmem_default = 262144
+net.core.wmem_max = 1048576
+net.ipv4.conf.all.rp_filter = 2
+net.ipv4.conf.default.rp_filter = 2
+fs.aio-max-nr = 1048576
+net.ipv4.ip_local_port_range = 9000 65500
+
+dnf install -y bc    
+dnf install -y binutils
+dnf install -y compat-libcap1
+dnf install -y compat-libstdc++-33
+dnf install -y dtrace-modules
+dnf install -y dtrace-modules-headers
+dnf install -y dtrace-modules-provider-headers
+dnf install -y dtrace-utils
+dnf install -y elfutils-libelf
+dnf install -y elfutils-libelf-devel
+dnf install -y fontconfig-devel
+dnf install -y glibc
+dnf install -y glibc-devel
+dnf install -y ksh
+dnf install -y libaio
+dnf install -y libaio-devel
+dnf install -y libdtrace-ctf-devel
+dnf install -y libXrender
+dnf install -y libXrender-devel
+dnf install -y libX11
+dnf install -y libXau
+dnf install -y libXi
+dnf install -y libXtst
+dnf install -y libgcc
+dnf install -y librdmacm-devel
+dnf install -y libstdc++
+dnf install -y libstdc++-devel
+dnf install -y libxcb
+dnf install -y make
+dnf install -y net-tools 
+dnf install -y nfs-utils 
+dnf install -y python 
+dnf install -y python-configshell 
+dnf install -y python-rtslib 
+dnf install -y python-six 
+dnf install -y targetcli 
+dnf install -y smartmontools
+dnf install -y sysstat
+dnf install -y unixODBC
+dnf install -y libnsl
+dnf install -y libnsl.i686
+dnf install -y libnsl2
+dnf install -y libnsl2.i686
+
+groupadd -g 54321 oinstall
+groupadd -g 54322 dba
+groupadd -g 54323 oper 
+groupadd -g 54324 backupdba
+groupadd -g 54325 dgdba
+groupadd -g 54326 kmdba
+groupadd -g 54327 asmdba
+groupadd -g 54328 asmoper
+groupadd -g 54329 asmadmin
+groupadd -g 54330 racdba
+useradd -u 54321 -g oinstall -G dba,oper oracle
+passwd oracle
+
+vi /etc/selinux/config
+SELINUX=disabled
+
+mkdir -p /u01/app/oracle/product/19.3.0/dbhome_1
+mkdir -p /u02/oradata
+chown -R oracle:oinstall /u01 /u02
+chmod -R 775 /u01 /u02
+
+su - oracle
+
+mkdir /home/oracle/scripts
+
+cat > /home/oracle/scripts/setEnv.sh <<EOF
+# Oracle Settings
+export TMP=/tmp
+export TMPDIR=\$TMP
+
+export ORACLE_HOSTNAME=ol8-19.localdomain
+export ORACLE_UNQNAME=cdb1
+export ORACLE_BASE=/u01/app/oracle
+export ORACLE_HOME=\$ORACLE_BASE/product/19.0.0/dbhome_1
+export ORA_INVENTORY=/u01/app/oraInventory
+export ORACLE_SID=cdb1
+export PDB_NAME=pdb1
+export DATA_DIR=/u02/oradata
+
+export PATH=/usr/sbin:/usr/local/bin:\$PATH
+export PATH=\$ORACLE_HOME/bin:\$PATH
+
+export LD_LIBRARY_PATH=\$ORACLE_HOME/lib:/lib:/usr/lib
+export CLASSPATH=\$ORACLE_HOME/jlib:\$ORACLE_HOME/rdbms/jlib
+EOF
+
+echo ". /home/oracle/scripts/setEnv.sh" >> /home/oracle/.bash_profile
+
+cat > /home/oracle/scripts/start_all.sh <<EOF
+#!/bin/bash
+. /home/oracle/scripts/setEnv.sh
+
+export ORAENV_ASK=NO
+. oraenv
+export ORAENV_ASK=YES
+
+dbstart \$ORACLE_HOME
+EOF
+
+
+cat > /home/oracle/scripts/stop_all.sh <<EOF
+#!/bin/bash
+. /home/oracle/scripts/setEnv.sh
+
+export ORAENV_ASK=NO
+. oraenv
+export ORAENV_ASK=YES
+
+dbshut \$ORACLE_HOME
+EOF
+
+chown -R oracle:oinstall /home/oracle/scripts
+chmod u+x /home/oracle/scripts/*.sh
+
+#DOWNLOAD SFW ORACLE DATABASE 19C
+wget https://download.oracle.com/otn/linux/oracle19c/190000/LINUX.X64_193000_db_home.zip?AuthParam=1572025743_564a70275ba3497e71d40b29312f5ce0
+mv LINUX.X64_193000_db_home.zip?AuthParam=1572025743_564a70275ba3497e71d40b29312f5ce0 $ORACLE_HOME/LINUX.X64_193000_db_home.zip
+
+#UNZIP SFW DATABASE
+cd $ORACLE_HOME
+unzip -oq LINUX.X64_193000_db_home.zip
+
+#BEFORE INSTALL CONFIGURE AUTOMATIC STARTUP OF DATABASE
+vi /etc/oratab
+$ORACLE_SID:$ORACLE_HOME:Y
+
+SQL> CREATE PLUGGABLE DATABASE teste ADMIN USER pdb_adm IDENTIFIED BY Ora19cdbsys ROLES=(DBA) FILE_NAME_CONVERT=('/data/oradata/ORATST19C/pdbseed/','/data/oradata/ORATST19C/teste/') DEFAULT TABLESPACE users DATAFILE '/data/oradata/ORATST19C/teste/users01.dbf' SIZE 50M AUTOEXTEND ON NEXT 50M MAXSIZE 10G;
+
+Pluggable database created.
+
+SQL> ALTER PLUGGABLE DATABASE teste OPEN READ WRITE;
+
+Pluggable database altered.
+
+SQL> ALTER SESSION SET CONTAINER=teste;
+
+Session altered.
+
+
