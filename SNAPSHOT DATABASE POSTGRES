@@ -1,0 +1,34 @@
++++++++++++++++++++++++++++++++++++++++++
++      SNAPSHOT DATABASE POSTGRES       +
++++++++++++++++++++++++++++++++++++++++++
+
+*ex is need one standby database postgres read only and lvm file system
+
+#STOP DATABASE POSTGRES
+su - postgres -c "/usr/local/pgsql-11.4/bin/pg_ctl -D /dados-bi/data stop -m fast"
+
+#UMOUNT FILE SYSTEM
+umount /dados-bi-snap
+
+#REMOVE LV AND CREATE LV
+lvremove -fy /dev/vgdata/lvdata-bi-snap
+lvcreate -L 30G -s /dev/vgdata/lvdata-bi -n lvdata-bi-snap
+
+#MOUNT FILE SYSTEM SNAPSHOT
+mount /dados-bi-snap
+
+#CHANGE OWNER 
+chown postgres:postgres -R /dados-bi-snap
+
+#CHANGE CONFIGURATION FILES POSTGRES
+sed -i 's/hot_standby = on/hot_standby = off/g' /dados-bi-snap/data/postgresql.conf
+sed -i 's/port = 5432/port = 5433/g' /dados-bi-snap/data/postgresql.conf
+echo "host    database      user        ip/port          md5" >> /dados-bi-snap/data/pg_hba.conf
+
+#REMOVE RECOVERY FILE
+rm -vf /dados-bi-snap/STDBBI/data/recovery.conf
+
+#START STANDBY DATABASE AND SNAPSHOT DATABASE READ WRITE
+su - postgres -c "/usr/local/pgsql-11.4/bin/pg_ctl -D /dados-bi/data start -l logfile1"
+su - postgres -c "/usr/local/pgsql-11.4/bin/pg_ctl -D /dados-bi-snap/data start -l logfile2"
+
