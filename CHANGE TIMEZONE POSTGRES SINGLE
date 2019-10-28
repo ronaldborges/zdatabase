@@ -1,0 +1,41 @@
++++++++++++++++++++++++++++++++++++++++
++   CHANGE TIMEZONE POSTGRES SINGLE   +
++++++++++++++++++++++++++++++++++++++++
+
+#CHECK MACHINE TIME AND TIMEZONE
+date +"%Z %z"
+-03 -0300
+
+#STOP THE DATABASE
+/usr/local/pgsql/bin/pg_ctl -D /usr/local/pgsql/data/ stop -m faste
+
+#BACKUP THE POSTGRESQL.CONF FILE
+cp postgresql.conf postgresql.conf.bkp_data
+
+#MODIFY PARAMETERS IN POSTGRESQL.CONF FILE
+log_timezone = 'America/Fortaleza'
+timezone = 'America/Fortaleza'
+
+#BACKUP THE /ETC/LOCALTIME FILE
+cp /etc/localtime /etc/localtime_bkp
+
+#COPY FILE WITH DESIRED TIMEZONE TO /ETC/LOCALTIME
+cp /usr/share/zoneinfo/America/Fortaleza /etc/localtimme
+
+#VALIDATE TIME
+date
+Wed Aug  9 22:32:07 -03 2017
+
+date +"%Z %z"
+-03 -0300
+
+#START THE DATABASE AND VALIDATE
+/usr/local/pgsql/bin/pg_ctl -D /usr/local/pgsql/data/ start -l logstart
+
+#VALIDATE BANK TIME
+psql -U postgres
+show timezone;
+SELECT current_setting('TIMEZONE');
+SELECT now();
+\q
+
