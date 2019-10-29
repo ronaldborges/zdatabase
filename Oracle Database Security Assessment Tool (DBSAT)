@@ -1,0 +1,78 @@
++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
++   Oracle Database Security Assessment Tool (DBSAT)    +
++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+
+*Running in Oracle 19c
+*Running in RedHat Enterprise Linux 8
+*Oracle 10g to Oracle 19c
+*Oracle Database Security Assessment Tool (DBSAT)(Doc ID 2138254.1)
+*Files:
+https://drive.google.com/file/d/1ZxLbHzbKS43IwIQ4-8NZgckXGelsywm-/view?usp=sharing
+https://drive.google.com/file/d/10MTNMkStdnkFpOQYtJRe281HD2oaN3Wv/view?usp=sharing
+
+PURPOSE
+
+Overview of the Oracle Database Security Assessment Tool (DBSAT)
+The Oracle Database Security Assessment Tool (DBSAT) is a command line tool focused on identifying how securely the database is
+configured, who are the users and what are their entitlements, what security policies and controls are in place, and where sensitive
+data resides with the goal of promoting successful approaches to mitigate potential security risks.
+DBSAT has three components: Collector, Reporter, and Discoverer. Collector and Reporter work together to discover risk areas and
+produce reports on those risk areas - Database Security Assessment report. The Discoverer is a stand-alone module used to locate and
+report on sensitive data - Database Sensitive Data Assessment report.
+The Collector is responsible to collect raw data from the target database by executing SQL queries and OS commands.
+The Reporter reads the collected data, analyzes it and produces reports with the findings. The Reporter outputs four reports in
+HTML, XLS, JSON and Text formats.
+The Discoverer executes SQL queries against database dictionary views to discover sensitive data, and outputs reports in HTML
+and CSV formats. The Discoverer CSV report can be loaded into Oracle Audit Vault and Database Firewall starting in 12.2.0.8,
+to add sensitive data context to the new Data Privacy reports. For more information about this functionality, see Importing
+Sensitive Data Into AVDF Repository in the Oracle Audit Vault and Database Firewall Auditor's Guide.
+
+#INSTALL AND CONFIGURE PYTHON
+yum install python2.x86_64 -y
+ln -s /usr/bin/python2.7 /usr/bin/python
+python -V
+Python 2.7.15
+
+#DESCOMPRESS AND CONFIGURE DBSAT
+su - oracle
+mkdir -p /home/oracle/dbsat
+unzip dbsat.zip –d /home/oracle/dbsat
+mkdir -p /tmp/dbsat/
+
+#RUN COLLECT AND REPORT
+./dbsat collect -n "/ as sysdba" /tmp/dbsat/collect
+./dbsat report /tmp/dbsat/collect
+
+#DESCOMPRESS REPORT FILE collect_report.zip
+ls -ltr /tmp/dbsat/
+-rw------- 1 oracle oinstall 106399 Oct 29 11:22 collect_report.zip
+unzip /tmp/dbsat/collect_report.zip
+ls -ltr /tmp/dbsat/
+-rw------- 1 oracle oinstall 397930 Oct 29 11:21 collect.json
+-rw------- 1 oracle oinstall  24979 Oct 29 11:22 collect_report.xlsx
+-rw------- 1 oracle oinstall 111090 Oct 29 11:22 collect_report.txt
+-rw------- 1 oracle oinstall 131065 Oct 29 11:22 collect_report.json
+-rw------- 1 oracle oinstall 173407 Oct 29 11:22 collect_report.html
+
+#RUN DISCOVERY
+export JAVA_HOME="/u01/app/oracle/product/19.3.0/dbhome_1/jdk"
+export PATH=$JAVA_HOME/bin:$PATH
+
+cp /home/oracle/dbsat/Discover/conf/sample_dbsat.config /home/oracle/dbsat/Discover/conf/dbsat.config
+chmod 755 /home/oracle/dbsat/Discover/conf/dbsat.config
+
+vi /home/oracle/dbsat/Discover/conf/dbsat.config
+DB_HOSTNAME = localhost
+DB_PORT = 1521
+DB_SERVICE_NAME = oradbcXDB
+
+cd dbsat/
+./dbsat discover -c ./Discover/conf/dbsat.config oradbc_discovery
+
+ ls -ltr
+-rw------- 1 oracle oinstall   3692 Oct 29 13:54 oradbc_discovery_report.zip
+
+unzip oradbc_discovery_report.zip
+-rw------- 1 oracle oinstall  11329 Oct 29 13:54 oradbc_discovery_discover.html
+-rw------- 1 oracle oinstall    137 Oct 29 13:54 oradbc_discovery_discover.csv
+
