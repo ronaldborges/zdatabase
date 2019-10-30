@@ -36,6 +36,8 @@ make
 make install
 ls -l /usr/local/pgsql/
 
+adduser postgres
+
 #INIT/CREATE INSTANCE 
 /usr/local/pgsql/bin/initdb -D /usr/local/pgsql/data/       --optional [/usr/local/pgsql/bin/initdb -D $pathdata/data/
 ls -ltrh /usr/local/pgsql/data/
