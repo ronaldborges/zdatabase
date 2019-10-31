@@ -1,0 +1,266 @@
++++++++++++++++++++++++++++++++++++++
++     ZABBIX ON REDHATEL8      		+
++++++++++++++++++++++++++++++++++++++
+
+#CONFIGURE ZABBIX/GRAFANA MACHINE
+#NETWORK 
+echo "192.168.56.114    ZABBIX" >> /etc/hosts
+
+#SUBSCRIPTION
+subscription-manager register --username () --password () --auto-attach
+subscription-manager repos --enable codeready-builder-for-rhel-8-x86_64-rpms
+rpm -Uvh https://repo.zabbix.com/zabbix/4.2/rhel/8/x86_64/zabbix-release-4.2-2.el8.noarch.rpm
+
+#DISABLE SELINUX AND FIREWALLD
+sed -i 's/SELINUX=.*/SELINUX=disabled/' /etc/sysconfig/selinux && setenforce 0
+systemctl stop firewalld && systemctl disable firewalld
+
+#CHANGE STATIC IP IN MACHINE
+vi /etc/sysconfig/network-scripts/ifcfg-enp0s8
+TYPE=Ethernet
+PROXY_METHOD=none
+BROWSER_ONLY=no
+BOOTPROTO=none
+DEFROUTE=yes
+IPV4_FAILURE_FATAL=no
+IPV6INIT=no
+IPV6_AUTOCONF=yes
+IPV6_DEFROUTE=yes
+IPV6_FAILURE_FATAL=no
+IPV6_ADDR_GEN_MODE=stable-privacy
+NAME=enp0s8
+UUID=d4638581-c50c-43ee-800e-fbecfd122a22
+DEVICE=enp0s8
+ONBOOT=yes
+IPADDR=192.168.56.114
+PREFIX=24
+GATEWAY=192.168.56.1
+
+#CONFIGURE HOSTNAME IN MACHINE
+hostnamectl 
+hostnamectl set-hostname ZABBIX
+hostnamectl --static 
+
+#INSTALL PACKAGES
+yum repolist enabled
+yum -y install dnf-utils
+yum -y install zabbix-proxy-mysql
+yum -y install zabbix-web-mysql
+yum -y install zabbix-proxy-mysql
+yum -y install zabbix-web-mysql
+yum -y install mariadb-server
+yum -y install zabbix-server-mysql
+yum -y install zabbix-agent
+
+#START APACHE 
+systemctl start httpd.service
+systemctl status httpd.service
+systemctl enable httpd
+
+#CONFIGURE PHP LOCATION
+vi /etc/php.ini
+date.timezone = America/Fortaleza
+
+#START DATABASE MYSQL
+systemctl start mariadb.service
+systemctl status mariadb.service
+systemctl enable mariadb
+
+#INSTALL DATABASE MYSQL
+mysql_secure_installation
+
+NOTE: RUNNING ALL PARTS OF THIS SCRIPT IS RECOMMENDED FOR ALL MariaDB
+      SERVERS IN PRODUCTION USE!  PLEASE READ EACH STEP CAREFULLY!
+
+In order to log into MariaDB to secure it, we'll need the current
+password for the root user.  If you've just installed MariaDB, and
+you haven't set the root password yet, the password will be blank,
+so you should just press enter here.
+
+Enter current password for root (enter for none):
+OK, successfully used password, moving on...
+
+Setting the root password ensures that nobody can log into the MariaDB
+root user without the proper authorisation.
+
+Set root password? [Y/n] y
+New password: ######
+Re-enter new password: ######
+Password updated successfully!
+Reloading privilege tables..
+ ... Success!
+
+
+By default, a MariaDB installation has an anonymous user, allowing anyone
+to log into MariaDB without having to have a user account created for
+them.  This is intended only for testing, and to make the installation
+go a bit smoother.  You should remove them before moving into a
+production environment.
+
+Remove anonymous users? [Y/n] y
+ ... Success!
+
+Normally, root should only be allowed to connect from 'localhost'.  This
+ensures that someone cannot guess at the root password from the network.
+
+Disallow root login remotely? [Y/n] y
+ ... Success!
+
+By default, MariaDB comes with a database named 'test' that anyone can
+access.  This is also intended only for testing, and should be removed
+before moving into a production environment.
+
+Remove test database and access to it? [Y/n] y
+ - Dropping test database...
+ ... Success!
+ - Removing privileges on test database...
+ ... Success!
+
+Reloading the privilege tables will ensure that all changes made so far
+will take effect immediately.
+
+Reload privilege tables now? [Y/n] y
+ ... Success!
+
+Cleaning up...
+
+All done!  If you've completed all of the above steps, your MariaDB
+installation should now be secure.
+
+Thanks for using MariaDB!
+
+#CRIAR DATABASE ZABBIX
+[root@localhost ~]# mysql -u root -p
+Enter password: ######
+Welcome to the MariaDB monitor.  Commands end with ; or \g.
+Your MariaDB connection id is 17
+Server version: 10.3.11-MariaDB MariaDB Server
+
+Copyright (c) 2000, 2018, Oracle, MariaDB Corporation Ab and others.
+
+Type 'help;' or '\h' for help. Type '\c' to clear the current input statement.
+
+MariaDB [(none)]> Create database zabbix;
+Query OK, 1 row affected (0.000 sec)
+
+MariaDB [(none)]> create user 'zabbix'@'localhost' identified BY '######';
+Query OK, 0 rows affected (0.000 sec)
+
+MariaDB [(none)]> grant all privileges on ZABBIX.* to zabbix@localhost ;
+Query OK, 0 rows affected (0.000 sec)
+
+MariaDB [(none)]> flush privileges;
+Query OK, 0 rows affected (0.000 sec)
+
+MariaDB [(none)]> \q
+Bye
+
+#CONFIGURE PARAMETERS ZABBIX.CONF
+vi /etc/php-fpm.d/zabbix.conf
+[zabbix]
+user = apache
+group = apache
+
+listen = /run/php-fpm/zabbix.sock
+listen.acl_users = apache,nginx
+listen.allowed_clients = 127.0.0.1
+
+pm = dynamic
+pm.max_children = 50
+pm.start_servers = 5
+pm.min_spare_servers = 5
+pm.max_spare_servers = 35
+
+php_value[session.save_handler] = files
+php_value[session.save_path]    = /var/lib/php/session
+
+php_value[max_execution_time] = 300
+php_value[memory_limit] = 128M
+php_value[post_max_size] = 16M
+php_value[upload_max_filesize] = 2M
+php_value[max_input_time] = 300
+php_value[max_input_vars] = 10000
+php_value always_populate_raw_post_data -1
+php_value[date.timezone] = America/Fortaleza
+
+#RESTART APACHE SERVICE
+systemctl restart httpd.service
+
+#IMPORT DATABASE ZABBIX
+cd /usr/share/doc/zabbix-server-mysql
+zcat create.sql.gz | mysql -u zabbix -p zabbix
+Enter password: ######
+
+#CHANGE CONFIGURATION FILE ZABBIX SERVER
+vi /etc/zabbix/zabbix_server.conf 
+DBHost=localhost
+DBName=zabbix
+DBUser=zabbix
+DBPassword=######
+
+#START ZABIIX SERVER
+systemctl enable zabbix-server.service
+systemctl start zabbix-server.service
+systemctl status zabbix-server.service
+systemctl start zabbix-agent.service
+systemctl enable zabbix-agent.service
+systemctl status zabbix-agent.service
+systemctl restart httpd
+
+#ADJUSTE SELINUX REDHAT
+setsebool -P httpd_can_network_connect on
+setsebool -P zabbix_can_network on
+setsebool -P httpd_can_connect_zabbix on
+curl https://support.zabbix.com/secure/attachment/53320/zabbix_server_add.te > zabbix_server_add.te
+checkmodule -M -m -o zabbix_server_add.mod zabbix_server_add.te
+semodule_package -m zabbix_server_add.mod -o zabbix_server_add.pp
+semodule -i zabbix_server_add.pp
+
+#RESTART MACHINE
+init 6
+
+#ENTER WEBPAGE
+http://<ip>/zabbix
+
+User Default : Admin
+Default Password: ######
+
+
++++++++++++++++++++++++++++++++++++++
++     GRAFANA ON REDHATEL8      	+
++++++++++++++++++++++++++++++++++++++
+
+#INSTALL GRAFANA 
+rpm -Uvh https://dl.grafana.com/oss/release/grafana-6.3.5-1.x86_64.rpm
+systemctl daemon-reload
+systemctl enable grafana-server.service
+systemctl start grafana-server.service
+systemctl status grafana-server.service
+
+yum -y install fontconfig
+yum -y install freetype*
+yum -y install urw-fonts
+
+#ACCESS GRAFANA
+http://192.168.56.114:3000
+User Default : admin
+Default Password: ######
+
+#CONFIGURE DATASOURCE
+Data Sources / MySQL
+Name		Zabbix MySQL
+MySQL Connection
+Host 		localhost:3306
+Database 	zabbix
+User		zabbix			Password ######
+
+Data Sources / Zabbix
+Name		Zabbix
+HTTP
+URL 		http://192.168.56.114/zabbix/api_jsonrpc.php
+Access		Browser
+Zabbix API
+Username	Admin
+Password	######
+Trends		[x]
+
