@@ -52,7 +52,7 @@ vi $path/wal_sync.sh
 RESULT=`ps aux | grep rsync | wc -l`
 if [ $RESULT -le 1 ];then
     echo "rsync copy attempt"
-    rsync -av -e 'ssh -p 22' $path/wals/ postgres@172.29.2.36:/backup/wall-replication/STDBHGF/
+    rsync -av -e 'ssh -p 22' $path/wals/ postgres@#########:/backup/wall-replication/STDBHGF/
     exit
 fi
     echo "still copying!"
