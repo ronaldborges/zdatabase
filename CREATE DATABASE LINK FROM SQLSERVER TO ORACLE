@@ -1,0 +1,73 @@
++++++++++++++++++++++++++++++++++++++++++++++++++++++
++   CREATE DATABASE LINK FROM SQLSERVER TO ORACLE   +
++++++++++++++++++++++++++++++++++++++++++++++++++++++
+
+1 - install oracle client
+2 - create $ORACLE_HOME/Network/tnsnames.ora files
+
+TEST =
+(DESCRIPTION =
+  (ADDRESS_LIST =
+     (ADDRESS = (PROTOCOL = TCP)(HOST = ############)(PORT = ####))
+  )
+  (CONNECT_DATA =
+     (SERVER = DEDICATED)
+     (SERVICE_NAME = ########)
+  )
+)  
+
+3 - test connection tnsping TEST
+3.1 - sqlplus <user>/<password>@TEST
+4 - connect to sqlserver database and enable oledb Oracle
+EXEC master.dbo.sp_MSset_oledb_prop N'OraOLEDB.Oracle', N'AllowInProcess', 1
+5 - create database link
+
+USE [master]
+GO
+
+/****** Object:  LinkedServer [DBLINK_TEST]    Script Date: 04/11/2019 16:04:43 ******/
+EXEC master.dbo.sp_addlinkedserver @server = N'DBLINK_TEST', @srvproduct=N'Oracle', @provider=N'OraOLEDB.Oracle', @datasrc=N'TEST'
+ /* For security reasons the linked server remote logins password is changed with ######## */
+EXEC master.dbo.sp_addlinkedsrvlogin @rmtsrvname=N'DBLINK_TEST',@useself=N'False',@locallogin=NULL,@rmtuser=N'#######',@rmtpassword='#######'
+GO
+
+EXEC master.dbo.sp_serveroption @server=N'DBLINK_TEST', @optname=N'collation compatible', @optvalue=N'false'
+GO
+
+EXEC master.dbo.sp_serveroption @server=N'DBLINK_TEST', @optname=N'data access', @optvalue=N'true'
+GO
+
+EXEC master.dbo.sp_serveroption @server=N'DBLINK_TEST', @optname=N'dist', @optvalue=N'false'
+GO
+
+EXEC master.dbo.sp_serveroption @server=N'DBLINK_TEST', @optname=N'pub', @optvalue=N'false'
+GO
+
+EXEC master.dbo.sp_serveroption @server=N'DBLINK_TEST', @optname=N'rpc', @optvalue=N'false'
+GO
+
+EXEC master.dbo.sp_serveroption @server=N'DBLINK_TEST', @optname=N'rpc out', @optvalue=N'false'
+GO
+
+EXEC master.dbo.sp_serveroption @server=N'DBLINK_TEST', @optname=N'sub', @optvalue=N'false'
+GO
+
+EXEC master.dbo.sp_serveroption @server=N'DBLINK_TEST', @optname=N'connect timeout', @optvalue=N'0'
+GO
+
+EXEC master.dbo.sp_serveroption @server=N'DBLINK_TEST', @optname=N'collation name', @optvalue=null
+GO
+
+EXEC master.dbo.sp_serveroption @server=N'DBLINK_TEST', @optname=N'lazy schema validation', @optvalue=N'false'
+GO
+
+EXEC master.dbo.sp_serveroption @server=N'DBLINK_TEST', @optname=N'query timeout', @optvalue=N'0'
+GO
+
+EXEC master.dbo.sp_serveroption @server=N'DBLINK_TEST', @optname=N'use remote collation', @optvalue=N'true'
+GO
+
+EXEC master.dbo.sp_serveroption @server=N'DBLINK_TEST', @optname=N'remote proc transaction promotion', @optvalue=N'true'
+GO
+
+6 - execute connection test
