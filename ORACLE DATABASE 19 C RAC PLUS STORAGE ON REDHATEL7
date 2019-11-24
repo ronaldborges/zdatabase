@@ -495,7 +495,7 @@ Allocation Unit Size 4 MB
 
 Select Disks                       Show Candidate/Provisioned Disks !
 +---+-------------------+--------------+----------------+
-[ ] |  Disk Path        | Size (in MB) | Status  		|
+[ ] |  Disk Path        | Size (in MB) | Status  	|
 +---+-------------------+--------------+----------------+
 [x] |   /dev/sdb1       | 20448        | Candidate      |
 +---+-------------------+--------------+----------------+
@@ -517,7 +517,7 @@ Allocation Unit Size 4 MB
 
 Select Disks           Show Candidate/Provisioned Disks !
 +---+----------------+-----------------+----------------------+
-[  ] |  Disk Path    | Size (in MB)    |       Status  		  |
+[  ] |  Disk Path    | Size (in MB)    |       Status  	      |
 +---+----------------+-----------------+----------------------+
 [x] |   /dev/sdd1    | 20448           |       Candidate      |
 +---+----------------+-----------------+----------------------+
@@ -829,11 +829,11 @@ Select the type of database installation you want to perform.
 # screen 3
 
 Select nodes (in addition to the local node) in the cluster where the installer should install Oracle RAC or Oracle RAC One.
-+---+----+------------------------------------------+
-|[x]|    | oraclerac19cn1             |				|
-+---+----+------------------------------------------+
-|[x]|    | oraclerac19cn2             |				|
-+---+----+----------------------------+-------------+
++---+----+--------------------------------------+
+|[x]|    | oraclerac19cn1             |		|
++---+----+--------------------------------------+
+|[x]|    | oraclerac19cn2             |		|
++---+----+----------------------------+---------+
 
 SSH connectivity ...         Select all          Deselect all
 
@@ -909,7 +909,7 @@ Redundancy       ( ) Flex     ( )High      ( )Normal     (@)External
 Allocation Unit Size 4 MB
 							Show Candidate/Provisioned Disks !
 +---+------------------+-----------------+-------------------+
-|[ ]| Disk Path        | Size (in MB)    |   Status  		 |
+|[ ]| Disk Path        | Size (in MB)    |   Status  	     |
 +---+------------------+-----------------+-------------------+
 |[x]| /dev/sdb1        | 20240           |   Candidate       |
 +---+------------------+-----------------+-------------------+
