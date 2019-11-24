@@ -119,14 +119,14 @@ session required        pam_limits.so
 session required        pam_unix.so
 
 vi /etc/security/limits.conf
-*              hard             nofile          327680
-*               soft            nofile          262144
-*               hard    nproc         327680
-*               soft            nproc         262144
-*               hard    memlock    3145728
-*               soft            memlock    3145728
-*               hard    stack         16384
-*               soft            stack         10240
+*    hard    nofile     327680
+*    soft    nofile     262144
+*    hard    nproc      327680
+*    soft    nproc      262144
+*    hard    memlock    3145728
+*    soft    memlock    3145728
+*    hard    stack      16384
+*    soft    stack      10240
 
 groupadd -g 54321 oinstall
 groupadd -g 54322 dba
@@ -254,7 +254,6 @@ Default group to own the driver interface []: oinstall
 Start Oracle ASM library driver on boot (y/n) [n]: y
 Scan for Oracle ASM disks on boot (y/n) [y]: y
 Writing Oracle ASM library driver configuration: done
-
 
 
 #iscsi datanode
@@ -398,25 +397,19 @@ https://asanga-pradeep.blogspot.com/2019/04/installing-18c-183-rac-on-rhel-7-wit
 
 Select an option to configure the software. The wizard will register the home in the central inventory and then perform the selected configuration
 
-( @ ) Configure Oracle Grid Infrastructure for a New Cluster
-
- (    ) Configure Oracle Grid Infrastructure for a Standalone Server (Oracle_Restart)
-
- (    ) Upgrade Oracle Grid Infrastructure
-
- (    ) Set Up Software Only
+(@) Configure Oracle Grid Infrastructure for a New Cluster
+( ) Configure Oracle Grid Infrastructure for a Standalone Server (Oracle_Restart)
+( ) Upgrade Oracle Grid Infrastructure
+( ) Set Up Software Only
 
 # screen 2
 
 Choose the required cluster configuration
 
-( @ ) Configure an Oracle Standalone Cluster
-
- (    ) Configure an Oracle Domain Services Cluster
-
- (    ) Configure an Oracle Member Cluster for Oracle Databases
-
- (    ) Configure an Oracle Member Cluster for Applications
+(@) Configure an Oracle Standalone Cluster
+( ) Configure an Oracle Domain Services Cluster
+( ) Configure an Oracle Member Cluster for Oracle Databases
+( ) Configure an Oracle Member Cluster for Applications
 
 Oracle Extended clusters are special purpose clusters that constitute nodes which span across multiple sites. Specify a minimum of 3 sites names and a maximum of 5
 [ ] Configure as an Oracle Extended cluster
@@ -425,55 +418,55 @@ Oracle Extended clusters are special purpose clusters that constitute nodes whic
 # screen 3
 
 Single Client Access Name (SCAN) allows clients to use one name in connection strings to connect to the cluster as a whole. Client connect request to the SCAN name can be handled by any cluster node.
-( @ ) Create Local SCAN
+(@) Create Local SCAN
           Cluster Name: oraclerac19c
           SCAN Name: oraclerac19c-scan
           SCAN Port: 1521
- (    ) Use Shared SCAN
+( ) Use Shared SCAN
         SCAN Client Data: ___________________________________________________________________________________________________________ Browse ...
  [ ] Configure GNS
         [ ] Configure nodes Virtual_IPs as assigned by the Dynamic Networls
-         (    )  Create a new GNS
-                        GNS VIP Address: ___________________________________________________________________________________________________
-                        GNS Sub Domain: ___________________________________________________________________________________________________
-        (    ) Use Shared GNS
-                        GNS Client Data: ____________________________________________________________________________________________________ Browse ...
+         ( )  Create a new GNS
+                        GNS VIP Address: ____________________________________________________________________________________________
+                        GNS Sub Domain: _____________________________________________________________________________________________
+         ( ) Use Shared GNS
+                        GNS Client Data: ____________________________________________________________________________________________ Browse ...
 
 # screen 4
 
 Provide the list of nodes to be managed by Oracle Grid Infrastructure with their Public Hostname and Virtual Hostname
-+------------------------------------------------------------------------------------------------------------------------+--------------------------------------------------------------------------------------------------------------------------------+
-| Public Hostname                                                                                                  |    Virtual Hostname                                                                                                     |
-+------------------------------------------------------------------------------------------------------------------------+--------------------------------------------------------------------------------------------------------------------------------+
-| oraclerac19cn1.appsdba.info                                                                              |    oraclerac19cn1-vip.appsdba.info                                                                              |
-+------------------------------------------------------------------------------------------------------------------------+--------------------------------------------------------------------------------------------------------------------------------+
-| oraclerac19cn2.appsdba.info                                                                              |    oraclerac19cn2-vip.appsdba.info                                                                              |
-+------------------------------------------------------------------------------------------------------------------------+--------------------------------------------------------------------------------------------------------------------------------+
++-----------------------------------+---------------------------------------+
+| Public Hostname                   | Virtual Hostname                      |
++-----------------------------------+---------------------------------------+
+| oraclerac19cn1.appsdba.info       | oraclerac19cn1-vip.appsdba.info       |
++-----------------------------------+---------------------------------------+
+| oraclerac19cn2.appsdba.info       | oraclerac19cn2-vip.appsdba.info       |
++-----------------------------------+---------------------------------------+
 
-SSH connectivity...                                                     Use Cluster Configuration File...       Add...  Edit... Remove
+SSH connectivity...          Use Cluster Configuration File...       Add...  Edit... Remove
 
 # screen 5
 
 Private interfaces are used by Oracle Grid infrastructure for internode traffic.
 
-+-------------------------------------+------------------------------+----------------------------------------------+
-| Interface Name                |       Subnet          |       Use for                         |
-+-------------------------------------+------------------------------+----------------------------------------------+
-| enp0s3                                |       10.5.150.0      |       Public                          |
-+-------------------------------------+------------------------------+----------------------------------------------+
-| enp0s8                                |       192.168.0.0     |       ASM & Private                   |
-+-------------------------------------+------------------------------+----------------------------------------------+
-| virb0                         |       192.168.122.0   |       Do not Use                      |
-+-------------------------------------+------------------------------+----------------------------------------------+
++---------------------+-----------------------+-----------------------------+
+| Interface Name      |       Subnet          |       Use for               |
++---------------------+-----------------------+-----------------------------+
+| enp0s3              |       10.5.150.0      |       Public                |
++---------------------+-----------------------+-----------------------------+
+| enp0s8              |       192.168.0.0     |       ASM & Private         |
++---------------------+-----------------------+-----------------------------+
+| virb0               |       192.168.122.0   |       Do not Use            |
++---------------------+-----------------------+-----------------------------+
 
 # screen 6
 
 you can place oracle cluster registry(OCR), files and voting disk files on Oracle ASM storage, or on a file system
 
-( @ ) Use Oracle Flex ASM for storage
+(@) Use Oracle Flex ASM for storage
  Choose this option to configure OCR and voting disks on ASM storage. ASM instance will be configured on reduced number of cluster nodes.
 
- (    ) Use Shared File System
+( ) Use Shared File System
  Choose this option to configure OCR and voting disk files on an existing shared file system.
 
 # screen 7
@@ -482,15 +475,15 @@ The Grid Infrastructure Management Repository is an essential component for comp
 
 Configure Grid Infrastructure Management Repository
 
- ( @ ) Yes
- (     ) No
+(@) Yes
+( ) No
 
 # screen 8
 
 Do you want to create a separate Automatic Storage Management (ASM) disk group for the Grid Infrastructure Management Repository (GIMR) data ?
 
- ( @ ) Yes
- (     ) No
+ (@) Yes
+ ( ) No
 
 # screen 9
 
@@ -500,18 +493,18 @@ Disk group name         DATA
 Redundancy              ( ) Flex        ( )High ( )Normal       (@)External
 Allocation Unit Size 4 MB
 
-Select Disks                                                                            Show Candidate/Provisioned Disks !
-+---+----------------------------------------------------------------------------------------+------------------------------+----------------------+
-[  ] |  Disk Path                                                                               |       Size (in MB)    |       Status  |
-+---+----------------------------------------------------------------------------------------+------------------------------+----------------------+
-[x] |   /dev/sdb1                                                                               |       20448           |       Candidate       |
-+---+----------------------------------------------------------------------------------------+------------------------------+----------------------+
-[x] |   /dev/sdc1                                                                               |       20448           |       Candidate       |
-+---+----------------------------------------------------------------------------------------+------------------------------+----------------------+
+Select Disks                       Show Candidate/Provisioned Disks !
++---+-------------------+--------------+----------------+
+[ ] |  Disk Path        | Size (in MB) | Status  		|
++---+-------------------+--------------+----------------+
+[x] |   /dev/sdb1       | 20448        | Candidate      |
++---+-------------------+--------------+----------------+
+[x] |   /dev/sdc1       | 20448        | Candidate      |
++---+-------------------+--------------+----------------+
 Disk Discovery Path: '/dev/sd*'
 Change Discovery Path
 
-[  ] Configure Oracle ASM Filter Driver
+[ ] Configure Oracle ASM Filter Driver
 Select this option to configure ASM Filter Driver (ADF) to simplify configuration and management of disk devices by Oracle ASM
 
 # screen 10
@@ -522,14 +515,14 @@ Disk group name         MGMT
 Redundancy              ( ) Flex        ( )High ( )Normal       (@)External
 Allocation Unit Size 4 MB
 
-Select Disks                                                                            Show Candidate/Provisioned Disks !
-+---+----------------------------------------------------------------------------------------+------------------------------+----------------------+
-[  ] |  Disk Path                                                                               |       Size (in MB)    |       Status  |
-+---+----------------------------------------------------------------------------------------+------------------------------+----------------------+
-[x] |   /dev/sdd1                                                                               |       20448           |       Candidate       |
-+---+----------------------------------------------------------------------------------------+------------------------------+----------------------+
-[x] |   /dev/sde1                                                                               |       20448           |       Candidate       |
-+---+----------------------------------------------------------------------------------------+------------------------------+----------------------+
+Select Disks           Show Candidate/Provisioned Disks !
++---+----------------+-----------------+----------------------+
+[  ] |  Disk Path    | Size (in MB)    |       Status  		  |
++---+----------------+-----------------+----------------------+
+[x] |   /dev/sdd1    | 20448           |       Candidate      |
++---+----------------+-----------------+----------------------+
+[x] |   /dev/sde1    | 20448           |       Candidate      |
++---+----------------+-----------------+----------------------+
 Disk Discovery Path: '/dev/sd*'
 Change Discovery Path
 
@@ -538,17 +531,17 @@ Change Discovery Path
 The new Oracle Automatic Storage Management (Oracle ASM) instance requires its own SYS user with SYSASM privileges for administration. Oracle recommends that you create a less privileged ASMSNMP user with SYSDBA privileges to monitor the ASM instance.
 
 Specify password for these user accounts.
-(  ) Use different passwords for these accounts
+( ) Use different passwords for these accounts
 
-+---------------------+--------------------------------------+-------------------------------------------------------+
-|                       |       Password                |               Confirm Password                |
-+---------------------+--------------------------------------+------------------------------------------------------+
-| SYS           |                                       |                                                       |
-+---------------------+--------------------------------------+------------------------------------------------------+
-| ASMSNMP       |                                       |                                                       |
-+---------------------+--------------------------------------+------------------------------------------------------+
++---------------+------------------------+---------------------------+
+|               |       Password         |     Confirm Password      |
++---------------+------------------------+---------------------------+
+| SYS           |                        |                           |
++---------------+------------------------+---------------------------+
+| ASMSNMP       |                        |                           |
++---------------+------------------------+---------------------------+
 
-( @ ) Use same passwords for these accounts
+(@) Use same passwords for these accounts
 
 Specify Password @Or1clerac193  Confirm Password @Or1clerac193
 
@@ -556,35 +549,35 @@ Specify Password @Or1clerac193  Confirm Password @Or1clerac193
 
 Chose one of the following Failure Isolation Support options
 
-(   )  Use Intelligent Platform Management Interface (IPMI)
+( )  Use Intelligent Platform Management Interface (IPMI)
         To ensure sucessful instalation with IPMI enabled, ensure your IPMI drivers are properly installed and enabled
         User Name: ________________
-        Password:   ________________
+        Password:  ________________
 
-( @ ) Do not use Intelligent Platform Management Interface (IPMI)
+(@) Do not use Intelligent Platform Management Interface (IPMI)
 
 # screen 13
 
 You can configure to have instance of Oracle Grid infrastructure and Oracle Automatic Storage Management to be managed by Enterprise Manager Cloud Control. Specify the details of the Cloud Control configuration to perform the registration.
-[  ] Register with Enterprise Manager (EM) Cloud Control
+[ ] Register with Enterprise Manager (EM) Cloud Control
         OMS host: ______________________________
         OMS port: ______________________________
-        EM Admin User Name: _____________________
-        EM Admin Password: ______________________
+        EM Admin User Name: ____________________
+        EM Admin Password: _____________________
 
 # screen 14
 
 Select the name of the operating system group, that you want to use for operating system authentication to Oracle Automatic Storage Management.
 
-Oracle ASM Administrator (OSASM) Group                                  asmadmin
-Oracle ASM DBA (OSDBA FOR ASM) Group                                    asmdba
+Oracle ASM Administrator (OSASM) Group                          asmadmin
+Oracle ASM DBA (OSDBA FOR ASM) Group                            asmdba
 Oracle ASM Operator (OSOPER for ASM) Group (Optional)           asmoper
 
 # screen 15
 
 Specify the Oracle base. The Oracle base directory for the Oracle Grid Infrastructure installation is the location where diagnostic and administrative logs, and administrative logs, and other logs associated with Oracle ASM and Oracle Clusteware are stored. This location would also contain files pertaining to the configuration of Oracle.
 
-Oracle Base: /u01/app/grid                                      Browse...
+Oracle Base: /u01/app/grid                              Browse...
 
 This software directory is the Oracle Grid Infrastructure home directory.
 Software location: /u01/app/19.3/grid
@@ -600,45 +593,28 @@ oraInventory Group Name: oinstall
 # screen 17
 
 During the software configuration, certain operations have to be perform as "root" user. You can choose to have the installer perform these operations automatically by specifying inputs for one the options below. The input specified will also be used by the installer to perform additional prerequisite checks.
-[  ] Automatically run configuration scripts
-        ( @ ) Use "root" user credential
+[ ] Automatically run configuration scripts
+        (@) Use "root" user credential
                 Password: oracle
-        (    ) Use sudo
+        ( ) Use sudo
                 Program path: /usr/bin/sudo
                 User name: grid
-                Password:  ____________________
-
+                Password:  __________________
+				
 # screen 18
 Verification Result
 Some of the minimun requirements for installation completed.
 
-Check Again             Fix & Check Again               Show Failed             All Nodes                       [x] Ignore All
-+------+-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
- |       | Checks                                                                                                                                               | Status                        | Fixable               |
-+------+-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
+Check Again     Fix & Check Again     Show Failed      All Nodes     [x] Ignore All
++--+--------------------------------------------+
+|  | Checks       | Status        | Fixable     |
++--+--------------------------------------------+
 
 # screen 18
 Save Response File...
 Install
 
 # instaltion sucessfully
-Memory used
-
-Node 1 6gb total                                                                                Node 1 6gb total
-------------------------------------------------------------------------------------------------------- ---------------------------------
-has 1gb                                                                                         has 1gb
-+ASM1 1gb                                                                                       +ASM2 1gb
--MGMDB 2gb
-
-Node down
-egrep --color 'Mem|Cache|Swap' /proc/meminfo                            egrep --color 'Mem|Cache|Swap' /proc/meminfo
-MemTotal:               6109576 kB                                                              MemTotal:               6109576 kB
-MemFree:                4786092 kB                                                              MemFree:                5041924 kB
-MemAvailable:          5145424 kB                                                               MemAvailable:           5146856 kB
-Cached:                      401412 kB                                                          Cached:                    169712 kB
-SwapCached:                  272 kB                                                             SwapCached:                 0 kB
-SwapTotal:               4194300 kB                                                             SwapTotal:               4194300 kB
-SwapFree:                4190708 kB                                                             SwapFree:                4194300 kB
 
 #Status Cluster
 
@@ -818,7 +794,7 @@ crsctl start has
 crsctl start cluster -all
 
 
-# Install database Oracle 19.3 c
+# Install Software database Oracle 19.3 c
 su –
 xhost +
 su - oracle
@@ -835,9 +811,9 @@ unzip ./LINUX.X64_193000_db_home.zip
 
 Select any of the following install options
 
-(   ) Create and configure a single instance database.
+( ) Create and configure a single instance database.
 
-( @ )  Set Up Software Only
+(@) Set Up Software Only
 
 Note 1: For RAC install, do 'Set Up Software Only' and then execute DBCA (Database Configuration Assistant) from the oracle home.
 Note 2: To upgrade an Oracle Database, do 'Set Up Software Only' and then execute DBUA (Database Upgrade Assistat) from the oracle home.
@@ -846,40 +822,39 @@ Note 2: To upgrade an Oracle Database, do 'Set Up Software Only' and then execut
 
 Select the type of database installation you want to perform.
 
-(   ) Single instance database installation
+( ) Single instance database installation
 
-( @ ) Oracle Real Application Cluster database installation.
+(@) Oracle Real Application Cluster database installation.
 
 # screen 3
 
 Select nodes (in addition to the local node) in the cluster where the installer should install Oracle RAC or Oracle RAC One.
-+----+----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
-| [x] |                 | oraclerac19cn1                                                                                                                                                                                                        |
-+----+----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
-| [x] |                 | oraclerac19cn2                                                                                                                                                                                                    |
-+----+----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
++---+----+------------------------------------------+
+|[x]|    | oraclerac19cn1             |				|
++---+----+------------------------------------------+
+|[x]|    | oraclerac19cn2             |				|
++---+----+----------------------------+-------------+
 
-SSH connectivity ...                                                                                                                                                            Select all                      Deselect all
+SSH connectivity ...         Select all          Deselect all
 
-Os Username: oracle                                                                                             OS Password: ___________________________________________________
-[  ] Reuse private and public keys existing in the user home
-                                                                                                                                                                                                Test                    Setup
+Os Username: oracle                 OS Password: ____________________________
+[ ] Reuse private and public keys existing in the user home
 
 # screen 4
 
 Which database edition do you want to install?
 
 (@) Enterprise Edition
-        Oracle Database 19c Enterprise Edition is a self-managing database that has the scalability, performance, high availability, and secutiry features required to run the most demanding, mission- critical applications.
+       Oracle Database 19c Enterprise Edition is a self-managing database that has the scalability, performance, high availability, and secutiry features required to run the most demanding, mission- critical applications.
 
-(    ) Standart Edition 2
+( ) Standart Edition 2
        Oracle Database 19c Standart Edition 2 is a full-featured data management solution ideally suited to the needs of medium-sized businesses,
 
 # screen 5
 
 Specify a path to place all Oracle software and configuration-related files installed by this installation owner. This location is the Oracle base directory for the installation owner.
 
-Oracle base: /u01/app/oracle                                                                                                                    Browser...
+Oracle base: /u01/app/oracle                                                         Browser...
 This software directory is the Oracle Database home directory.
 Software location: /u01/app/oracle/product/19.3/dbhome_1
 
@@ -888,12 +863,12 @@ Software location: /u01/app/oracle/product/19.3/dbhome_1
 SYS privileges are required to create a database using operating system (OS) authentication.
 Membership in OS Groups grants the corresponding SYS privilege, eg. membership in OSDBA grants the SYSDBA privilege.
 
-Database Administrator (OSDBA) group:                                           dba
-Database Operator (OSDBA) group (Optional):                             oinstall
+Database Administrator (OSDBA) group:                           dba
+Database Operator (OSDBA) group (Optional):                     oinstall
 Database Backup and Recovery (OSBACKUPDBA)                      backupdba
-Data Guard administrative (OSDGDBA) group:                                      dgdba
+Data Guard administrative (OSDGDBA) group:                      dgdba
 Encryption Key Management administrative (OSKMDBA) group:       kmdba
-Real Application Cluster administrative (OSRACDBA) group:               racdba
+Real Application Cluster administrative (OSRACDBA) group:       racdba
 
 #screen 7
 During the software configuration, certain operations have to be performed as "root" user. You can choose to have the installer perform these operations automatically by specifying inputs for one of the options bellow. The input specified will also be used by the installer to perform additional prerequisite checks.
@@ -902,8 +877,8 @@ During the software configuration, certain operations have to be performed as "r
         (@) Use "root" user credential
                 Password : oracle
 
-        (   ) Use sudo
-                Program path: /usr/bin/sudo                                                             Browse...
+        ( ) Use sudo
+                Program path: /usr/bin/sudo                      Browse...
                 User name: oracle
                 Password:
 
@@ -911,10 +886,10 @@ During the software configuration, certain operations have to be performed as "r
 
 Verification Result
 Some of the minimum requirements for installation are completed.
-Check A...      Fix & Check Again               Show Failed             All Nodes               [  ] Ignore all
-+----+---------------------------------------------------------------------------------------+----------------------+------------------------------------------------------+
-|      | Checks                                                                         | Status                | Fixable                                               |
-+----+---------------------------------------------------------------------------------------+----------------------+------------------------------------------------------+
+Check A...      Fix & Check Again        Show Failed       All Nodes       [ ] Ignore all
++---+---------------------+----------------------+------------------------+
+|   | Checks              | Status               | Fixable                |
++---+---------------------+----------------------+------------------------+
 
 # screen 9
 Save Response File...
@@ -930,25 +905,25 @@ asmca
 ASM > Disk Groups > Create
 
 Disk group name         FRA
-Redundancy              ( ) Flex        ( )High ( )Normal       (@)External
+Redundancy       ( ) Flex     ( )High      ( )Normal     (@)External
 Allocation Unit Size 4 MB
-                                                                                                Show Candidate/Provisioned Disks !
-+---+----------------------------------------------------------------------------------------+------------------------------+----------------------+
-|[  ] |         Disk Path                                                                       |       Size (in MB)    |       Status  |
-+---+----------------------------------------------------------------------------------------+------------------------------+----------------------+
-|[x] |  /dev/sdb1                                                                       |       20240           |       Candidate       |
-+---+----------------------------------------------------------------------------------------+------------------------------+----------------------+
+							Show Candidate/Provisioned Disks !
++---+------------------+-----------------+-------------------+
+|[ ]| Disk Path        | Size (in MB)    |   Status  		 |
++---+------------------+-----------------+-------------------+
+|[x]| /dev/sdb1        | 20240           |   Candidate       |
++---+------------------+-----------------+-------------------+
 
 ASM > Disk Groups
-+---------------------------------------------------------------------+----------------------+----------------------+----------------------+------------------------------+---------------------------------------+
-| Disk Group Name                                               | Size (GB)     | Free (GB)     | Usable (GB)   | Redundancy            | State                         |
-+---------------------------------------------------------------------+----------------------+----------------------+----------------------+------------------------------+---------------------------------------+
-| DATA                                                          | 39.94         | 39.60         | 39.60         | EXTERN                        | MOUNTED(2 of 2)               |
-+---------------------------------------------------------------------+----------------------+----------------------+----------------------+------------------------------+---------------------------------------+
-| MGMT                                                          | 39.94         | 15.53         | 15.53         | EXTERN                        | MOUNTED(2 of 2)               |
-+---------------------------------------------------------------------+----------------------+----------------------+----------------------+------------------------------+---------------------------------------+
-| FRA                                                           | 19.94         | 19.80         | 19.80         | EXTERN                        | MOUNTED(2 of 2)               |
-+---------------------------------------------------------------------+----------------------+----------------------+----------------------+------------------------------+---------------------------------------+
++----------------------+---------------+---------------+---------------+-----------------+---------------------+
+| Disk Group Name      | Size (GB)     | Free (GB)     | Usable (GB)   | Redundancy      | State               |
++----------------------+---------------+---------------+---------------+-----------------+---------------------+
+| DATA                 | 39.94         | 39.60         | 39.60         | EXTERN          | MOUNTED(2 of 2)     |
++----------------------+---------------+---------------+---------------+-----------------+---------------------+
+| MGMT                 | 39.94         | 15.53         | 15.53         | EXTERN          | MOUNTED(2 of 2)     |
++----------------------+---------------+---------------+---------------+-----------------+---------------------+
+| FRA                  | 19.94         | 19.80         | 19.80         | EXTERN          | MOUNTED(2 of 2)     |
++----------------------+---------------+---------------+---------------+-----------------+---------------------+
 
 Exit
 
@@ -964,24 +939,24 @@ cd /u01/app/oracle/product/19.3/dbhome_1
 Select the operation that you want to perform.
 
 (@) Create a database
-(   ) Configuration an existing database
-(   ) Delete database
-(   ) Manage templates
-(   ) Manage Pluggable databases
-(   ) Oracle RAC database Instance management
+( ) Configuration an existing database
+( ) Delete database
+( ) Manage templates
+( ) Manage Pluggable databases
+( ) Oracle RAC database Instance management
 
 # screen 2
 
-(   ) Typical configuration
-        Global database name:           orcl.appsdba.info
-        Storage type:                           Automatic Storage Management (ASM)
-        Database files location:                +DATA/{DB_UNIQUE_NAME}                                          Browse...
-        Fast Recovery Area (FRA)        +FRA                                                                            Browse...
-        Database character set:         AL32UTF8 - Unicode UTF-8 Universal character set
-        Administrative password:                ________________________________________
-        Confirm password:                       ________________________________________
-        [x] Create as Container database
-                Plugable database name:_________________________________________
+( ) Typical configuration
+      Global database name:           orcl.appsdba.info
+      Storage type:                   Automatic Storage Management (ASM)
+      Database files location:        +DATA/{DB_UNIQUE_NAME}                                  Browse...
+      Fast Recovery Area (FRA)        +FRA                                                    Browse...
+      Database character set:         AL32UTF8 - Unicode UTF-8 Universal character set
+      Administrative password:        ________________________________________
+      Confirm password:               ________________________________________
+      [x] Create as Container database
+              Plugable database name:_________________________________________
 
 (@) Advanced configuration
 
@@ -995,134 +970,134 @@ Select a template for your database.
 Templates that include datafiles contain pre-created databases. They allow you to create a new database quickly.
 Use templates without datafiles only when necessary. such as when you need to change attributes like block size that cannot be altered after database creation.
 
-+------+---------------------------------------------------------------------------------------------------------------------------------+---------------------------------------------------------+-------------------------------------------+
-|       |       Template name                                                                                               | Include datafiles                                | Details                                    |
-+------+---------------------------------------------------------------------------------------------------------------------------------+---------------------------------------------------------+-------------------------------------------+
-| (   ) | Data Warehouse                                                                                                           |  Yes                                                      | View datails                       |
-+------+---------------------------------------------------------------------------------------------------------------------------------+---------------------------------------------------------+-------------------------------------------+
-| (   ) | Custom Database                                                                                                          | No                                                | View detais                        |
-+------+---------------------------------------------------------------------------------------------------------------------------------+---------------------------------------------------------+-------------------------------------------+
-| (@) | General Purpose or Transaction Processing                                                                  | Yes                                                       | View detais                        |
-+------+---------------------------------------------------------------------------------------------------------------------------------+---------------------------------------------------------+-------------------------------------------+
++---+------------------------------------------------+-------------------------+-------------------+
+|   |       Template name                            | Include datafiles       | Details           |
++---+------------------------------------------------+-------------------------+-------------------+
+|( )| Data Warehouse                                 |  Yes                    | View datails      |
++---+------------------------------------------------+-------------------------+-------------------+
+|( )| Custom Database                                | No                      | View detais       |
++---+------------------------------------------------+-------------------------+-------------------+
+|(@)| General Purpose or Transaction Processing      | Yes                     | View detais       |
++---+------------------------------------------------+-------------------------+-------------------+
 
-Template location: /u01/app/oracle/product/19.3/dbhome_1/assistants/dbca/template                                                                       Change...
+Template location: /u01/app/oracle/product/19.3/dbhome_1/assistants/dbca/template                   Change...
 
 # screen 4
 
 Select the nodes on which you want to create the cluster database. The local node "oraclerac19cn1" should always be selected.
-+----+------+--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
-|    |       |                                                                Node name                                                                                                	|
-+----+------+--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
-| [x] | 1     | oraclerac19cn1                                                                                                                                                   			|
-+----+------+--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
-| [x] | 2     | oraclerac19cn2                                                                                                                                                  			 |
-+----+------+--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
-                                                                                                                                        Select all                      Deselect all
++---+----+--------------------+
+|   |    | Node name          |
++---+----+--------------------+
+|[x]| 1  | oraclerac19cn1     |
++---+----+--------------------+
+|[x]| 2  | oraclerac19cn2     |
++---+----+--------------------+
+Select all         Deselect all
 
 # screen 5
 
 Provide a unique database identifier information. An Oracle database is uniquely identified by a Global database name, typically of the form "name.domain".
 
 Global database name:   oradbc.appsdba.info
-SID Prefix:                     oradbc
-Service name:                   ________________
+SID Prefix:             oradbc
+Service name:           ________________
 
 [x] Create as Container database
         A container database can be used for cosolidating multiple databases into a single database, and it enables database virtualization, A container database (CDB) can have zero or more pluggable databases (PDB).
         [x] Use Local Undo tablespace for PDBs
-        (  ) Create an empty Container database
+        ( ) Create an empty Container database
         (@) Create a Container database with one or more PDBs
                 Number of PDBs:         1
                 PDB name:               pdboradbc
 
 # screen 5
 
-(   ) Use template file for database storage attributes
+( ) Use template file for database storage attributes
         Storage type and location for database files will be picked up from the specified template (General Purpose or Transaction Processing)
 (@) Use following for the database storage attributes
         All the database files will be put at the specified location below. You can customize the name and location of each datafile in the subsequent screen.
         Database files storage type:    Automatic Storage Management (ASM)
-        Database files location:                +DATA/[DB_UNIQUE_NAME]                                          Browse...
+        Database files location:                +DATA/[DB_UNIQUE_NAME]                       Browse...
 
         Oracle Managed files option will enable Oracle to automatically generate the names of the datafiles for simplified management.
-        [x] Use Oracle-Managed Files (OMF)                                                                              Multiplex redo logs and control files ...
+        [x] Use Oracle-Managed Files (OMF)                                                   Multiplex redo logs and control files ...
 
-                                                                                                                                                File location variables...
+                                                                                             File location variables...
 
 # screen 6
 
 Choose the recovery options for the database.
 [x] Specify Fast Recovery Area
         Recovery files storage type :   Automatic Storage Management (ASM)
-        Fast Recovery Area:             +FRA                                                                            Browse...
-        Fast Recovery Area size:                20200   MB
+        Fast Recovery Area:             +FRA                               Browse...
+        Fast Recovery Area size:        20200   MB
 
 [x] Enable archiving                            Edit archive mode parameters...
 
 # screen 7
 
-[  ] Configure Oracle Database Vault
+[ ] Configure Oracle Database Vault
         Database Vault owner: ________________
-        Password:                  ________________             Confirm password: ________________
-        [  ] Create a separate account manager
+        Password:             ________________         Confirm password: ________________
+        [ ] Create a separate account manager
                 Account manager: _______________
-                Password:            _______________            Confirm password: ________________
+                Password:        _______________       Confirm password: ________________
 
-[  ] Configure Oracle Label Security
-        [  ] Configure Oracle Label Security with OID
+[ ] Configure Oracle Label Security
+        [ ] Configure Oracle Label Security with OID
 
 # screen 8
 
 Memory          Sizing          Character sets          Connection mode         Sample schemas
 (@)  Use Automatic Shared Memory Management
         SGA size:       1788 MB                                 2385 MB
-        PGA size:                597 MB
-(  ) Use Manual Shared Memory Management
-        Shared pool size :                                      0 MB
-        Buffer cache size:                                      0 MB
-        Java pool size     :                                    0 MB
-        Large pool size   :                                     0 MB
-        PGA     size               :                                    0 MB
+        PGA size:        597 MB
+( ) Use Manual Shared Memory Management
+        Shared pool size    0 MB
+        Buffer cache size   0 MB
+        Java pool size      0 MB
+        Large pool size     0 MB
+        PGA size          	0 MB
 
         Total memory for database 0 MB
 
-(   ) Use Automatic Memory Management
+( ) Use Automatic Memory Management
         Memory target:  2385 MB
 
 # screen 9
 
 Specify the management options for the database
 [x] Run Cluster Verification Utility (CVU) checks periodically
-[  ] Configure Enterprise Manager (EM) database express
+[ ] Configure Enterprise Manager (EM) database express
         EM database express port                                                5500
-        [  ] Configure EM database express port as global port
+        [ ] Configure EM database express port as global port
 
-[  ] Register with Enterprise Manager (EM) cloud control
-        OMS host: ______________________________
-        OMS port ______________________________
-        EM admin username: ______________________
-        EM admin password: ______________________
-        ASMSNMP_user_password: ________________
+[ ] Register with Enterprise Manager (EM) cloud control
+        OMS host: ___________________________
+        OMS port ____________________________
+        EM admin username: __________________
+        EM admin password: __________________
+        ASMSNMP_user_password: ______________
 
 # screen 10
 
 You must specify password for the following user accounts in the new database for security reasons.
 
-(  ) Use different passwords for these accounts
+( ) Use different passwords for these accounts
 
-+---------------------+--------------------------------------+------------------------------------------------------+
-|                     |       Password                		 |               Confirm Password                		|
-+---------------------+--------------------------------------+------------------------------------------------------+
-| SYS           	  |                                      |                                                      |
-+---------------------+--------------------------------------+------------------------------------------------------+
-| SYSTEM        	  |                                      |                                                      |
-+---------------------+--------------------------------------+------------------------------------------------------+
-| PDBADMIN        	  |                                      |                                                      |
-+---------------------+--------------------------------------+------------------------------------------------------+
-| DBSNMP       		  |                                      |                                                      |
-+---------------------+--------------------------------------+------------------------------------------------------+
++-------------+--------------------+----------------------------+
+|             |       Password     |     Confirm Password       |
++-------------+--------------------+----------------------------+
+| SYS         |                    |                            |
++-------------+--------------------+----------------------------+
+| SYSTEM      |                    |                            |
++-------------+--------------------+----------------------------+
+| PDBADMIN    |                    |                            |
++-------------+--------------------+----------------------------+
+| DBSNMP      |                    |                            |
++-------------+--------------------+----------------------------+
 
-( @ ) Use same administrative passwords for all accounts
+(@) Use same administrative passwords for all accounts
 
 Specify Password @Or1clerac193  Confirm Password @Or1clerac193
 
@@ -1133,13 +1108,13 @@ Select the database creation options
         Specify the SQL scripts you want to run after the database is created. The script are run in the order listed below.
         Post DB creation scripts: ____________________________________________________________ Browse...
 
-[  ] Save as a database template
+[ ] Save as a database template
         Template name: dbca_template_2019...
-        Template location: /u01/app/oracle/product/19.3/dbhome_1/assistants/dbca/template                               Browse...
-        Description: _____________________________________________________________________________
+        Template location: /u01/app/oracle/product/19.3/dbhome_1/assistants/dbca/template      Browse...
+        Description: _________________________________________________________________________
 
-[  ] Generate database creation scripts
-        Destination directory: {ORACLE_BASE}/admin/{DB_UNIQUE_NAME}/scripts                                             Browse...
+[ ] Generate database creation scripts
+        Destination directory: {ORACLE_BASE}/admin/{DB_UNIQUE_NAME}/scripts                    Browse...
 
 Following advanced configuration options can be used to configure initialization parameters and customize database storage locations.
-All initialization Parameters,,,                                                                        Customize Storage Location...
+All initialization Parameters,,,                                                               Customize Storage Location...
