@@ -1,0 +1,99 @@
++++++++++++++++++++++++++++++++++++++++
++   ORACLE PHYSICAL BACKUP 9I         +
++++++++++++++++++++++++++++++++++++++++
+
+* The routine performs three tasks, two are daily, and the afternoon is only performed on Sunday. 
+* A full Sunday backup, incremental backups on other days of the week, and archive backups every two hours.
+* Routines can be scheduled in crontab or oracle schedules jobs
+
+#CRONTAB SCHEDULE
+crontab -l
+30 00 * * 6             su - oracle -c /backup/rman/scripts/bkp_level0.sh
+30 00 * * 0,1,2,3,4,5   su - oracle -c /backup/rman/scripts/bkp_level2.sh
+00 02,04,06,08,10,12,14,16,18,20,22 * * * su - oracle -c /backup/rman/scripts/bkp_archive.sh
+
+#SCRIPT FULL BACKUP
+vi /backup/rman/scripts/bkp_level0.sh
+export data=$(date +"_%Y%m%d%H%M%S")
+rman target / log=/backup/rman/logs/full_$data.log cmdfile=/backup/rman/scripts/bkp_level0.rman
+find /backup/rman/control/ -name "control*.bkp" -mtime +7 -exec rm -vf {} \;
+
+vi /backup/rman/scripts/bkp_level0.rman
+RUN
+{
+CROSSCHECK BACKUP;
+CROSSCHECK ARCHIVELOG ALL;
+BACKUP INCREMENTAL LEVEL=0 DATABASE TAG='BKP_FULL' FORMAT '/backup/rman/dados/DADOS_FULL_%D_%Y%M%D_%U.BKP';
+BACKUP ARCHIVELOG ALL DELETE ALL INPUT FORMAT '/backup/rman/archives/ARC_%D_%Y%M%D.BKP' TAG='BKP_ARC';
+COPY CURRENT CONTROLFILE TO '/backup/rman/control/CONTROL01_%D_%Y%M%D.BKP';
+DELETE NOPROMPT OBSOLETE;
+}
+
+#SCRIPT INCREMENTAL BACKUP
+vi /backup/rman/scripts/bkp_level2.sh
+export data=$(date +"_%Y%m%d%H%M%S")
+rman target / log=/backup/rman/logs/incremental_$data.log cmdfile=/backup/rman/scripts/bkp_level2.rman
+
+vi /backup/rman/scripts/bkp_level2.rman
+RUN
+{
+CROSSCHECK BACKUP;
+CROSSCHECK ARCHIVELOG ALL;
+BACKUP INCREMENTAL LEVEL=2 CUMULATIVE DATABASE TAG='BKP_CUM' FORMAT '/backup/rman/dados/DADOS_CUM_%D_%Y%M%D_%U.BKP';
+BACKUP ARCHIVELOG ALL DELETE ALL INPUT FORMAT '/backup/rman/archives/ARC_%D_%Y%M%D.BKP' TAG='BKP_ARC';
+COPY CURRENT CONTROLFILE TO '/backup/rman/control/CONTROL01_%D_%Y%M%D.BKP';
+DELETE NOPROMPT OBSOLETE;
+}
+
+#SCRIPT BACKUP ARCHIVELOG
+vi /backup/rman/scripts/bkp_archive.sh
+export data=$(date +"_%Y%m%d%H%M%S")
+rman target / log=/backup/rman/logs/archive_$data.log cmdfile=/backup/rman/scripts/bkp_archive.rman
+
+vi /backup/rman/scripts/bkp_archive.rman
+RUN
+{
+CROSSCHECK ARCHIVELOG ALL;
+BACKUP ARCHIVELOG ALL DELETE ALL INPUT FORMAT '/backup/rman/archives/ARC_%D_%Y%M%D_%U.BKP' TAG='BKP_ARC';
+COPY CURRENT CONTROLFILE TO '/backup/rman/control/CONTROL01_%D_%Y%M%D.BKP';
+DELETE NOPROMPT OBSOLETE;
+}
+
+
+* Beyond backup setup it is necessary to parameter the backup full retention that is the main resume consumer on server.
+* Oracle allows to configure this retention automatically by two parameters or command line on linux.
+
+CONFIGURE RETENTION POLICY TO REDUNDANCY 1;  --- WILL KEEP ONLY THE LAST SUCCESSFUL BACKUP FULL
+CONFIGURE RETENTION POLICY TO RECOVERY WINDOW OF 7 DAYS;  --- WILL KEEP ULTIMATE FULL BACKUP SUCCESSFUL FOR 7 DAYS
+find backup/rman/dados/ -name "DADOS_FULL_*" -mtime +7 -exec rm -vf {} \;
+
+rman target /
+Recovery Manager: Release 9.2.0.6.0 - Production
+Copyright (c) 1995, 2002, Oracle Corporation.  All rights reserved.
+connected to target database: SESA (DBID=2543438604)
+
+RMAN> show all;
+
+using target database controlfile instead of recovery catalog
+RMAN configuration parameters are:
+CONFIGURE RETENTION POLICY TO RECOVERY WINDOW OF 7 DAYS;
+CONFIGURE BACKUP OPTIMIZATION OFF; # default
+CONFIGURE DEFAULT DEVICE TYPE TO DISK; # default
+CONFIGURE CONTROLFILE AUTOBACKUP OFF; # default
+CONFIGURE CONTROLFILE AUTOBACKUP FORMAT FOR DEVICE TYPE DISK TO '%F'; # default
+CONFIGURE DEVICE TYPE DISK PARALLELISM 4;
+CONFIGURE DATAFILE BACKUP COPIES FOR DEVICE TYPE DISK TO 1; # default
+CONFIGURE ARCHIVELOG BACKUP COPIES FOR DEVICE TYPE DISK TO 1; # default
+RMAN configuration has no stored or default parameters
+RMAN configuration has no stored or default parameters
+CONFIGURE MAXSETSIZE TO UNLIMITED; # default
+CONFIGURE SNAPSHOT CONTROLFILE NAME TO '/oracle/9.2.0/dbs/snapcf_SESA.f'; # default
+RMAN configuration has no stored or default parameters
+RMAN configuration has no stored or default parameters
+
+RMAN> report obsolete; 
+
+RMAN retention policy will be applied to the command
+RMAN retention policy is set to recovery window of 7 days
+no obsolete backups found
+
