@@ -75,7 +75,7 @@ sqlplus / as sysdba
 select max(GROUP#) from v$logfile;
 MAX(GROUP#)
 -----------
-	        3
+	  3
 ALTER DATABASE ADD STANDBY LOGFILE ('/u01/app/oracle/oradata/orcl1/standby_redo01.log') THREAD 1 GROUP 4 SIZE 50M;
 ALTER DATABASE ADD STANDBY LOGFILE ('/u01/app/oracle/oradata/orcl1/standby_redo02.log') THREAD 1 GROUP 5 SIZE 50M;
 ALTER DATABASE ADD STANDBY LOGFILE ('/u01/app/oracle/oradata/orcl1/standby_redo03.log') THREAD 1 GROUP 6 SIZE 50M;
@@ -404,8 +404,59 @@ SELECT flashback_on FROM v$database;
 
 
 #ENABLE BROKER DATA GUARD
+##ON PRIMARY
+sqlplus / as sysdba
+ALTER SYSTEM SET dg_broker_start=true;
+##ON STANDBY 
+sqlplus / as sysdba
+ALTER SYSTEM SET dg_broker_start=true;
+
+##ON PRIMARY
+dgmgrl sys/<_password_>@orcl1
+DGMGRL for Linux: Version 11.2.0.4.0 - 64bit Production
+Copyright (c) 2000, 2009, Oracle. All rights reserved.
+Welcome to DGMGRL, type "help" for information.
+Connected.
+DGMGRL> CREATE CONFIGURATION DGORCL1 AS PRIMARY DATABASE IS orcl1 CONNECT IDENTIFIER IS orcl1;
+Configuration "dgorcl1" created with primary database "orcl1"
+DGMGRL> ADD DATABASE orcl1_stdb AS CONNECT IDENTIFIER IS orcl1_stdb MAINTAINED AS PHYSICAL;
+DGMGRL> ENABLE CONFIGURATION;
+ Enabled.
+DGMGRL> SHOW CONFIGURATION;
+Configuration - dgorcl1
+  Protection Mode: MaxPerformance
+  Databases:
+    orcl1      - Primary database
+    orcl1_stdb - Physical standby database
+Fast-Start Failover: DISABLED
+Configuration Status:
+SUCCESS
+DGMGRL> SHOW DATABASE orcl1;
+Database - orcl1
+  Role:            PRIMARY
+  Intended State:  TRANSPORT-ON
+  Instance(s):
+    orcl1
+Database Status:
+SUCCESS
+DGMGRL> SHOW DATABASE orcl1_stdb;
+Database - orcl1_stdb
+  Role:            PHYSICAL STANDBY
+  Intended State:  APPLY-ON
+  Transport Lag:   0 seconds (computed 0 seconds ago)
+  Apply Lag:       0 seconds (computed 0 seconds ago)
+  Apply Rate:      0 Byte/s
+  Real Time Query: OFF
+  Instance(s):
+    orcl1
+Database Status:
+SUCCESS
+
+#ENABLING FAST-START FAILOVER (changing the Maximum Performance mode to Max Availability mode)
 
 
+
+ 
 
 
 
