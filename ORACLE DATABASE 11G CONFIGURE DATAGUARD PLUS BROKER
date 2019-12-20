@@ -1,6 +1,6 @@
-++++++++++++++++++++++++++++++++++++++++++++++++++++++
-+ ORACLE DATABASE 11G CONFIGURE DATAGUARD AND BROKER +
-++++++++++++++++++++++++++++++++++++++++++++++++++++++
++++++++++++++++++++++++++++++++++++++++++++++++++++++++
++ ORACLE DATABASE 11G CONFIGURE DATAGUARD PLUS BROKER +
++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
 #CREATE TWO MACHINES, PRINCIPAL (prod-ora) AND STANDBY (stdb-ora)
 #INSTALL SOFTWARE ORACLE DATABASE 11G ON BOTH MACHINES
@@ -36,6 +36,8 @@ mkdir -p /u01/app/oracle/oradata/orcl1/archive/
 *.log_archive_dest_state_2='ENABLE'
 *.log_archive_format='%t_%s_%r.arc'
 *.log_archive_max_processes=30
+*.db_recovery_file_dest_size=5G scope=both;
+*.db_recovery_file_dest='/u01/app/oracle/oradata/orcl1/FRA';
 
 STARTUP MOUNT PFILE '/home/oracle/pfile_dg.ora';
 ALTER DATABASE ARCHIVELOG;
@@ -308,7 +310,6 @@ SELECT MAX(SEQUENCE#) FROM V$LOG_HISTORY;
 ##PRIMARY
 sqlplus / as sysdba
 ALTER DATABASE COMMIT TO SWITCHOVER TO STANDBY;
-SHUTDOWN IMMEDIATE;
 STARTUP NOMOUNT;
 ALTER DATABASE MOUNT STANDBY DATABASE;
 ALTER DATABASE RECOVER MANAGED STANDBY DATABASE DISCONNECT FROM SESSION;
@@ -317,6 +318,60 @@ ALTER DATABASE RECOVER MANAGED STANDBY DATABASE DISCONNECT FROM SESSION;
 ALTER DATABASE COMMIT TO SWITCHOVER TO PRIMARY;
 SHUTDOWN IMMEDIATE;
 STARTUP;
+
+#FAILOVER
+If the primary database is not available the standby database can be activated as a primary database using the following statements.
+
+##ON STANDBY
+sqlplus / as sysdba
+ALTER DATABASE RECOVER MANAGED STANDBY DATABASE FINISH;
+ALTER DATABASE ACTIVATE STANDBY DATABASE;
+
+#READ-ONLY STANDBY DATABASE AND ACTIVE DATA GUARD
+Once a standby database is configured, it can be opened in read-only mode to allow query access. 
+When open in read-only mode, archive log shipping continues, but managed recovery is stopped, so the standby database becomes increasingly out of date until managed recovery is resumed.
+##ON STANDBY
+sqlplus / as sysdba
+SHUTDOWN IMMEDIATE;
+STARTUP MOUNT;
+ALTER DATABASE OPEN READ ONLY;
+
+To resume managed recovery, do the following.
+##ON STANDBY
+sqlplus / as sysdba
+SHUTDOWN IMMEDIATE;
+STARTUP MOUNT;
+ALTER DATABASE RECOVER MANAGED STANDBY DATABASE DISCONNECT FROM SESSION;
+
+In 11g, Oracle introduced the Active Data Guard feature.This allows the standby database to be open in read-only mode, but still apply redo information.
+##ON STANDBY
+sqlplus / as sysdba
+SHUTDOWN IMMEDIATE;
+STARTUP MOUNT;
+ALTER DATABASE OPEN READ ONLY;
+ALTER DATABASE RECOVER MANAGED STANDBY DATABASE DISCONNECT FROM SESSION;
+select open_mode, database_role from v$database;
+  OPEN_MODE	     DATABASE_ROLE
+  -------------------- ----------------
+  READ ONLY WITH APPLY PHYSICAL STANDBY
+
+ALTER TABLESPACE TEMP ADD TEMPFILE '/u01/app/oracle/oradata/orcl1/temp01.dbf' SIZE 1G AUTOEXTEND ON NEXT 50M MAXSIZE 31G;
+
+#SNAPSHOT STANDBY DATABASE
+Introduced in 11g, snapshot standby allows the standby database to be opened in read-write mode. 
+When switched back into standby mode, all changes made whilst in read-write mode are lost. 
+This is achieved using flashback database, but the standby database does not need to have flashback database explicitly enabled to take advantage of this feature, thought it works just the same if it is.
+##ON STANDBY
+sqlplus / as sysdba
+SHUTDOWN IMMEDIATE;
+STARTUP MOUNT;
+ALTER DATABASE RECOVER MANAGED STANDBY DATABASE CANCEL;
+SELECT flashback_on FROM v$database;
+  FLASHBACK_ON
+  ------------------
+  NO
+
+
 
 #ENABLE BROKER DATA GUARD
 
