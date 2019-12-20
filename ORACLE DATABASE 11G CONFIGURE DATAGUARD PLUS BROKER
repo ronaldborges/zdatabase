@@ -66,7 +66,7 @@ orcl1_stdb =
       (ADDRESS = (PROTOCOL = TCP)(HOST = stdb-ora)(PORT = 1521))
     )
     (CONNECT_DATA =
-      (SERVICE_NAME = orcl1_stdb)
+      (SID = orcl1)
     )
   )
   
@@ -142,7 +142,7 @@ orcl1_stdb =
       (ADDRESS = (PROTOCOL = TCP)(HOST = stdb-ora)(PORT = 1521))
     )
     (CONNECT_DATA =
-      (SERVICE_NAME = orcl1_stdb)
+      (SID = orcl1)
     )
   )
 
@@ -451,6 +451,10 @@ Database - orcl1_stdb
     orcl1
 Database Status:
 SUCCESS
+
+dgmgrl sys/oracle@orcl1_stdb
+DGMGRL> SWITCHOVER TO orcl1;
+
 
 #ENABLING FAST-START FAILOVER (changing the Maximum Performance mode to Max Availability mode)
 
