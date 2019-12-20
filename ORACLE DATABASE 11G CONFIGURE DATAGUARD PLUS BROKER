@@ -108,7 +108,7 @@ SID_LIST_LISTENER =
     (SID_DESC =
       (GLOBAL_DBNAME = orcl1)
       (ORACLE_HOME = /u01/app/oracle/product/11.2.0.4/dbhome_1)
-      (SID = orcl1)
+      (SID_NAME = orcl1)
     )
   )
 
