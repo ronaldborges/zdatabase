@@ -1,6 +1,6 @@
-+++++++++++++++++++++++++++++++++++++++++++++++++++++++
-+ ORACLE DATABASE 11G CONFIGURE DATAGUARD PLUS BROKER +
-+++++++++++++++++++++++++++++++++++++++++++++++++++++++
++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
++ ORACLE DATABASE 11G CONFIGURE DATAGUARD PLUS BROKER AND FAST-START FAILOVER +
++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
 #CREATE TWO MACHINES, PRINCIPAL (prod-ora) AND STANDBY (stdb-ora)
 #INSTALL SOFTWARE ORACLE DATABASE 11G ON BOTH MACHINES
