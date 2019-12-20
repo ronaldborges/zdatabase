@@ -452,9 +452,8 @@ Database - orcl1_stdb
 Database Status:
 SUCCESS
 
-dgmgrl sys/oracle@orcl1_stdb
+dgmgrl sys/oracle@orcl1
 DGMGRL> SWITCHOVER TO orcl1;
-
 
 #ENABLING FAST-START FAILOVER (changing the Maximum Performance mode to Max Availability mode)
 
