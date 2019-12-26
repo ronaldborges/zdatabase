@@ -517,24 +517,3 @@ sqlplus sys/<_password_>@'(DESCRIPTION=(ADDRESS=(PROTOCOL=tcp)(HOST=192.168.56.1
 sqlplus sys/<_password_>@'(DESCRIPTION=(ADDRESS=(PROTOCOL=tcp)(HOST=192.168.56.113)(PORT=1521))(CONNECT_DATA=(SERVICE_NAME=orcl1_DGMGRL)(INSTANCE_NAME=orcl1)(SERVER=DEDICATED)))' as sysdba
 sqlplus sys/<_password_>@'(DESCRIPTION=(ADDRESS=(PROTOCOL=tcp)(HOST=192.168.56.114)(PORT=1521))(CONNECT_DATA=(SERVICE_NAME=orcl1_DGMGRL)(INSTANCE_NAME=orcl1)(SERVER=DEDICATED)))' as sysdba
 
-#ENABLING FAST-START FAILOVER (changing the Maximum Performance mode to Max Availability mode)
-
-
-
- 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
