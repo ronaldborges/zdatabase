@@ -75,7 +75,7 @@ orcl1_prod_dg =
       (ADDRESS = (PROTOCOL = TCP)(HOST = 192.168.56.113)(PORT = 1521))
     )
     (CONNECT_DATA =
-      (SERVICE_NAME = orcl1_DGB)
+      (SERVICE_NAME = orcl1_DGMGRL)
     )
   )
 
@@ -105,11 +105,9 @@ orcl1_stdb_dg =
       (ADDRESS = (PROTOCOL = TCP)(HOST = 192.168.56.114)(PORT = 1521))
     )
     (CONNECT_DATA =
-      (SERVICE_NAME = orcl1_DGB)
+       (SERVICE_NAME = orcl1_stdb_DGMGRL)
     )
-  )
-  
-  
+  ) 
   
 #CREATE STANDBY REDO LOGS ON PRIMARY
 sqlplus / as sysdba
