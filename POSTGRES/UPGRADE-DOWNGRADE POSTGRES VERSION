@@ -1,0 +1,174 @@
+++++++++++++++++++++++++++++++++++++++++++++++
++     UPGRADE-DOWNGRADE POSTGRES VERSION     +
+++++++++++++++++++++++++++++++++++++++++++++++
+
+#EQ UPGRADE pgsql-9.2.24 TO pgsql-9.6.14
+
+#VERIFY IF POSTGRES IS INSTALLED 
+ps -ef | grep pgsql
+/usr/local/pgsql-9.2.24/bin/postgres -D /dados/<data_directory>/data
+#OR
+ps -ef | grep postmaster
+
+#DEFAULT SOFTWARE LOCATION
+ls -ltr /usr/local/pgsql/
+total 16
+drwxr-xr-x 6 root root 4096 Jul 23 16:11 include
+drwxr-xr-x 7 root root 4096 Jul 24 13:56 share
+drwxr-xr-x 2 root root 4096 Aug  9 09:35 bin
+drwxr-xr-x 4 root root 4096 Aug  9 09:35 lib
+
+#TO UPGRADE THE POSTGRES VERSION IT IS NECESSARY TO INSTALL THE NEW SOFTWARE VERSION IN A DIRECTORY OTHER THAN THE CURRENT VERSION IS INSTALLED
+#DOWNLOAD NEW VERSION
+https://ftp.postgresql.org/pub/source/v9.6.14/postgresql-9.6.14.tar.gz
+
+#UNCOMPRESS POSTGRES SOFTWARE
+tar xvfz postgresql-9.6.14.tar.gz
+
+#CREATE NEW POSTGRES DIRECTORY SOFTWARE
+mkdir -p /usr/local/pgsql-9.6.14
+
+#NAVIGATE TO DIRECTORY
+cd postgresql-9.6.14/
+
+#INSTALL SFW DATABASE POSTGRES
+#POSTGRES SOFTWARE REQUIRED PACKAGES DETAILED IN POSTGRES SINGLE REDHATEL8 MANUAL ARE REQUIRED)
+./configure --prefix=/usr/local/pgsql-9.6.14
+make
+make install
+cd contrib/
+make
+make install
+ls -l /usr/local/pgsql-9.6.14
+adduser postgres
+passwd postgres
+
+#UPGRADE DATABASE 
+#SNAPSHOT DATABASE FEATURE CAN BE USED TO VALIDATE THE UPGRADE PROCESS MORE DETAILS IN THE SNAPSHOT DATABASE POSTGRES PROCEDURE
+#CREATE NEW DATABASE USING NEW SOFTWARE VERSION
+/usr/local/pgsql-9.6.14/bin/initdb --locale=pt_BR.UTF8 -D '/dados/data-new'
+
+#START NEW DATABASE
+/usr/local/pgsql-9.6.14/bin/pg_ctl -D /dados/data-new start -l logstartnew
+
+#PERFORMING CONSISTENCY CHECKS
+/usr/local/pgsql-9.6.14/bin/pg_upgrade -b /usr/local/pgsql-9.2.24/bin -B /usr/local/pgsql-9.6.14/bin -d /dados/data -D /dados/data-new -c
+Checking cluster versions                                         ok
+Checking database user is the install user                        ok
+Checking database connection settings                             ok
+Checking for prepared transactions                                ok
+Checking for reg* system OID user data types                      ok
+Checking for contrib/isn with bigint-passing mismatch             ok
+Checking for roles starting with 'pg_'                            ok
+Checking for invalid "line" user columns                          ok
+Checking for presence of required libraries                       ok
+Checking database user is the install user                        ok
+Checking for prepared transactions                                ok
+
+#RUN UPGRADE DATABASE
+# -K OPTION USE HARD LINKS INSTEAD OF COPYING FILES TO THE NEW CLUSTER
+/usr/local/pgsql-9.6.14/bin/pg_upgrade -b /usr/local/pgsql-9.2.24/bin -B /usr/local/pgsql-9.6.14/bin -d /dados/data -D /dados/data-new -k –v
+Performing Consistency Checks
+-----------------------------
+Checking cluster versions                                         ok
+Checking database user is the install user                        ok
+Checking database connection settings                             ok
+Checking for prepared transactions                                ok
+Checking for reg* system OID user data types                      ok
+Checking for contrib/isn with bigint-passing mismatch             ok
+Checking for roles starting with 'pg_'                            ok
+Checking for invalid "line" user columns                          ok
+Creating dump of global objects                                   ok
+Creating dump of database schemas                                 ok
+Checking for presence of required libraries                       ok
+Checking database user is the install user                        ok
+Checking for prepared transactions                                ok
+
+If pg_upgrade fails after this point, you must re-initdb the
+new cluster before continuing.
+
+Performing Upgrade
+------------------
+Analyzing all rows in the new cluster                               ok
+Freezing all rows on the new cluster                                ok
+Deleting files from new pg_clog                                     ok
+Copying old pg_clog to new server                                   ok
+Setting next transaction ID and epoch for new cluster               ok
+Deleting files from new pg_multixact/offsets                        ok
+Setting oldest multixact ID on new cluster                          ok
+Resetting WAL archives                                              ok
+Setting frozenxid and minmxid counters in new cluster               ok
+Restoring global objects in the new cluster                         ok
+Restoring database schemas in the new cluster                       ok
+Setting minmxid counter in new cluster                              ok
+Adding ".old" suffix to old global/pg_control                       ok
+
+If you want to start the old cluster, you will need to remove
+the ".old" suffix from /dados-snap/data/global/pg_control.old.
+Because "link" mode was used, the old cluster cannot be safely
+started once the new cluster has been started.
+
+Linking user relation files                                           ok
+Setting next OID for new cluster                                      ok
+Sync data directory to disk                                           ok
+Creating script to analyze new cluster                                ok
+Creating script to delete old cluster                                 ok
+
+Upgrade Complete
+----------------
+Optimizer statistics are not transferred by pg_upgrade so,
+once you start the new server, consider running:
+
+./analyze_new_cluster.sh
+
+Running this script will delete the old cluster's data files:
+
+./delete_old_cluster.sh
+
+#START DATABASE UPDATED
+/usr/local/pgsql-9.6.14/bin/pg_ctl -D /dados/data-new start -l logstartnew
+
+#RUN DATA ANALYZE IN NEW VERSION DATABASE
+./analyze_new_cluster.sh
+This script will generate minimal optimizer statistics rapidly
+so your system is usable, and then gather statistics twice more
+with increasing accuracy.  When it is done, your system will
+have the default level of optimizer statistics.
+
+If you have used ALTER TABLE to modify the statistics target for
+any tables, you might want to remove them and restore them after
+running this script because they will delay fast statistics generation.
+
+If you would like default statistics as quickly as possible, cancel
+this script and run:
+    "/usr/local/pgsql-9.6.14/bin/vacuumdb" --all --analyze-only
+
+vacuumdb: processing database "postgres": Generating minimal optimizer statistics (1 target)
+vacuumdb: processing database "template1": Generating minimal optimizer statistics (1 target)
+vacuumdb: processing database "postgres": Generating medium optimizer statistics (10 targets)
+vacuumdb: processing database "template1": Generating medium optimizer statistics (10 targets)
+vacuumdb: processing database "postgres": Generating default (full) optimizer statistics
+vacuumdb: processing database "template1": Generating default (full) optimizer statistics
+
+Done
+
+#TO DO THE POSTGR VERSION DOWNGRADE THE SAFEEST METHOD IS TO PERFORM A DUMP AND RESTORE IN THE DESTINATION ENVIRONMENT
+#RUN DOWNGRADE 
+
+#EXPORT DUMPFILE OF DATABASE
+/usr/local/pgsql-9.6.14/bin/pg_dump -d <_dbname_> -p <_port_> | gzip > /backup/logic/<_dbname_>`date +%d%m%y_%H%M`.sql.gz
+
+#START NEW DATABASE VERSION 
+/usr/local/pgsql-9.2.24/bin/pg_ctl -D /dados/data-old start -l logstartold
+
+#CREATE DATABASE 
+CREATE DATABASE "<_dbname_>" ENCODING 'LATIN1' LC_COLLATE 'pt_BR.ISO-8859-1' LC_CTYPE 'pt_BR.ISO-8859-1' template template0;
+
+#RESTORE DATABASE
+#IT IS IMPORTANT TO HAVE A RESTORE DATABASE CAPTURE LOG FOR POSSIBLE ERROR
+nohup gunzip < database.sql.gz | /usr/local/pgsql-9.2.24/bin/psql -U postgres -d <_dbname_> -p <_port_> > /home/postgres/log_out_import & 
+
+
+
+
+
