@@ -157,6 +157,11 @@ SID_LIST_LISTENER =
       (ORACLE_HOME = /u01/app/oracle/product/11.2.0.4/dbhome_1)
       (SID_NAME = orcl1)
     )
+    (SID_DESC =
+      (GLOBAL_DBNAME = orcl1_stdb_DGMGRL)
+      (ORACLE_HOME = /u01/app/oracle/product/11.2.0.4/dbhome_1)
+      (SID_NAME = orcl1)
+    )
   )
  )
 
