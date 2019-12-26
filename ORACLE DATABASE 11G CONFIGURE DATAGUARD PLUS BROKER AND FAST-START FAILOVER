@@ -105,7 +105,7 @@ orcl1_stdb_dg =
       (ADDRESS = (PROTOCOL = TCP)(HOST = 192.168.56.114)(PORT = 1521))
     )
     (CONNECT_DATA =
-      (SERVICE_NAME = orcl1_stdb_DGB)
+      (SERVICE_NAME = orcl1_DGB)
     )
   )
   
