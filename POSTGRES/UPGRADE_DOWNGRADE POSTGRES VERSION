@@ -1,5 +1,5 @@
 ++++++++++++++++++++++++++++++++++++++++++++++
-+     UPGRADE-DOWNGRADE POSTGRES VERSION     +
++     UPGRADE_DOWNGRADE POSTGRES VERSION     +
 ++++++++++++++++++++++++++++++++++++++++++++++
 
 #EQ UPGRADE pgsql-9.2.24 TO pgsql-9.6.14
@@ -168,7 +168,5 @@ CREATE DATABASE "<_dbname_>" ENCODING 'LATIN1' LC_COLLATE 'pt_BR.ISO-8859-1' LC_
 #IT IS IMPORTANT TO HAVE A RESTORE DATABASE CAPTURE LOG FOR POSSIBLE ERROR
 nohup gunzip < database.sql.gz | /usr/local/pgsql-9.2.24/bin/psql -U postgres -d <_dbname_> -p <_port_> > /home/postgres/log_out_import & 
 
-
-
-
-
+#ANALYZE DATABASE BEFORE RESTORE
+"/usr/local/pgsql-9.2.24/bin/vacuumdb" --all --analyze-only
