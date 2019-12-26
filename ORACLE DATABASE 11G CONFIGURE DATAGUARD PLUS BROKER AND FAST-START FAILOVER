@@ -481,7 +481,28 @@ Database - orcl1_stdb
 Database Status:
 SUCCESS
 
+DGMGRL> SWITCHOVER TO orcl1_stdb;
 DGMGRL> SWITCHOVER TO orcl1;
+
+#DISABLE/RESET CONFIGURATION DATA GUARD BROKER
+#ON PRIMARY AND STANDBY
+sqlplus / as sysdba
+ALTER SYSTEM SET DG_BROKER_START=FALSE;
+show parameter dg_broker_config_file;
+NAME				     TYPE	 VALUE
+------------------------------------ ----------- -----------------------------------------------------------
+dg_broker_config_file1		     string	 /u01/app/oracle/product/11.2.0.4/dbhome_1/dbs/dr1orcl1.dat
+dg_broker_config_file2		     string	 /u01/app/oracle/product/11.2.0.4/dbhome_1/dbs/dr2orcl1.dat
+#ON PRIMARY
+!rm -vf /u01/app/oracle/product/11.2.0.4/dbhome_1/dbs/dr1orcl1.dat
+!rm -vf /u01/app/oracle/product/11.2.0.4/dbhome_1/dbs/dr2orcl1.dat
+#ON STANDBY
+!rm -vf /u01/app/oracle/product/11.2.0.4/dbhome_1/dbs/dr1orcl1_stdb.dat
+!rm -vf /u01/app/oracle/product/11.2.0.4/dbhome_1/dbs/dr2orcl1_stdb.dat
+
+#TROUBLESHOUTS DATA GUARD
+show database verbose orcl1;
+show database verbose orcl1_stdb;
 
 #ENABLING FAST-START FAILOVER (changing the Maximum Performance mode to Max Availability mode)
 
