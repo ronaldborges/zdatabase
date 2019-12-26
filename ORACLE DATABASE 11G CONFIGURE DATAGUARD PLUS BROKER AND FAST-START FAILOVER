@@ -481,6 +481,17 @@ SUCCESS
 
 DGMGRL> SWITCHOVER TO orcl1_stdb;
 DGMGRL> SWITCHOVER TO orcl1;
+Performing switchover NOW, please wait...
+Operation requires a connection to instance "orcl1" on database "orcl1"
+Connecting to instance "orcl1"...
+Connected.
+New primary database "orcl1" is opening...
+Operation requires startup of instance "orcl1" on database "orcl1_stdb"
+Starting instance "orcl1"...
+ORACLE instance started.
+Database mounted.
+Switchover succeeded, new primary is "orcl1"
+
 
 #DISABLE/RESET CONFIGURATION DATA GUARD BROKER
 #ON PRIMARY AND STANDBY
