@@ -48,8 +48,9 @@ passwd postgres
 #CREATE NEW DATABASE USING NEW SOFTWARE VERSION
 /usr/local/pgsql-9.6.14/bin/initdb --locale=pt_BR.UTF8 -D '/dados/data-new'
 
-#START NEW DATABASE
-/usr/local/pgsql-9.6.14/bin/pg_ctl -D /dados/data-new start -l logstartnew
+#STOP NEW DATABASE AND OLD DATABASE
+/usr/local/pgsql-9.2.24/bin/pg_ctl -D /dados/data stop -m fast
+/usr/local/pgsql-9.6.14/bin/pg_ctl -D /dados/data-new stop -m fast
 
 #PERFORMING CONSISTENCY CHECKS
 /usr/local/pgsql-9.6.14/bin/pg_upgrade -b /usr/local/pgsql-9.2.24/bin -B /usr/local/pgsql-9.6.14/bin -d /dados/data -D /dados/data-new -c
