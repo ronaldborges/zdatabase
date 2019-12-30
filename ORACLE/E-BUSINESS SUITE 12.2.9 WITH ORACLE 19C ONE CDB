@@ -9,11 +9,11 @@
 IP 192.168.1.131
 Disk /dev/sda: 37.6 GB
 /dev/sda1 /boot 350 MB
-/dev/sda2 /		  31  GB
-/dev/sda3 swap	  4	GB	
+/dev/sda2 /	31  GB
+/dev/sda3 swap	  4 GB	
 
 Disk /dev/sdb: 107.4 GB
-LVM  /u01 		  100  GB
+LVM  /u01 	100  GB
 
 INSTALL PRE-INSTALL PACKAGES
 yum install -y https://yum.oracle.com/repo/OracleLinux/OL7/addons/x86_64/getPackage/compat-libstdc++-296-2.96-144.0.2.el7.i686.rpm
