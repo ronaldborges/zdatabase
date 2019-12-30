@@ -13,7 +13,8 @@ Disk /dev/sda: 37.6 GB
 /dev/sda3 swap	  4 GB	
 
 Disk /dev/sdb: 107.4 GB
-LVM  /u01 	100  GB
+Disk /dev/sdc: 107.4 GB
+LVM  /u01 	200  GB
 
 INSTALL PRE-INSTALL PACKAGES
 yum install -y https://yum.oracle.com/repo/OracleLinux/OL7/addons/x86_64/getPackage/compat-libstdc++-296-2.96-144.0.2.el7.i686.rpm
@@ -58,6 +59,7 @@ hostnamectl --static
 #CREATE LVM
 
 fdisk /dev/sdb
+fdisk /dev/sdc
 
 Command (m for help): n
 Partition type:
@@ -75,21 +77,22 @@ The partition table has been altered!
 Calling ioctl() to re-read partition table.
 Syncing disks.
 
-pvcreate /dev/sdb1
+pvcreate /dev/sdb1 /dev/sdc1
   Physical volume "/dev/sdb1" successfully created.
+  Physical volume "/dev/sdc1" successfully created.
 
-vgcreate vg_apps /dev/sdb1
+vgcreate vg_apps /dev/sdb1 /dev/sdc1
   Volume group "vg_apps" successfully created
 
 vgs
   VG          #PV #LV #SN Attr   VSize    VFree
-  vg_database   1   0   0 wz--n- <100,00g <100,00g
+  vg_database   1   0   0 wz--n- <200,00g <200,00g
 
 lvcreate --name lv_apps -l 100%FREE vg_apps
 
 lvs
   LV      VG      Attr       LSize    Pool Origin Data%  Meta%  Move Log Cpy%Sync Convert
-  lv_apps vg_apps -wi-a----- <100,00g
+  lv_apps vg_apps -wi-a----- <200,00g
 
 lvdisplay
   --- Logical volume ---
@@ -101,8 +104,8 @@ lvdisplay
   LV Creation host, time ol7apps1, 2019-12-28 18:29:10 -0300
   LV Status              available
   # open                 0
-  LV Size                <100,00 GiB
-  Current LE             25599
+  LV Size                <200,00 GiB
+  Current LE             51198
   Segments               1
   Allocation             inherit
   Read ahead sectors     auto
@@ -186,5 +189,3 @@ SSO User Name:
 #ENTER ORACLE EMAIL
 #ENTER PASSWORD
 
-du -sh /u01/
-43G     /u01/
