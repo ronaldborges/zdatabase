@@ -1,0 +1,190 @@
++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
++  INSTALL E-BUSINESS SUITE 12.2.9 WITH ORACLE 19C ONE CDB  +
++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+
+#THIS DOCUMENT ONES ONLY PREPARING AND INSTALLING THE APPLICATION. 
+#DATABASE INSTALLATION AND CONFIGURATION IS IN THE DOCUMENT (ORACLE 19C SI ONE CDB EBS)
+
+#ORACLE EBS MACHINE 
+IP 192.168.1.131
+Disk /dev/sda: 37.6 GB
+/dev/sda1 /boot 350 MB
+/dev/sda2 /		  31  GB
+/dev/sda3 swap	  4	GB	
+
+Disk /dev/sdb: 107.4 GB
+LVM  /u01 		  100  GB
+
+INSTALL PRE-INSTALL PACKAGES
+yum install -y https://yum.oracle.com/repo/OracleLinux/OL7/addons/x86_64/getPackage/compat-libstdc++-296-2.96-144.0.2.el7.i686.rpm
+yum install -y https://yum.oracle.com/repo/OracleLinux/OL7/addons/x86_64/getPackage/xorg-x11-libs-compat-6.8.2-1.EL.33.0.1.i386.rpm
+yum install -y https://yum.oracle.com/repo/OracleLinux/OL7/addons/x86_64/getPackage/openmotif21-2.1.30-11.el7.i686.rpm
+yum install -y https://yum.oracle.com/repo/OracleLinux/OL7/addons/x86_64/getPackage/oracle-ebs-server-R12-preinstall-1.0-4.el7.x86_64.rpm
+
+#DISABLE SELINUX AND FIREWALLD
+sed -i 's/SELINUX=.*/SELINUX=disabled/' /etc/sysconfig/selinux && setenforce 0
+systemctl stop firewalld && systemctl disable firewalld
+
+#CONFIGURE STATIC NETWORK
+TYPE=Ethernet
+PROXY_METHOD=none
+BROWSER_ONLY=no
+BOOTPROTO=none
+DEFROUTE=yes
+IPV4_FAILURE_FATAL=no
+IPV6INIT=no
+IPV6_AUTOCONF=yes
+IPV6_DEFROUTE=yes
+IPV6_FAILURE_FATAL=no
+IPV6_ADDR_GEN_MODE=stable-privacy
+NAME=enp0s3
+UUID=fa423a9c-0b65-4ab4-b30f-e3d36a6c3a9a
+DEVICE=enp0s3
+ONBOOT=yes
+IPADDR=192.168.1.131
+PREFIX=24
+GATEWAY=192.168.1.1
+DNS1=8.8.8.8
+
+#CONFIGURE HOSTNAME
+hostnamectl 
+hostnamectl set-hostname ol7apps1
+hostnamectl --static 
+
+#CONFIGURE /ETC/HOSTS
+192.168.1.131   ol7apps1
+192.168.1.130   ol7db1
+
+#CREATE LVM
+
+fdisk /dev/sdb
+
+Command (m for help): n
+Partition type:
+   p   primary (0 primary, 0 extended, 4 free)
+   e   extended
+Select (default p): p
+Partition number (1-4, default 1): 1
+First sector (2048-209715199, default 2048):
+Using default value 2048
+Last sector, +sectors or +size{K,M,G} (2048-209715199, default 209715199):
+Using default value 209715199
+Partition 1 of type Linux and of size 100 GiB is set
+Command (m for help): w
+The partition table has been altered!
+Calling ioctl() to re-read partition table.
+Syncing disks.
+
+pvcreate /dev/sdb1
+  Physical volume "/dev/sdb1" successfully created.
+
+vgcreate vg_apps /dev/sdb1
+  Volume group "vg_apps" successfully created
+
+vgs
+  VG          #PV #LV #SN Attr   VSize    VFree
+  vg_database   1   0   0 wz--n- <100,00g <100,00g
+
+lvcreate --name lv_apps -l 100%FREE vg_apps
+
+lvs
+  LV      VG      Attr       LSize    Pool Origin Data%  Meta%  Move Log Cpy%Sync Convert
+  lv_apps vg_apps -wi-a----- <100,00g
+
+lvdisplay
+  --- Logical volume ---
+  LV Path                /dev/vg_apps/lv_apps
+  LV Name                lv_apps
+  VG Name                vg_apps
+  LV UUID                5O9vig-7dec-bGNT-8vTc-A5U9-Dw8v-yusG0c
+  LV Write Access        read/write
+  LV Creation host, time ol7apps1, 2019-12-28 18:29:10 -0300
+  LV Status              available
+  # open                 0
+  LV Size                <100,00 GiB
+  Current LE             25599
+  Segments               1
+  Allocation             inherit
+  Read ahead sectors     auto
+  - currently set to     8192
+  Block device           252:0
+
+vi /etc/fstab
+/dev/vg_apps/lv_apps              /u01                    ext4    defaults        1 1
+
+mkfs.ext4 /dev/vg_apps/lv_apps
+
+mkdir -p /u01
+mount /u01
+chown oracle:oinstall -R /u01
+
+#DOWNLOAD SOFTWARE ORACLE E-BUSINESS SUITE FROM https://edelivery.oracle.com/
+
+Oracle E-Business Suite 12.2.9 for Linux x86-64
+		V982743-01_1of2.zip			Oracle E-Business Suite Release 12.2 Supplemental Media, 3.3 GB
+		V982743-01_2of2.zip			Oracle E-Business Suite Release 12.2 Supplemental Media, 3.4 GB
+		V982746-01_1of10.zip		Oracle E-Business Suite Release 12.2.9 Update Pack for Linux x86-64, 540.3 MB
+		V982746-01_2of10.zip		Oracle E-Business Suite Release 12.2.9 Update Pack for Linux x86-64, 544.8 MB
+		V982746-01_3of10.zip		Oracle E-Business Suite Release 12.2.9 Update Pack for Linux x86-64, 541.2 MB
+		V982746-01_4of10.zip		Oracle E-Business Suite Release 12.2.9 Update Pack for Linux x86-64, 546.4 MB
+		V982746-01_5of10.zip		Oracle E-Business Suite Release 12.2.9 Update Pack for Linux x86-64, 632.8 MB
+		V982746-01_6of10.zip		Oracle E-Business Suite Release 12.2.9 Update Pack for Linux x86-64, 565.4 MB
+		V982746-01_7of10.zip		Oracle E-Business Suite Release 12.2.9 Update Pack for Linux x86-64, 567.1 MB
+		V982746-01_8of10.zip		Oracle E-Business Suite Release 12.2.9 Update Pack for Linux x86-64, 546.2 MB
+		V982746-01_9of10.zip		Oracle E-Business Suite Release 12.2.9 Update Pack for Linux x86-64, 573.5 MB
+		V982746-01_10of10.zip		Oracle E-Business Suite Release 12.2.9 Update Pack for Linux x86-64, 57.9 MB
+		V983437-01.zip				Oracle Enterprise Command Center Framework Release 12.2 V3 Quick Install for Linux x86-64, 1.9 GB
+		V983438-01.zip				Oracle Enterprise Command Center Framework Release 12.2 V3 Supplemental Media, 274.3 MB
+Oracle E-Business Suite 12.2.0 Current for Linux x86-64
+		V35803-01_1of3.zip			Oracle E-Business Suite Release 12.2.0 for Linux x86-64 Rapid Install APPL_TOP - Disk 1, 1.2 GB
+		V35803-01_2of3.zip			Oracle E-Business Suite Release 12.2.0 for Linux x86-64 Rapid Install APPL_TOP - Disk 1, 1022.8 MB
+		V35803-01_3of3.zip			Oracle E-Business Suite Release 12.2.0 for Linux x86-64 Rapid Install APPL_TOP - Disk 1, 1.3 GB
+		V35804-01_1of2.zip			Oracle E-Business Suite Release 12.2.0 for Linux x86-64 Rapid Install APPL_TOP - Disk 2, 1.2 GB
+		V35804-01_2of2.zip			Oracle E-Business Suite Release 12.2.0 for Linux x86-64 Rapid Install APPL_TOP - Disk 2, 1.6 GB
+		V35802-01.zip				Oracle E-Business Suite Release 12.2.0 for Linux x86-64 Rapid Install AS10.1.2, 711.6 MB
+		V100060-01_1of3.zip			Oracle E-Business Suite Release 12.2.0 for Linux x86-64 Rapid Install Databases PROD - Disk 2, 1.6 GB
+		V100060-01_2of3.zip			Oracle E-Business Suite Release 12.2.0 for Linux x86-64 Rapid Install Databases PROD - Disk 2, 1.1 GB
+		V100060-01_3of3.zip			Oracle E-Business Suite Release 12.2.0 for Linux x86-64 Rapid Install Databases PROD - Disk 2, 1.0 GB
+		V100061-01.zip				Oracle E-Business Suite Release 12.2.0 for Linux x86-64 Rapid Install Technology one-off Patches, 839.9 MB
+		V100054-01.zip				Oracle E-Business Suite Release 12.2.0 for Linux x86-64 Rapid Install Databases VISION - Disk 2, 3.0 GB
+		V100055-01.zip				Oracle E-Business Suite Release 12.2.0 for Linux x86-64 Rapid Install Databases VISION - Disk 3, 2.8 GB
+		V100052-01_1of3.zip			Oracle E-Business Suite Release 12.2.0 Rapid Install Start Here, 725.3 MB
+		V100052-01_2of3.zip			Oracle E-Business Suite Release 12.2.0 Rapid Install Start Here, 81.6 MB
+		V100052-01_3of3.zip			Oracle E-Business Suite Release 12.2.0 Rapid Install Start Here, 97.3 MB
+		V100053-01_1of2.zip			Oracle E-Business Suite Release 12.2.0 for Linux x86-64 Rapid Install Databases VISION - Disk 1, 52.0 MB
+		V100053-01_2of2.zip			Oracle E-Business Suite Release 12.2.0 for Linux x86-64 Rapid Install Databases VISION - Disk 1, 3.4 GB
+		V100058-01.zip				Oracle E-Business Suite Release 12.2.0 for Linux x86-64 Rapid Install Databases VISION - Disk 6, 2.0 GB
+		V100059-01_1of2.zip			Oracle E-Business Suite Release 12.2.0 for Linux x86-64 Rapid Install Databases PROD - Disk 1, 1007.0 MB
+		V100059-01_2of2.zip			Oracle E-Business Suite Release 12.2.0 for Linux x86-64 Rapid Install Databases PROD - Disk 1, 1.6 GB
+		V100056-01.zip				Oracle E-Business Suite Release 12.2.0 for Linux x86-64 Rapid Install Databases VISION - Disk 4, 2.6 GB
+		V100057-01.zip				Oracle E-Business Suite Release 12.2.0 for Linux x86-64 Rapid Install Databases VISION - Disk 5, 2.4 GB
+		V100102-01.zip				Oracle Database 12c Release 1 (12.1.0.2.0) EXAMPLES for Linux x86-64, 476.1 MB
+Oracle E-Business Suite Documentation 12.2.9
+		V982742-01.zip				Oracle E-Business Suite Release 12.2 Supplemental Documentation - REVIEW FIRST, 8.3 MB
+		V983311-01.zip				Oracle E-Business Suite Release 12.2.9 Documentation Library, 627.0 MB
+		V983439-01.zip				Oracle Enterprise Command Center Framework Release 12.2 V3 Supplemental Documentation, 495.8 KB
+Oracle E-Business Suite Languages 12.2.9 for Brazilian Portuguese
+		V983262-01.zip				Oracle E-Business Suite NLS Release 12.2.9 - Brazilian Portuguese, 359.0 MB
+		V983503-01.zip				Oracle Enterprise Command Center Framework Release 12.2 V3 - Brazilian Portuguese, 31.7 MB
+Oracle E-Business Suite Languages 12.2.0.0.0 for Brazilian Portuguese
+		V36821-01.zip				Oracle E-Business Suite NLS Release 12.2.0 - Brazilian Portuguese (for the base rapid install), 617.5 MB
+Oracle E-Business Suite Mobile Application Archive 8.0 for Linux x86-64
+		V978633-01_1of4.zip			Oracle E-Business Suite Mobile Foundation and Mobile Application Archive 8.0, 3.5 GB
+		V978633-01_2of4.zip			Oracle E-Business Suite Mobile Foundation and Mobile Application Archive 8.0, 2.8 GB
+		V978633-01_3of4.zip			Oracle E-Business Suite Mobile Foundation and Mobile Application Archive 8.0, 3.2 GB
+		V978633-01_4of4.zip			Oracle E-Business Suite Mobile Foundation and Mobile Application Archive 8.0, 2.4 GB
+Oracle Web Tier 11.1.1.9.0 for Linux x86-64
+		V75792-01.zip				Oracle Web Tier 11.1.1.9.0 Utilities (11g Patch Set 7) - Oracle Fusion Middleware for Linux x86-64, 2.0 GB
+Oracle WebLogic Server 10.3.6.0.0 for Linux x86-64
+		V29856-01.zip				Oracle WebLogic Server 10.3.6 (11gR1) Generic with Coherence 3.7.1, 1018.5 MB
+
+#CAN USE THE WGET METHOD
+
+cd /u01
+./wget.sh
+SSO User Name: 
+#ENTER ORACLE EMAIL
+#ENTER PASSWORD
+
+du -sh /u01/
+43G     /u01/
