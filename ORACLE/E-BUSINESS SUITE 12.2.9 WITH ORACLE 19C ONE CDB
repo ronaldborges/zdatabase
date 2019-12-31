@@ -189,3 +189,27 @@ SSO User Name:
 #ENTER ORACLE EMAIL
 #ENTER PASSWORD
 
+#AFTER UNZIPPING ALL FILES THE /u01 DIRECTORY WILL HAVE 72GB, REMOVE ALL V*.zip FILES
+ls -ltrh
+total 2,9G
+-rw-r--r--   1 root root 1020M Dez 22  2011 wls1036_generic.jar
+drwxr-xr-x   6 root root  4,0K Abr 27  2015 Disk1
+drwxrwxr-x   3 root root  4,0K Abr 27  2015 Disk3
+drwxrwxr-x   3 root root  4,0K Abr 27  2015 Disk2
+drwxrwxr-x   3 root root  4,0K Abr 27  2015 Disk4
+-rw-r--r--   1 root root   24K Abr 30  2015 readme_fmw_ps7.htm
+drwxr-xr-x   4 root root  4,0K Dez 30  2015 TechPatches
+drwxr-xr-x   3 root root  4,0K Jul  3 16:14 V982742-01
+drwxr-xr-x   5 root root  4,0K Ago  2 18:23 current
+-rw-------   1 root root  1,9G Ago 19 12:10 EBS_ECC3.0_12.2.bsx
+-rw-r--r--   1 root root  1,3K Ago 31 03:54 README.txt
+-rw-r--r--   1 root root  9,2K Set  9 07:09 p30276526_R12_GENERIC.zip
+-rwxr-xr-x   1 root root  1,1K Dez 30 22:57 unzip.sh
+drwxr-xr-x   5 root root  4,0K Dez 30 22:58 startCD
+drwxr-xr-x   5 root root  4,0K Dez 30 23:09 EBSInstallMedia
+drwxr-xr-x 166 root root   12K Dez 30 23:16 28840850
+drwxr-xr-x  12 root root  4,0K Dez 30 23:17 patches
+drwxr-xr-x   8 root root  4,0K Dez 30 23:19 EBS-Mobile-8.0
+drwxr-xr-x   4 root root  4,0K Dez 30 23:24 Documents
+
+
