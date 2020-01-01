@@ -212,4 +212,23 @@ drwxr-xr-x  12 root root  4,0K Dez 30 23:17 patches
 drwxr-xr-x   8 root root  4,0K Dez 30 23:19 EBS-Mobile-8.0
 drwxr-xr-x   4 root root  4,0K Dez 30 23:24 Documents
 
+#INSTALL VNC
+yum install tigervnc-server
+cp /lib/systemd/system/vncserver@.service /lib/systemd/system/vncserver@:2.service
+
+vi /lib/systemd/system/vncserver@:2.service
+User=oracle
+ExecStart=/usr/bin/vncserver %i -geometry 1440x1080
+PIDFile=/home/oracle/.vnc/%H%i.pid
+
+systemctl daemon-reload
+su - oracle
+vncpasswd
+Password:
+Verify:
+Would you like to enter a view-only password (y/n)? n
+exit
+systemctl start vncserver@:2.service
+systemctl enable vncserver@:2.service
+
 
