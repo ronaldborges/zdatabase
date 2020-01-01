@@ -204,6 +204,7 @@ Password:
 Verify:
 Would you like to enter a view-only password (y/n)? n
 exit
+systemctl start vncserver@:2.service
 
 CONNECT VNC AND INSTALL SOFTWARE
 
