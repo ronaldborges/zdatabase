@@ -185,6 +185,7 @@ Oracle WebLogic Server 10.3.6.0.0 for Linux x86-64
 
 cd /u01
 mkdir -p StageR122
+cd StageR122/
 ./wget.sh
 SSO User Name: 
 #ENTER ORACLE EMAIL
