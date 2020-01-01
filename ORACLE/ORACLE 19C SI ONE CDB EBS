@@ -188,3 +188,218 @@ chmod u+x /home/oracle/scripts/*.sh
 #DOWNLOAD AND INSTALL ORACLE DATABASE 19.3C
 wget https://download.oracle.com/otn/linux/oracle19c/190000/LINUX.X64_193000_db_home.zip?AuthParam=1577574051_dcd3a71670cb8ddcb11b27e39a41738e
 
+#INSTALL VNC
+yum install tigervnc-server
+cp /lib/systemd/system/vncserver@.service /lib/systemd/system/vncserver@:2.service
+
+vi /lib/systemd/system/vncserver@:2.service
+User=oracle
+ExecStart=/usr/bin/vncserver %i -geometry 1440x1080
+PIDFile=/home/oracle/.vnc/%H%i.pid
+
+systemctl daemon-reload
+su - oracle
+vncpasswd
+Password:
+Verify:
+Would you like to enter a view-only password (y/n)? n
+exit
+
+CONNECT VNC AND INSTALL SOFTWARE
+
+#CREATE db_install.rsp INSTALL RESPONSE FILE
+vi db_install.rsp
+oracle.install.responseFileVersion=/oracle/install/rspfmt_dbinstall_response_schema_v19.0.0
+oracle.install.option=INSTALL_DB_SWONLY
+UNIX_GROUP_NAME=oinstall
+INVENTORY_LOCATION=/u01/app/oraInventory
+ORACLE_BASE=/u01/app/oracle
+oracle.install.db.InstallEdition=EE
+oracle.install.db.OSDBA_GROUP=dba
+oracle.install.db.OSOPER_GROUP=oinstall
+oracle.install.db.OSBACKUPDBA_GROUP=backupdba
+oracle.install.db.OSDGDBA_GROUP=dgdba
+oracle.install.db.OSKMDBA_GROUP=kmdba
+oracle.install.db.OSRACDBA_GROUP=racdba
+oracle.install.db.rootconfig.executeRootScript=false
+oracle.install.db.rootconfig.configMethod=
+oracle.install.db.rootconfig.sudoPath=
+oracle.install.db.rootconfig.sudoUserName=
+oracle.install.db.CLUSTER_NODES=
+oracle.install.db.config.starterdb.type=GENERAL_PURPOSE
+oracle.install.db.config.starterdb.globalDBName=
+oracle.install.db.config.starterdb.SID=
+oracle.install.db.ConfigureAsContainerDB=false
+oracle.install.db.config.PDBName=
+oracle.install.db.config.starterdb.characterSet=
+oracle.install.db.config.starterdb.memoryOption=false
+oracle.install.db.config.starterdb.memoryLimit=
+oracle.install.db.config.starterdb.installExampleSchemas=false
+oracle.install.db.config.starterdb.password.ALL=
+oracle.install.db.config.starterdb.password.SYS=
+oracle.install.db.config.starterdb.password.SYSTEM=
+oracle.install.db.config.starterdb.password.DBSNMP=
+oracle.install.db.config.starterdb.password.PDBADMIN=
+oracle.install.db.config.starterdb.managementOption=DEFAULT
+oracle.install.db.config.starterdb.omsHost=
+oracle.install.db.config.starterdb.omsPort=0
+oracle.install.db.config.starterdb.emAdminUser=
+oracle.install.db.config.starterdb.emAdminPassword=
+oracle.install.db.config.starterdb.enableRecovery=false
+oracle.install.db.config.starterdb.storageType=
+oracle.install.db.config.starterdb.fileSystemStorage.dataLocation=
+oracle.install.db.config.starterdb.fileSystemStorage.recoveryLocation=
+oracle.install.db.config.asm.diskGroup=
+oracle.install.db.config.asm.ASMSNMPPassword=
+
+cd $ORACLE_HOME
+./runInstaller -silent -responseFile /home/oracle/db_install.rsp
+
+#CREATE dbca.rsp response file
+vi dbca.rsp
+responseFileVersion=/oracle/assistants/rspfmt_dbca_response_schema_v12.2.0
+gdbName=appscdb
+sid=appscdb1
+databaseConfigType=SI
+RACOneNodeServiceName=
+policyManaged=false
+createServerPool=false
+serverPoolName=
+cardinality=
+force=false
+pqPoolName=
+pqCardinality=
+createAsContainerDatabase=true
+numberOfPDBs=1
+pdbName=appspdb
+useLocalUndoForPDBs=true
+pdbAdminPassword=
+nodelist=
+templateName=/u01/app/oracle/product/19.3.0/dbhome_1/assistants/dbca/templates/General_Purpose.dbc
+sysPassword=
+systemPassword= 
+serviceUserPassword=
+emConfiguration=
+emExpressPort=5500
+runCVUChecks=FALSE
+dbsnmpPassword=
+omsHost=
+omsPort=0
+emUser=
+emPassword=
+dvConfiguration=false
+dvUserName=
+dvUserPassword=
+dvAccountManagerName=
+dvAccountManagerPassword=
+olsConfiguration=false
+datafileJarLocation={ORACLE_HOME}/assistants/dbca/templates/
+datafileDestination={ORACLE_BASE}/oradata/{DB_UNIQUE_NAME}/
+recoveryAreaDestination={ORACLE_BASE}/fast_recovery_area/{DB_UNIQUE_NAME}
+storageType=FS
+diskGroupName=
+asmsnmpPassword=
+recoveryGroupName=
+characterSet=AL32UTF8
+nationalCharacterSet=AL16UTF16
+registerWithDirService=false
+dirServiceUserName=
+dirServicePassword=
+walletPassword=
+listeners=
+variablesFile=
+variables=ORACLE_BASE_HOME=/u01/app/oracle/product/19.3.0/dbhome_1,DB_UNIQUE_NAME=appscdb,ORACLE_BASE=/u01/app/oracle,PDB_NAME=,DB_NAME=appscdb,ORACLE_HOME=/u01/app/oracle/product/19.3.0/dbhome_1,SID=appscdb1
+initParams=undo_tablespace=UNDOTBS1,sga_target=2047MB,db_block_size=8192BYTES,log_archive_dest_1='LOCATION={ORACLE_BASE}/oradata/archivelog/',nls_language=AMERICAN,dispatchers=(PROTOCOL=TCP) (SERVICE=appscdb1XDB),diagnostic_dest={ORACLE_BASE},control_files=("{ORACLE_BASE}/oradata/{DB_UNIQUE_NAME}/control01.ctl", "{ORACLE_BASE}/fast_recovery_area/{DB_UNIQUE_NAME}/control02.ctl"),remote_login_passwordfile=EXCLUSIVE,audit_file_dest={ORACLE_BASE}/admin/{DB_UNIQUE_NAME}/adump,processes=600,pga_aggregate_target=683MB,nls_territory=AMERICA,db_recovery_file_dest_size=12732MB,open_cursors=300,log_archive_format=%t_%s_%r.dbf,compatible=19.0.0,db_name=appscdb,db_recovery_file_dest={ORACLE_BASE}/fast_recovery_area/{DB_UNIQUE_NAME},audit_trail=db
+sampleSchema=false
+memoryPercentage=40
+databaseType=MULTIPURPOSE
+automaticMemoryManagement=false
+totalMemory=0
+
+#CREATE netca.rsp response file
+vi netca.rsp
+[GENERAL]
+RESPONSEFILE_VERSION="19.0"
+CREATE_TYPE="CUSTOM"
+INSTALLED_COMPONENTS={"server","net8","javavm"}
+INSTALL_TYPE=""typical""
+LISTENER_NUMBER=1
+LISTENER_NAMES={"LISTENER"}
+LISTENER_START=""LISTENER""
+NAMING_METHODS={"TNSNAMES","ONAMES","HOSTNAME"}
+NSN_NUMBER=1
+NSN_NAMES={"EXTPROC_CONNECTION_DATA"}
+NSN_SERVICE={"PLSExtProc"}
+NSN_SERVICE={"PLSExtProc"}
+NSN_PROTOCOLS={"TCP;HOSTNAME;1521"}
+
+#CREATE DATABASE 
+dbca -silent -responseFile ./dbca.rsp
+
+#CREATE LISTENER
+netca -silent -responsefile ./netca.rsp
+
+sqlplus / as sysdba
+
+SQL*Plus: Release 19.0.0.0.0 - Production on Wed Jan 1 16:58:32 2020
+Version 19.3.0.0.0
+Copyright (c) 1982, 2019, Oracle.  All rights reserved.
+Connected to:
+Oracle Database 19c Enterprise Edition Release 19.0.0.0.0 - Production
+Version 19.3.0.0.0
+
+SQL> select name from v$pdbs;
+
+NAME
+--------------------------------------------------------------------------------
+PDB$SEED
+APPSPDB
+
+SQL> exit
+
+lsnrctl status
+
+LSNRCTL for Linux: Version 19.0.0.0.0 - Production on 01-JAN-2020 17:12:00
+Copyright (c) 1991, 2019, Oracle.  All rights reserved.
+Connecting to (DESCRIPTION=(ADDRESS=(PROTOCOL=TCP)(HOST=ol7db1)(PORT=1521)))
+STATUS of the LISTENER
+------------------------
+Alias                     LISTENER
+Version                   TNSLSNR for Linux: Version 19.0.0.0.0 - Production
+Start Date                01-JAN-2020 17:10:08
+Uptime                    0 days 0 hr. 1 min. 52 sec
+Trace Level               off
+Security                  ON: Local OS Authentication
+SNMP                      OFF
+Listener Parameter File   /u01/app/oracle/product/19.3.0/dbhome_1/network/admin/listener.ora
+Listener Log File         /u01/app/oracle/diag/tnslsnr/ol7db1/listener/alert/log.xml
+Listening Endpoints Summary...
+  (DESCRIPTION=(ADDRESS=(PROTOCOL=tcp)(HOST=ol7db1)(PORT=1521)))
+  (DESCRIPTION=(ADDRESS=(PROTOCOL=ipc)(KEY=EXTPROC1521)))
+Services Summary...
+Service "86b637b62fdf7a65e053f706e80a27ca" has 1 instance(s).
+  Instance "appscdb1", status READY, has 1 handler(s) for this service...
+Service "9b1a741974f6335ee0538201a8c087cb" has 1 instance(s).
+  Instance "appscdb1", status READY, has 1 handler(s) for this service...
+Service "appscdb" has 1 instance(s).
+  Instance "appscdb1", status READY, has 1 handler(s) for this service...
+Service "appscdb1XDB" has 1 instance(s).
+  Instance "appscdb1", status READY, has 1 handler(s) for this service...
+Service "appspdb" has 1 instance(s).
+  Instance "appscdb1", status READY, has 1 handler(s) for this service...
+The command completed successfully
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
