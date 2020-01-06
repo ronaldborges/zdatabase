@@ -123,6 +123,9 @@ chown oracle:oinstall -R /u01
 
 #DOWNLOAD SOFTWARE ORACLE E-BUSINESS SUITE FROM https://edelivery.oracle.com/
 
+Oracle Database 12.1.0.2.0 for Linux x86-64
+		V46095-01_1of2.zip		Oracle Database 12c Release 1 (12.1.0.2.0), 1.6 GB
+		V46095-01_2of2.zip		Oracle Database 12c Release 1 (12.1.0.2.0), 967.5 MB
 Oracle E-Business Suite 12.2.9 for Linux x86-64
 		V982743-01_1of2.zip			Oracle E-Business Suite Release 12.2 Supplemental Media, 3.3 GB
 		V982743-01_2of2.zip			Oracle E-Business Suite Release 12.2 Supplemental Media, 3.4 GB
