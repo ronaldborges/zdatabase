@@ -124,21 +124,21 @@ chown oracle:oinstall -R /u01
 #DOWNLOAD SOFTWARE ORACLE E-BUSINESS SUITE FROM https://edelivery.oracle.com/
 
 Oracle Database 12.1.0.2.0 for Linux x86-64
-		V46095-01_1of2.zip		Oracle Database 12c Release 1 (12.1.0.2.0), 1.6 GB
-		V46095-01_2of2.zip		Oracle Database 12c Release 1 (12.1.0.2.0), 967.5 MB
+		V46095-01_1of2.zip			Oracle Database 12c Release 1 (12.1.0.2.0), 1.6 GB
+		V46095-01_2of2.zip			Oracle Database 12c Release 1 (12.1.0.2.0), 967.5 MB
 Oracle E-Business Suite 12.2.9 for Linux x86-64
 		V982743-01_1of2.zip			Oracle E-Business Suite Release 12.2 Supplemental Media, 3.3 GB
 		V982743-01_2of2.zip			Oracle E-Business Suite Release 12.2 Supplemental Media, 3.4 GB
-		V982746-01_1of10.zip		Oracle E-Business Suite Release 12.2.9 Update Pack for Linux x86-64, 540.3 MB
-		V982746-01_2of10.zip		Oracle E-Business Suite Release 12.2.9 Update Pack for Linux x86-64, 544.8 MB
-		V982746-01_3of10.zip		Oracle E-Business Suite Release 12.2.9 Update Pack for Linux x86-64, 541.2 MB
-		V982746-01_4of10.zip		Oracle E-Business Suite Release 12.2.9 Update Pack for Linux x86-64, 546.4 MB
-		V982746-01_5of10.zip		Oracle E-Business Suite Release 12.2.9 Update Pack for Linux x86-64, 632.8 MB
-		V982746-01_6of10.zip		Oracle E-Business Suite Release 12.2.9 Update Pack for Linux x86-64, 565.4 MB
-		V982746-01_7of10.zip		Oracle E-Business Suite Release 12.2.9 Update Pack for Linux x86-64, 567.1 MB
-		V982746-01_8of10.zip		Oracle E-Business Suite Release 12.2.9 Update Pack for Linux x86-64, 546.2 MB
-		V982746-01_9of10.zip		Oracle E-Business Suite Release 12.2.9 Update Pack for Linux x86-64, 573.5 MB
-		V982746-01_10of10.zip		Oracle E-Business Suite Release 12.2.9 Update Pack for Linux x86-64, 57.9 MB
+		V982746-01_1of10.zip			Oracle E-Business Suite Release 12.2.9 Update Pack for Linux x86-64, 540.3 MB
+		V982746-01_2of10.zip			Oracle E-Business Suite Release 12.2.9 Update Pack for Linux x86-64, 544.8 MB
+		V982746-01_3of10.zip			Oracle E-Business Suite Release 12.2.9 Update Pack for Linux x86-64, 541.2 MB
+		V982746-01_4of10.zip			Oracle E-Business Suite Release 12.2.9 Update Pack for Linux x86-64, 546.4 MB
+		V982746-01_5of10.zip			Oracle E-Business Suite Release 12.2.9 Update Pack for Linux x86-64, 632.8 MB
+		V982746-01_6of10.zip			Oracle E-Business Suite Release 12.2.9 Update Pack for Linux x86-64, 565.4 MB
+		V982746-01_7of10.zip			Oracle E-Business Suite Release 12.2.9 Update Pack for Linux x86-64, 567.1 MB
+		V982746-01_8of10.zip			Oracle E-Business Suite Release 12.2.9 Update Pack for Linux x86-64, 546.2 MB
+		V982746-01_9of10.zip			Oracle E-Business Suite Release 12.2.9 Update Pack for Linux x86-64, 573.5 MB
+		V982746-01_10of10.zip			Oracle E-Business Suite Release 12.2.9 Update Pack for Linux x86-64, 57.9 MB
 		V983437-01.zip				Oracle Enterprise Command Center Framework Release 12.2 V3 Quick Install for Linux x86-64, 1.9 GB
 		V983438-01.zip				Oracle Enterprise Command Center Framework Release 12.2 V3 Supplemental Media, 274.3 MB
 Oracle E-Business Suite 12.2.0 Current for Linux x86-64
