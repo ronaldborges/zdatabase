@@ -42,7 +42,7 @@ NAME=enp0s3
 UUID=fa423a9c-0b65-4ab4-b30f-e3d36a6c3a9a
 DEVICE=enp0s3
 ONBOOT=yes
-IPADDR=192.168.1.131
+IPADDR=192.168.1.119
 PREFIX=24
 GATEWAY=192.168.1.1
 DNS1=8.8.8.8
@@ -53,8 +53,8 @@ hostnamectl set-hostname ol7apps1
 hostnamectl --static 
 
 #CONFIGURE /ETC/HOSTS
-192.168.1.131   ol7apps1
-192.168.1.130   ol7db1
+192.168.1.119   ol7apps1.localdomain    ol7apps1
+192.168.1.120   ol7db1.localdomain      ol7db1
 
 #CREATE LVM
 
