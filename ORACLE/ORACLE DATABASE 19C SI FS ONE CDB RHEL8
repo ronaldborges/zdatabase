@@ -1,6 +1,6 @@
-+++++++++++++++++++++++++++++++++++++
-+   ORACLE 19C SI FS ON REDHATEL8   +
-+++++++++++++++++++++++++++++++++++++
++++++++++++++++++++++++++++++++++++++++++++++++
++   ORACLE DATABASE 19C SI FS ONE CDB RHEL8   +
++++++++++++++++++++++++++++++++++++++++++++++++
 
 #DISABLE INITIAL SCREEM REDHAT 8
 touch ~/.config/gnome-initial-setup-done
