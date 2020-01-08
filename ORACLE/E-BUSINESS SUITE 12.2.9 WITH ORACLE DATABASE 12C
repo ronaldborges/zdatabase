@@ -295,30 +295,10 @@ Running command:
 
 /u01/StageR122/startCD/Disk1/rapidwiz/bin/../jre/Linux_x64/1.6.0/bin/java -classpath /u01/StageR122/startCD/Disk1/rapidwiz/bin/../jlib/emocmutl.jar:/u01/StageR122/startCD/Disk1/rapidwiz/bin/../jlib/ewt-3_4_22.jar:/u01/StageR122/startCD/Disk1/rapidwiz/bin/../jlib/share-1_1_18.jar:/u01/StageR122/startCD/Disk1/rapidwiz/bin/../jlib/jnls.jar:/u01/StageR122/startCD/Disk1/rapidwiz/bin/../jlib/ACC.JAR:/u01/StageR122/startCD/Disk1/rapidwiz/bin/../jlib/netcfg.jar:/u01/StageR122/startCD/Disk1/rapidwiz/bin/../jlib/ojdbc14.jar:/u01/StageR122/startCD/Disk1/rapidwiz/bin/../jlib/OraInstaller.jar:/u01/StageR122/startCD/Disk1/rapidwiz/bin/../jlib/java oracle.apps.ad.rapidwiz.util.StageBuilder /u01/StageR122/startCD/Disk1/rapidwiz/bin Linux_x64 Linux_x64
 
-
 Specify the directory containing the zipped installation media:
 /u01/StageR122/
 File list:
 /u01/StageR122/startCD/Disk1/rapidwiz/bin/stageData/zipFiles.dat
-The following files are missing from /media/sf_erp/StageR122/.
-Return to the Oracle Software Delivery Cloud and download them:
-====================================================
-Part number: V46095-01
-Description:
-Oracle Database 12c Release 1 (12.1.0.2.0)
-File name: V46095-01_1of2.zip
-====================================================
-Part number: V46095-01
-Description:
-Oracle Database 12c Release 1 (12.1.0.2.0)
-File name: V46095-01_2of2.zip
-====================================================
-Part number: V100102-01
-Description:
-Oracle Database 12c Release 1 (12.1.0.2.0) EXAMPLES for Linux x86-64
-File name: V100102-01.zip
-====================================================
-WARNING: Some of the required zip files have not yet been downloaded.  Do you want to continue, and obtain them later? (Y)/N Y
 
 #AS WE WILL INSTALL THE APPLICATION AND THE DATABASE ON SEPARATE MACHINES IT IS NOT NECESSARY TO DOWNLOAD THE DATABASE 12C FILES
 #NEXT COMMAND NEEDS GRAPHICAL INTERFACE
