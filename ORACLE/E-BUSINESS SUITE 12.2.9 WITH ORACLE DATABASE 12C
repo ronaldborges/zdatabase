@@ -304,6 +304,78 @@ Specify the directory containing the zipped installation media:
 File list:
 /u01/StageR122/startCD/Disk1/rapidwiz/bin/stageData/zipFiles.dat
 
+Press Enter to continue...
+
+                      Build Stage Menu
+
+   ------------------------------------------------------
+
+   1.     Create new stage area
+
+   2.     Copy patches to existing stage area
+
+   3.     List files in TechPatches directory
+
+   4.     Exit menu
+
+
+   Enter your choice [4]: 2
+
+            Rapid Install Platform Menu
+
+   ------------------------------------------------------
+
+   1.    Oracle Solaris SPARC (64-bit)
+
+   2.    Linux x86 (64-bit)
+
+   3.    IBM AIX on Power Systems (64-bit)
+
+   4.    HP-UX Itanium
+
+   5.    Exit Menu
+
+
+   Enter your choice [5]: 2
+
+
+Directory /home/setup/TechPatches
+
+Stage Builder will now stage the one-off patches for Linux_x64...
+
+Press Enter to continue...
+
+Copying latest one-off patches to stage area...
+
+Running command:
+
+/u01/StageR122/startCD/Disk1/rapidwiz/bin/../unzip/Linux_x64/unzip -o /u01/StageR122/startCD/Disk1/rapidwiz/bin/../Xpatches/Linux_x64.zip -d /u01/StageR122/startCD/Disk1/rapidwiz/bin/../../../../TechPatches
+
+
+Press Enter to continue...
+Archive: /u01/StageR122/startCD/Disk1/rapidwiz/bin/../Xpatches/Linux_x64.zip
+
+Finished copying additional patches.
+
+Press Enter to continue...
+
+                      Build Stage Menu
+
+   ------------------------------------------------------
+
+   1.     Create new stage area
+
+   2.     Copy patches to existing stage area
+
+   3.     List files in TechPatches directory
+
+   4.     Exit menu
+
+
+   Enter your choice [4]: 4
+
+Stage Builder exiting... 
+
 #AS WE WILL INSTALL THE APPLICATION AND THE DATABASE ON SEPARATE MACHINES IT IS NOT NECESSARY TO DOWNLOAD THE DATABASE 12C FILES
 #NEXT COMMAND NEEDS GRAPHICAL INTERFACE
 
