@@ -105,8 +105,7 @@ mkfs.ext4 /dev/vg_apps/lv_apps
 mkdir -p /u01
 mount /u01
 chown oracle:dba -R /u01
-mkdir /u01/oracle
-chown oracle.dba /u01/oracle
+mkdir -p /u01/oracle
 mkdir -p /u01/oracle/oraInventory
 
 #DOWNLOAD SOFTWARE ORACLE E-BUSINESS SUITE FROM https://edelivery.oracle.com/
