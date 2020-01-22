@@ -108,7 +108,6 @@ chown oracle:oinstall -R /u01
 mkdir /u01/oracle
 chown oracle.oinstall /u01/oracle
 mkdir -p /u01/oracle/oraInventory
-mkdir -p /u01/oracle/VIS 
 
 #DOWNLOAD SOFTWARE ORACLE E-BUSINESS SUITE FROM https://edelivery.oracle.com/
 
@@ -184,46 +183,24 @@ SSO User Name:
 #ENTER PASSWORD
 
 #AFTER UNZIPPING ALL FILES THE /u01 DIRECTORY WILL HAVE 72GB, REMOVE ALL V*.zip FILES
-ls -ltrh
-total 2,9G
--rw-r--r--   1 root root 1020M Dez 22  2011 wls1036_generic.jar
-drwxr-xr-x   6 root root  4,0K Abr 27  2015 Disk1
-drwxrwxr-x   3 root root  4,0K Abr 27  2015 Disk3
-drwxrwxr-x   3 root root  4,0K Abr 27  2015 Disk2
-drwxrwxr-x   3 root root  4,0K Abr 27  2015 Disk4
--rw-r--r--   1 root root   24K Abr 30  2015 readme_fmw_ps7.htm
-drwxr-xr-x   4 root root  4,0K Dez 30  2015 TechPatches
-drwxr-xr-x   3 root root  4,0K Jul  3 16:14 V982742-01
-drwxr-xr-x   5 root root  4,0K Ago  2 18:23 current
--rw-------   1 root root  1,9G Ago 19 12:10 EBS_ECC3.0_12.2.bsx
--rw-r--r--   1 root root  1,3K Ago 31 03:54 README.txt
--rw-r--r--   1 root root  9,2K Set  9 07:09 p30276526_R12_GENERIC.zip
--rwxr-xr-x   1 root root  1,1K Dez 30 22:57 unzip.sh
-drwxr-xr-x   5 root root  4,0K Dez 30 22:58 startCD
-drwxr-xr-x   5 root root  4,0K Dez 30 23:09 EBSInstallMedia
-drwxr-xr-x 166 root root   12K Dez 30 23:16 28840850
-drwxr-xr-x  12 root root  4,0K Dez 30 23:17 patches
-drwxr-xr-x   8 root root  4,0K Dez 30 23:19 EBS-Mobile-8.0
-drwxr-xr-x   4 root root  4,0K Dez 30 23:24 Documents
 
 #INSTALL VNC
 yum install tigervnc-server
-cp /lib/systemd/system/vncserver@.service /lib/systemd/system/vncserver@:2.service
+cp /lib/systemd/system/vncserver@.service /lib/systemd/system/vncserver@:1.service
 
-vi /lib/systemd/system/vncserver@:2.service
-User=oracle
+vi /lib/systemd/system/vncserver@:1.service
+User=root
 ExecStart=/usr/bin/vncserver %i -geometry 1440x1080
-PIDFile=/home/oracle/.vnc/%H%i.pid
+PIDFile=/root/.vnc/%H%i.pid
 
 systemctl daemon-reload
-su - oracle
 vncpasswd
 Password:
 Verify:
 Would you like to enter a view-only password (y/n)? n
 exit
-systemctl start vncserver@:2.service
-systemctl enable vncserver@:2.service
+systemctl start vncserver@:1.service
+systemctl enable vncserver@:1.service
 
 #PREPARE STAGE TO INSTALL EBS
 cd /u01/StageR122/
@@ -361,6 +338,7 @@ Press Enter to continue...
 
 Stage Builder exiting... 
 
+#RAPIDWIZ MUST BE PERFORMED WITH USER ROOT
 #AS WE WILL INSTALL THE APPLICATION AND THE DATABASE ON SEPARATE MACHINES IT IS NOT NECESSARY TO DOWNLOAD THE DATABASE 12C FILES
 #NEXT COMMAND NEEDS GRAPHICAL INTERFACE
 
