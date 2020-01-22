@@ -584,7 +584,9 @@ The Rapid install Wizard is ready to install Oracle E-Business Suite on this mac
 
 YES
 
-
+#DATABASE ENVORIMENTS VARIABLES
+su - oracle
+/u01/oracle/PROD/12.1.0/PROD_ol7apps1.env
 
 
 
