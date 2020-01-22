@@ -31,6 +31,11 @@ yum install -y https://yum.oracle.com/repo/OracleLinux/OL7/addons/x86_64/getPack
 sed -i 's/SELINUX=.*/SELINUX=disabled/' /etc/sysconfig/selinux && setenforce 0
 systemctl stop firewalld && systemctl disable firewalld
 
+#CONFIGURE ORAINST.LOC
+vi /etc/oraInst.loc
+inventory_loc=/u01/oracle/oraInventory
+inst_group=dba
+
 #CONFIGURE STATIC NETWORK
 TYPE=Ethernet
 PROXY_METHOD=none
