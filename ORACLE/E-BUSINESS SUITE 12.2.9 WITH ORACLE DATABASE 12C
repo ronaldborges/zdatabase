@@ -2,15 +2,14 @@
 +  E-BUSINESS SUITE 12.2.9 WITH ORACLE DATABASE 12C  	    +
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
-#THIS DOCUMENT ONES ONLY PREPARING AND INSTALLING THE APPLICATION. 
 #DATABASE INSTALLATION AND CONFIGURATION IS IN THE DOCUMENT (ORACLE 19C SI ONE CDB EBS)
+#THIS DOCUMENT USES StartCD51 SO IT DOES NOT SUPPORT multinode installation (database / application). But it allows installation in RAC
 #IF INSTALLATION IS MULTI-NODE, CREATING APPLMGR USER ON DATABASE Node.
 useradd -g dba -d /home/applmgr/ -m applmgr
 usermod -a -G oinstall applmgr
 passwd applmgr
 
-
-#ORACLE EBS MACHINE 
+#ORACLE APPSR12 MACHINE 
 IP 192.168.1.131
 Disk /dev/sda: 37.6 GB
 /dev/sda1 /boot 350 MB
@@ -19,7 +18,8 @@ Disk /dev/sda: 37.6 GB
 
 Disk /dev/sdb: 107.4 GB
 Disk /dev/sdc: 107.4 GB
-LVM  /u01 	200  GB
+Disk /dev/sdd: 107.4 GB
+LVM  /u01 	300  GB
 
 INSTALL PRE-INSTALL PACKAGES
 yum install -y https://yum.oracle.com/repo/OracleLinux/OL7/addons/x86_64/getPackage/compat-libstdc++-296-2.96-144.0.2.el7.i686.rpm
@@ -59,34 +59,14 @@ hostnamectl --static
 
 #CONFIGURE /ETC/HOSTS
 192.168.1.119   ol7apps1.localdomain    ol7apps1
-192.168.1.120   ol7db1.localdomain      ol7db1
 
 #CREATE LVM
 
-fdisk /dev/sdb
-fdisk /dev/sdc
-
-Command (m for help): n
-Partition type:
-   p   primary (0 primary, 0 extended, 4 free)
-   e   extended
-Select (default p): p
-Partition number (1-4, default 1): 1
-First sector (2048-209715199, default 2048):
-Using default value 2048
-Last sector, +sectors or +size{K,M,G} (2048-209715199, default 209715199):
-Using default value 209715199
-Partition 1 of type Linux and of size 100 GiB is set
-Command (m for help): w
-The partition table has been altered!
-Calling ioctl() to re-read partition table.
-Syncing disks.
-
-pvcreate /dev/sdb1 /dev/sdc1
+pvcreate /dev/sdb /dev/sdc f/dev/sdd
   Physical volume "/dev/sdb1" successfully created.
   Physical volume "/dev/sdc1" successfully created.
 
-vgcreate vg_apps /dev/sdb1 /dev/sdc1
+vgcreate vg_apps /dev/sdb /dev/sdc /dev/sdd
   Volume group "vg_apps" successfully created
 
 vgs
