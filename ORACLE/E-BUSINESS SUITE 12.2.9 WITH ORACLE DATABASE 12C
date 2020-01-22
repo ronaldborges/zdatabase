@@ -464,4 +464,84 @@ NEXT >
 
 # screen 6 
 
-.
+Database Node COnfiguration
+
+Database Type			Vision Demo Database
+Database SID			PROD
+Database Host Name		ol7apps1
+DNS Domain Name			localdomain
+Database Operating System	Linux x86-64(64-bit)
+Database OS User 		oracle
+Database OS Group		dba
+Database Base Dir		/u01/oracle/PROD	[ Browse ]
+Database Home Dir		/u01/oracle/PROD/12.1.0 [ Browse ]
+Datafiles Dir			/u01/oracle/PROD/data	[ Browse ]
+Storage Type			File System		
+[ ] RAC				[ ] Shared OracleHome
+Instance Prefix			PROD			[ RAC Nodes ]
+
+NEXT >
+
+# screen 7 
+
+Primary Applications Node Configuration
+
+Primary Host Name		ol7apps1
+DNS Domain Name			localdomain
+Operating System		Linux x86-64(64-bit)
+Apps OS User	 		applmgr
+Apps OS Group			dba
+Apps Base Dir			/u01/oracle/PROD	[ Browse ]
+Apps Instance Dir		/u01/oracle/PROD	[ Browse ]
+File System 1 Base Dir		/u01/oracle/PROD/fs1
+File System 2 Base Dir		/u01/oracle/PROD/fs2
+File System 1 Instance Dir	/u01/oracle/PROD/fs1/inst
+File System 1 Instance Dir	/u01/oracle/PROD/fs2/inst
+Non-Editioned File System	/u01/oracle/PROD/fs_ne
+APPLCFS				/u01/oracle/PROD/fs_ne/inst/PROD_ol7app1/logs/appl/conc
+AppsLog Distribution		Single
+
+NEXT >
+
+# screen 8
+
+Application User Information
+
+WLS Admin User 				weblogic
+WLS Admin Password			**************
+Confirm WLS Admin Password		**************
+Apps OS User				applmgr
+Apps OS User Password			**************
+Confirm Apps OS User Password		**************
+[ ] Change Default Password	
+Apps DB User Password		
+Confirm Apps DB User Password	
+SYSTEM DB User Password
+Products DB User Password
+Confirm Products DB User Password	
+SYSADMIN User Password
+Confirm SYSADMIN User Password
+
+NEXT >
+
+# screen 9
+
+Node Information
+	Service.		Node Name		Operating System
+	Database Node		ol7apps1		Linux x86-64 (64-bit)
+	Primary Apps Node	ol7apps1		Linux x86-64 (64-bit)
+	
+NEXT >
+
+# screen 10
+
+
+
+
+
+
+
+
+
+
+
