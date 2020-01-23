@@ -4,9 +4,10 @@
 
 #CREATE AND INSTALL CLUSTER HADOOP ON VIRTUALBOX (ORACLE LINUX 7)
 #GUIDE : Hadoop Compatible Framework For Discovering Network Topology And Detecting Hardware Failures
+#REFERENCE: http://www.stratapps.net/hadoop-multinode-installation-guide.php
+#REFERENCE: https://hadoopabcd.wordpress.com/2015/01/03/setting-up-hadoop-multi-node-cluster-on-amazon-ec2-2/
 
-#CONFIGURE HADOOP MASTER MACHINE
-
+#CONFIGURE IN ALL HADOOP MACHINES
 #NETWORK 
 vi /etc/hosts
 192.168.56.119  HADOOPMASTER1
@@ -14,8 +15,13 @@ vi /etc/hosts
 192.168.56.121  HADOOPMASTER3
 192.168.56.122  HADOOPSLAVE2
 
+#DISABLE SELINUX AND STOP FIREWALL IN ALL NODES 
 sed -i 's/SELINUX=.*/SELINUX=disabled/' /etc/sysconfig/selinux && setenforce 0
 systemctl stop firewalld && systemctl disable firewalld
+
+adduser 
+ssh-copy-id -i ~/.ssh/id_rsa.pub hduser@HADOOP_MACHINE
+
 
 
 
