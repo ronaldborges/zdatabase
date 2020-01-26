@@ -1,11 +1,15 @@
-+++++++++++++++++++++++++++++++++++++
-+   HADOOP MULTI-NODE CLUSTER OL7   +
-+++++++++++++++++++++++++++++++++++++
++++++++++++++++++++++++++++++
++   HADOOP MULTI-NODE OL7   +
++++++++++++++++++++++++++++++
 
-#CREATE AND INSTALL CLUSTER HADOOP ON VIRTUALBOX (ORACLE LINUX 7)
-#GUIDE : Hadoop Compatible Framework For Discovering Network Topology And Detecting Hardware Failures
-#REFERENCE: http://www.stratapps.net/hadoop-multinode-installation-guide.php
-#REFERENCE: https://hadoopabcd.wordpress.com/2015/01/03/setting-up-hadoop-multi-node-cluster-on-amazon-ec2-2/
+THE APACHE HADOOP FRAMEWORK CONSISTS OF THE FOLLOWING MODULES:
+* HADOOP COMMON - CONTAINS THE COMMON LIBRARIES AND FILES NEEDED FOR ALL HADOOP MODULES.
+* HADOOP DISTRIBUTED FILE SYSTEM (HDFS) - DISTRIBUTED FILE SYSTEM THAT STORES DATA ON MACHINES WITHIN THE CLUSTER, ON DEMAND, ALLOWING VERY LARGE BANDWIDTH ACROSS THE CLUSTER.
+* HADOOP YARN - IT IS A RESOURCE MANAGEMENT PLATFORM RESPONSIBLE FOR THE MANAGEMENT OF COMPUTATIONAL RESOURCES IN THE CLUSTER, AS WELL AS RESOURCE SCHEDULING.
+* HADOOP MAPREDUCE - PROGRAMMING MODEL FOR LARGE-SCALE PROCESSING.
+
+#CREATE AND INSTALL MULTI-NODE HADOOP ON VIRTUALBOX (ORACLE LINUX 7)
+#GUIDE : https://medium.com/@mr_cheng/instala%C3%A7%C3%A3o-do-apache-hadoop-3-2-1-multi-node-no-ubuntu-18-04-utilizando-oracle-virtualbox-f5aa90bc0b5a
 
 #CONFIGURE IN ALL HADOOP MACHINES
 #NETWORK 
@@ -45,18 +49,6 @@ yum install java-1.8.0-openjdk.x86_64 -y
 #CHECK JAVA VERSION
 java -version
 
-#CONFIGURE ENVORIMENTS VARIABLES
-vi .bashrc
-export PDSH_RCMD_TYPE=ssh
-
-#GERENATE SSH KEY
-ssh-keygen -t rsa
-cat ~/.ssh/id_rsa.pub >> ~/.ssh/authorized_keys
-chmod 600 ~/.ssh/authorized_keys
-
-#VALIDADE LOCAL ACCESS
-ssh localhost
-
 #DOWNLOAD HADOOP 3.2
 wget https://mirrors.sonic.net/apache/hadoop/common/hadoop-3.2.1/hadoop-3.2.1.tar.gz
 
@@ -73,6 +65,12 @@ export JAVA_HOME=/usr/lib/jvm/java-1.8.0-openjdk-1.8.0.242.b08-0.el7_7.x86_64/jr
 #MOVE HADOOP FOR /USR/LOCAL
 mv hadoop /usr/local/hadoop
 
+#CHANGE HOSTNAME
+#FOR SLAVE MACHINES, SET THE HOSTNAME
+hostnamectl 
+hostnamectl set-hostname HADOOPMASTER1
+hostnamectl --static 
+
 #ADD VARIABLES /ETC/ENVIRONMENT
 vi /etc/environment
 PATH="/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/local/hadoop/bin:/usr/local/hadoop/sbin"
@@ -85,11 +83,20 @@ chown hadoopuser:root -R /usr/local/hadoop/
 chmod g+rwx -R /usr/local/hadoop/
 id hadoopuser
 uid=1001(hadoopuser) gid=1001(hadoopuser) groups=1001(hadoopuser)
+su - hadoopuser
 
-#CHANGE HOSTNAME
-hostnamectl 
-hostnamectl set-hostname HADOOPMASTER1
-hostnamectl --static 
+#GERENATE SSH KEY
+ssh-keygen -t rsa
+cat ~/.ssh/id_rsa.pub >> ~/.ssh/authorized_keys
+chmod 600 ~/.ssh/authorized_keys
+
+#VALIDADE LOCAL ACCESS
+ssh localhost
+
+#CONFIGURE ENVORIMENTS VARIABLES
+vi .bashrc
+export PDSH_RCMD_TYPE=ssh
+
 
 
 
