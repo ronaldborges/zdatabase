@@ -68,7 +68,7 @@ mv hadoop /usr/local/hadoop
 #CHANGE HOSTNAME
 #FOR SLAVE MACHINES, SET THE HOSTNAME
 hostnamectl 
-hostnamectl set-hostname HADOOPMASTER1
+hostnamectl set-hostname hadoopmaster1
 hostnamectl --static 
 
 #ADD VARIABLES /ETC/ENVIRONMENT
