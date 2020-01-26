@@ -100,10 +100,38 @@ export PDSH_RCMD_TYPE=ssh
 #REBOOT master MACHINE
 #REPEAT THE ABOVE CONFIGURATION ON SLAVE1 AND SLAVE2
 
+#COPY SSH KEY AMONG THE THREE MACHINES
+COPY hadoopuser@hadoopmaster1:/home/hadoopuser/.ssh/id_rsa.pub TO FILE /home/hadoopuser/.ssh/authorized_keys
+COPY hadoopuser@hadoopslave1:/home/hadoopuser/.ssh/id_rsa.pub TO FILE /home/hadoopuser/.ssh/authorized_keys
+COPY hadoopuser@hadoopslave2:/home/hadoopuser/.ssh/id_rsa.pub TO FILE /home/hadoopuser/.ssh/authorized_keys
 
+## HADOOP MASTER ##
 
+#IN HADOOP-MASTER, OPEN THE FILE CORE-SITE.XML AND ADD THE CONTENT AT THE END OF THE FILE:
+vi /usr/local/hadoop/etc/hadoop/core-site.xml
 
+<configuration>
+<property>
+<name>fs.defaultFS</name>
+<value>hdfs://hadoopmaster1:9000</value>
+</property>
+</configuration>
 
+# IN HADOOP-MASTER, OPEN THE FILE HDFS-SITE.XML:
+vi /usr/local/hadoop/etc/hadoop/hdfs-site.xml
+
+<configuration>
+<property>
+<name>dfs.namenode.name.dir</name><value>/usr/local/hadoop/data/nameNode</value>
+</property>
+<property>
+<name>dfs.datanode.data.dir</name><value>/usr/local/hadoop/data/dataNode</value>
+</property>
+<property>
+<name>dfs.replication</name>
+<value>2</value>
+</property>
+</configuration>
 
 
 
