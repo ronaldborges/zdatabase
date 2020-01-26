@@ -97,6 +97,9 @@ ssh localhost
 vi .bashrc
 export PDSH_RCMD_TYPE=ssh
 
+#REBOOT master MACHINE
+#REPEAT THE ABOVE CONFIGURATION ON SLAVE1 AND SLAVE2
+
 
 
 
