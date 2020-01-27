@@ -261,10 +261,7 @@ SHUTDOWN_MSG: Shutting down NameNode at hadoopmaster1/192.168.56.119
 #START HDFS
 start-dfs.sh
 Starting namenodes on [hadoopmaster1]
-hadoopmaster1: Warning: Permanently added 'hadoopmaster1,192.168.56.119' (ECDSA) to the list of known hosts.
 Starting datanodes
-hadoopslave2: WARNING: /usr/local/hadoop/logs does not exist. Creating.
-hadoopslave1: WARNING: /usr/local/hadoop/logs does not exist. Creating.
 Starting secondary namenodes [hadoopmaster1]
 
 #AFTER THE PREVIOUS STEP, EXECUTE:
@@ -290,6 +287,13 @@ vi /usr/local/hadoop/etc/hadoop/yarn-site.xml
 ## MASTER ##
 #START YARN
 start-yarn.sh
+Starting resourcemanager
+Starting nodemanagers
+hadoopslave1: ERROR: Cannot set priority of nodemanager process 2301
+hadoopslave2: ERROR: Cannot set priority of nodemanager process 2305
+pdsh@hadoopmaster1: hadoopslave1: ssh exited with exit code 1
+pdsh@hadoopmaster1: hadoopslave2: ssh exited with exit code 1
+
 
 
 
