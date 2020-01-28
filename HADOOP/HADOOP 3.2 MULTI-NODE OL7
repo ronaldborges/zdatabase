@@ -97,13 +97,15 @@ PATH="/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/local/ha
 JAVA_HOME="/usr/lib/jvm/java-1.8.0-openjdk-1.8.0.242.b08-0.el7_7.x86_64/jre"
 
 #ADD USER HADOOPUSER
-adduser hadoopuser
-usermod -aG hadoopuser hadoopuser
-chown hadoopuser:root -R /usr/local/hadoop/
+useradd hadoop
+groupadd hadoopgrp
+gpasswd -a hadoop hadoopgrp
+passwd hadoop
+chown hadoop:root -R /usr/local/hadoop/
 chmod g+rwx -R /usr/local/hadoop/
-id hadoopuser
-uid=1001(hadoopuser) gid=1001(hadoopuser) groups=1001(hadoopuser)
-su - hadoopuser
+id hadoop
+uid=1001(hadoop) gid=1001(hadoopgrp) groups=1001(hadoop)
+su - hadoop
 
 #GERENATE SSH KEY
 ssh-keygen -t rsa
