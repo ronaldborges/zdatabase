@@ -109,8 +109,8 @@ su - hadoop
 
 #GERENATE SSH KEY
 ssh-keygen -t rsa
-cat ~/.ssh/id_rsa.pub >> ~/.ssh/authorized_keys
-chmod 600 ~/.ssh/authorized_keys
+cat .ssh/id_rsa.pub >> .ssh/authorized_keys
+chmod 600 .ssh/authorized_keys
 
 #VALIDADE LOCAL ACCESS
 ssh localhost
@@ -123,15 +123,15 @@ export PDSH_RCMD_TYPE=ssh
 #REPEAT THE ABOVE CONFIGURATION ON SLAVE1 AND SLAVE2
 
 #COPY SSH KEY AMONG THE THREE MACHINES
-COPY hadoopuser@hadoopmaster1:/home/hadoopuser/.ssh/id_rsa.pub TO FILE /home/hadoopuser/.ssh/authorized_keys
-COPY hadoopuser@hadoopslave1:/home/hadoopuser/.ssh/id_rsa.pub TO FILE /home/hadoopuser/.ssh/authorized_keys
-COPY hadoopuser@hadoopslave2:/home/hadoopuser/.ssh/id_rsa.pub TO FILE /home/hadoopuser/.ssh/authorized_keys
+COPY hadoop@hadoopmaster1:/home/hadoop/.ssh/id_rsa.pub TO FILE /home/hadoop/.ssh/authorized_keys
+COPY hadoop@hadoopslave1:/home/hadoop/.ssh/id_rsa.pub TO FILE /home/hadoop/.ssh/authorized_keys
+COPY hadoop@hadoopslave2:/home/hadoop/.ssh/id_rsa.pub TO FILE /home/hadoop/.ssh/authorized_keys
 
 #TEST CONNECTION SSH
-ssh hadoopuser@hadoopmaster1
-ssh hadoopuser@hadoopslave1
-ssh hadoopuser@hadoopslave2
-ssh hadoopuser@localhost
+ssh hadoop@hadoopmaster1
+ssh hadoop@hadoopslave1
+ssh hadoop@hadoopslave2
+ssh hadoop@localhost
 
 ## HADOOP MASTER CONNECTED AS A HADOOPUSER USER ##
 
