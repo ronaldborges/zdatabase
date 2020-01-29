@@ -18,26 +18,6 @@ vi /etc/hosts
 192.168.56.120  hadoopslave1
 192.168.56.121  hadoopslave2
 
-#CONFIGURE ENVORIMENTS VARIABLES
-vi /root/.bashrc
-export PDSH_RCMD_TYPE=ssh
-
-#GERENATE SSH KEY
-ssh-keygen -t rsa
-cat ~/.ssh/id_rsa.pub >> ~/.ssh/authorized_keys
-chmod 600 ~/.ssh/authorized_keys
-
-#COPY SSH KEY AMONG THE THREE MACHINES
-COPY root@hadoopmaster1:/home/hadoopuser/.ssh/id_rsa.pub TO FILE /home/hadoopuser/.ssh/authorized_keys
-COPY root@hadoopslave1:/home/hadoopuser/.ssh/id_rsa.pub TO FILE /home/hadoopuser/.ssh/authorized_keys
-COPY root@hadoopslave2:/home/hadoopuser/.ssh/id_rsa.pub TO FILE /home/hadoopuser/.ssh/authorized_keys
-
-#TEST CONNECTION SSH
-ssh root@hadoopmaster1
-ssh root@hadoopslave1
-ssh root@hadoopslave2
-ssh root@localhost
-
 #DISABLE SELINUX AND STOP FIREWALL IN ALL NODES 
 sed -i 's/SELINUX=.*/SELINUX=disabled/' /etc/sysconfig/selinux && setenforce 0
 systemctl stop firewalld && systemctl disable firewalld
@@ -100,8 +80,16 @@ ssh-keygen -t rsa
 cat .ssh/id_rsa.pub >> .ssh/authorized_keys
 chmod 600 .ssh/authorized_keys
 
-#VALIDADE LOCAL ACCESS
-ssh localhost
+#COPY SSH KEY AMONG THE THREE MACHINES
+COPY SSH KEY hadoop@hadoopmaster1:/home/hadoop/.ssh/id_rsa.pub TO FILE /home/hadoop/.ssh/authorized_keys
+COPY SSH KEY hadoop@hadoopslave1:/home/hadoop/.ssh/id_rsa.pub TO FILE /home/hadoop/.ssh/authorized_keys
+COPY SSH KEY hadoop@hadoopslave2:/home/hadoop/.ssh/id_rsa.pub TO FILE /home/hadoop/.ssh/authorized_keys
+
+#TEST CONNECTION SSH
+ssh hadoop@hadoopmaster1
+ssh hadoop@hadoopslave1
+ssh hadoop@hadoopslave2
+ssh hadoop@localhost
 
 #DOWNLOAD HADOOP 3.2
 wget https://mirrors.sonic.net/apache/hadoop/common/hadoop-3.2.1/hadoop-3.2.1.tar.gz
@@ -159,29 +147,80 @@ vi ~/hadoop/etc/hadoop/hdfs-site.xml
 </property>
 </configuration>
 
-#REBOOT master MACHINE
-#REPEAT THE ABOVE CONFIGURATION ON SLAVE1 AND SLAVE2
+#SET YARN AS JOB SCHEDULER
+vi ~/hadoop/etc/hadoop/mapred-site.xml
 
-#COPY SSH KEY AMONG THE THREE MACHINES
-COPY hadoop@hadoopmaster1:/home/hadoop/.ssh/id_rsa.pub TO FILE /home/hadoop/.ssh/authorized_keys
-COPY hadoop@hadoopslave1:/home/hadoop/.ssh/id_rsa.pub TO FILE /home/hadoop/.ssh/authorized_keys
-COPY hadoop@hadoopslave2:/home/hadoop/.ssh/id_rsa.pub TO FILE /home/hadoop/.ssh/authorized_keys
+<configuration>
+ <property>
+     <name>yarn.acl.enable</name>
+     <value>0</value>
+ </property>
 
-#TEST CONNECTION SSH
-ssh hadoop@hadoopmaster1
-ssh hadoop@hadoopslave1
-ssh hadoop@hadoopslave2
-ssh hadoop@localhost
+ <property>
+     <name>yarn.resourcemanager.hostname</name>
+     <value>hadoopmaster1</value>
+ </property>
 
-#IN HADOOP-MASTER, OPEN THE WORKERS FILE:
-vi /usr/local/hadoop/etc/hadoop/workers
+ <property>
+     <name>yarn.nodemanager.aux-services</name>
+     <value>mapreduce_shuffle</value>
+</property>
+
+<property>
+  <name>yarn.application.classpath</name>
+  <value>$HADOOP_CONF_DIR,$HADOOP_COMMON_HOME/share/hadoop/common/*,$HADOOP_COMMON_HOME/share/hadoop/common/lib/*,$HADOOP_HDFS_HOME/share/hadoop/hdfs/*,$HADOOP_HDFS_HOME/share/hadoop/hdfs/lib/*,$HADOOP_MAPRED_HOME/share/hadoop/mapreduce/*,$HADOOP_MAPRED_HOME/share/hadoop/mapreduce/lib/*,$HADOOP_YARN_HOME/share/hadoop/yarn/*,$HADOOP_YARN_HOME/share/hadoop/yarn/lib/*</value>
+</property>
+
+<property>
+ <name>yarn.resourcemanager.resource-tracker.address</name>
+ <value>hadoopmaster1:8025</value>
+</property>
+
+<property>
+ <name>yarn.resourcemanager.scheduler.address</name>
+ <value>hadoopmaster1:8030</value>
+</property>
+
+<property>
+ <name>yarn.resourcemanager.address</name>
+ <value>hadoopmaster1:8050</value>
+</property>
+
+<property>
+  <name>yarn.nodemanager.resource.memory-mb</name>
+  <value>2536</value>
+</property>
+
+<property>
+   <name>yarn.scheduler.maximum-allocation-mb</name>
+    <value>2536</value>
+</property>
+
+<property>
+    <name>yarn.scheduler.minimum-allocation-mb</name>
+    <value>256</value>
+</property>
+
+<property>
+   <name>yarn.nodemanager.vmem-check-enabled</name>
+   <value>false</value>
+</property>
+
+</configuration>
+
+#CONFIGURE SLAVES (hadoopslave1, hadoopslave2)
+
+#REGISTER SLAVES
+vi ~/hadoop/etc/hadoop/slaves
 
 hadoopslave1
 hadoopslave2
 
-#COPY THE HADOOP MASTER CONFIGURATION FILES TO THE SLAVES
-scp /usr/local/hadoop/etc/hadoop/* hadoopuser@hadoopslave1:/usr/local/hadoop/etc/hadoop/
-scp /usr/local/hadoop/etc/hadoop/* hadoopuser@hadoopslave2:/usr/local/hadoop/etc/hadoop/
+#REGISTER WORKERS
+vi ~/hadoop/etc/hadoop/workers
+
+hadoopslave1
+hadoopslave2
 
 #FORMAT THE HDFS FILE SYSTEM, USING THE COMMANDS BELOW:
 
