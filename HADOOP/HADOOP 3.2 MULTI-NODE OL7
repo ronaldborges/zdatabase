@@ -75,23 +75,6 @@ Selection      Command
 --------------------------------------------------------------------------------------------------------------------
 *+ 1           java-1.8.0-openjdk.x86_64 (/usr/lib/jvm/java-1.8.0-openjdk-1.8.0.242.b08-0.el7_7.x86_64/jre/bin/java)
 
-
-#DOWNLOAD HADOOP 3.2
-wget https://mirrors.sonic.net/apache/hadoop/common/hadoop-3.2.1/hadoop-3.2.1.tar.gz
-
-#EXTRACT SOFTWARE
-tar xzf hadoop-3.2.1.tar.gz
-
-#RENAME FOLDER
-mv hadoop-3.2.1 hadoop
-
-#CONFIGURE JAVA_HOME ON HADOOP-ENV.SH
-vi ~/hadoop/etc/hadoop/hadoop-env.sh
-export JAVA_HOME=/usr/lib/jvm/java-1.8.0-openjdk-1.8.0.242.b08-0.el7_7.x86_64/jre
-
-#MOVE HADOOP FOR /USR/LOCAL
-mv hadoop /usr/local/hadoop
-
 #CHANGE HOSTNAME
 #FOR SLAVE MACHINES, SET THE HOSTNAME
 hostnamectl 
@@ -108,8 +91,6 @@ useradd hadoop
 groupadd hadoopgrp
 gpasswd -a hadoop hadoopgrp
 passwd hadoop
-chown hadoop:root -R /usr/local/hadoop/
-chmod g+rwx -R /usr/local/hadoop/
 id hadoop
 uid=1001(hadoop) gid=1001(hadoopgrp) groups=1001(hadoop)
 su - hadoop
@@ -121,6 +102,22 @@ chmod 600 .ssh/authorized_keys
 
 #VALIDADE LOCAL ACCESS
 ssh localhost
+
+#DOWNLOAD HADOOP 3.2
+wget https://mirrors.sonic.net/apache/hadoop/common/hadoop-3.2.1/hadoop-3.2.1.tar.gz
+
+#EXTRACT SOFTWARE
+tar xzf hadoop-3.2.1.tar.gz
+
+#RENAME FOLDER
+mv hadoop-3.2.1 hadoop
+
+#CONFIGURE JAVA_HOME ON HADOOP-ENV.SH
+vi ~/hadoop/etc/hadoop/hadoop-env.sh
+export JAVA_HOME=/usr/lib/jvm/java-1.8.0-openjdk-1.8.0.242.b08-0.el7_7.x86_64/jre
+
+#MOVE HADOOP FOR /USR/LOCAL
+mv hadoop /usr/local/hadoop
 
 #CONFIGURE ENVORIMENTS VARIABLES
 vi .bashrc
@@ -139,8 +136,6 @@ ssh hadoop@hadoopmaster1
 ssh hadoop@hadoopslave1
 ssh hadoop@hadoopslave2
 ssh hadoop@localhost
-
-## HADOOP MASTER CONNECTED AS A HADOOPUSER USER ##
 
 #IN HADOOP-MASTER, OPEN THE FILE CORE-SITE.XML AND ADD THE CONTENT AT THE END OF THE FILE:
 vi /usr/local/hadoop/etc/hadoop/core-site.xml
