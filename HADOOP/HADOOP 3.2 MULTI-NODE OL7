@@ -143,7 +143,7 @@ vi ~/hadoop/etc/hadoop/core-site.xml
 </property>
 </configuration>
 
-#IN HADOOP-MASTER, OPEN THE FILE HDFS-SITE.XML:
+#IN HADOOP-MASTER, OPEN THE FILE HDFS-SITE.XML: (THE VALUE OF PARAMETER dfs.replication MUST BE UPDATED WITH EACH NEW IN THE ADDED, SO THAT ALL REPLICATIONS CAN BE SYNCHRONIZED)
 vi ~/hadoop/etc/hadoop/hdfs-site.xml
 
 <configuration>
@@ -155,7 +155,7 @@ vi ~/hadoop/etc/hadoop/hdfs-site.xml
 </property>
 <property>
 <name>dfs.replication</name>
-<value>2</value>
+<value>3</value>
 </property>
 </configuration>
 
