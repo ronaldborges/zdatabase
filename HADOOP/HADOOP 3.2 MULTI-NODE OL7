@@ -112,10 +112,6 @@ tar xzf hadoop-3.2.1.tar.gz
 #RENAME FOLDER
 mv hadoop-3.2.1 hadoop
 
-#CONFIGURE JAVA_HOME ON HADOOP-ENV.SH
-vi ~/hadoop/etc/hadoop/hadoop-env.sh
-export JAVA_HOME=/usr/lib/jvm/java-1.8.0-openjdk-1.8.0.242.b08-0.el7_7.x86_64/jre
-
 #CONFIGURE ENVORIMENTS VARIABLES
 vi /home/hadoop/.bashrc
 export PDSH_RCMD_TYPE=ssh
@@ -128,6 +124,40 @@ export YARN_HOME=$HADOOP_HOME
 export HADOOP_COMMON_LIB_NATIVE_DIR=$HADOOP_HOME/lib/native
 export PATH=$PATH:$HADOOP_HOME/sbin:$HADOOP_HOME/bin
 
+#LOAD VARIABLES
+source /home/hadoop/.bashrc
+
+#CONFIGURE JAVA_HOME ON HADOOP-ENV.SH
+vi ~/hadoop/etc/hadoop/hadoop-env.sh
+export JAVA_HOME=/usr/lib/jvm/java-1.8.0-openjdk-1.8.0.242.b08-0.el7_7.x86_64/jre
+export HADOOP_CONF_DIR=${HADOOP_HOME}/etc/hadoop
+export HADOOP_OPTS="-Djava.net.preferIPv4Stack=true"
+
+#IN HADOOP-MASTER, OPEN THE FILE CORE-SITE.XML AND ADD THE CONTENT AT THE END OF THE FILE: (USE SAME NAME FOR ALL NODES AND MASTER)
+vi ~/hadoop/etc/hadoop/core-site.xml
+
+<configuration>
+<property>
+<name>fs.defaultFS</name>
+<value>hdfs://hadoopmaster1:9000</value>
+</property>
+</configuration>
+
+#IN HADOOP-MASTER, OPEN THE FILE HDFS-SITE.XML:
+vi ~/hadoop/etc/hadoop/hdfs-site.xml
+
+<configuration>
+<property>
+<name>dfs.namenode.name.dir</name><value>/home/hadoop/data/nameNode</value>
+</property>
+<property>
+<name>dfs.datanode.data.dir</name><value>/home/hadoop/data/dataNode</value>
+</property>
+<property>
+<name>dfs.replication</name>
+<value>2</value>
+</property>
+</configuration>
 
 #REBOOT master MACHINE
 #REPEAT THE ABOVE CONFIGURATION ON SLAVE1 AND SLAVE2
@@ -142,32 +172,6 @@ ssh hadoop@hadoopmaster1
 ssh hadoop@hadoopslave1
 ssh hadoop@hadoopslave2
 ssh hadoop@localhost
-
-#IN HADOOP-MASTER, OPEN THE FILE CORE-SITE.XML AND ADD THE CONTENT AT THE END OF THE FILE:
-vi /usr/local/hadoop/etc/hadoop/core-site.xml
-
-<configuration>
-<property>
-<name>fs.defaultFS</name>
-<value>hdfs://hadoopmaster1:9000</value>
-</property>
-</configuration>
-
-#IN HADOOP-MASTER, OPEN THE FILE HDFS-SITE.XML:
-vi /usr/local/hadoop/etc/hadoop/hdfs-site.xml
-
-<configuration>
-<property>
-<name>dfs.namenode.name.dir</name><value>/usr/local/hadoop/data/nameNode</value>
-</property>
-<property>
-<name>dfs.datanode.data.dir</name><value>/usr/local/hadoop/data/dataNode</value>
-</property>
-<property>
-<name>dfs.replication</name>
-<value>2</value>
-</property>
-</configuration>
 
 #IN HADOOP-MASTER, OPEN THE WORKERS FILE:
 vi /usr/local/hadoop/etc/hadoop/workers
