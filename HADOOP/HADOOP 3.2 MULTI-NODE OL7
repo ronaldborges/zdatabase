@@ -8,6 +8,7 @@ THE APACHE HADOOP FRAMEWORK CONSISTS OF THE FOLLOWING MODULES:
 * HADOOP YARN - IT IS A RESOURCE MANAGEMENT PLATFORM RESPONSIBLE FOR THE MANAGEMENT OF COMPUTATIONAL RESOURCES IN THE CLUSTER, AS WELL AS RESOURCE SCHEDULING.
 * HADOOP MAPREDUCE - PROGRAMMING MODEL FOR LARGE-SCALE PROCESSING.
 
+#GUIDE HADOOP INSTALL https://openhelp.net/node/1
 #CREATE AND INSTALL MULTI-NODE HADOOP ON VIRTUALBOX (ORACLE LINUX 7)
 
 #CONFIGURE IN ALL HADOOP MACHINES
@@ -344,6 +345,16 @@ http://192.168.56.124:9870/dfshealth.html#tab-overview
 #CREATE DIRECTORY HDFS 
 hdfs dfs -mkdir -p books
 
+#LIST DIRECTORIES HDFS 
+hdfs dfs -ls
+Found 1 items
+drwxr-xr-x   - hadoop supergroup          0 2020-01-29 17:02 books
+
+#REMOVE FILE ON DIRECTORY HDFS
+hdfs dfs -rmdir <directory_path>
+hdfs dfs -rm -R <directory_path>
+hdfs dfs -rmdir <directory_path>/<file>
+
 #UPDATE FILE TO DIRECTORY HDFS
 hdfs dfs -put OracleDatabaseNotesForProfessionals.pdf books
 2020-01-29 17:02:19,766 WARN hdfs.DataStreamer: DataStreamer Exception
@@ -385,7 +396,6 @@ org.apache.hadoop.ipc.RemoteException(java.io.IOException): File /user/hadoop/bo
 	at org.apache.hadoop.hdfs.DataStreamer.nextBlockOutputStream(DataStreamer.java:1668)
 	at org.apache.hadoop.hdfs.DataStreamer.run(DataStreamer.java:716)
 put: File /user/hadoop/books/OracleDatabaseNotesForProfessionals.pdf._COPYING_ could only be written to 0 of the 1 minReplication nodes. There are 0 datanode(s) running and 0 node(s) are excluded in this operation.
-
 
 
 
