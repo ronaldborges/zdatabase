@@ -116,9 +116,6 @@ mv hadoop-3.2.1 hadoop
 vi ~/hadoop/etc/hadoop/hadoop-env.sh
 export JAVA_HOME=/usr/lib/jvm/java-1.8.0-openjdk-1.8.0.242.b08-0.el7_7.x86_64/jre
 
-#MOVE HADOOP FOR /USR/LOCAL
-mv hadoop /usr/local/hadoop
-
 #CONFIGURE ENVORIMENTS VARIABLES
 vi .bashrc
 export PDSH_RCMD_TYPE=ssh
