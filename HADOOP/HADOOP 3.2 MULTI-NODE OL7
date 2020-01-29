@@ -119,7 +119,6 @@ source /home/hadoop/.bashrc
 vi ~/hadoop/etc/hadoop/hadoop-env.sh
 export JAVA_HOME=/usr/lib/jvm/java-1.8.0-openjdk-1.8.0.242.b08-0.el7_7.x86_64/jre
 export HADOOP_CONF_DIR=${HADOOP_HOME}/etc/hadoop
-export HADOOP_OPTS="-Djava.net.preferIPv4Stack=true"
 
 #IN HADOOP-MASTER, OPEN THE FILE CORE-SITE.XML AND ADD THE CONTENT AT THE END OF THE FILE: (USE SAME NAME FOR ALL NODES AND MASTER)
 vi ~/hadoop/etc/hadoop/core-site.xml
