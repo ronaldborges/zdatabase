@@ -117,8 +117,17 @@ vi ~/hadoop/etc/hadoop/hadoop-env.sh
 export JAVA_HOME=/usr/lib/jvm/java-1.8.0-openjdk-1.8.0.242.b08-0.el7_7.x86_64/jre
 
 #CONFIGURE ENVORIMENTS VARIABLES
-vi .bashrc
+vi /home/hadoop/.bashrc
 export PDSH_RCMD_TYPE=ssh
+export HADOOP_HOME=/home/hadoop/hadoop
+export HADOOP_INSTALL=$HADOOP_HOME
+export HADOOP_MAPRED_HOME=$HADOOP_HOME
+export HADOOP_COMMON_HOME=$HADOOP_HOME
+export HADOOP_HDFS_HOME=$HADOOP_HOME
+export YARN_HOME=$HADOOP_HOME
+export HADOOP_COMMON_LIB_NATIVE_DIR=$HADOOP_HOME/lib/native
+export PATH=$PATH:$HADOOP_HOME/sbin:$HADOOP_HOME/bin
+
 
 #REBOOT master MACHINE
 #REPEAT THE ABOVE CONFIGURATION ON SLAVE1 AND SLAVE2
