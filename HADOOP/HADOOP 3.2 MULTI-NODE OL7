@@ -45,7 +45,6 @@ yum repolist
 #INSTALL PRE-REQUIRES PACKAGES
 yum install pdsh.x86_64 -y
 yum install java-1.8.0-openjdk.x86_64 -y
-yum install java-1.8.0-openjdk-devel.x86_64 -y
 
 #CHECK JAVA VERSION
 java -version
@@ -102,7 +101,7 @@ mv hadoop-3.2.1 hadoop
 
 #CONFIGURE ENVORIMENTS VARIABLES
 vi /home/hadoop/.bashrc
-export PDSH_RCMD_TYPE=ssh
+
 export HADOOP_HOME=/home/hadoop/hadoop
 export HADOOP_INSTALL=$HADOOP_HOME
 export HADOOP_MAPRED_HOME=$HADOOP_HOME
@@ -119,6 +118,7 @@ source /home/hadoop/.bashrc
 vi ~/hadoop/etc/hadoop/hadoop-env.sh
 export JAVA_HOME=/usr/lib/jvm/java-1.8.0-openjdk-1.8.0.242.b08-0.el7_7.x86_64/jre
 export HADOOP_CONF_DIR=${HADOOP_HOME}/etc/hadoop
+export HADOOP_OPTS="$HADOOP_OPTS -Djava.library.path=$HADOOP_HOME/lib/native"
 
 #IN HADOOP-MASTER, OPEN THE FILE CORE-SITE.XML AND ADD THE CONTENT AT THE END OF THE FILE: (USE SAME NAME FOR ALL NODES AND MASTER)
 vi ~/hadoop/etc/hadoop/core-site.xml
