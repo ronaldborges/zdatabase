@@ -9,7 +9,6 @@ THE APACHE HADOOP FRAMEWORK CONSISTS OF THE FOLLOWING MODULES:
 * HADOOP MAPREDUCE - PROGRAMMING MODEL FOR LARGE-SCALE PROCESSING.
 
 #CREATE AND INSTALL MULTI-NODE HADOOP ON VIRTUALBOX (ORACLE LINUX 7)
-#GUIDE : https://medium.com/@mr_cheng/instala%C3%A7%C3%A3o-do-apache-hadoop-3-2-1-multi-node-no-ubuntu-18-04-utilizando-oracle-virtualbox-f5aa90bc0b5a
 
 #CONFIGURE IN ALL HADOOP MACHINES
 #NETWORK 
@@ -312,7 +311,6 @@ start-dfs.sh
 Starting namenodes on [hadoopmaster1]
 Starting datanodes
 Starting secondary namenodes [hadoopmaster1]
-2020-01-29 15:08:36,732 WARN util.NativeCodeLoader: Unable to load native-hadoop library for your platform... using builtin-java classes where applicable
 
 
 
