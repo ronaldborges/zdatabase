@@ -307,7 +307,7 @@ Formatting using clusterid: CID-2f67bff1-cdbc-4dc2-b7e9-2525bbcbdf23
 SHUTDOWN_MSG: Shutting down NameNode at hadoopmaster1/192.168.56.124
 ************************************************************/
 
-#START HDFS
+#START HDFS (ALL NODES)
 start-dfs.sh
 Starting namenodes on [hadoopmaster1]
 Starting datanodes
@@ -355,7 +355,7 @@ hdfs dfs -rmdir <directory_path>
 hdfs dfs -rm -R <directory_path>
 hdfs dfs -rmdir <directory_path>/<file>
 
-#START YARN
+#START YARN (ALL NODES)
 start-yarn.sh
 Starting resourcemanager
 Starting nodemanagers
