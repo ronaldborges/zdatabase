@@ -339,8 +339,8 @@ Erasure Coded Block Groups:
 #LIST HELP HDFS
 hdfs dfsadmin -help
 
-#HDFS TAB-OVERVIEW
-http://192.168.56.124:9870/dfshealth.html#tab-overview
+#HDFS WEB OVERVIEW
+http://192.168.56.124:9870
 
 #CREATE DIRECTORY HDFS 
 hdfs dfs -mkdir -p books
@@ -360,6 +360,9 @@ start-yarn.sh
 Starting resourcemanager
 Starting nodemanagers
 
+#YARN WEB OVERVIEW
+http://192.168.56.124:8088
+
 #UPDATE FILE TO DIRECTORY HDFS
 [hadoop@hadoopmaster1 ~]$ hdfs dfs -put OracleDatabaseNotesForProfessionals.pdf books
 2020-02-01 19:10:09,967 INFO sasl.SaslDataTransferClient: SASL encryption trust check: localHostTrusted = false, remoteHostTrusted = false
@@ -368,4 +371,22 @@ Starting nodemanagers
 [hadoop@hadoopmaster1 ~]$ hdfs dfs -ls books
 Found 1 items
 -rw-r--r--   3 hadoop supergroup    1211210 2020-02-01 19:10 books/OracleDatabaseNotesForProfessionals.pdf
+
+#CHECK NODES RUNNING YARN
+yarn node -list
+2020-02-01 19:25:03,952 INFO client.RMProxy: Connecting to ResourceManager at hadoopmaster1/192.168.56.124:8050
+Total Nodes:3
+         Node-Id             Node-State Node-Http-Address       Number-of-Running-Containers
+hadoopslave1:33939              RUNNING hadoopslave1:8042                                  0
+hadoopmaster1:38933             RUNNING hadoopmaster1:8042                                 0
+hadoopslave2:36729              RUNNING hadoopslave2:8042                                  0
+
+#YARN LIST APPLICATIONS
+yarn application -list
+2020-02-01 19:27:55,463 INFO client.RMProxy: Connecting to ResourceManager at hadoopmaster1/192.168.56.124:8050
+Total number of applications (application-types: [], states: [SUBMITTED, ACCEPTED, RUNNING] and tags: []):0
+                Application-Id      Application-Name        Application-Type          User           Queue                   State             Final-State             Progress                        Tracking-URL
+           Final-State             Progress                        Tracking-URL
+
+
 
