@@ -491,7 +491,7 @@ Found 2 items
 hdfs dfs -head output/part-r-00000
 
 #STOP ALL SERVICES HADOOP (RUN ON ALL NODES) (yarn daemons and hdfs daemons)
-[hadoop@hadoopmaster1 ~]$ stop-all.sh
+stop-all.sh
 WARNING: Stopping all Apache Hadoop daemons as hadoop in 10 seconds.
 WARNING: Use CTRL-C to abort.
 Stopping namenodes on [hadoopmaster1]
