@@ -341,6 +341,12 @@ hdfs dfsadmin -help
 #HDFS WEB OVERVIEW
 http://192.168.56.124:9870
 
+#SECONDARY NAMENODE WEB OVERVIEW
+http://192.168.56.124:9868/status.html
+
+#NODE MANAGER OVERVIEW
+http://192.168.56.124:8042/node
+
 #CREATE DIRECTORY HDFS 
 hdfs dfs -mkdir -p books
 
@@ -483,3 +489,28 @@ Found 2 items
 -rw-r--r--   3 hadoop supergroup    1632316 2020-02-01 20:32 output/part-r-00000
 
 hdfs dfs -head output/part-r-00000
+
+#STOP ALL SERVICES HADOOP (RUN ON ALL NODES) (yarn daemons and hdfs daemons)
+[hadoop@hadoopmaster1 ~]$ stop-all.sh
+WARNING: Stopping all Apache Hadoop daemons as hadoop in 10 seconds.
+WARNING: Use CTRL-C to abort.
+Stopping namenodes on [hadoopmaster1]
+Stopping datanodes
+Stopping secondary namenodes [hadoopmaster1]
+Stopping nodemanagers
+Stopping resourcemanager
+
+#START ALL SERVICES HADOOP (RUN ON ALL NODES) (yarn daemons and hdfs daemons)
+start-all.sh
+WARNING: Attempting to start all Apache Hadoop daemons as hadoop in 10 seconds.
+WARNING: This is not a recommended production deployment configuration.
+WARNING: Use CTRL-C to abort.
+Starting namenodes on [hadoopmaster1]
+Starting datanodes
+Starting secondary namenodes [hadoopmaster1]
+Starting resourcemanager
+Starting nodemanagers
+
+
+
+
