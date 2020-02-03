@@ -113,6 +113,25 @@ systemctl start docker
 #ON KUBERNETES MASTER SERVER
 yum -y install kubeadm kubelet kubectl
 
+#LOG IN ORACLE CONTAINER REGISTRY
+#IT IS NECESSARY TO HAVE AN ORACLE LOGIN
+FIRST OPEN ORACLE CONTAINER REGISTRY ADDRESS IN A BROWSER, LOGIN, GO TO THE "CONTAINER SERVICES" OPTION AND SING IN TO ACCEPT THE TERMS OF USE
+https://container-registry.oracle.com/
+
+docker login container-registry.oracle.com/kubernetes
+Username: <email> 
+Password: <password>
+WARNING! Your password will be stored unencrypted in /root/.docker/config.json.
+Configure a credential helper to remove this warning. See
+https://docs.docker.com/engine/reference/commandline/login/#credentials-store
+
+Login Succeeded
+
+#CONFIGURE MASTER SERVER
+kubeadm-setup.sh up --pod-network-cidr 192.168.0.0/16
+
+
+
 
 
 
