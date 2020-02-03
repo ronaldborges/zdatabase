@@ -1,0 +1,118 @@
++++++++++++++++++++++++++++++++++++
++  CLUSTER KUBERNETES v1.17 OL7   +
++++++++++++++++++++++++++++++++++++
+
+#KUBERNETES IS AN OPEN SOURCE PRODUCT USED TO AUTOMATE THE IMPLEMENTATION, DIMENSIONING AND MANAGEMENT OF CONTAINER APPLICATIONS
+
+CHECK KERNEL VERSION (THE ORACLE LINUX 7 RUN WITH KERNEL VERSION 4.*)
+[root@localhost ~]# uname -a
+Linux localhost.localdomain 4.14.35-1902.9.2.el7uek.x86_64 #2 SMP Mon Dec 23 13:39:16 PST 2019 x86_64 x86_64 x86_64 GNU/Linux
+
+#DISABLE SELINUX AND STOP FIREWALL IN ALL NODES 
+sed -i 's/SELINUX=.*/SELINUX=disabled/' /etc/sysconfig/selinux && setenforce 0
+systemctl stop firewalld && systemctl disable firewalld
+
+#ADD REPOSITORY ol7_addons
+vi /etc/yum.repos.d/oracle-linux-ol7.repo
+[ol7_addons]
+name=Oracle Linux $releasever Add ons ($basearch)
+baseurl=https://yum$ociregion.oracle.com/repo/OracleLinux/OL7/addons/$basearch/
+gpgkey=file:///etc/pki/rpm-gpg/RPM-GPG-KEY-oracle
+gpgcheck=1
+enabled=1
+
+#LIST REPOSITORIES
+Loaded plugins: langpacks, ulninfo
+ol7_UEKR5                                                                                                                                                                                                                                                | 2.5 kB  00:00:00     
+ol7_addons                                                                                                                                                                                                                                               | 2.5 kB  00:00:00     
+ol7_latest                                                                                                                                                                                                                                               | 2.7 kB  00:00:00     
+(1/6): ol7_UEKR5/x86_64/updateinfo                                                                                                                                                                                                                       |  28 kB  00:00:00     
+(2/6): ol7_addons/x86_64/updateinfo                                                                                                                                                                                                                      |  76 kB  00:00:00     
+(3/6): ol7_addons/x86_64/primary_db                                                                                                                                                                                                                      | 147 kB  00:00:00     
+(4/6): ol7_UEKR5/x86_64/primary_db                                                                                                                                                                                                                       |  10 MB  00:00:00     
+(5/6): ol7_latest/x86_64/updateinfo                                                                                                                                                                                                                      | 2.6 MB  00:00:00     
+(6/6): ol7_latest/x86_64/primary_db                                                                                                                                                                                                                      |  26 MB  00:00:01     
+repo id                                              repo name                                                                                                                                                            status
+ol7_UEKR5/x86_64                                     Latest Unbreakable Enterprise Kernel Release 5 for Oracle Linux 7Server (x86_64)                                                                                        221
+ol7_addons/x86_64                                    Oracle Linux 7Server Add ons (x86_64)                                                                                                                                   395
+ol7_latest/x86_64                                    Oracle Linux 7Server Latest (x86_64)                                                                                                                                 16,108
+repolist: 16,724
+
+#ADD DISK TO CREATE STORAGE AREA FOR DOCKER ENGINE
+fdisk -l
+Disk /dev/sdb: 107.4 GB, 107374182400 bytes, 209715200 sectors
+Units = sectors of 1 * 512 = 512 bytes
+Sector size (logical/physical): 512 bytes / 512 bytes
+I/O size (minimum/optimal): 512 bytes / 512 bytes
+
+#CREATE BTRFS PARTITION FOR DOCKER
+mkdir -p /var/lib/docker
+
+parted /dev/sdb -s -- mklabel gpt mkpart DOCKER 1 -1
+
+mkfs.btrfs -L var-lib-docker /dev/sdb1
+btrfs-progs v4.9.1
+See http://btrfs.wiki.kernel.org for more information.
+
+Label:              var-lib-docker
+UUID:               e35d7f7e-b8f2-474d-8ba0-8a75c5c3d30b
+Node size:          16384
+Sector size:        4096
+Filesystem size:    100.00GiB
+Block group profiles:
+  Data:             single            8.00MiB
+  Metadata:         DUP               1.00GiB
+  System:           DUP               8.00MiB
+SSD detected:       no
+Incompat features:  extref
+Number of devices:  1
+Devices:
+   ID        SIZE  PATH
+    1   100.00GiB  /dev/sdb1
+
+#MOUNT PARTITION DOCKER
+echo "LABEL=var-lib-docker /var/lib/docker btrfs defaults 0 0" >> /etc/fstab
+mount /var/lib/docker
+df -h
+Used Avail Use% Mounted on
+devtmpfs        2.0G     0  2.0G   0% /dev
+tmpfs           2.0G     0  2.0G   0% /dev/shm
+tmpfs           2.0G  9.4M  2.0G   1% /run
+tmpfs           2.0G     0  2.0G   0% /sys/fs/cgroup
+/dev/sda2        31G  7.2G   22G  25% /
+/dev/sda1       347M  284M   64M  82% /boot
+tmpfs           394M   20K  394M   1% /run/user/0
+/dev/sdb1       100G   17M   98G   1% /var/lib/docker
+
+#INSTALL AND CONFIGURE NTP
+yum -y install ntp
+
+systemctl enable ntpd
+
+ntpdate a.ntp.br
+ 3 Feb 11:42:15 ntpdate[3249]: step time server 200.160.0.8 offset 74.420798 sec
+
+vi /etc/ntp.conf 
+server a.ntp.br
+server b.ntp.br
+server c.ntp.br
+
+systemctl start ntpd
+
+[root@localhost ~]# systemctl status ntpd
+● ntpd.service - Network Time Service
+   Loaded: loaded (/usr/lib/systemd/system/ntpd.service; enabled; vendor preset: disabled)
+   Active: active (running) since Mon 2020-02-03 11:47:35 -03; 4s ago
+
+#INSTALL DOCKER ENGINE
+yum -y install docker-engine
+systemctl enable docker
+systemctl start docker
+
+#KUBERNETES MASTER
+#ON KUBERNETES MASTER SERVER
+yum -y install kubeadm kubelet kubectl
+
+
+
+
