@@ -5,7 +5,7 @@
 #KUBERNETES IS AN OPEN SOURCE PRODUCT USED TO AUTOMATE THE IMPLEMENTATION, DIMENSIONING AND MANAGEMENT OF CONTAINER APPLICATIONS
 
 CHECK KERNEL VERSION (THE ORACLE LINUX 7 RUN WITH KERNEL VERSION 4.*)
-[root@localhost ~]# uname -a
+uname -a
 Linux localhost.localdomain 4.14.35-1902.9.2.el7uek.x86_64 #2 SMP Mon Dec 23 13:39:16 PST 2019 x86_64 x86_64 x86_64 GNU/Linux
 
 #DISABLE SELINUX AND STOP FIREWALL IN ALL NODES 
@@ -37,6 +37,16 @@ ol7_UEKR5/x86_64                                     Latest Unbreakable Enterpri
 ol7_addons/x86_64                                    Oracle Linux 7Server Add ons (x86_64)                                                                                                                                   395
 ol7_latest/x86_64                                    Oracle Linux 7Server Latest (x86_64)                                                                                                                                 16,108
 repolist: 16,724
+
+#CHANGE HOSTNAME
+#FOR SLAVE MACHINES, SET THE HOSTNAME
+hostnamectl 
+hostnamectl set-hostname KUBERMASTER
+hostnamectl --static 
+
+vi /etc/hosts
+192.168.56.128  KUBERMASTER
+192.168.56.129  KUBERWORKER
 
 #ADD DISK TO CREATE STORAGE AREA FOR DOCKER ENGINE
 fdisk -l
@@ -99,7 +109,7 @@ server c.ntp.br
 
 systemctl start ntpd
 
-[root@localhost ~]# systemctl status ntpd
+systemctl status ntpd
 ● ntpd.service - Network Time Service
    Loaded: loaded (/usr/lib/systemd/system/ntpd.service; enabled; vendor preset: disabled)
    Active: active (running) since Mon 2020-02-03 11:47:35 -03; 4s ago
@@ -127,8 +137,150 @@ https://docs.docker.com/engine/reference/commandline/login/#credentials-store
 
 Login Succeeded
 
-#CONFIGURE MASTER SERVER
+### CONFIGURE MASTER SERVER ####
+
 kubeadm-setup.sh up --pod-network-cidr 192.168.0.0/16
+Checking kubelet and kubectl RPM ...
+Starting to initialize master node ...
+Checking if env is ready ...
+Checking whether docker can pull busybox image ...
+Checking access to container-registry.oracle.com/kubernetes ...
+Trying to pull repository container-registry.oracle.com/kubernetes/kube-proxy ... 
+v1.12.10: Pulling from container-registry.oracle.com/kubernetes/kube-proxy
+Digest: sha256:2340f6d185aaec709f46a878b2b0003615de95c87809fb224eb53818ad5ddda6
+Status: Image is up to date for container-registry.oracle.com/kubernetes/kube-proxy:v1.12.10
+container-registry.oracle.com/kubernetes/kube-proxy:v1.12.10
+Checking whether docker can run container ...
+Checking iptables default rule ...
+Checking br_netfilter module ...
+Checking sysctl variables ...
+Enabling kubelet ...
+Created symlink from /etc/systemd/system/multi-user.target.wants/kubelet.service to /etc/systemd/system/kubelet.service.
+Check successful, ready to run 'up' command ...
+Waiting for kubeadm to setup master cluster...
+Please wait ...
+/ - 80% completed
+Waiting for the control plane to become ready ...
+.............................
+100% completed
+clusterrole.rbac.authorization.k8s.io/flannel created
+clusterrolebinding.rbac.authorization.k8s.io/flannel created
+serviceaccount/flannel created
+configmap/kube-flannel-cfg created
+daemonset.extensions/kube-flannel-ds created
+Patching CVE ...
+
+Installing kubernetes-dashboard ...
+
+Enabling kubectl-proxy.service ...
+Starting kubectl-proxy.service ...
+deployment.extensions/coredns patched
+
+[===> PLEASE DO THE FOLLOWING STEPS BELOW: <===]
+
+Your Kubernetes master has initialized successfully!
+
+To start using your cluster, you need to run the following as a regular user:
+
+  mkdir -p $HOME/.kube
+  sudo cp -i /etc/kubernetes/admin.conf $HOME/.kube/config
+  sudo chown $(id -u):$(id -g) $HOME/.kube/config
+
+
+You can now join any number of machines by running the following on each node
+as root:
+
+  kubeadm-setup.sh join 10.0.2.15:6443 --token q25cf8.0282ptckho361dcf --discovery-token-ca-cert-hash sha256:9ee1ace7e63f309e57df3962e6419cb2543a2ea0ddab5040a447453514f62790
+
+#CREATE A USER ORACLE GROUP DOCKER
+adduser -g docker oracle
+passwd oracle
+
+#COPY USER ENVORIMENTS ROOT FILES TO EXECUTE COMMANDS ON KUBERNETES
+su - oracle
+mkdir -p $HOME/.kube
+logout
+cp -i /etc/kubernetes/admin.conf /home/oracle/.kube/config
+chown oracle:docker /home/oracle/.kube/config
+su - oracle
+export KUBECONFIG=$HOME/.kube/config
+echo 'export KUBECONFIG=$HOME/.kube/config' >> $HOME/.bashrc
+
+### CONFIGURE WORKER SERVER ###
+
+#DISABLE SELINUX AND STOP FIREWALL IN ALL NODES 
+sed -i 's/SELINUX=.*/SELINUX=disabled/' /etc/sysconfig/selinux && setenforce 0
+systemctl stop firewalld && systemctl disable firewalld
+
+#ADD REPOSITORY ol7_addons
+vi /etc/yum.repos.d/oracle-linux-ol7.repo
+[ol7_addons]
+name=Oracle Linux $releasever Add ons ($basearch)
+baseurl=https://yum$ociregion.oracle.com/repo/OracleLinux/OL7/addons/$basearch/
+gpgkey=file:///etc/pki/rpm-gpg/RPM-GPG-KEY-oracle
+gpgcheck=1
+enabled=1
+
+#CHANGE HOSTNAME
+#FOR SLAVE MACHINES, SET THE HOSTNAME
+hostnamectl 
+hostnamectl set-hostname KUBERMASTER
+hostnamectl --static 
+
+vi /etc/hosts
+192.168.56.128  KUBERMASTER
+192.168.56.129  KUBERWORKER
+
+#INSTALL AND CONFIGURE NTP
+yum -y install ntp
+
+systemctl enable ntpd
+
+ntpdate a.ntp.br
+ 3 Feb 11:42:15 ntpdate[3249]: step time server 200.160.0.8 offset 74.420798 sec
+
+vi /etc/ntp.conf 
+server a.ntp.br
+server b.ntp.br
+server c.ntp.br
+
+systemctl start ntpd
+
+systemctl status ntpd
+● ntpd.service - Network Time Service
+   Loaded: loaded (/usr/lib/systemd/system/ntpd.service; enabled; vendor preset: disabled)
+   Active: active (running) since Mon 2020-02-03 11:47:35 -03; 4s ago
+
+#INSTALL KUBERNETS PACKAGES ON WORKER
+yum -y install kubeadm kubelet kubectl
+
+#INSTALL DOCKER ENGINE
+yum -y install docker-engine
+systemctl enable docker
+systemctl start docker
+
+#LOG IN ORACLE CONTAINER REGISTRY
+docker login container-registry.oracle.com/kubernetes
+Username: <email>
+Password: <password>
+WARNING! Your password will be stored unencrypted in /root/.docker/config.json.
+Configure a credential helper to remove this warning. See
+https://docs.docker.com/engine/reference/commandline/login/#credentials-store
+
+Login Succeeded
+
+#JOIN TO CLUSTER KUBERNETES
+#USE TOKEN HASH TO SUBSCRIBE IN CLUSTER MASTER
+  kubeadm-setup.sh join 10.0.2.15:6443 --token q25cf8.0282ptckho361dcf --discovery-token-ca-cert-hash sha256:9ee1ace7e63f309e57df3962e6419cb2543a2ea0ddab5040a447453514f62790
+
+#VERIFY KUBERNETES NODES 
+kubectl get nodes
+
+
+
+
+
+
 
 
 
