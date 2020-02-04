@@ -45,8 +45,8 @@ hostnamectl set-hostname KUBERMASTER
 hostnamectl --static 
 
 vi /etc/hosts
-192.168.56.128  KUBERMASTER
-192.168.56.129  KUBERWORKER
+192.168.1.116  KUBERMASTER
+192.168.1.117  KUBERWORKER
 
 #ADD DISK TO CREATE STORAGE AREA FOR DOCKER ENGINE
 fdisk -l
@@ -119,7 +119,7 @@ yum -y install docker-engine
 systemctl enable docker
 systemctl start docker
 
-#KUBERNETES MASTER
+## KUBERNETES MASTER ##
 #ON KUBERNETES MASTER SERVER
 yum -y install kubeadm kubelet kubectl
 
@@ -223,12 +223,12 @@ enabled=1
 #CHANGE HOSTNAME
 #FOR SLAVE MACHINES, SET THE HOSTNAME
 hostnamectl 
-hostnamectl set-hostname KUBERMASTER
+hostnamectl set-hostname KUBERWORKER
 hostnamectl --static 
 
 vi /etc/hosts
-192.168.56.128  KUBERMASTER
-192.168.56.129  KUBERWORKER
+192.168.1.116  KUBERMASTER
+192.168.1.117  KUBERWORKER
 
 #INSTALL AND CONFIGURE NTP
 yum -y install ntp
@@ -270,10 +270,81 @@ Login Succeeded
 
 #JOIN TO CLUSTER KUBERNETES
 #USE TOKEN HASH TO SUBSCRIBE IN CLUSTER MASTER
-  kubeadm-setup.sh join 10.0.2.15:6443 --token q25cf8.0282ptckho361dcf --discovery-token-ca-cert-hash sha256:9ee1ace7e63f309e57df3962e6419cb2543a2ea0ddab5040a447453514f62790
+ kubeadm-setup.sh join 192.168.1.116:6443 --token 06ewe6.5b8l9qorhwzwbmhn --discovery-token-ca-cert-hash sha256:3f786c0d6c581232c65d6c4d7834ce3f123a2493c2cce1ef3d07f82e6e446637                                                                                                                                       covery-token-ca-cert-hash sha256:3f786c0d6c581232c65d6c4d7834ce3f123a2493c2cce1ef3d07f82e6e446637
+Checking kubelet and kubectl RPM ...
+Starting to initialize worker node ...
+Checking if env is ready ...
+Checking whether docker can pull busybox image ...
+Checking access to container-registry.oracle.com/kubernetes ...
+Trying to pull repository container-registry.oracle.com/kubernetes/kube-proxy ...
+v1.12.10: Pulling from container-registry.oracle.com/kubernetes/kube-proxy
+Digest: sha256:2340f6d185aaec709f46a878b2b0003615de95c87809fb224eb53818ad5ddda6
+Status: Image is up to date for container-registry.oracle.com/kubernetes/kube-proxy:v1.12.10
+container-registry.oracle.com/kubernetes/kube-proxy:v1.12.10
+Checking whether docker can run container ...
+Checking iptables default rule ...
+Checking br_netfilter module ...
+Checking sysctl variables ...
+Enabling kubelet ...
+Created symlink from /etc/systemd/system/multi-user.target.wants/kubelet.service to /etc/systemd/sys                                                                                                                                         tem/kubelet.service.
+Check successful, ready to run 'join' command ...
+[validation] WARNING: kubeadm doesn't fully support multiple API Servers yet
+[preflight] running pre-flight checks
+        [WARNING RequiredIPVSKernelModulesAvailable]: the IPVS proxier will not be used, because the                                                                                                                                          following required kernel modules are not loaded: [ip_vs ip_vs_rr ip_vs_wrr ip_vs_sh] or no builtin                                                                                                                                          kernel ipvs support: map[ip_vs:{} ip_vs_rr:{} ip_vs_sh:{} ip_vs_wrr:{} nf_conntrack_ipv4:{}]
+you can solve this problem with following methods:
+ 1. Run 'modprobe -- ' to load missing kernel modules;
+2. Provide the missing builtin kernel ipvs support
 
+        [WARNING Swap]: running with swap on is not supported. Please disable swap
+        [WARNING SystemVerification]: this Docker version is not on the list of validated versions:                                                                                                                                          19.03.1-ol. Latest validated version: 18.06
+[discovery] Trying to connect to API Server "192.168.1.116:6443"
+[discovery] Created cluster-info discovery client, requesting info from "https://192.168.1.116:6443"
+[discovery] Trying to connect to API Server "192.168.1.116:6443"
+[discovery] Created cluster-info discovery client, requesting info from "https://192.168.1.116:6443"
+[discovery] Requesting info from "https://192.168.1.116:6443" again to validate TLS against the pinn                                                                                                                                         ed public key
+[discovery] Requesting info from "https://192.168.1.116:6443" again to validate TLS against the pinn                                                                                                                                         ed public key
+[discovery] Cluster info signature and contents are valid and TLS certificate validates against pinn                                                                                                                                         ed roots, will use API Server "192.168.1.116:6443"
+[discovery] Successfully established connection with API Server "192.168.1.116:6443"
+[discovery] Cluster info signature and contents are valid and TLS certificate validates against pinn                                                                                                                                         ed roots, will use API Server "192.168.1.116:6443"
+[discovery] Successfully established connection with API Server "192.168.1.116:6443"
+[kubelet] Downloading configuration for the kubelet from the "kubelet-config-1.12" ConfigMap in the                                                                                                                                          kube-system namespace
+[kubelet] Writing kubelet configuration to file "/var/lib/kubelet/config.yaml"
+[kubelet] Writing kubelet environment file with flags to file "/var/lib/kubelet/kubeadm-flags.env"
+[preflight] Activating the kubelet service
+[tlsbootstrap] Waiting for the kubelet to perform the TLS Bootstrap...
+[patchnode] Uploading the CRI Socket information "/var/run/dockershim.sock" to the Node API object "                                                                                                                                         kuberworker" as an annotation
+
+This node has joined the cluster:
+* Certificate signing request was sent to apiserver and a response was received.
+* The Kubelet was informed of the new secure connection details.
+
+Run 'kubectl get nodes' on the master to see this node join the cluster.
+
+## KUBERNETES MASTER ##
 #VERIFY KUBERNETES NODES 
 kubectl get nodes
+NAME          STATUS   ROLES    AGE     VERSION
+kubermaster   Ready    master   48m     v1.12.10+1.0.10.el7
+kuberworker   Ready    <none>   3m57s   v1.12.10+1.0.10.el7
+
+
+kubectl get pods -n kube-system
+NAME                                   READY   STATUS    RESTARTS   AGE
+coredns-6d5cc884f4-xbqr8               1/1     Running   0          50m
+coredns-6d5cc884f4-z4kmq               1/1     Running   0          47m
+etcd-kubermaster                       1/1     Running   0          50m
+kube-apiserver-kubermaster             1/1     Running   1          46m
+kube-controller-manager-kubermaster    1/1     Running   1          47m
+kube-flannel-ds-8t6hj                  1/1     Running   2          50m
+kube-flannel-ds-lsjfn                  1/1     Running   0          6m19s
+kube-proxy-5djhr                       1/1     Running   0          6m19s
+kube-proxy-q2vjc                       1/1     Running   0          50m
+kube-scheduler-kubermaster             1/1     Running   1          47m
+kubernetes-dashboard-f6b58ff9c-r7vmz   1/1     Running   0          50m
+
+#YOUR CLUSTER IS UP AND RUNNING 
+#SEE THAT SOME CLOUD NATIVE SERVICE ARE ALREADY DELIVERED BY DEFAULT BY ORACLE (CoreDNS, Flannel)
+
 
 
 
