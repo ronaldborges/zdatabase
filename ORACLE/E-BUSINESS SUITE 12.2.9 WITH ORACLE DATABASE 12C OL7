@@ -67,7 +67,7 @@ hostnamectl --static
 
 #CREATE LVM
 
-pvcreate /dev/sdb /dev/sdc f/dev/sdd
+pvcreate /dev/sdb /dev/sdc /dev/sdd
   Physical volume "/dev/sdb1" successfully created.
   Physical volume "/dev/sdc1" successfully created.
 
