@@ -5,6 +5,32 @@
 #THIS SCRIPT GUARANTESS THE EXECUTION OF A SPECIFIC JOB BY REMOVING BLLOCKS ON THE OBJECTS USED BY IT.
 #BUILDED IN SHELL SCRIPT + PSQL
 #THIS SCRIPT WAS CREATED TO EXECUTE ANY COMMAND. THE CALL OF ANOTHER SHELL SCRIPT WAS USED IN THE EXAMPLE
+#IT IS POSSIBLE TO IDENTIFY THE BLOCKING CONSULTATIONS IN POSTGRES THROUGH THE FOLLOWING QUERY, FILTERING SESSIONS PERFORMING LOCK FOR MORE THAN ONE MINUTE
+select (now() - a.query_start) as tmp_exe, 
+	l.locktype, l.tuple, 
+	l.transactionid, 
+	l.objid, 
+	l.mode, 
+	a.datname, 
+	a.pid, 
+	a.usesysid, 
+	a.usename, 
+	a.application_name, 
+	a.client_addr, 
+	a.client_hostname, 
+	a.client_port, 
+	a.backend_start, 
+	a.xact_start, 
+	a.query_start, 
+	a.state_change, 
+	a.wait_event, 
+	a.state, 
+	a.query 
+from pg_locks l, pg_stat_activity a 
+  where a.pid=l.pid 
+	and l.mode like '%Exclusive%' 
+	and (now() - a.query_start) > interval '1 minutes';
+
 
 #HOW TO RUN
 ./run_job.sh /home/postgres/script/job_update_table.sh
@@ -26,7 +52,7 @@ export ISREADY2=`echo $ISREADY | awk -F '$PGHOST:$PGPORT - ' '{print $2}'`
 if [ "$ISREADY2" == "accepting connections" ]; then
 	echo nohup $JOB > output.log &      
 	sleep 10	
-	while [ $($PATH/psql -U $PGUSER -d $PGDATABASE -p $PGPORT -h $PGHOST -t -c "select count(1) from (select  (now() - a.query_start) as tmp_exe, l.locktype, l.tuple, l.transactionid, l.objid, l.mode, a.datname, a.pid, a.usesysid, a.usename, a.application_name, a.client_addr, a.client_hostname, a.client_port, a.backend_start, a.xact_start, a.query_start, a.state_change, a.wait_event, a.state, a.query from pg_locks l, pg_stat_activity a where a.pid=l.pid and l.mode like '%Exclusive%' and (now() - a.query_start) > interval '1 minutes') as c") != 0 ]
+	while [ $($PATH/psql -U $PGUSER -d $PGDATABASE -p $PGPORT -h $PGHOST -t -c "select count(1) from pg_locks l, pg_stat_activity a where a.pid=l.pid and l.mode like '%Exclusive%' and (now() - a.query_start) > interval '1 minutes'") != 0 ]
 	do
 	$PATH/psql -U $PGUSER -d $PGDATABASE -p $PGPORT -h $PGHOST -t -c "select pg_terminate_backend(a.pid) from pg_locks l, pg_stat_activity a where a.pid=l.pid and l.mode like '%Exclusive%' and (now() - a.query_start) > interval '1 minutes' order by (now() - a.query_start) desc limit 1"
 	echo "session killed"
@@ -35,4 +61,5 @@ if [ "$ISREADY2" == "accepting connections" ]; then
 else
         echo "database down"
 fi
+
 
