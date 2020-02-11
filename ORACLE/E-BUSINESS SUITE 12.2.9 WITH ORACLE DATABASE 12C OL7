@@ -655,6 +655,10 @@ FND_WEB_SEC.VALIDATE_LOGIN('SYSADMIN','SYSADMIN')
 --------------------------------------------------------------------------------
 Y
 
+#ACCESS ON BROWSER
+ol7apps1.localdomain:8000/OA_HTML/AppsLogin
+user = SYSADMIN \ password = sysadmin
+
 
 
 
