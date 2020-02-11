@@ -72,6 +72,12 @@ addn-hosts=/etc/appsdns
 vi /etc/resolv.conf
 nameserver 127.0.0.1
 search appsdba.info
+nameserver 10.5.150.1
+#oracle-ebs-server-R12-preinstall setting for attempts is 5
+options attempts:5
+#oracle-ebs-server-R12-preinstall setting for timeout is 15
+options timeout:15
+
 chattr +i /etc/resolv.conf
 
 systemctl start dnsmasq
