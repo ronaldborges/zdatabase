@@ -584,9 +584,57 @@ The Rapid install Wizard is ready to install Oracle E-Business Suite on this mac
 
 YES
 
+#POST INSTALL PROBLEMS 
+#ENVIRONMENT WITHOUT DEFINED DOMAIN
+
+Virtual Directory
+   checking URL = http://ol7apps1.localdomain:8000/OA_MEDIA/FNDLOGOL.gif
+   RW-50016: Error: - {0} was not created:
+      File = {1}   checking URL = http://ol7apps1.localdomain:8000/OA_JAVA/oracle/apps/fnd/admin/server/server.xml
+   RW-50016: Error: - {0} was not created:
+      File = {1}   checking URL = http://ol7apps1.localdomain:8000/OA_CGI/FNDWRR.exe
+   RW-50016: Error: - {0} was not created:
+      File = {1}
+
+JSP
+   checking URL = http://ol7apps1.localdomain:8000/OA_HTML/jtfTestCookie.jsp 
+   JSP is not responding, waiting 15 seconds and retesting.
+   JSP is not responding, waiting 15 seconds and retesting.
+
+#SOLUTION 1
+
+cd /u01/oracle/PROD/fs1/EBSapps/10.1.2/lib/stubs
+rm libgcc_s.so
+rm libgcc_s.so.1
+ln -s libgcc_s-2.3.2-stub.so libgcc_s.so.1
+ln -s libgcc_s.so.1 libgcc_s.so
+ls -lrt libgcc_s-2.3.2-stub.so
+
+RETRY POST INSTALL CHECKS
+
+#SOLUTION 2
+#BEFORE INSTALLING CREATE A LOCAL USE DOMAIN
+vi /etc/appsdns
+192.168.1.119   ol7apps1.localdomain    ol7apps1
+
+vi /etc/dnsmasq.conf
+addn-hosts=/etc/appsdns
+
+vi /etc/resolv.conf
+nameserver 127.0.0.1
+search appsdba.info
+chattr +i /etc/resolv.conf
+
+systemctl start dnsmasq
+systemctl enable dnsmasq
+
 #DATABASE ENVORIMENTS VARIABLES
 su - oracle
 /u01/oracle/PROD/12.1.0/PROD_ol7apps1.env
+
+
+
+
 
 
 
