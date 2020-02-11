@@ -62,8 +62,24 @@ hostnamectl
 hostnamectl set-hostname ol7apps1
 hostnamectl --static 
 
+#SOLUTION 2
+#BEFORE INSTALLING CREATE A LOCAL USE DOMAIN
+vi /etc/appsdns
+192.168.1.119   ol7apps1.appsdba.info    ol7apps1
+
+vi /etc/dnsmasq.conf
+addn-hosts=/etc/appsdns
+
+vi /etc/resolv.conf
+nameserver 127.0.0.1
+search appsdba.info
+chattr +i /etc/resolv.conf
+
+systemctl start dnsmasq
+systemctl enable dnsmasq
+
 #CONFIGURE /ETC/HOSTS
-192.168.1.119   ol7apps1.localdomain    ol7apps1
+192.168.1.119   ol7apps1.appsdba.info    ol7apps1
 
 #CREATE LVM
 
@@ -487,7 +503,7 @@ NEXT >
 Primary Applications Node Configuration
 
 Primary Host Name		ol7apps1
-DNS Domain Name			localdomain
+DNS Domain Name			appsdba.info
 Operating System		Linux x86-64(64-bit)
 Apps OS User	 		applmgr
 Apps OS Group			dba
@@ -588,20 +604,20 @@ YES
 #ENVIRONMENT WITHOUT DEFINED DOMAIN
 
 Virtual Directory
-   checking URL = http://ol7apps1.localdomain:8000/OA_MEDIA/FNDLOGOL.gif
+   checking URL = http://ol7apps1.appsdba.info:8000/OA_MEDIA/FNDLOGOL.gif
    RW-50016: Error: - {0} was not created:
-      File = {1}   checking URL = http://ol7apps1.localdomain:8000/OA_JAVA/oracle/apps/fnd/admin/server/server.xml
+      File = {1}   checking URL = http://ol7apps1.appsdba.info:8000/OA_JAVA/oracle/apps/fnd/admin/server/server.xml
    RW-50016: Error: - {0} was not created:
-      File = {1}   checking URL = http://ol7apps1.localdomain:8000/OA_CGI/FNDWRR.exe
+      File = {1}   checking URL = http://ol7apps1.appsdba.info:8000/OA_CGI/FNDWRR.exe
    RW-50016: Error: - {0} was not created:
       File = {1}
 
 JSP
-   checking URL = http://ol7apps1.localdomain:8000/OA_HTML/jtfTestCookie.jsp 
+   checking URL = http://ol7apps1.appsdba.info:8000/OA_HTML/jtfTestCookie.jsp 
    JSP is not responding, waiting 15 seconds and retesting.
    JSP is not responding, waiting 15 seconds and retesting.
 
-#SOLUTION 1
+#SOLUTION 
 
 cd /u01/oracle/PROD/fs1/EBSapps/10.1.2/lib/stubs
 rm libgcc_s.so
@@ -611,22 +627,6 @@ ln -s libgcc_s.so.1 libgcc_s.so
 ls -lrt libgcc_s-2.3.2-stub.so
 
 RETRY POST INSTALL CHECKS
-
-#SOLUTION 2
-#BEFORE INSTALLING CREATE A LOCAL USE DOMAIN
-vi /etc/appsdns
-192.168.1.119   ol7apps1.localdomain    ol7apps1
-
-vi /etc/dnsmasq.conf
-addn-hosts=/etc/appsdns
-
-vi /etc/resolv.conf
-nameserver 127.0.0.1
-search appsdba.info
-chattr +i /etc/resolv.conf
-
-systemctl start dnsmasq
-systemctl enable dnsmasq
 
 #DATABASE ENVORIMENTS VARIABLES
 su - oracle
