@@ -1,0 +1,77 @@
++++++++++++++++++++++++++++++++++++++++++++++++
++    E-BUSINESS SUITE 12.2.9 START && STOP    +
++++++++++++++++++++++++++++++++++++++++++++++++
+
+#DATABASE ENVIRONMENTS VARIABLES
+/u01/oracle/PROD/12.1.0/PROD_ol7apps1.env
+
+#APPLICATION ENVIRONMENTS VARIABLES
+/u01/oracle/PROD/fs1/EBSapps/appl/APPSPROD_ol7apps1.env
+
+## STARTUP PROCESS ##
+
+#START LISTENER 
+su - oracle
+/u01/oracle/PROD/12.1.0/appsutil/scripts/PROD_ol7apps1/addlnctl.sh start PROD
+Logfile: /u01/oracle/PROD/12.1.0/appsutil/log/PROD_ol7apps1/addlnctl.txt
+You are running addlnctl.sh version 120.4
+Starting listener process PROD ...
+LSNRCTL for Linux: Version 12.1.0.2.0 - Production on 11-FEB-2020 14:25:57
+Copyright (c) 1991, 2014, Oracle.  All rights reserved.
+Starting /u01/oracle/PROD/12.1.0/bin/tnslsnr: please wait...
+
+TNSLSNR for Linux: Version 12.1.0.2.0 - Production
+System parameter file is /u01/oracle/PROD/12.1.0/network/admin/PROD_ol7apps1/listener.ora
+Log messages written to /u01/oracle/PROD/12.1.0/admin/PROD_ol7apps1/diag/tnslsnr/ol7apps1/prod/alert/log.xml
+Listening on: (DESCRIPTION=(ADDRESS=(PROTOCOL=tcp)(HOST=ol7apps1.localdomain)(PORT=1521)))
+
+Connecting to (DESCRIPTION=(ADDRESS=(PROTOCOL=TCP)(HOST=ol7apps1.localdomain)(PORT=1521)))
+STATUS of the LISTENER
+------------------------
+Alias                     PROD
+Version                   TNSLSNR for Linux: Version 12.1.0.2.0 - Production
+Start Date                11-FEB-2020 14:25:57
+Uptime                    0 days 0 hr. 0 min. 3 sec
+Trace Level               off
+Security                  ON: Local OS Authentication
+SNMP                      OFF
+Listener Parameter File   /u01/oracle/PROD/12.1.0/network/admin/PROD_ol7apps1/listener.ora
+Listener Log File         /u01/oracle/PROD/12.1.0/admin/PROD_ol7apps1/diag/tnslsnr/ol7apps1/prod/alert/log.xml
+Listening Endpoints Summary...
+  (DESCRIPTION=(ADDRESS=(PROTOCOL=tcp)(HOST=ol7apps1.localdomain)(PORT=1521)))
+Services Summary...
+Service "PROD" has 1 instance(s).
+  Instance "PROD", status UNKNOWN, has 1 handler(s) for this service...
+The command completed successfully
+
+addlnctl.sh: exiting with status 0
+addlnctl.sh: check the logfile /u01/oracle/PROD/12.1.0/appsutil/log/PROD_ol7apps1/addlnctl.txt for more information ...  
+
+#START DATABASE
+su - oracle
+/u01/oracle/PROD/12.1.0/appsutil/scripts/PROD_ol7apps1/addbctl.sh start
+You are running addbctl.sh version 120.1
+Starting the database PROD ...
+SQL*Plus: Release 12.1.0.2.0 Production on Tue Feb 11 14:30:20 2020
+Copyright (c) 1982, 2014, Oracle.  All rights reserved.
+Connected to an idle instance.
+ORA-32004: obsolete or deprecated parameter(s) specified for RDBMS instance
+ORACLE instance started.
+
+Total System Global Area 2147483648 bytes
+Fixed Size		    2926472 bytes
+Variable Size		  452987000 bytes
+Database Buffers	 1677721600 bytes
+Redo Buffers		   13848576 bytes
+Database mounted.
+Database opened.
+Disconnected from Oracle Database 12c Enterprise Edition Release 12.1.0.2.0 - 64bit Production
+With the Partitioning, OLAP, Advanced Analytics and Real Application Testing options
+
+addbctl.sh: exiting with status 0
+
+#START APPLICATION/MIDDLE TIER SERVICES
+su - applmgr
+/u01/oracle/PROD/fs1/inst/apps/PROD_ol7apps1/admin/scripts/adstrtal.sh apps/apps Or@8642mar
+
+
