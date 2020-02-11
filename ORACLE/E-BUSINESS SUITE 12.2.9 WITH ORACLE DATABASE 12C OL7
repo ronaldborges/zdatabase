@@ -627,19 +627,3 @@ ln -s libgcc_s.so.1 libgcc_s.so
 ls -lrt libgcc_s-2.3.2-stub.so
 
 RETRY POST INSTALL CHECKS
-
-#DATABASE ENVORIMENTS VARIABLES
-su - oracle
-/u01/oracle/PROD/12.1.0/PROD_ol7apps1.env
-
-
-
-
-
-
-
-
-
-
-
-
