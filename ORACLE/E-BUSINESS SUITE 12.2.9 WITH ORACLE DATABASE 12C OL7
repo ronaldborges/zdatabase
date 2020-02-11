@@ -62,8 +62,7 @@ hostnamectl
 hostnamectl set-hostname ol7apps1
 hostnamectl --static 
 
-#SOLUTION 2
-#BEFORE INSTALLING CREATE A LOCAL USE DOMAIN
+#CREATE A LOCAL USE DOMAIN
 vi /etc/appsdns
 192.168.1.119   ol7apps1.appsdba.info    ol7apps1
 
