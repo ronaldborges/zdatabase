@@ -10,7 +10,7 @@ usermod -a -G dba applmgr
 passwd applmgr
 
 #ORACLE APPSR12 MACHINE 
-IP 192.168.1.131
+IP 192.168.1.119
 Disk /dev/sda: 37.6 GB
 /dev/sda1 /boot 350 MB
 /dev/sda2 /	31  GB
