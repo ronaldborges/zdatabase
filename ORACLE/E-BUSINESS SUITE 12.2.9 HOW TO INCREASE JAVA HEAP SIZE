@@ -1,0 +1,77 @@
++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
++  E-BUSINESS SUITE 12.2.9 HOW TO INCREASE JAVA HEAP SIZE +
++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+
+THE DEFAULT SIZE OF THE OACORE JVM HEAP IS 512 MB, SUPPORTS 50 TO 100 USERS. 
+WHEN AN INSTANCE IS REACHING MORE THAN 200 USERS, IT IS NECESSARY TO INCREASE THE SIZE OF JAVA HEAP AT OACORE.
+ORACLE RECOMMENDS A 2GB JAVA HEAP, THIS CAN SUPPORT 150 TO 200 USERS. 
+FOR GREATER WORK LOAD AND NUMBER OF USERS IT IS POSSIBLE TO ADD MORE OACORES MANAGED SERVERS. ORACLE RECOMMENDS TO HAVE A SERVER FOR TWO CPU´s
+THERE ARE TWO WAYS TO MODIFY THE SIZE OF JAVA HEAP. 
+WITH THE ENVIRONMENT IN OPERATION OR WAITING FOR A WINDOW TO PERFORM THE MODIFICATION OF A FILE AND APPLICATION BOUNCE.
+
+#LOGIN TO THE WEBLOGIC ADMINISTRATION CONSOLE
+http://hostname:port/console
+Enter Username and Password
+
+#GO TO THE BELOW SECTION.
+Home Page
+ -- Information and Resources -------------------------------------------------------------------------------------------------
+HELPFULL TOOLS                              GENERAL INFORMATION
+ 
+ -- Domain Configuration ------------------------------------------------------------------------------------------------------
+DOMAIN                                   SERVICES                                   INTEROPERABILITY
+   * Domain                                 * Messaging                                * WTC Servers
+ENVIRONMENT                                      * JMS Servers                         * Jolt Connection Pools
+>> * Servers                                     * Store and Forwad                 DIAGNOSTICS
+   * Clusters                                    * JMS Modules                         * Log Files
+   * Virtual Hosts                               * Path Services                       * Diagnostic Modules
+   * Migratable targets                          * Bridges                             * Diagnostic Images
+   * Coherence Servers                      * Data Sources                             * Request Performance
+   * Machines                               * Persistent Stores                        * Archives
+   * Work Managers                          * XML Registries                           * Context 
+   * Startup And Shutdown Classes           * XML Entity Caches                        * SNMP
+YOUR DEPLOYED RESOURCES                     * Foreing JNDI Providers                CHART AND GRAPHS
+   * Deployments                            * Work Contexts                            * Monitoring Dashboard
+YOUR APPLICATION´S SECURITY SETTINGS        * jCOM
+   * Security Realms                        * Mail Sessions
+                                            * FileT3
+                                            * JTA
+
+# SELECT OACORE_SERVER1
+SUMMARY OF SERVERS
+CONFIGURATION \ CONTROL
+  A server is an instance of Weblogic Server that runs in its own Java Virtual Machine (JVM) and has its own configuration.
+  This page summarizes each server that has been configured in the current WebLogic Server Domain.
+  
+  |> Customize this table
+     Servers(Filtered - More Columns Exist)
+     Click the Lock & Edit button in the Change Center to activate all the button on this page.
+  [NEW] [CLONE] [DELETE]
+  +----------------------------------------------------------------------------------------------------------------------+
+  | [] | Name                     | Cluster            | Machine        | State         | Health       | Listen Port     |
+  +----------------------------------------------------------------------------------------------------------------------+
+  | [] |  AdminServer(admin)      |                    | ol7apps1       | RUNNING       | OK           | 7002            |
+  +----------------------------------------------------------------------------------------------------------------------+
+  | [] |  forms-c4ws_server1      | forms-c4ws_server1 | ol7apps1       | RUNNING       | OK           | 7002            |
+  +----------------------------------------------------------------------------------------------------------------------+
+  | [] |  forms-server1           | forms-server1      | ol7apps1       | RUNNING       | OK           | 7002            |
+  +----------------------------------------------------------------------------------------------------------------------+
+  | [] |>> oacore_server1         | oacore_cluster1    | ol7apps1       | RUNNING       | OK           | 7002            |
+  +----------------------------------------------------------------------------------------------------------------------+
+  | [] |  oafm_server1            | oafm_cluster1      | ol7apps1       | RUNNING       | OK           | 7002            |
+  +----------------------------------------------------------------------------------------------------------------------+
+  [NEW] [CLONE] [DELETE]
+  
+# CLICK SERVER START ("Sub Tab")
+SETTINGS FOR AOACORE_SERVER1
+ CONFIGURATION \ PROTOCOLS\ LOGGING \ DEBUG \ MONITORING \ CONTROL \ DEPLOYMENT \ SERVICES \ SECURITY \ NOTES
+ GENERAL \ CLUSTER \ SERVICES \ KEYSTORES \ SSL \ FEDERATION SERVICES \ DEPLOYMENT \ MIGRATION \ TUNING \ OVERLOAD \ HEALTH MONITORING \ SERVER START \ WEB SERVICES 
+Click the Lock & Edit button in the Change Center to modify the settings on the page.
+[save]
+ Use this page to configure general features of the server such as default network communications.
+VIEW JNDI Tree
+
+Name:               oacore_server1            An alphanumeric name for this server instance.
+Machine:            ol7apps1                  The Weblogic Server host name 
+
+
