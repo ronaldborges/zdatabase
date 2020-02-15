@@ -605,7 +605,7 @@ The Rapid install Wizard is ready to install Oracle E-Business Suite on this mac
 
 YES
 
-#POST INSTALL PROBLEMS 
+#POST INSTALL PROBLEMS ON ORACLE LINUX 7
 #ENVIRONMENT WITHOUT DEFINED DOMAIN
 
 Virtual Directory
@@ -624,12 +624,30 @@ JSP
 
 #SOLUTION 
 
-cd /u01/oracle/PROD/fs1/EBSapps/10.1.2/lib/stubs
+Then follow below steps to resolve this problem. Don't click on cancel button, 
+
+Step 1:
+Modify Below file:
+su - applmgr
+cd /u01/oracle/PROD/fs1/FMW_Home/webtier/ohs/bin
+ls -lrt apachectl*
+-rwxr-x---. 1 applmgr dba 12105 Oct 19 23:42 apachectl.orig
+-rwxrwxrwx. 1 applmgr dba 12190 Oct 20 11:14 apachectl
+diff apachectl apachectl.orig
+
+Step 2: Apply patch  12415211
+su - applmgr
+cd /u01/oracle/PROD/fs1/EBSapps/10.1.2/lib
+cp -p -R stubs stubs_ORIG
+cd stubs
+cp /tmp/12415211/files/lib/stubs .
+cd stubs
 rm libgcc_s.so
 rm libgcc_s.so.1
 ln -s libgcc_s-2.3.2-stub.so libgcc_s.so.1
 ln -s libgcc_s.so.1 libgcc_s.so
 ls -lrt libgcc_s-2.3.2-stub.so
+-rwxr-xr-x. 1 applmgr dba 12246 Oct 19 23:48 libgcc_s-2.3.2-stub.so
 
 RETRY POST INSTALL CHECKS
 
