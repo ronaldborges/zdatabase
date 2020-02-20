@@ -1,6 +1,6 @@
-++++++++++++++++++++++++++++++++++++++++++++++++++
-+     TKE - Tencent Kubernetes Engine OL 7.7     +
-++++++++++++++++++++++++++++++++++++++++++++++++++
+++++++++++++++++++++++++++++++++++++++++++++++++++++
++     TKE - Tencent Kubernetes Engine RHEL 7.5     +
+++++++++++++++++++++++++++++++++++++++++++++++++++++
 
 TKE is an open source project that provides a container management platform built for organizations that deploy containers in production. 
 TKE makes it easy to run Kubernetes everywhere, meet IT requirements, and empower DevOps teams.
@@ -14,22 +14,9 @@ FEATURES
 sed -i 's/SELINUX=.*/SELINUX=disabled/' /etc/sysconfig/selinux && setenforce 0
 systemctl stop firewalld && systemctl disable firewalld
 
-#ADD REPOSITORIES TO YUM 
-vi /etc/yum.repos.d/oracle-linux-ol7.repo
-
-[ol7_optional_developer]
-name=Developer Preview of Oracle Linux $releasever Optional ($basearch)
-baseurl=https://yum.oracle.com/repo/OracleLinux/OL7/optional/developer/$basearch/
-gpgkey=file:///etc/pki/rpm-gpg/RPM-GPG-KEY-oracle
-gpgcheck=1
-enabled=1
-
-[ol7_developer_EPEL]
-name=Oracle Linux $releasever Development Packages ($basearch)
-baseurl=https://yum.oracle.com/repo/OracleLinux/OL7/developer_EPEL/$basearch/
-gpgkey=file:///etc/pki/rpm-gpg/RPM-GPG-KEY-oracle
-gpgcheck=1
-enabled=1
+#SUBSCRIPTION
+subscription-manager register --username () --password () --auto-attach
+subscription-manager repos --enable codeready-builder-for-rhel-7-x86_64-rpms
 
 #CHANGE HOSTNAME
 #FOR SLAVE MACHINES, SET THE HOSTNAME
