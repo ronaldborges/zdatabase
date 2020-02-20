@@ -1,0 +1,42 @@
+++++++++++++++++++++++++++++++++++++++++++++++++++
++     TKE - Tencent Kubernetes Engine OL 7.7     +
+++++++++++++++++++++++++++++++++++++++++++++++++++
+
+TKE is an open source project that provides a container management platform built for organizations that deploy containers in production. 
+TKE makes it easy to run Kubernetes everywhere, meet IT requirements, and empower DevOps teams.
+FEATURES
+   º Unified Cluster Management 
+   º Application Workload Management 
+   º Operation And Maintenance Management
+   º Plugin Support And Management  
+
+#DISABLE SELINUX AND STOP FIREWALL IN ALL NODES 
+sed -i 's/SELINUX=.*/SELINUX=disabled/' /etc/sysconfig/selinux && setenforce 0
+systemctl stop firewalld && systemctl disable firewalld
+
+#ADD REPOSITORIES TO YUM 
+vi /etc/yum.repos.d/oracle-linux-ol7.repo
+
+[ol7_optional_developer]
+name=Developer Preview of Oracle Linux $releasever Optional ($basearch)
+baseurl=https://yum.oracle.com/repo/OracleLinux/OL7/optional/developer/$basearch/
+gpgkey=file:///etc/pki/rpm-gpg/RPM-GPG-KEY-oracle
+gpgcheck=1
+enabled=1
+
+[ol7_developer_EPEL]
+name=Oracle Linux $releasever Development Packages ($basearch)
+baseurl=https://yum.oracle.com/repo/OracleLinux/OL7/developer_EPEL/$basearch/
+gpgkey=file:///etc/pki/rpm-gpg/RPM-GPG-KEY-oracle
+gpgcheck=1
+enabled=1
+
+#CHANGE HOSTNAME
+#FOR SLAVE MACHINES, SET THE HOSTNAME
+hostnamectl 
+hostnamectl set-hostname TKE1
+hostnamectl --static 
+
+#TKES-INSTALLER TOOL TO DEPLOY
+version=v1.1.0 && wget https://tke-release-1251707795.cos.ap-guangzhou.myqcloud.com/tke-installer-x86_64-$version.run{,.sha256} && sha256sum --check --status tke-installer-x86_64-$version.run.sha256 && chmod +x tke-installer-x86_64-$version.run && ./tke-installer-x86_64-$version.run
+
