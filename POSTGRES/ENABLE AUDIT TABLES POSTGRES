@@ -1,0 +1,96 @@
++++++++++++++++++++++++++++++++++++++++++
++    ENABLE AUDIT TABLES POSTGRES   +
++++++++++++++++++++++++++++++++++++++++++
+
+drop table audit.logged_actions;
+CREATE schema audit;
+REVOKE CREATE ON schema audit FROM public;
+CREATE TABLE audit.logged_actions (
+    schema_name text NOT NULL,
+    TABLE_NAME text NOT NULL,
+    user_name text,
+    action_tstamp TIMESTAMP WITH TIME zone NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    action TEXT NOT NULL CHECK (action IN ('I','D','U')),
+    original_data text,
+    new_data text,
+    query text,
+    datname text,
+    pid text,
+    usesysid text,
+    application_name text, 
+    client_addr text,
+    client_hostname text
+) WITH (fillfactor=100);
+REVOKE ALL ON audit.logged_actions FROM public;
+GRANT SELECT ON audit.logged_actions TO public;
+CREATE INDEX logged_actions_schema_table_idx ON audit.logged_actions(((schema_name||'.'||TABLE_NAME)::TEXT));
+CREATE INDEX logged_actions_action_tstamp_idx ON audit.logged_actions(action_tstamp);
+CREATE INDEX logged_actions_action_idx ON audit.logged_actions(action);
+
+#CREATE FUNCTION FOR AUDIT ROWS AND SESSION INFORMATION
+DROP FUNCTION audit.if_modified_func();
+CREATE OR REPLACE FUNCTION audit.if_modified_func() RETURNS TRIGGER AS $body$
+DECLARE
+    v_old_data TEXT;
+    v_new_data TEXT;
+    v_datname TEXT;
+    v_pid TEXT;
+    v_usesysid TEXT;
+    v_application_name TEXT;
+    v_client_addr TEXT;
+    v_client_hostname TEXT;
+BEGIN
+select a.datname::TEXT, a.pid::TEXT, a.usesysid::TEXT, a.application_name::TEXT, a.application_name::TEXT, a.client_addr::TEXT, a.client_hostname::TEXT INTO v_datname, v_pid, v_usesysid, v_application_name, v_client_addr, v_client_hostname from pg_stat_activity a where a.pid=(SELECT pg_backend_pid());
+    IF (TG_OP = 'UPDATE') THEN
+        v_old_data := ROW(OLD.*);
+        v_new_data := ROW(NEW.*);
+        INSERT INTO audit.logged_actions (schema_name,table_name,user_name,action,original_data,new_data,query,datname,pid,usesysid,application_name,client_addr,client_hostname)
+        VALUES (TG_TABLE_SCHEMA::TEXT,TG_TABLE_NAME::TEXT,session_user::TEXT,substring(TG_OP,1,1),v_old_data,v_new_data,current_query(),v_datname,v_pid,v_usesysid,v_application_name,v_client_addr,v_client_hostname);
+        RETURN NEW;
+    ELSIF (TG_OP = 'DELETE') THEN
+        v_old_data := ROW(OLD.*);
+        INSERT INTO audit.logged_actions (schema_name,table_name,user_name,action,original_data,query,datname,pid,usesysid,application_name,client_addr,client_hostname)
+        VALUES (TG_TABLE_SCHEMA::TEXT,TG_TABLE_NAME::TEXT,session_user::TEXT,substring(TG_OP,1,1),v_old_data,current_query(),v_datname,v_pid,v_usesysid,v_application_name,v_client_addr,v_client_hostname);
+        RETURN OLD;
+    ELSIF (TG_OP = 'INSERT') THEN
+        v_new_data := ROW(NEW.*);
+        INSERT INTO audit.logged_actions (schema_name,table_name,user_name,action,new_data,query,datname,pid,usesysid,application_name,client_addr,client_hostname)
+        VALUES (TG_TABLE_SCHEMA::TEXT,TG_TABLE_NAME::TEXT,session_user::TEXT,substring(TG_OP,1,1),v_new_data,current_query(),v_datname,v_pid,v_usesysid,v_application_name,v_client_addr,v_client_hostname);
+        RETURN NEW;
+    ELSE
+        RAISE WARNING '[AUDIT.IF_MODIFIED_FUNC] - Other action occurred: %, at %',TG_OP,now();
+        RETURN NULL;
+    END IF;
+ 
+EXCEPTION
+    WHEN data_exception THEN
+        RAISE WARNING '[AUDIT.IF_MODIFIED_FUNC] - UDF ERROR [DATA EXCEPTION] - SQLSTATE: %, SQLERRM: %',SQLSTATE,SQLERRM;
+        RETURN NULL;
+    WHEN unique_violation THEN
+        RAISE WARNING '[AUDIT.IF_MODIFIED_FUNC] - UDF ERROR [UNIQUE] - SQLSTATE: %, SQLERRM: %',SQLSTATE,SQLERRM;
+        RETURN NULL;
+    WHEN OTHERS THEN
+        RAISE WARNING '[AUDIT.IF_MODIFIED_FUNC] - UDF ERROR [OTHER] - SQLSTATE: %, SQLERRM: %',SQLSTATE,SQLERRM;
+        RETURN NULL;
+END;
+$body$
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = pg_catalog, audit;
+
+#CREATE TABLE TESTE AUDIT
+DROP TABLE public.testaud;
+CREATE TABLE public.testaud (x INT NOT NULL PRIMARY KEY, y text);
+
+#CREATE TRIGGER AUDIT
+DROP TRIGGER t_if_modified_trg ON medpoint.testaud;
+CREATE TRIGGER t_if_modified_trg AFTER INSERT OR UPDATE OR DELETE ON medpoint.testaud FOR EACH ROW EXECUTE PROCEDURE audit.if_modified_func();
+
+#EXAMPLE USE TRIGGER 
+INSERT INTO public.testaud (x,y) VALUES (1,'asdf'),(2,'werwer'),(3,NULL);
+UPDATE public.testaud SET y='GGGGG' WHERE x=2;
+
+#CHECK TABLE AUDIT ACTIONS LOG
+select * from audit.logged_actions;
+
+
