@@ -1425,3 +1425,29 @@ post install
 2020/03/02 19:34:53 31.Execute post deploy hook [Success] [0.011986s]
 2020/03/02 19:34:53 ===>install task [Sucesss] [1761.227638s]
 
+Click on >> View guidelines
+
+Operation guidelines
+
+Please follow the instructions below:
+º Configure domain name resolution
+     Please configure the DNS resolution as follows, 
+     you can also configure local resolution for temporary access (Linux:/etc/hosts,
+     Windows: c:\windows\system32\drivers\etc\hosts)
+   $IP_SERVER console.tke.com
+   $IP_SERVER registry.tke.com
+
+º Cluster access
+1 - Access TKE Stack console：http://console.tke.com
+    User name: admin
+    Password: admin123
+2 - Access global cluster via kubeconfig:
+   Download kubeconfig
+
+   The access credentials of the TKE global cluster are stored in the deployment node /opt/tke-installer/data/directory.
+   You can view the above information again in this directory. 
+   For the configuration of kubeclt, please refer to the help document
+
+   https://kubernetes.io/docs/tasks/access-application-cluster/configure-access-multiple-clusters/
+
+
