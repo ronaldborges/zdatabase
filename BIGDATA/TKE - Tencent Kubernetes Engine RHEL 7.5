@@ -1,6 +1,13 @@
 ++++++++++++++++++++++++++++++++++++++++++++++++++++
-+     TKE - Tencent Kubernetes Engine RHEL 7.5     +
++     TKE - Tencent Kubernetes Engine CENTOS 7.6   +
 ++++++++++++++++++++++++++++++++++++++++++++++++++++
+
+To perform the installation of the environment it is necessary a client machine and the destination server where the tke cluster will be created
+Envoriment client 
+Red Hat Enterprise Linux 8.0
+
+Envoriment server
+Centos 7.6 
 
 TKE is an open source project that provides a container management platform built for organizations that deploy containers in production. 
 TKE makes it easy to run Kubernetes everywhere, meet IT requirements, and empower DevOps teams.
@@ -10,13 +17,10 @@ FEATURES
    º Operation And Maintenance Management
    º Plugin Support And Management  
 
+#STEPS ON SERVER BEFORE INSTALL TKE
 #DISABLE SELINUX AND STOP FIREWALL IN ALL NODES 
 sed -i 's/SELINUX=.*/SELINUX=disabled/' /etc/sysconfig/selinux && setenforce 0
 systemctl stop firewalld && systemctl disable firewalld
-
-#SUBSCRIPTION
-subscription-manager register --username () --password () --auto-attach
-subscription-manager repos --enable codeready-builder-for-rhel-7-x86_64-rpms
 
 #CHANGE HOSTNAME
 #FOR SLAVE MACHINES, SET THE HOSTNAME
@@ -24,6 +28,30 @@ hostnamectl
 hostnamectl set-hostname TKE1
 hostnamectl --static 
 
+#STEPS ON CLIENT
+#DISABLE SELINUX AND STOP FIREWALL IN ALL NODES 
+sed -i 's/SELINUX=.*/SELINUX=disabled/' /etc/sysconfig/selinux && setenforce 0
+systemctl stop firewalld && systemctl disable firewalld
+
 #TKES-INSTALLER TOOL TO DEPLOY
 version=v1.1.0 && wget https://tke-release-1251707795.cos.ap-guangzhou.myqcloud.com/tke-installer-x86_64-$version.run{,.sha256} && sha256sum --check --status tke-installer-x86_64-$version.run.sha256 && chmod +x tke-installer-x86_64-$version.run && ./tke-installer-x86_64-$version.run
+Step.1 prefight
+Step.2 ensure docker is ok
+Step.3 load tke-installer image [doing]
+Loaded image: tkestack/tke-installer:v1.1.0
+Step.3 load tke-installer image [ok]
+Step.4 clean old data [doing]
+tke-installer
+Step.4 clean old data [ok]
+Step.5 start tke-installer [doing]
+036c0baae43ed7096defb17b449d6d6ae9f37b9d8247ec4883e2b214d9aa8afc
+Step.5 start tke-installer [ok]
+Step.6 check tke-installer status [doing]
+Step.6 check tke-installer status [ok]
+Please use your browser which can connect this machine to open http://0:8080/index.html for install TKE!
+
+#OPEN YOUR BROWSER http://localhost:8080/index.html
+Follow the steps for installation on the local infrastructure
+https://github.com/tkestack/tke/tree/master/docs/images
+
 
