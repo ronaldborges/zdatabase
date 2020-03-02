@@ -56,4 +56,1372 @@ Please use your browser which can connect this machine to open http://0:8080/ind
 Follow the steps for installation on the local infrastructure
 https://github.com/tkestack/tke/tree/master/docs/images
 
+#LOG INSTALL TKE SERVER
+2020/03/02 19:05:32 ===>starting install task
+2020/03/02 19:05:32 0.Execute pre install hook doing
+2020/03/02 19:05:32 Execute hook script hooks/pre-install
+pre install
+2020/03/02 19:05:32 0.Execute pre install hook [Success] [0.122616s]
+2020/03/02 19:05:32 1.Load images doing
+Loaded image: tkestack/kube-proxy:v1.16.6
+Loaded image: tkestack/prometheus-config-reloader:v0.31.1
+Loaded image: tkestack/tke-auth-api:v1.1.0
+Loaded image: tkestack/configmap-reload:v0.1
+Loaded image: tkestack/kube-scheduler:v1.16.6
+Loaded image: tkestack/cron-hpa-controller:v1.0.0
+Loaded image: tkestack/tke-business-controller:v1.1.0
+Loaded image: tkestack/galaxy-ipam:v1.0.0
+Loaded image: tkestack/keepalived:2.0.16-r0
+Loaded image: tkestack/kube-state-metrics:v1.6.0
+Loaded image: tkestack/prometheus-operator:v0.31.1
+Loaded image: tkestack/tke-auth-controller:v1.1.0
+Loaded image: tkestack/nvidia-device-plugin:1.0.0-beta4
+Loaded image: tkestack/tapp-controller:v1.0.0
+Loaded image: tkestack/tke-business-api:v1.1.0
+Loaded image: tkestack/tke-notify-api:v1.1.0
+Loaded image: tkestack/alertmanager:v0.18.0
+Loaded image: tkestack/tke-audit-collector:v0.3
+Loaded image: tkestack/tke-notify-controller:v1.1.0
+Loaded image: tkestack/tke-gateway:v1.1.0
+Loaded image: tkestack/gpu-quota-admission:v1.0.0
+Loaded image: tkestack/kube-apiserver:v1.14.10
+Loaded image: tkestack/swift:0.9.0
+Loaded image: tkestack/tke-event-watcher:v0.1
+Loaded image: tkestack/tke-monitor-api:v1.1.0
+Loaded image: tkestack/helm-api:v1.3
+Loaded image: tkestack/kube-controller-manager:v1.14.10
+Loaded image: tkestack/lbcf-controller:v1.0.0.rc.2
+Loaded image: tkestack/prometheus:v2.11.0
+Loaded image: tkestack/volume-decorator:v1.0.0
+Loaded image: tkestack/kube-scheduler:v1.14.10
+Loaded image: tkestack/pause:3.1
+Loaded image: tkestack/kube-apiserver:v1.16.6
+Loaded image: tkestack/node-exporter:v0.15.2
+Loaded image: tkestack/provider-res:v1.16.6-1
+Loaded image: tkestack/tke-registry-api:v1.1.0
+Loaded image: tkestack/busybox:1.31.0
+Loaded image: tkestack/flannel:v0.10.0-amd64
+Loaded image: tkestack/kube-proxy:v1.14.10
+Loaded image: tkestack/local-tcr:v1.0.0
+Loaded image: tkestack/log-collector:v1.1.0
+Loaded image: tkestack/tiller:v2.10.0
+Loaded image: tkestack/etcd:v3.3.12
+Loaded image: tkestack/gpu-manager:v1.0.0
+Loaded image: tkestack/tke-platform-controller:v1.1.0
+Loaded image: tkestack/coredns:1.2.6
+Loaded image: tkestack/kube-controller-manager:v1.16.6
+Loaded image: tkestack/prometheusbeat:6.4.1
+Loaded image: tkestack/tke-monitor-controller:v1.1.0
+Loaded image: tkestack/csi-operator:v1.0.1
+Loaded image: tkestack/galaxy:v1.0.0
+Loaded image: tkestack/influxdb:1.7.6-alpine
+Loaded image: tkestack/tke-platform-api:v1.1.0
+2020/03/02 19:10:17 1.Load images [Success] [284.880709s]
+2020/03/02 19:10:17 2.Setup local registry doing
+987efc6ebce7efb5ad9478dab83c38f1c08ddf3dd8ddbbed160c5df12399c373
+2020/03/02 19:10:27 127.0.0.1   localhost localhost.localdomain localhost4 localhost4.localdomain4
+::1         localhost localhost.localdomain localhost6 localhost6.localdomain6
+192.168.56.130  rhev-hypervisor
+10.5.150.74     NUINFRA-271320
+192.168.56.130  rhev-s1
+192.168.56.118	ol7apps1.localdomain
+
+
+127.0.0.1 registry.tke.com
+2020/03/02 19:10:27 2.Setup local registry [Success] [9.966659s]
+2020/03/02 19:10:27 3.Push images to registry.tke.com/library doing
+2020/03/02 19:10:27 /bin/sh -c docker images --format='{{.Repository}}:{{.Tag}}' --filter='reference=registry.tke.com/library/*'
+The push refers to repository [registry.tke.com/library/tke-business-controller]
+0f0c5eafa4bb: Preparing
+85c775531473: Preparing
+523d39c9810b: Preparing
+531743b7098c: Preparing
+523d39c9810b: Pushed
+85c775531473: Pushed
+0f0c5eafa4bb: Pushed
+531743b7098c: Pushed
+v1.1.0: digest: sha256:d4ff615197a90ee85503965df6cda8e53429cd771bda4fcd5f30191738e37749 size: 1154
+2020/03/02 19:10:34 upload registry.tke.com/library/tke-business-controller:v1.1.0 to registry success[1/53]
+The push refers to repository [registry.tke.com/library/tke-business-api]
+c086f8f69a93: Preparing
+85c775531473: Preparing
+523d39c9810b: Preparing
+531743b7098c: Preparing
+531743b7098c: Mounted from library/tke-business-controller
+523d39c9810b: Mounted from library/tke-business-controller
+85c775531473: Mounted from library/tke-business-controller
+c086f8f69a93: Pushed
+v1.1.0: digest: sha256:e1c727809bbd5156127c8c5e859f8aaeeb4afa40d9cbf05d0f47b3b50300a5fd size: 1154
+2020/03/02 19:10:39 upload registry.tke.com/library/tke-business-api:v1.1.0 to registry success[2/53]
+The push refers to repository [registry.tke.com/library/tke-notify-controller]
+84538c79f9ef: Preparing
+85c775531473: Preparing
+523d39c9810b: Preparing
+531743b7098c: Preparing
+531743b7098c: Mounted from library/tke-business-api
+523d39c9810b: Mounted from library/tke-business-api
+85c775531473: Mounted from library/tke-business-api
+84538c79f9ef: Pushed
+v1.1.0: digest: sha256:de7748e76b8ffa5a02ac83324a73ef08c59330cd45718e2f6126579e32ebf169 size: 1154
+2020/03/02 19:10:42 upload registry.tke.com/library/tke-notify-controller:v1.1.0 to registry success[3/53]
+The push refers to repository [registry.tke.com/library/tke-gateway]
+c289302e1654: Preparing
+85c775531473: Preparing
+523d39c9810b: Preparing
+531743b7098c: Preparing
+523d39c9810b: Mounted from library/tke-notify-controller
+85c775531473: Mounted from library/tke-notify-controller
+531743b7098c: Mounted from library/tke-notify-controller
+c289302e1654: Pushed
+v1.1.0: digest: sha256:578d1b512803d6498cb169b55eb5572b27ccf1df24cd08a8fb1b1639e660c017 size: 1154
+2020/03/02 19:10:47 upload registry.tke.com/library/tke-gateway:v1.1.0 to registry success[4/53]
+The push refers to repository [registry.tke.com/library/tke-notify-api]
+f0f5ae73ddaa: Preparing
+85c775531473: Preparing
+523d39c9810b: Preparing
+531743b7098c: Preparing
+531743b7098c: Mounted from library/tke-gateway
+85c775531473: Mounted from library/tke-gateway
+523d39c9810b: Mounted from library/tke-gateway
+f0f5ae73ddaa: Pushed
+v1.1.0: digest: sha256:00ac19ac62f974413a3a205328e0aafc7741b72d00a6c9b22e4851fb851ac792 size: 1154
+2020/03/02 19:10:51 upload registry.tke.com/library/tke-notify-api:v1.1.0 to registry success[5/53]
+The push refers to repository [registry.tke.com/library/tke-registry-api]
+784ad33bb1d4: Preparing
+85c775531473: Preparing
+523d39c9810b: Preparing
+531743b7098c: Preparing
+531743b7098c: Mounted from library/tke-notify-api
+523d39c9810b: Mounted from library/tke-notify-api
+85c775531473: Mounted from library/tke-notify-api
+784ad33bb1d4: Pushed
+v1.1.0: digest: sha256:06f1cefcd417dd8025c1835629a6d9e4609ae4f53aff3555d2fd2d9aa431b399 size: 1154
+2020/03/02 19:10:55 upload registry.tke.com/library/tke-registry-api:v1.1.0 to registry success[6/53]
+The push refers to repository [registry.tke.com/library/tke-auth-controller]
+fcb2a39b35a8: Preparing
+30f3f2ab4697: Preparing
+85c775531473: Preparing
+523d39c9810b: Preparing
+531743b7098c: Preparing
+85c775531473: Mounted from library/tke-registry-api
+531743b7098c: Mounted from library/tke-registry-api
+523d39c9810b: Mounted from library/tke-registry-api
+fcb2a39b35a8: Pushed
+30f3f2ab4697: Pushed
+v1.1.0: digest: sha256:7cd3234b4eadc8c39ecf088a576973e528447f402482742a9b0c9eed509ddf33 size: 1362
+2020/03/02 19:10:59 upload registry.tke.com/library/tke-auth-controller:v1.1.0 to registry success[7/53]
+The push refers to repository [registry.tke.com/library/tke-monitor-controller]
+ba7274b6bdfc: Preparing
+85c775531473: Preparing
+523d39c9810b: Preparing
+531743b7098c: Preparing
+85c775531473: Mounted from library/tke-auth-controller
+523d39c9810b: Mounted from library/tke-auth-controller
+531743b7098c: Mounted from library/tke-auth-controller
+ba7274b6bdfc: Pushed
+v1.1.0: digest: sha256:26539e84ee66dd013e132b8b6229580d0262f005dd40f8f7bb48d5dfe3aa1479 size: 1154
+2020/03/02 19:11:03 upload registry.tke.com/library/tke-monitor-controller:v1.1.0 to registry success[8/53]
+The push refers to repository [registry.tke.com/library/tke-auth-api]
+43515f57d7b6: Preparing
+8a1c2f27b67f: Preparing
+85c775531473: Preparing
+523d39c9810b: Preparing
+531743b7098c: Preparing
+531743b7098c: Mounted from library/tke-monitor-controller
+85c775531473: Mounted from library/tke-monitor-controller
+523d39c9810b: Mounted from library/tke-monitor-controller
+43515f57d7b6: Pushed
+8a1c2f27b67f: Pushed
+v1.1.0: digest: sha256:46a9b4a7d1e5cf80d01bfe7151d032ace16e8f7fe647dd9a3d4ba6a93c09d6f2 size: 1364
+2020/03/02 19:11:07 upload registry.tke.com/library/tke-auth-api:v1.1.0 to registry success[9/53]
+The push refers to repository [registry.tke.com/library/tke-platform-controller]
+db792a46abc5: Preparing
+85c775531473: Preparing
+523d39c9810b: Preparing
+531743b7098c: Preparing
+523d39c9810b: Mounted from library/tke-auth-api
+531743b7098c: Mounted from library/tke-auth-api
+85c775531473: Mounted from library/tke-auth-api
+db792a46abc5: Pushed
+v1.1.0: digest: sha256:33ac6197afa1f98ac0dee6826f76535468a02e66793d58714b05954cb2d40b0f size: 1154
+2020/03/02 19:11:11 upload registry.tke.com/library/tke-platform-controller:v1.1.0 to registry success[10/53]
+The push refers to repository [registry.tke.com/library/tke-monitor-api]
+0f245fa0f639: Preparing
+85c775531473: Preparing
+523d39c9810b: Preparing
+531743b7098c: Preparing
+523d39c9810b: Mounted from library/tke-platform-controller
+531743b7098c: Mounted from library/tke-platform-controller
+85c775531473: Mounted from library/tke-platform-controller
+0f245fa0f639: Pushed
+v1.1.0: digest: sha256:c9f68b758ae048d72ee058e505b38e92feceabe799498ec7b96d410d9a510e0f size: 1154
+2020/03/02 19:11:15 upload registry.tke.com/library/tke-monitor-api:v1.1.0 to registry success[11/53]
+The push refers to repository [registry.tke.com/library/tke-platform-api]
+6760a046ba01: Preparing
+85c775531473: Preparing
+523d39c9810b: Preparing
+531743b7098c: Preparing
+85c775531473: Mounted from library/tke-monitor-api
+523d39c9810b: Mounted from library/tke-monitor-api
+531743b7098c: Mounted from library/tke-monitor-api
+6760a046ba01: Pushed
+v1.1.0: digest: sha256:921ce59e66ad953278052ada1b232afb934bcb3c17d71e62c7924ce1cd2fd919 size: 1154
+2020/03/02 19:11:19 upload registry.tke.com/library/tke-platform-api:v1.1.0 to registry success[12/53]
+The push refers to repository [registry.tke.com/library/provider-res]
+6237e76a0a41: Preparing
+313b56559228: Preparing
+531743b7098c: Preparing
+531743b7098c: Mounted from library/tke-platform-api
+313b56559228: Pushed
+6237e76a0a41: Pushed
+v1.16.6-1: digest: sha256:0829a43adc81fdb4c3e8e7d058e4385f9db596b8e85c99e8582fd913fdbec969 size: 948
+2020/03/02 19:11:34 upload registry.tke.com/library/provider-res:v1.16.6-1 to registry success[13/53]
+The push refers to repository [registry.tke.com/library/kube-proxy]
+0896cdb7bd5f: Preparing
+15c9248be8a9: Preparing
+fe9a8b4f1dcc: Preparing
+15c9248be8a9: Pushed
+0896cdb7bd5f: Pushed
+fe9a8b4f1dcc: Pushed
+v1.16.6: digest: sha256:f9a072c24913fffb4c61a88a20238433b44ea2b1b17ed1286586d91b4ea7b731 size: 951
+2020/03/02 19:11:39 upload registry.tke.com/library/kube-proxy:v1.16.6 to registry success[14/53]
+The push refers to repository [registry.tke.com/library/kube-controller-manager]
+bad0ccf93a25: Preparing
+fe9a8b4f1dcc: Preparing
+fe9a8b4f1dcc: Mounted from library/kube-proxy
+bad0ccf93a25: Pushed
+v1.16.6: digest: sha256:fc9890a63086c3058d5aad3fca151c0db4d70d3ef13bc24e783b4aa537afefa7 size: 741
+2020/03/02 19:11:44 upload registry.tke.com/library/kube-controller-manager:v1.16.6 to registry success[15/53]
+The push refers to repository [registry.tke.com/library/kube-apiserver]
+f9ce123c61bf: Preparing
+fe9a8b4f1dcc: Preparing
+fe9a8b4f1dcc: Mounted from library/kube-controller-manager
+f9ce123c61bf: Pushed
+v1.16.6: digest: sha256:3e865937580ce5cfaec288b22ca2ea59ab55762029ea05ade9be869efd72a2eb size: 741
+2020/03/02 19:11:49 upload registry.tke.com/library/kube-apiserver:v1.16.6 to registry success[16/53]
+The push refers to repository [registry.tke.com/library/kube-scheduler]
+669df12538ff: Preparing
+fe9a8b4f1dcc: Preparing
+fe9a8b4f1dcc: Mounted from library/kube-apiserver
+669df12538ff: Pushed
+v1.16.6: digest: sha256:70dfb6ac4994fe05ee857705f9fbe8b36d39e525bd8448f1aed07aee71eed946 size: 741
+2020/03/02 19:11:52 upload registry.tke.com/library/kube-scheduler:v1.16.6 to registry success[17/53]
+The push refers to repository [registry.tke.com/library/tapp-controller]
+eaa931a6496f: Preparing
+9dfa57e59778: Preparing
+763daa5ebafc: Preparing
+44b514384918: Preparing
+6b2e6bbbf07f: Preparing
+f1b5933fe4b5: Preparing
+eaa931a6496f: Pushed
+44b514384918: Pushed
+763daa5ebafc: Pushed
+9dfa57e59778: Pushed
+6b2e6bbbf07f: Pushed
+f1b5933fe4b5: Pushed
+v1.0.0: digest: sha256:25095d9abf28e0120557c2d22a27dd9a37d4f909c3a9ec159fdf866d61b7a3ba size: 1570
+2020/03/02 19:11:55 upload registry.tke.com/library/tapp-controller:v1.0.0 to registry success[18/53]
+The push refers to repository [registry.tke.com/library/gpu-quota-admission]
+a475f52a2b57: Preparing
+9beb42c77c5c: Preparing
+071d8bd76517: Preparing
+9beb42c77c5c: Pushed
+a475f52a2b57: Pushed
+071d8bd76517: Pushed
+v1.0.0: digest: sha256:36ad6d8700e4cbc94b6fcb461e04729ee73c71679db074a90ff94e6331ffa5a1 size: 953
+2020/03/02 19:12:08 upload registry.tke.com/library/gpu-quota-admission:v1.0.0 to registry success[19/53]
+The push refers to repository [registry.tke.com/library/gpu-manager]
+79b301253572: Preparing
+c37ef326cc75: Preparing
+a66f58b160c6: Preparing
+c15140c6b5d4: Preparing
+bb1a72e9c51d: Preparing
+3fb171526432: Preparing
+375672f7bd34: Preparing
+5e80025e6f91: Preparing
+071d8bd76517: Preparing
+5e80025e6f91: Waiting
+3fb171526432: Waiting
+375672f7bd34: Waiting
+071d8bd76517: Waiting
+a66f58b160c6: Pushed
+c37ef326cc75: Pushed
+79b301253572: Pushed
+5e80025e6f91: Pushed
+3fb171526432: Pushed
+375672f7bd34: Pushed
+071d8bd76517: Mounted from library/gpu-quota-admission
+c15140c6b5d4: Pushed
+bb1a72e9c51d: Pushed
+v1.0.0: digest: sha256:ce8ad0dde422516008be187482408b2e041927b1a9cd5850511fda7878a060fd size: 2207
+2020/03/02 19:12:13 upload registry.tke.com/library/gpu-manager:v1.0.0 to registry success[20/53]
+The push refers to repository [registry.tke.com/library/kube-apiserver]
+201303bf09a6: Preparing
+fe9a8b4f1dcc: Preparing
+fe9a8b4f1dcc: Layer already exists
+201303bf09a6: Pushed
+v1.14.10: digest: sha256:9db80438e07fcca3bc4a88d7be8e32e26bf3db62491399fee056860ff92b9fc6 size: 741
+2020/03/02 19:12:19 upload registry.tke.com/library/kube-apiserver:v1.14.10 to registry success[21/53]
+The push refers to repository [registry.tke.com/library/kube-controller-manager]
+fafee33d237b: Preparing
+fe9a8b4f1dcc: Preparing
+fe9a8b4f1dcc: Layer already exists
+fafee33d237b: Pushed
+v1.14.10: digest: sha256:148d97fd73a118e530c8782d18c915a1ae54dc797908f23df8aa7fb5936a037d size: 741
+2020/03/02 19:12:24 upload registry.tke.com/library/kube-controller-manager:v1.14.10 to registry success[22/53]
+The push refers to repository [registry.tke.com/library/kube-proxy]
+2111df6280b0: Preparing
+15c9248be8a9: Preparing
+fe9a8b4f1dcc: Preparing
+15c9248be8a9: Layer already exists
+fe9a8b4f1dcc: Layer already exists
+2111df6280b0: Pushed
+v1.14.10: digest: sha256:8ae59ec70dd6519434f410843d3bac2e4d6ccf75ff709e6d51f9f71e772ef5e2 size: 951
+2020/03/02 19:12:27 upload registry.tke.com/library/kube-proxy:v1.14.10 to registry success[23/53]
+The push refers to repository [registry.tke.com/library/kube-scheduler]
+9b1050c2b0c7: Preparing
+fe9a8b4f1dcc: Preparing
+fe9a8b4f1dcc: Layer already exists
+9b1050c2b0c7: Pushed
+v1.14.10: digest: sha256:586f794247d5b794f17e60be80983a7a6c4e67563ca12e64f021ef1531559238 size: 741
+2020/03/02 19:12:30 upload registry.tke.com/library/kube-scheduler:v1.14.10 to registry success[24/53]
+The push refers to repository [registry.tke.com/library/galaxy-ipam]
+ab851e25a383: Preparing
+73f596529cd4: Preparing
+77b174a6a187: Preparing
+ab851e25a383: Pushed
+73f596529cd4: Pushed
+77b174a6a187: Pushed
+v1.0.0: digest: sha256:5f6af8e1c76599099e96be78bd3507dc0c5f5b54479bf98c69230c6e57334402 size: 948
+2020/03/02 19:12:42 upload registry.tke.com/library/galaxy-ipam:v1.0.0 to registry success[25/53]
+The push refers to repository [registry.tke.com/library/galaxy]
+26e70c629d51: Preparing
+620e3bd8b96c: Preparing
+7cb075cfd001: Preparing
+5afb8ba41c72: Preparing
+77b174a6a187: Preparing
+77b174a6a187: Mounted from library/galaxy-ipam
+26e70c629d51: Pushed
+7cb075cfd001: Pushed
+620e3bd8b96c: Pushed
+5afb8ba41c72: Pushed
+v1.0.0: digest: sha256:ede661dce186a26f6eb6fbfec688d9235bc43219ffe61b4c482b36fa76938412 size: 1372
+2020/03/02 19:12:46 upload registry.tke.com/library/galaxy:v1.0.0 to registry success[26/53]
+The push refers to repository [registry.tke.com/library/cron-hpa-controller]
+8de28607d382: Preparing
+bac7b2c9877f: Preparing
+d05d8c7c36bb: Preparing
+c59e5894aff0: Preparing
+544aa21bb8c2: Preparing
+a464c54f93a9: Preparing
+a464c54f93a9: Waiting
+c59e5894aff0: Pushed
+d05d8c7c36bb: Pushed
+bac7b2c9877f: Pushed
+8de28607d382: Pushed
+544aa21bb8c2: Pushed
+a464c54f93a9: Pushed
+v1.0.0: digest: sha256:51f05542dbedfce7211883160ad4ad85d3ca3319cebe8ced5b8176de32621117 size: 1570
+2020/03/02 19:12:51 upload registry.tke.com/library/cron-hpa-controller:v1.0.0 to registry success[27/53]
+The push refers to repository [registry.tke.com/library/lbcf-controller]
+fe229be36b73: Preparing
+77cae8ab23bf: Preparing
+77cae8ab23bf: Pushed
+fe229be36b73: Pushed
+v1.0.0.rc.2: digest: sha256:02fa42f3281a1c647a585f9d05a21386ef6f7f71d6fe0cc262aed83c4d640abb size: 740
+2020/03/02 19:12:54 upload registry.tke.com/library/lbcf-controller:v1.0.0.rc.2 to registry success[28/53]
+The push refers to repository [registry.tke.com/library/keepalived]
+8014b1790a20: Preparing
+77cae8ab23bf: Preparing
+77cae8ab23bf: Mounted from library/lbcf-controller
+8014b1790a20: Pushed
+2.0.16-r0: digest: sha256:ba97d7478b09f2938e5bcf80b5acda1f0ee1db48188d1d077696718acc873d69 size: 739
+2020/03/02 19:12:56 upload registry.tke.com/library/keepalived:2.0.16-r0 to registry success[29/53]
+The push refers to repository [registry.tke.com/library/nvidia-device-plugin]
+76f96d731cb8: Preparing
+e9dc98463cd6: Preparing
+76f96d731cb8: Pushed
+e9dc98463cd6: Pushed
+1.0.0-beta4: digest: sha256:76c08ab2780e88142384c6d9da48dae1788555273a5429a3eb67ed68a9bc358a size: 740
+2020/03/02 19:13:01 upload registry.tke.com/library/nvidia-device-plugin:1.0.0-beta4 to registry success[30/53]
+The push refers to repository [registry.tke.com/library/csi-operator]
+0407a84d8955: Preparing
+d69483a6face: Preparing
+0407a84d8955: Pushed
+d69483a6face: Pushed
+v1.0.1: digest: sha256:a4c3e56238a1924e279a894cc0bfbdf922da482127085c192ef6c7315d67741b size: 741
+2020/03/02 19:13:10 upload registry.tke.com/library/csi-operator:v1.0.1 to registry success[31/53]
+The push refers to repository [registry.tke.com/library/prometheus]
+799a04338fc1: Preparing
+d2cacb77d93d: Preparing
+97c86534d863: Preparing
+b1f92c6d4068: Preparing
+483b2ba761c7: Preparing
+495a19a962c5: Preparing
+5858aa1caa48: Preparing
+a135773ab4c8: Preparing
+a724badf61ce: Preparing
+a135773ab4c8: Waiting
+a724badf61ce: Waiting
+495a19a962c5: Waiting
+5858aa1caa48: Waiting
+97c86534d863: Pushed
+799a04338fc1: Pushed
+b1f92c6d4068: Pushed
+483b2ba761c7: Pushed
+d2cacb77d93d: Pushed
+a724badf61ce: Pushed
+a135773ab4c8: Pushed
+495a19a962c5: Pushed
+5858aa1caa48: Pushed
+v2.11.0: digest: sha256:a9f19c4d340affaa6cb1adca29b775e24da7ca63638a5879d8b79c93f9fc529b size: 2198
+2020/03/02 19:13:16 upload registry.tke.com/library/prometheus:v2.11.0 to registry success[32/53]
+The push refers to repository [registry.tke.com/library/alertmanager]
+96d25d0e9121: Preparing
+d56a80b83a4c: Preparing
+d8a26634229b: Preparing
+1660e4ef8e72: Preparing
+a135773ab4c8: Preparing
+a724badf61ce: Preparing
+a724badf61ce: Waiting
+a135773ab4c8: Mounted from library/prometheus
+a724badf61ce: Mounted from library/prometheus
+d56a80b83a4c: Pushed
+1660e4ef8e72: Pushed
+d8a26634229b: Pushed
+96d25d0e9121: Pushed
+v0.18.0: digest: sha256:3c0f0ea52a662342282fc7236ce058ab47a6259ed146cfc6bbdb122ba244c160 size: 1575
+2020/03/02 19:13:20 upload registry.tke.com/library/alertmanager:v0.18.0 to registry success[33/53]
+The push refers to repository [registry.tke.com/library/prometheus-config-reloader]
+0ccc317478d9: Preparing
+5effb4064a9c: Preparing
+a135773ab4c8: Preparing
+a724badf61ce: Preparing
+a724badf61ce: Mounted from library/alertmanager
+a135773ab4c8: Mounted from library/alertmanager
+5effb4064a9c: Pushed
+0ccc317478d9: Pushed
+v0.31.1: digest: sha256:4bc40e4f991606cfcc5dab1c90c77db6e09c6f7b7220de5ee24483732ce6a288 size: 1159
+2020/03/02 19:13:22 upload registry.tke.com/library/prometheus-config-reloader:v0.31.1 to registry success[34/53]
+The push refers to repository [registry.tke.com/library/prometheus-operator]
+f02e8132e055: Preparing
+a135773ab4c8: Preparing
+a724badf61ce: Preparing
+a724badf61ce: Mounted from library/prometheus-config-reloader
+a135773ab4c8: Mounted from library/prometheus-config-reloader
+f02e8132e055: Pushed
+v0.31.1: digest: sha256:f4576ec82c1951eb4b6024714f4b573c4853b0a9a2ee8c7fa40aabf55acf9151 size: 949
+2020/03/02 19:13:25 upload registry.tke.com/library/prometheus-operator:v0.31.1 to registry success[35/53]
+The push refers to repository [registry.tke.com/library/busybox]
+6194458b07fc: Preparing
+6194458b07fc: Pushed
+1.31.0: digest: sha256:bf510723d2cd2d4e3f5ce7e93bf1e52c8fd76831995ac3bd3f90ecc866643aff size: 527
+2020/03/02 19:13:26 upload registry.tke.com/library/busybox:1.31.0 to registry success[36/53]
+The push refers to repository [registry.tke.com/library/helm-api]
+863752dbe0f5: Preparing
+1ffdcf52ec13: Preparing
+8d7ea83e3c62: Preparing
+6a061ee02432: Preparing
+f73b2816c52a: Preparing
+6267b420796f: Preparing
+a30b835850bf: Preparing
+6267b420796f: Waiting
+8d7ea83e3c62: Pushed
+6a061ee02432: Pushed
+f73b2816c52a: Pushed
+863752dbe0f5: Pushed
+6267b420796f: Pushed
+1ffdcf52ec13: Pushed
+a30b835850bf: Pushed
+v1.3: digest: sha256:f72030d392f8a09894b4d87a8799b0531dcd664a0d53b22b66ddefdb45220db4 size: 1780
+2020/03/02 19:13:37 upload registry.tke.com/library/helm-api:v1.3 to registry success[37/53]
+The push refers to repository [registry.tke.com/library/log-collector]
+81910cc44730: Preparing
+344836e9ba36: Preparing
+de3dd7d63660: Preparing
+c6877266b235: Preparing
+4dedcb94ee1a: Preparing
+6270adb5794c: Preparing
+6270adb5794c: Waiting
+c6877266b235: Pushed
+4dedcb94ee1a: Pushed
+de3dd7d63660: Pushed
+81910cc44730: Pushed
+6270adb5794c: Pushed
+344836e9ba36: Pushed
+v1.1.0: digest: sha256:d5fdc48fd4187fdecb7620cd0456ee2c515ad01fd3a1606a03142364bda94153 size: 1579
+2020/03/02 19:13:48 upload registry.tke.com/library/log-collector:v1.1.0 to registry success[38/53]
+The push refers to repository [registry.tke.com/library/influxdb]
+e3eff84e3ccd: Preparing
+fa934809e7e4: Preparing
+72a0bdaeab4c: Preparing
+ab5e981adec3: Preparing
+1e76208b76a8: Preparing
+3d6dc3fcb2df: Preparing
+f1b5933fe4b5: Preparing
+3d6dc3fcb2df: Waiting
+f1b5933fe4b5: Waiting
+fa934809e7e4: Pushed
+1e76208b76a8: Pushed
+72a0bdaeab4c: Pushed
+e3eff84e3ccd: Pushed
+f1b5933fe4b5: Mounted from library/tapp-controller
+3d6dc3fcb2df: Pushed
+ab5e981adec3: Pushed
+1.7.6-alpine: digest: sha256:82b14a14dcc512e6468228548303871adafd109c08df4e6f5947a1529e691281 size: 1780
+2020/03/02 19:13:54 upload registry.tke.com/library/influxdb:1.7.6-alpine to registry success[39/53]
+The push refers to repository [registry.tke.com/library/volume-decorator]
+995a4feb8d6a: Preparing
+995a4feb8d6a: Preparing
+6ed045889619: Preparing
+e15afa4858b6: Preparing
+995a4feb8d6a: Pushed
+6ed045889619: Pushed
+e15afa4858b6: Pushed
+v1.0.0: digest: sha256:d111eade17865ad2c1f56fba0b276b9ede1d74e689b4a726114e51d2b0c6ada5 size: 1165
+2020/03/02 19:14:07 upload registry.tke.com/library/volume-decorator:v1.0.0 to registry success[40/53]
+The push refers to repository [registry.tke.com/library/kube-state-metrics]
+2f397bfc4ce3: Preparing
+4826cdadf1ef: Preparing
+2f397bfc4ce3: Pushed
+4826cdadf1ef: Pushed
+v1.6.0: digest: sha256:d89e3ab2e2f7badfd6742ea70bda4b9d837b4ad48544a321c9edba2bcccf5dda size: 740
+2020/03/02 19:14:20 upload registry.tke.com/library/kube-state-metrics:v1.6.0 to registry success[41/53]
+The push refers to repository [registry.tke.com/library/node-exporter]
+b1ec14839854: Preparing
+bcc97fbfc9e1: Preparing
+b1ec14839854: Pushed
+bcc97fbfc9e1: Pushed
+v0.15.2: digest: sha256:7fdade2359f5a00f849d43003905f41a9193a5196afcc51c6154284879524317 size: 740
+2020/03/02 19:14:29 upload registry.tke.com/library/node-exporter:v0.15.2 to registry success[42/53]
+The push refers to repository [registry.tke.com/library/local-tcr]
+73d61bf022fd: Preparing
+5bbc5831d696: Preparing
+d5974ddb5a45: Preparing
+f641ef7a37ad: Preparing
+d9ff549177a9: Preparing
+d9ff549177a9: Pushed
+5bbc5831d696: Pushed
+f641ef7a37ad: Pushed
+73d61bf022fd: Pushed
+d5974ddb5a45: Pushed
+v1.0.0: digest: sha256:b1165286043f2745f45ea637873d61939bff6d9a59f76539d6228abf79f87774 size: 1363
+2020/03/02 19:14:32 upload registry.tke.com/library/local-tcr:v1.0.0 to registry success[43/53]
+The push refers to repository [registry.tke.com/library/etcd]
+8afe4919c373: Preparing
+522e7057d51a: Preparing
+1c9610088ac9: Preparing
+be69db24f4ca: Preparing
+7fa563ed646b: Preparing
+503e53e365f3: Preparing
+503e53e365f3: Waiting
+522e7057d51a: Pushed
+8afe4919c373: Pushed
+1c9610088ac9: Pushed
+7fa563ed646b: Pushed
+be69db24f4ca: Pushed
+503e53e365f3: Pushed
+v3.3.12: digest: sha256:21012df620d0ed6b4bf63ab5d1e98f81e2e6e4f83ffff620d4cd4dae31cd857b size: 1571
+2020/03/02 19:14:35 upload registry.tke.com/library/etcd:v3.3.12 to registry success[44/53]
+The push refers to repository [registry.tke.com/library/prometheusbeat]
+55556fb06084: Preparing
+45ff1f6a1114: Preparing
+492818884ab9: Preparing
+928e438170ce: Preparing
+cdb3f9544e4c: Preparing
+45ff1f6a1114: Pushed
+928e438170ce: Pushed
+492818884ab9: Pushed
+55556fb06084: Pushed
+cdb3f9544e4c: Pushed
+6.4.1: digest: sha256:031a826a1de1a0250ebdd6486c22cf41a533318e48bf707beef0012554282db6 size: 1369
+2020/03/02 19:14:38 upload registry.tke.com/library/prometheusbeat:6.4.1 to registry success[45/53]
+The push refers to repository [registry.tke.com/library/swift]
+7259973e28cd: Preparing
+c6e7374f0e55: Preparing
+df64d3292fd6: Preparing
+c6e7374f0e55: Pushed
+df64d3292fd6: Pushed
+7259973e28cd: Pushed
+0.9.0: digest: sha256:c75113edf9038d768a4b3a4c1850b401ae9f45d3504b79a5fab32481a93f7714 size: 950
+2020/03/02 19:14:41 upload registry.tke.com/library/swift:0.9.0 to registry success[46/53]
+The push refers to repository [registry.tke.com/library/tke-event-watcher]
+c595d329711d: Preparing
+186d94bd2c62: Preparing
+24a9d20e5bee: Preparing
+e7dc337030ba: Preparing
+920961b94eb3: Preparing
+fa0c3f992cbd: Preparing
+ce6466f43b11: Preparing
+719d45669b35: Preparing
+3b10514a95be: Preparing
+fa0c3f992cbd: Waiting
+ce6466f43b11: Waiting
+3b10514a95be: Waiting
+719d45669b35: Waiting
+24a9d20e5bee: Pushed
+186d94bd2c62: Pushed
+c595d329711d: Pushed
+ce6466f43b11: Pushed
+719d45669b35: Pushed
+920961b94eb3: Pushed
+3b10514a95be: Pushed
+fa0c3f992cbd: Pushed
+e7dc337030ba: Pushed
+v0.1: digest: sha256:d5521541935efaa8beb82df5a6f37682340146fdb242ea866d99bd0fecd843f7 size: 2216
+2020/03/02 19:15:12 upload registry.tke.com/library/tke-event-watcher:v0.1 to registry success[47/53]
+The push refers to repository [registry.tke.com/library/coredns]
+30a6f49aa944: Preparing
+9198eadacc0a: Preparing
+9198eadacc0a: Pushed
+30a6f49aa944: Pushed
+1.2.6: digest: sha256:0e7e5387c73f4898a7251d91f27297d3a5b210421a0b234302276feb8b264a27 size: 739
+2020/03/02 19:15:15 upload registry.tke.com/library/coredns:1.2.6 to registry success[48/53]
+The push refers to repository [registry.tke.com/library/tke-audit-collector]
+8212426aafdb: Preparing
+4c07a7d6610c: Preparing
+a080446c2fd8: Preparing
+b3dadc06f9a5: Preparing
+66110b03be33: Preparing
+12c692cc70cf: Preparing
+8b15606a9e3e: Preparing
+8b15606a9e3e: Waiting
+12c692cc70cf: Waiting
+b3dadc06f9a5: Pushed
+8212426aafdb: Pushed
+4c07a7d6610c: Pushed
+a080446c2fd8: Pushed
+12c692cc70cf: Pushed
+8b15606a9e3e: Pushed
+66110b03be33: Pushed
+v0.3: digest: sha256:1ce6303e26696d4239fac6c2934f84f519a7c0a93f33e5f0ed829cacba2a5899 size: 1782
+2020/03/02 19:15:29 upload registry.tke.com/library/tke-audit-collector:v0.3 to registry success[49/53]
+The push refers to repository [registry.tke.com/library/tiller]
+c051e9f64617: Preparing
+6f440018af45: Preparing
+8a9df54b0cf8: Preparing
+717b092b8c86: Preparing
+717b092b8c86: Pushed
+8a9df54b0cf8: Pushed
+c051e9f64617: Pushed
+6f440018af45: Pushed
+v2.10.0: digest: sha256:2a3dd484ecfcf9343994e0f6c2af0a6faf1af7f7e499905793643f91e90edcb3 size: 1161
+2020/03/02 19:15:33 upload registry.tke.com/library/tiller:v2.10.0 to registry success[50/53]
+The push refers to repository [registry.tke.com/library/flannel]
+b883fd48bb96: Preparing
+4165b2148f36: Preparing
+93b0fa7f0802: Preparing
+3b6c03b8ad66: Preparing
+cd7100a72410: Preparing
+cd7100a72410: Pushed
+93b0fa7f0802: Pushed
+b883fd48bb96: Pushed
+3b6c03b8ad66: Pushed
+4165b2148f36: Pushed
+v0.10.0-amd64: digest: sha256:dbd5c4b125a87ac887eeeeee8e70522ed76b8ef729ff1d16f0da0f91d44f0e86 size: 1367
+2020/03/02 19:15:36 upload registry.tke.com/library/flannel:v0.10.0-amd64 to registry success[51/53]
+The push refers to repository [registry.tke.com/library/pause]
+e17133b79956: Preparing
+e17133b79956: Pushed
+3.1: digest: sha256:fcaff905397ba63fd376d0c3019f1f1cb6e7506131389edbcb3d22719f1ae54d size: 527
+2020/03/02 19:15:37 upload registry.tke.com/library/pause:3.1 to registry success[52/53]
+The push refers to repository [registry.tke.com/library/configmap-reload]
+5f70bf18a086: Preparing
+de9f4b1c1e91: Preparing
+de9f4b1c1e91: Pushed
+5f70bf18a086: Pushed
+v0.1: digest: sha256:cc153f2ed523952e85a73fafaff87d05fb14fb7e068ef330fb671274c4ed5998 size: 734
+2020/03/02 19:15:39 upload registry.tke.com/library/configmap-reload:v0.1 to registry success[53/53]
+2020/03/02 19:15:39 3.Push images to registry.tke.com/library [Success] [312.235240s]
+2020/03/02 19:15:39 4.Generate certificates for TKE components doing
+2020/03/02 19:15:40 4.Generate certificates for TKE components [Success] [0.481264s]
+2020/03/02 19:15:40 5.Prepare front proxy certificates doing
+2020/03/02 19:15:42 5.Prepare front proxy certificates [Success] [2.328803s]
+2020/03/02 19:15:42 6.Create global cluster doing
+2020/03/02 19:15:44 OnInitialize.EnsureRegistryHosts [Success] [1.546605s]
+2020/03/02 19:15:50 OnInitialize.EnsureKernelModule [Success] [0.907711s]
+2020/03/02 19:15:56 OnInitialize.EnsureSysctl [Success] [1.526911s]
+2020/03/02 19:16:02 OnInitialize.EnsureDisableSwap [Success] [0.409601s]
+2020/03/02 19:16:18 OnInitialize.EnsurePreflight [Success] [10.960351s]
+2020/03/02 19:16:23 OnInitialize.EnsureClusterComplete [Success] [0.000331s]
+2020/03/02 19:16:28 OnInitialize.EnsureNvidiaDriver [Success] [0.000295s]
+2020/03/02 19:16:33 OnInitialize.EnsureNvidiaContainerRuntime [Success] [0.001064s]
+2020/03/02 19:16:48 OnInitialize.EnsureDocker [Success] [10.462642s]
+2020/03/02 19:17:02 OnInitialize.EnsureKubelet [Success] [9.400231s]
+2020/03/02 19:17:10 OnInitialize.EnsureCNIPlugins [Success] [3.005867s]
+2020/03/02 19:17:19 OnInitialize.EnsureKubeadm [Success] [3.216469s]
+2020/03/02 19:17:25 OnInitialize.EnsurePrepareForControlplane [Success] [1.185393s]
+2020/03/02 19:17:31 OnInitialize.EnsureKubeadmInitKubeletStartPhase [Success] [1.161363s]
+2020/03/02 19:17:44 OnInitialize.EnsureKubeadmInitCertsPhase [Success] [7.924132s]
+2020/03/02 19:17:51 OnInitialize.EnsureStoreCredential [Success] [1.759271s]
+2020/03/02 19:17:56 OnInitialize.EnsureKubeconfig [Success] [0.419260s]
+2020/03/02 19:18:04 OnInitialize.EnsureKubeadmInitKubeConfigPhase [Success] [3.381346s]
+2020/03/02 19:18:10 OnInitialize.EnsureKubeadmInitControlPlanePhase [Success] [0.826428s]
+2020/03/02 19:18:16 OnInitialize.EnsureKubeadmInitEtcdPhase [Success] [0.829775s]
+2020/03/02 19:19:16 OnInitialize.EnsureKubeadmInitWaitControlPlanePhase [Success] [55.036075s]
+2020/03/02 19:19:23 OnInitialize.EnsureKubeadmInitUploadConfigPhase [Success] [1.407103s]
+2020/03/02 19:19:39 OnInitialize.EnsureKubeadmInitUploadCertsPhase [Success] [11.548226s]
+2020/03/02 19:19:45 OnInitialize.EnsureKubeadmInitBootstrapTokenPhase [Success] [0.933082s]
+2020/03/02 19:19:51 OnInitialize.EnsureKubeadmInitAddonPhase [Success] [1.072886s]
+2020/03/02 19:19:56 OnInitialize.EnsureGalaxy [Success] [0.265242s]
+2020/03/02 19:20:01 OnInitialize.EnsureJoinControlePlane [Success] [0.000412s]
+2020/03/02 19:20:08 OnInitialize.EnsurePatchAnnotation [Success] [1.616694s]
+2020/03/02 19:20:22 OnInitialize.EnsureMarkControlPlane [Success] [8.693063s]
+2020/03/02 19:20:27 6.Create global cluster [Success] [284.596254s]
+2020/03/02 19:20:27 7.Write kubeconfig doing
+2020/03/02 19:20:27 7.Write kubeconfig [Success] [0.043430s]
+2020/03/02 19:20:27 8.Execute post deploy hook doing
+2020/03/02 19:20:27 Execute hook script hooks/post-cluster-ready
+post cluster ready
+2020/03/02 19:20:27 8.Execute post deploy hook [Success] [0.030374s]
+2020/03/02 19:20:27 9.Create namespace for install TKE doing
+2020/03/02 19:20:27 9.Create namespace for install TKE [Success] [0.662205s]
+2020/03/02 19:20:27 10.Prepare certificates doing
+2020/03/02 19:20:28 10.Prepare certificates [Success] [0.016348s]
+2020/03/02 19:20:28 11.Prepare baremetal provider config doing
+2020/03/02 19:20:28 11.Prepare baremetal provider config [Success] [0.193198s]
+2020/03/02 19:20:28 12.Install etcd doing
+2020/03/02 19:20:28 12.Install etcd [Success] [0.126173s]
+2020/03/02 19:20:28 13.Install tke-auth-api doing
+2020/03/02 19:21:58 13.Install tke-auth-api [Success] [90.108784s]
+2020/03/02 19:21:58 14.Install tke-auth-controller doing
+2020/03/02 19:22:08 14.Install tke-auth-controller [Success] [10.082700s]
+2020/03/02 19:22:08 15.Install tke-platform-api doing
+2020/03/02 19:22:28 15.Install tke-platform-api [Success] [20.104025s]
+2020/03/02 19:22:28 16.Install tke-platform-controller doing
+2020/03/02 19:23:58 16.Install tke-platform-controller [Success] [90.100424s]
+2020/03/02 19:23:58 17.Install tke-registry-api doing
+2020/03/02 19:24:38 17.Install tke-registry-api [Success] [40.108295s]
+2020/03/02 19:24:38 18.Install tke-business-api doing
+2020/03/02 19:25:08 18.Install tke-business-api [Success] [30.075772s]
+2020/03/02 19:25:08 19.Install tke-business-controller doing
+2020/03/02 19:25:49 19.Install tke-business-controller [Success] [40.195642s]
+2020/03/02 19:25:49 20.Install InfluxDB doing
+2020/03/02 19:26:09 20.Install InfluxDB [Success] [20.808352s]
+2020/03/02 19:26:09 21.Install tke-monitor-api doing
+2020/03/02 19:26:37 21.Install tke-monitor-api [Success] [27.103923s]
+2020/03/02 19:26:37 22.Install tke-monitor-controller doing
+2020/03/02 19:26:47 22.Install tke-monitor-controller [Success] [10.075294s]
+2020/03/02 19:26:47 23.Install tke-notify-api doing
+2020/03/02 19:27:07 23.Install tke-notify-api [Success] [20.125212s]
+2020/03/02 19:27:07 24.Install tke-notify-controller doing
+2020/03/02 19:27:18 24.Install tke-notify-controller [Success] [10.886544s]
+2020/03/02 19:27:18 25.Install tke-gateway doing
+2020/03/02 19:27:38 25.Install tke-gateway [Success] [20.072097s]
+2020/03/02 19:27:38 26.Register tke api into global cluster doing
+2020/03/02 19:28:18 26.Register tke api into global cluster [Success] [39.980653s]
+2020/03/02 19:28:18 27.Import resource to TKE platform doing
+2020/03/02 19:28:18 27.Import resource to TKE platform [Success] [0.543443s]
+2020/03/02 19:28:18 28.Prepare push images to TKE registry doing
+2020/03/02 19:28:18 28.Prepare push images to TKE registry [Success] [0.251212s]
+2020/03/02 19:28:18 29.Push images to registry doing
+2020/03/02 19:28:18 /bin/sh -c docker images --format='{{.Repository}}:{{.Tag}}' --filter='reference=registry.tke.com/library/*'
+The push refers to repository [registry.tke.com/library/tke-business-controller]
+0f0c5eafa4bb: Preparing
+85c775531473: Preparing
+523d39c9810b: Preparing
+531743b7098c: Preparing
+523d39c9810b: Pushed
+85c775531473: Pushed
+531743b7098c: Pushed
+0f0c5eafa4bb: Pushed
+v1.1.0: digest: sha256:d4ff615197a90ee85503965df6cda8e53429cd771bda4fcd5f30191738e37749 size: 1154
+2020/03/02 19:28:23 upload registry.tke.com/library/tke-business-controller:v1.1.0 to registry success[1/53]
+The push refers to repository [registry.tke.com/library/tke-business-api]
+c086f8f69a93: Preparing
+85c775531473: Preparing
+523d39c9810b: Preparing
+531743b7098c: Preparing
+523d39c9810b: Mounted from library/tke-business-controller
+85c775531473: Mounted from library/tke-business-controller
+531743b7098c: Mounted from library/tke-business-controller
+c086f8f69a93: Pushed
+v1.1.0: digest: sha256:e1c727809bbd5156127c8c5e859f8aaeeb4afa40d9cbf05d0f47b3b50300a5fd size: 1154
+2020/03/02 19:28:29 upload registry.tke.com/library/tke-business-api:v1.1.0 to registry success[2/53]
+The push refers to repository [registry.tke.com/library/tke-notify-controller]
+84538c79f9ef: Preparing
+85c775531473: Preparing
+523d39c9810b: Preparing
+531743b7098c: Preparing
+523d39c9810b: Mounted from library/tke-business-api
+85c775531473: Mounted from library/tke-business-api
+531743b7098c: Mounted from library/tke-business-api
+84538c79f9ef: Pushed
+v1.1.0: digest: sha256:de7748e76b8ffa5a02ac83324a73ef08c59330cd45718e2f6126579e32ebf169 size: 1154
+2020/03/02 19:28:33 upload registry.tke.com/library/tke-notify-controller:v1.1.0 to registry success[3/53]
+The push refers to repository [registry.tke.com/library/tke-gateway]
+c289302e1654: Preparing
+85c775531473: Preparing
+523d39c9810b: Preparing
+531743b7098c: Preparing
+85c775531473: Mounted from library/tke-notify-controller
+523d39c9810b: Mounted from library/tke-notify-controller
+531743b7098c: Mounted from library/tke-notify-controller
+c289302e1654: Pushed
+v1.1.0: digest: sha256:578d1b512803d6498cb169b55eb5572b27ccf1df24cd08a8fb1b1639e660c017 size: 1154
+2020/03/02 19:28:39 upload registry.tke.com/library/tke-gateway:v1.1.0 to registry success[4/53]
+The push refers to repository [registry.tke.com/library/tke-notify-api]
+f0f5ae73ddaa: Preparing
+85c775531473: Preparing
+523d39c9810b: Preparing
+531743b7098c: Preparing
+85c775531473: Mounted from library/tke-gateway
+531743b7098c: Mounted from library/tke-gateway
+523d39c9810b: Mounted from library/tke-gateway
+f0f5ae73ddaa: Pushed
+v1.1.0: digest: sha256:00ac19ac62f974413a3a205328e0aafc7741b72d00a6c9b22e4851fb851ac792 size: 1154
+2020/03/02 19:28:44 upload registry.tke.com/library/tke-notify-api:v1.1.0 to registry success[5/53]
+The push refers to repository [registry.tke.com/library/tke-registry-api]
+784ad33bb1d4: Preparing
+85c775531473: Preparing
+523d39c9810b: Preparing
+531743b7098c: Preparing
+85c775531473: Mounted from library/tke-notify-api
+523d39c9810b: Mounted from library/tke-notify-api
+531743b7098c: Mounted from library/tke-notify-api
+784ad33bb1d4: Pushed
+v1.1.0: digest: sha256:06f1cefcd417dd8025c1835629a6d9e4609ae4f53aff3555d2fd2d9aa431b399 size: 1154
+2020/03/02 19:28:50 upload registry.tke.com/library/tke-registry-api:v1.1.0 to registry success[6/53]
+The push refers to repository [registry.tke.com/library/tke-auth-controller]
+fcb2a39b35a8: Preparing
+30f3f2ab4697: Preparing
+85c775531473: Preparing
+523d39c9810b: Preparing
+531743b7098c: Preparing
+523d39c9810b: Mounted from library/tke-registry-api
+531743b7098c: Mounted from library/tke-registry-api
+85c775531473: Mounted from library/tke-registry-api
+fcb2a39b35a8: Pushed
+30f3f2ab4697: Pushed
+v1.1.0: digest: sha256:7cd3234b4eadc8c39ecf088a576973e528447f402482742a9b0c9eed509ddf33 size: 1362
+2020/03/02 19:28:55 upload registry.tke.com/library/tke-auth-controller:v1.1.0 to registry success[7/53]
+The push refers to repository [registry.tke.com/library/tke-monitor-controller]
+ba7274b6bdfc: Preparing
+85c775531473: Preparing
+523d39c9810b: Preparing
+531743b7098c: Preparing
+531743b7098c: Mounted from library/tke-auth-controller
+85c775531473: Mounted from library/tke-auth-controller
+523d39c9810b: Mounted from library/tke-auth-controller
+ba7274b6bdfc: Pushed
+v1.1.0: digest: sha256:26539e84ee66dd013e132b8b6229580d0262f005dd40f8f7bb48d5dfe3aa1479 size: 1154
+2020/03/02 19:29:00 upload registry.tke.com/library/tke-monitor-controller:v1.1.0 to registry success[8/53]
+The push refers to repository [registry.tke.com/library/tke-auth-api]
+43515f57d7b6: Preparing
+8a1c2f27b67f: Preparing
+85c775531473: Preparing
+523d39c9810b: Preparing
+531743b7098c: Preparing
+523d39c9810b: Mounted from library/tke-monitor-controller
+531743b7098c: Mounted from library/tke-monitor-controller
+85c775531473: Mounted from library/tke-monitor-controller
+43515f57d7b6: Pushed
+8a1c2f27b67f: Pushed
+v1.1.0: digest: sha256:46a9b4a7d1e5cf80d01bfe7151d032ace16e8f7fe647dd9a3d4ba6a93c09d6f2 size: 1364
+2020/03/02 19:29:05 upload registry.tke.com/library/tke-auth-api:v1.1.0 to registry success[9/53]
+The push refers to repository [registry.tke.com/library/tke-platform-controller]
+db792a46abc5: Preparing
+85c775531473: Preparing
+523d39c9810b: Preparing
+531743b7098c: Preparing
+85c775531473: Mounted from library/tke-auth-api
+523d39c9810b: Mounted from library/tke-auth-api
+531743b7098c: Mounted from library/tke-auth-api
+db792a46abc5: Pushed
+v1.1.0: digest: sha256:33ac6197afa1f98ac0dee6826f76535468a02e66793d58714b05954cb2d40b0f size: 1154
+2020/03/02 19:29:11 upload registry.tke.com/library/tke-platform-controller:v1.1.0 to registry success[10/53]
+The push refers to repository [registry.tke.com/library/tke-monitor-api]
+0f245fa0f639: Preparing
+85c775531473: Preparing
+523d39c9810b: Preparing
+531743b7098c: Preparing
+531743b7098c: Mounted from library/tke-platform-controller
+523d39c9810b: Mounted from library/tke-platform-controller
+85c775531473: Mounted from library/tke-platform-controller
+0f245fa0f639: Pushed
+v1.1.0: digest: sha256:c9f68b758ae048d72ee058e505b38e92feceabe799498ec7b96d410d9a510e0f size: 1154
+2020/03/02 19:29:16 upload registry.tke.com/library/tke-monitor-api:v1.1.0 to registry success[11/53]
+The push refers to repository [registry.tke.com/library/tke-platform-api]
+6760a046ba01: Preparing
+85c775531473: Preparing
+523d39c9810b: Preparing
+531743b7098c: Preparing
+85c775531473: Mounted from library/tke-monitor-api
+531743b7098c: Mounted from library/tke-monitor-api
+523d39c9810b: Mounted from library/tke-monitor-api
+6760a046ba01: Pushed
+v1.1.0: digest: sha256:921ce59e66ad953278052ada1b232afb934bcb3c17d71e62c7924ce1cd2fd919 size: 1154
+2020/03/02 19:29:22 upload registry.tke.com/library/tke-platform-api:v1.1.0 to registry success[12/53]
+The push refers to repository [registry.tke.com/library/provider-res]
+6237e76a0a41: Preparing
+313b56559228: Preparing
+531743b7098c: Preparing
+531743b7098c: Mounted from library/tke-platform-api
+313b56559228: Pushed
+6237e76a0a41: Pushed
+v1.16.6-1: digest: sha256:0829a43adc81fdb4c3e8e7d058e4385f9db596b8e85c99e8582fd913fdbec969 size: 948
+2020/03/02 19:30:03 upload registry.tke.com/library/provider-res:v1.16.6-1 to registry success[13/53]
+The push refers to repository [registry.tke.com/library/kube-apiserver]
+f9ce123c61bf: Preparing
+fe9a8b4f1dcc: Preparing
+fe9a8b4f1dcc: Pushed
+f9ce123c61bf: Pushed
+v1.16.6: digest: sha256:3e865937580ce5cfaec288b22ca2ea59ab55762029ea05ade9be869efd72a2eb size: 741
+2020/03/02 19:30:09 upload registry.tke.com/library/kube-apiserver:v1.16.6 to registry success[14/53]
+The push refers to repository [registry.tke.com/library/kube-proxy]
+0896cdb7bd5f: Preparing
+15c9248be8a9: Preparing
+fe9a8b4f1dcc: Preparing
+fe9a8b4f1dcc: Mounted from library/kube-apiserver
+15c9248be8a9: Pushed
+0896cdb7bd5f: Pushed
+v1.16.6: digest: sha256:f9a072c24913fffb4c61a88a20238433b44ea2b1b17ed1286586d91b4ea7b731 size: 951
+2020/03/02 19:30:12 upload registry.tke.com/library/kube-proxy:v1.16.6 to registry success[15/53]
+The push refers to repository [registry.tke.com/library/kube-controller-manager]
+bad0ccf93a25: Preparing
+fe9a8b4f1dcc: Preparing
+fe9a8b4f1dcc: Mounted from library/kube-proxy
+bad0ccf93a25: Pushed
+v1.16.6: digest: sha256:fc9890a63086c3058d5aad3fca151c0db4d70d3ef13bc24e783b4aa537afefa7 size: 741
+2020/03/02 19:30:18 upload registry.tke.com/library/kube-controller-manager:v1.16.6 to registry success[16/53]
+The push refers to repository [registry.tke.com/library/kube-scheduler]
+669df12538ff: Preparing
+fe9a8b4f1dcc: Preparing
+fe9a8b4f1dcc: Mounted from library/kube-controller-manager
+669df12538ff: Pushed
+v1.16.6: digest: sha256:70dfb6ac4994fe05ee857705f9fbe8b36d39e525bd8448f1aed07aee71eed946 size: 741
+2020/03/02 19:30:22 upload registry.tke.com/library/kube-scheduler:v1.16.6 to registry success[17/53]
+The push refers to repository [registry.tke.com/library/tapp-controller]
+eaa931a6496f: Preparing
+9dfa57e59778: Preparing
+763daa5ebafc: Preparing
+44b514384918: Preparing
+6b2e6bbbf07f: Preparing
+f1b5933fe4b5: Preparing
+763daa5ebafc: Pushed
+44b514384918: Pushed
+eaa931a6496f: Pushed
+9dfa57e59778: Pushed
+f1b5933fe4b5: Pushed
+6b2e6bbbf07f: Pushed
+v1.0.0: digest: sha256:25095d9abf28e0120557c2d22a27dd9a37d4f909c3a9ec159fdf866d61b7a3ba size: 1570
+2020/03/02 19:30:25 upload registry.tke.com/library/tapp-controller:v1.0.0 to registry success[18/53]
+The push refers to repository [registry.tke.com/library/gpu-quota-admission]
+a475f52a2b57: Preparing
+9beb42c77c5c: Preparing
+071d8bd76517: Preparing
+9beb42c77c5c: Pushed
+a475f52a2b57: Pushed
+071d8bd76517: Pushed
+v1.0.0: digest: sha256:36ad6d8700e4cbc94b6fcb461e04729ee73c71679db074a90ff94e6331ffa5a1 size: 953
+2020/03/02 19:30:39 upload registry.tke.com/library/gpu-quota-admission:v1.0.0 to registry success[19/53]
+The push refers to repository [registry.tke.com/library/gpu-manager]
+79b301253572: Preparing
+c37ef326cc75: Preparing
+a66f58b160c6: Preparing
+c15140c6b5d4: Preparing
+bb1a72e9c51d: Preparing
+3fb171526432: Preparing
+375672f7bd34: Preparing
+5e80025e6f91: Preparing
+071d8bd76517: Preparing
+3fb171526432: Waiting
+375672f7bd34: Waiting
+071d8bd76517: Waiting
+a66f58b160c6: Pushed
+79b301253572: Pushed
+c37ef326cc75: Pushed
+5e80025e6f91: Pushed
+071d8bd76517: Mounted from library/gpu-quota-admission
+3fb171526432: Pushed
+375672f7bd34: Pushed
+c15140c6b5d4: Pushed
+bb1a72e9c51d: Pushed
+v1.0.0: digest: sha256:ce8ad0dde422516008be187482408b2e041927b1a9cd5850511fda7878a060fd size: 2207
+2020/03/02 19:30:51 upload registry.tke.com/library/gpu-manager:v1.0.0 to registry success[20/53]
+The push refers to repository [registry.tke.com/library/kube-apiserver]
+201303bf09a6: Preparing
+fe9a8b4f1dcc: Preparing
+fe9a8b4f1dcc: Layer already exists
+201303bf09a6: Pushed
+v1.14.10: digest: sha256:9db80438e07fcca3bc4a88d7be8e32e26bf3db62491399fee056860ff92b9fc6 size: 741
+2020/03/02 19:30:58 upload registry.tke.com/library/kube-apiserver:v1.14.10 to registry success[21/53]
+The push refers to repository [registry.tke.com/library/kube-controller-manager]
+fafee33d237b: Preparing
+fe9a8b4f1dcc: Preparing
+fe9a8b4f1dcc: Layer already exists
+fafee33d237b: Pushed
+v1.14.10: digest: sha256:148d97fd73a118e530c8782d18c915a1ae54dc797908f23df8aa7fb5936a037d size: 741
+2020/03/02 19:31:04 upload registry.tke.com/library/kube-controller-manager:v1.14.10 to registry success[22/53]
+The push refers to repository [registry.tke.com/library/kube-proxy]
+2111df6280b0: Preparing
+15c9248be8a9: Preparing
+fe9a8b4f1dcc: Preparing
+15c9248be8a9: Layer already exists
+fe9a8b4f1dcc: Layer already exists
+2111df6280b0: Pushed
+v1.14.10: digest: sha256:8ae59ec70dd6519434f410843d3bac2e4d6ccf75ff709e6d51f9f71e772ef5e2 size: 951
+2020/03/02 19:31:08 upload registry.tke.com/library/kube-proxy:v1.14.10 to registry success[23/53]
+The push refers to repository [registry.tke.com/library/kube-scheduler]
+9b1050c2b0c7: Preparing
+fe9a8b4f1dcc: Preparing
+fe9a8b4f1dcc: Layer already exists
+9b1050c2b0c7: Pushed
+v1.14.10: digest: sha256:586f794247d5b794f17e60be80983a7a6c4e67563ca12e64f021ef1531559238 size: 741
+2020/03/02 19:31:11 upload registry.tke.com/library/kube-scheduler:v1.14.10 to registry success[24/53]
+The push refers to repository [registry.tke.com/library/galaxy-ipam]
+ab851e25a383: Preparing
+73f596529cd4: Preparing
+77b174a6a187: Preparing
+ab851e25a383: Pushed
+73f596529cd4: Pushed
+77b174a6a187: Pushed
+v1.0.0: digest: sha256:5f6af8e1c76599099e96be78bd3507dc0c5f5b54479bf98c69230c6e57334402 size: 948
+2020/03/02 19:31:24 upload registry.tke.com/library/galaxy-ipam:v1.0.0 to registry success[25/53]
+The push refers to repository [registry.tke.com/library/galaxy]
+26e70c629d51: Preparing
+620e3bd8b96c: Preparing
+7cb075cfd001: Preparing
+5afb8ba41c72: Preparing
+77b174a6a187: Preparing
+77b174a6a187: Mounted from library/galaxy-ipam
+26e70c629d51: Pushed
+620e3bd8b96c: Pushed
+7cb075cfd001: Pushed
+5afb8ba41c72: Pushed
+v1.0.0: digest: sha256:ede661dce186a26f6eb6fbfec688d9235bc43219ffe61b4c482b36fa76938412 size: 1372
+2020/03/02 19:31:32 upload registry.tke.com/library/galaxy:v1.0.0 to registry success[26/53]
+The push refers to repository [registry.tke.com/library/cron-hpa-controller]
+8de28607d382: Preparing
+bac7b2c9877f: Preparing
+d05d8c7c36bb: Preparing
+c59e5894aff0: Preparing
+544aa21bb8c2: Preparing
+a464c54f93a9: Preparing
+a464c54f93a9: Waiting
+bac7b2c9877f: Pushed
+8de28607d382: Pushed
+d05d8c7c36bb: Pushed
+c59e5894aff0: Pushed
+a464c54f93a9: Pushed
+544aa21bb8c2: Pushed
+v1.0.0: digest: sha256:51f05542dbedfce7211883160ad4ad85d3ca3319cebe8ced5b8176de32621117 size: 1570
+2020/03/02 19:31:35 upload registry.tke.com/library/cron-hpa-controller:v1.0.0 to registry success[27/53]
+The push refers to repository [registry.tke.com/library/lbcf-controller]
+fe229be36b73: Preparing
+77cae8ab23bf: Preparing
+77cae8ab23bf: Pushed
+fe229be36b73: Pushed
+v1.0.0.rc.2: digest: sha256:02fa42f3281a1c647a585f9d05a21386ef6f7f71d6fe0cc262aed83c4d640abb size: 740
+2020/03/02 19:31:39 upload registry.tke.com/library/lbcf-controller:v1.0.0.rc.2 to registry success[28/53]
+The push refers to repository [registry.tke.com/library/keepalived]
+8014b1790a20: Preparing
+77cae8ab23bf: Preparing
+77cae8ab23bf: Mounted from library/lbcf-controller
+8014b1790a20: Pushed
+2.0.16-r0: digest: sha256:ba97d7478b09f2938e5bcf80b5acda1f0ee1db48188d1d077696718acc873d69 size: 739
+2020/03/02 19:31:40 upload registry.tke.com/library/keepalived:2.0.16-r0 to registry success[29/53]
+The push refers to repository [registry.tke.com/library/nvidia-device-plugin]
+76f96d731cb8: Preparing
+e9dc98463cd6: Preparing
+76f96d731cb8: Pushed
+e9dc98463cd6: Pushed
+1.0.0-beta4: digest: sha256:76c08ab2780e88142384c6d9da48dae1788555273a5429a3eb67ed68a9bc358a size: 740
+2020/03/02 19:31:45 upload registry.tke.com/library/nvidia-device-plugin:1.0.0-beta4 to registry success[30/53]
+The push refers to repository [registry.tke.com/library/csi-operator]
+0407a84d8955: Preparing
+d69483a6face: Preparing
+0407a84d8955: Pushed
+d69483a6face: Pushed
+v1.0.1: digest: sha256:a4c3e56238a1924e279a894cc0bfbdf922da482127085c192ef6c7315d67741b size: 741
+2020/03/02 19:31:58 upload registry.tke.com/library/csi-operator:v1.0.1 to registry success[31/53]
+The push refers to repository [registry.tke.com/library/prometheus]
+799a04338fc1: Preparing
+d2cacb77d93d: Preparing
+97c86534d863: Preparing
+b1f92c6d4068: Preparing
+483b2ba761c7: Preparing
+495a19a962c5: Preparing
+5858aa1caa48: Preparing
+a135773ab4c8: Preparing
+a724badf61ce: Preparing
+a724badf61ce: Waiting
+a135773ab4c8: Waiting
+5858aa1caa48: Waiting
+495a19a962c5: Waiting
+b1f92c6d4068: Pushed
+d2cacb77d93d: Pushed
+799a04338fc1: Pushed
+483b2ba761c7: Pushed
+97c86534d863: Pushed
+a724badf61ce: Pushed
+a135773ab4c8: Pushed
+495a19a962c5: Pushed
+5858aa1caa48: Pushed
+v2.11.0: digest: sha256:a9f19c4d340affaa6cb1adca29b775e24da7ca63638a5879d8b79c93f9fc529b size: 2198
+2020/03/02 19:32:05 upload registry.tke.com/library/prometheus:v2.11.0 to registry success[32/53]
+The push refers to repository [registry.tke.com/library/alertmanager]
+96d25d0e9121: Preparing
+d56a80b83a4c: Preparing
+d8a26634229b: Preparing
+1660e4ef8e72: Preparing
+a135773ab4c8: Preparing
+a724badf61ce: Preparing
+a724badf61ce: Waiting
+a135773ab4c8: Mounted from library/prometheus
+96d25d0e9121: Pushed
+a724badf61ce: Mounted from library/prometheus
+d56a80b83a4c: Pushed
+1660e4ef8e72: Pushed
+d8a26634229b: Pushed
+v0.18.0: digest: sha256:3c0f0ea52a662342282fc7236ce058ab47a6259ed146cfc6bbdb122ba244c160 size: 1575
+2020/03/02 19:32:09 upload registry.tke.com/library/alertmanager:v0.18.0 to registry success[33/53]
+The push refers to repository [registry.tke.com/library/prometheus-config-reloader]
+0ccc317478d9: Preparing
+5effb4064a9c: Preparing
+a135773ab4c8: Preparing
+a724badf61ce: Preparing
+a724badf61ce: Mounted from library/alertmanager
+a135773ab4c8: Mounted from library/alertmanager
+0ccc317478d9: Pushed
+5effb4064a9c: Pushed
+v0.31.1: digest: sha256:4bc40e4f991606cfcc5dab1c90c77db6e09c6f7b7220de5ee24483732ce6a288 size: 1159
+2020/03/02 19:32:11 upload registry.tke.com/library/prometheus-config-reloader:v0.31.1 to registry success[34/53]
+The push refers to repository [registry.tke.com/library/prometheus-operator]
+f02e8132e055: Preparing
+a135773ab4c8: Preparing
+a724badf61ce: Preparing
+a135773ab4c8: Mounted from library/prometheus-config-reloader
+a724badf61ce: Mounted from library/prometheus-config-reloader
+f02e8132e055: Pushed
+v0.31.1: digest: sha256:f4576ec82c1951eb4b6024714f4b573c4853b0a9a2ee8c7fa40aabf55acf9151 size: 949
+2020/03/02 19:32:14 upload registry.tke.com/library/prometheus-operator:v0.31.1 to registry success[35/53]
+The push refers to repository [registry.tke.com/library/busybox]
+6194458b07fc: Preparing
+6194458b07fc: Pushed
+1.31.0: digest: sha256:bf510723d2cd2d4e3f5ce7e93bf1e52c8fd76831995ac3bd3f90ecc866643aff size: 527
+2020/03/02 19:32:15 upload registry.tke.com/library/busybox:1.31.0 to registry success[36/53]
+The push refers to repository [registry.tke.com/library/helm-api]
+863752dbe0f5: Preparing
+1ffdcf52ec13: Preparing
+8d7ea83e3c62: Preparing
+6a061ee02432: Preparing
+f73b2816c52a: Preparing
+6267b420796f: Preparing
+a30b835850bf: Preparing
+a30b835850bf: Waiting
+6267b420796f: Waiting
+6a061ee02432: Pushed
+f73b2816c52a: Pushed
+8d7ea83e3c62: Pushed
+863752dbe0f5: Pushed
+6267b420796f: Pushed
+1ffdcf52ec13: Pushed
+a30b835850bf: Pushed
+v1.3: digest: sha256:f72030d392f8a09894b4d87a8799b0531dcd664a0d53b22b66ddefdb45220db4 size: 1780
+2020/03/02 19:32:23 upload registry.tke.com/library/helm-api:v1.3 to registry success[37/53]
+The push refers to repository [registry.tke.com/library/log-collector]
+81910cc44730: Preparing
+344836e9ba36: Preparing
+de3dd7d63660: Preparing
+c6877266b235: Preparing
+4dedcb94ee1a: Preparing
+6270adb5794c: Preparing
+6270adb5794c: Waiting
+de3dd7d63660: Pushed
+c6877266b235: Pushed
+4dedcb94ee1a: Pushed
+81910cc44730: Pushed
+6270adb5794c: Pushed
+344836e9ba36: Pushed
+v1.1.0: digest: sha256:d5fdc48fd4187fdecb7620cd0456ee2c515ad01fd3a1606a03142364bda94153 size: 1579
+2020/03/02 19:32:41 upload registry.tke.com/library/log-collector:v1.1.0 to registry success[38/53]
+The push refers to repository [registry.tke.com/library/influxdb]
+e3eff84e3ccd: Preparing
+fa934809e7e4: Preparing
+72a0bdaeab4c: Preparing
+ab5e981adec3: Preparing
+1e76208b76a8: Preparing
+3d6dc3fcb2df: Preparing
+f1b5933fe4b5: Preparing
+3d6dc3fcb2df: Waiting
+f1b5933fe4b5: Waiting
+72a0bdaeab4c: Pushed
+fa934809e7e4: Pushed
+e3eff84e3ccd: Pushed
+f1b5933fe4b5: Mounted from library/tapp-controller
+3d6dc3fcb2df: Pushed
+1e76208b76a8: Pushed
+ab5e981adec3: Pushed
+1.7.6-alpine: digest: sha256:82b14a14dcc512e6468228548303871adafd109c08df4e6f5947a1529e691281 size: 1780
+2020/03/02 19:32:50 upload registry.tke.com/library/influxdb:1.7.6-alpine to registry success[39/53]
+The push refers to repository [registry.tke.com/library/volume-decorator]
+995a4feb8d6a: Preparing
+995a4feb8d6a: Preparing
+6ed045889619: Preparing
+e15afa4858b6: Preparing
+995a4feb8d6a: Pushed
+e15afa4858b6: Pushed
+6ed045889619: Pushed
+v1.0.0: digest: sha256:d111eade17865ad2c1f56fba0b276b9ede1d74e689b4a726114e51d2b0c6ada5 size: 1165
+2020/03/02 19:33:09 upload registry.tke.com/library/volume-decorator:v1.0.0 to registry success[40/53]
+The push refers to repository [registry.tke.com/library/kube-state-metrics]
+2f397bfc4ce3: Preparing
+4826cdadf1ef: Preparing
+2f397bfc4ce3: Pushed
+4826cdadf1ef: Pushed
+v1.6.0: digest: sha256:d89e3ab2e2f7badfd6742ea70bda4b9d837b4ad48544a321c9edba2bcccf5dda size: 740
+2020/03/02 19:33:24 upload registry.tke.com/library/kube-state-metrics:v1.6.0 to registry success[41/53]
+The push refers to repository [registry.tke.com/library/node-exporter]
+b1ec14839854: Preparing
+bcc97fbfc9e1: Preparing
+b1ec14839854: Pushed
+bcc97fbfc9e1: Pushed
+v0.15.2: digest: sha256:7fdade2359f5a00f849d43003905f41a9193a5196afcc51c6154284879524317 size: 740
+2020/03/02 19:33:39 upload registry.tke.com/library/node-exporter:v0.15.2 to registry success[42/53]
+The push refers to repository [registry.tke.com/library/local-tcr]
+73d61bf022fd: Preparing
+5bbc5831d696: Preparing
+d5974ddb5a45: Preparing
+f641ef7a37ad: Preparing
+d9ff549177a9: Preparing
+5bbc5831d696: Pushed
+73d61bf022fd: Pushed
+d9ff549177a9: Pushed
+f641ef7a37ad: Pushed
+d5974ddb5a45: Pushed
+v1.0.0: digest: sha256:b1165286043f2745f45ea637873d61939bff6d9a59f76539d6228abf79f87774 size: 1363
+2020/03/02 19:33:42 upload registry.tke.com/library/local-tcr:v1.0.0 to registry success[43/53]
+The push refers to repository [registry.tke.com/library/etcd]
+8afe4919c373: Preparing
+522e7057d51a: Preparing
+1c9610088ac9: Preparing
+be69db24f4ca: Preparing
+7fa563ed646b: Preparing
+503e53e365f3: Preparing
+503e53e365f3: Waiting
+1c9610088ac9: Pushed
+522e7057d51a: Pushed
+8afe4919c373: Pushed
+be69db24f4ca: Pushed
+7fa563ed646b: Pushed
+503e53e365f3: Pushed
+v3.3.12: digest: sha256:21012df620d0ed6b4bf63ab5d1e98f81e2e6e4f83ffff620d4cd4dae31cd857b size: 1571
+2020/03/02 19:33:46 upload registry.tke.com/library/etcd:v3.3.12 to registry success[44/53]
+The push refers to repository [registry.tke.com/library/prometheusbeat]
+55556fb06084: Preparing
+45ff1f6a1114: Preparing
+492818884ab9: Preparing
+928e438170ce: Preparing
+cdb3f9544e4c: Preparing
+45ff1f6a1114: Pushed
+928e438170ce: Pushed
+55556fb06084: Pushed
+492818884ab9: Pushed
+cdb3f9544e4c: Pushed
+6.4.1: digest: sha256:031a826a1de1a0250ebdd6486c22cf41a533318e48bf707beef0012554282db6 size: 1369
+2020/03/02 19:33:53 upload registry.tke.com/library/prometheusbeat:6.4.1 to registry success[45/53]
+The push refers to repository [registry.tke.com/library/swift]
+7259973e28cd: Preparing
+c6e7374f0e55: Preparing
+df64d3292fd6: Preparing
+c6e7374f0e55: Pushed
+df64d3292fd6: Pushed
+7259973e28cd: Pushed
+0.9.0: digest: sha256:c75113edf9038d768a4b3a4c1850b401ae9f45d3504b79a5fab32481a93f7714 size: 950
+2020/03/02 19:33:56 upload registry.tke.com/library/swift:0.9.0 to registry success[46/53]
+The push refers to repository [registry.tke.com/library/tke-event-watcher]
+c595d329711d: Preparing
+186d94bd2c62: Preparing
+24a9d20e5bee: Preparing
+e7dc337030ba: Preparing
+920961b94eb3: Preparing
+fa0c3f992cbd: Preparing
+ce6466f43b11: Preparing
+719d45669b35: Preparing
+3b10514a95be: Preparing
+fa0c3f992cbd: Waiting
+ce6466f43b11: Waiting
+719d45669b35: Waiting
+186d94bd2c62: Pushed
+24a9d20e5bee: Pushed
+c595d329711d: Pushed
+ce6466f43b11: Pushed
+719d45669b35: Pushed
+920961b94eb3: Pushed
+fa0c3f992cbd: Pushed
+3b10514a95be: Pushed
+e7dc337030ba: Pushed
+v0.1: digest: sha256:d5521541935efaa8beb82df5a6f37682340146fdb242ea866d99bd0fecd843f7 size: 2216
+2020/03/02 19:34:27 upload registry.tke.com/library/tke-event-watcher:v0.1 to registry success[47/53]
+The push refers to repository [registry.tke.com/library/coredns]
+30a6f49aa944: Preparing
+9198eadacc0a: Preparing
+9198eadacc0a: Pushed
+30a6f49aa944: Pushed
+1.2.6: digest: sha256:0e7e5387c73f4898a7251d91f27297d3a5b210421a0b234302276feb8b264a27 size: 739
+2020/03/02 19:34:30 upload registry.tke.com/library/coredns:1.2.6 to registry success[48/53]
+The push refers to repository [registry.tke.com/library/tke-audit-collector]
+8212426aafdb: Preparing
+4c07a7d6610c: Preparing
+a080446c2fd8: Preparing
+b3dadc06f9a5: Preparing
+66110b03be33: Preparing
+12c692cc70cf: Preparing
+8b15606a9e3e: Preparing
+12c692cc70cf: Waiting
+8b15606a9e3e: Waiting
+b3dadc06f9a5: Pushed
+a080446c2fd8: Pushed
+4c07a7d6610c: Pushed
+8212426aafdb: Pushed
+12c692cc70cf: Pushed
+8b15606a9e3e: Pushed
+66110b03be33: Pushed
+v0.3: digest: sha256:1ce6303e26696d4239fac6c2934f84f519a7c0a93f33e5f0ed829cacba2a5899 size: 1782
+2020/03/02 19:34:42 upload registry.tke.com/library/tke-audit-collector:v0.3 to registry success[49/53]
+The push refers to repository [registry.tke.com/library/tiller]
+c051e9f64617: Preparing
+6f440018af45: Preparing
+8a9df54b0cf8: Preparing
+717b092b8c86: Preparing
+717b092b8c86: Pushed
+c051e9f64617: Pushed
+6f440018af45: Pushed
+8a9df54b0cf8: Pushed
+v2.10.0: digest: sha256:2a3dd484ecfcf9343994e0f6c2af0a6faf1af7f7e499905793643f91e90edcb3 size: 1161
+2020/03/02 19:34:46 upload registry.tke.com/library/tiller:v2.10.0 to registry success[50/53]
+The push refers to repository [registry.tke.com/library/flannel]
+b883fd48bb96: Preparing
+4165b2148f36: Preparing
+93b0fa7f0802: Preparing
+3b6c03b8ad66: Preparing
+cd7100a72410: Preparing
+b883fd48bb96: Pushed
+93b0fa7f0802: Pushed
+4165b2148f36: Pushed
+3b6c03b8ad66: Pushed
+cd7100a72410: Pushed
+v0.10.0-amd64: digest: sha256:dbd5c4b125a87ac887eeeeee8e70522ed76b8ef729ff1d16f0da0f91d44f0e86 size: 1367
+2020/03/02 19:34:49 upload registry.tke.com/library/flannel:v0.10.0-amd64 to registry success[51/53]
+The push refers to repository [registry.tke.com/library/pause]
+e17133b79956: Preparing
+e17133b79956: Pushed
+3.1: digest: sha256:fcaff905397ba63fd376d0c3019f1f1cb6e7506131389edbcb3d22719f1ae54d size: 527
+2020/03/02 19:34:50 upload registry.tke.com/library/pause:3.1 to registry success[52/53]
+The push refers to repository [registry.tke.com/library/configmap-reload]
+5f70bf18a086: Preparing
+de9f4b1c1e91: Preparing
+5f70bf18a086: Pushed
+de9f4b1c1e91: Pushed
+v0.1: digest: sha256:cc153f2ed523952e85a73fafaff87d05fb14fb7e068ef330fb671274c4ed5998 size: 734
+2020/03/02 19:34:52 upload registry.tke.com/library/configmap-reload:v0.1 to registry success[53/53]
+2020/03/02 19:34:52 29.Push images to registry [Success] [393.240630s]
+2020/03/02 19:34:52 30.Set global cluster hosts doing
+2020/03/02 19:34:53 30.Set global cluster hosts [Success] [1.618931s]
+2020/03/02 19:34:53 31.Execute post deploy hook doing
+2020/03/02 19:34:53 Execute hook script hooks/post-install
+post install
+2020/03/02 19:34:53 31.Execute post deploy hook [Success] [0.011986s]
+2020/03/02 19:34:53 ===>install task [Sucesss] [1761.227638s]
 
