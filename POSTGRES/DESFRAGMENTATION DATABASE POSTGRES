@@ -4,6 +4,7 @@
 
 #CRONTAB
 50 23 1 * * nohup $path/desfrag.sh > $path/desfrag.log 2>&1 &
+*/2 * * * * $path/checa_bloqueiod.sh > $path/checa_bloqueiod.log 2>&1
 
 #SCRIPT DE DESFRAGMENTACAO
 vi $path/desfrag.sh
