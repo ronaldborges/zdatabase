@@ -42,6 +42,7 @@ export ISREADY=`ps aux | grep desfrag | grep -v "grep" | wc -l`
 if [ $ISREADY -eq 1 ]; then
         $path/elimina_bloqueio.sh
 else
+        echo "desfrag not running"      
 fi
 
 #SCRIPT QUE EXECUTA KILL DAS OPERAÇÕES BLOQUEANDO A DESFRAGMENTACAO
