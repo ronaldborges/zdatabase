@@ -58,7 +58,7 @@ vi /usr/lib/oracle/11.2/client64/network/admin/tnsnames.ora
 )
 )
 
-#configurar fdw do banco postgres para o banco oracle
+#CONFIGURE POSTGRES FDW FOR ORACLE DATABASE
 /usr/local/pgsql/bin/psql -U postgres -d <DATABASE> -p <PORT>
 CREATE EXTENSION ORACLE_FDW;
 CREATE SERVER ORATST FOREIGN DATA WRAPPER oracle_fdw OPTIONS (dbserver '//<IP>:<PORT>/<SID>');
