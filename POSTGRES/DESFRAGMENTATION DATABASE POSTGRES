@@ -38,7 +38,7 @@ fi
 
 #SCRIPT DE CHECAGEM DE BLOQUEIO EXCLUSIVO CONCORRENTE AO DESFRAG
 vi $path/checa_bloqueiod.sh
-export ISREADY=`ps aux | grep desfrag | grep -v "grep" | wc -l`
+export ISREADY=`ps aux | grep desfrag_banco.sh | grep -v "grep" | wc -l`
 if [ $ISREADY -eq 1 ]; then
         $path/elimina_bloqueio.sh
 else
