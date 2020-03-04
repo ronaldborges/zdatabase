@@ -45,8 +45,8 @@ fi
 
 #SCRIPT QUE EXECUTA KILL DAS OPERAÇÕES BLOQUEANDO A DESFRAGMENTACAO
 vi $path/elimina_bloqueio.sh
-while [ $(/usr/local/pgsql/bin/psql -U postgres -p 5432 -t -c "select count(1) from (select * from pg_locks l, pg_stat_activity a where a.pid=l.pid and l.mode like '%Exclusive%' and (query like 'vacuum%' or query like 'reindex%') and waiting='t') as c") != 0 ]; do
-        /usr/local/pgsql/bin/psql -U postgres -p 5432 -t -c "select pg_terminate_backend(a.pid) from pg_locks l, pg_stat_activity a where a.pid=l.pid and l.mode like '%Exclusive%' and query not like 'vacuum%' and query not like 'reindex%' order by (now() - a.query_start) desc limit 1"
+while [ $($path/bin/psql -U postgres -p 5432 -t -c "select count(1) from (select * from pg_locks l, pg_stat_activity a where a.pid=l.pid and l.mode like '%Exclusive%' and (query like 'vacuum%' or query like 'reindex%') and waiting='t') as c") != 0 ]; do
+        $path/bin/psql -U postgres -p 5432 -t -c "select pg_terminate_backend(a.pid) from pg_locks l, pg_stat_activity a where a.pid=l.pid and l.mode like '%Exclusive%' and query not like 'vacuum%' and query not like 'reindex%' order by (now() - a.query_start) desc limit 1"
 done
 
 
