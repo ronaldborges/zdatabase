@@ -337,7 +337,7 @@ NSN_SERVICE={"PLSExtProc"}
 NSN_PROTOCOLS={"TCP;HOSTNAME;1521"}
 
 #CREATE DATABASE 
-dbca -silent -responseFile ./dbca.rsp
+dbca -silent -createDatabase -responseFile ./dbca.rsp
 
 #CREATE LISTENER
 netca -silent -responsefile ./netca.rsp
