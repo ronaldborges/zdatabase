@@ -99,7 +99,11 @@ Connected to:
 Oracle Database 19c Enterprise Edition Release 19.0.0.0.0 - Production
 Version 19.3.0.0.0
 
-SQL>  
+SQL> SELECT NAME, CON_ID, DBID, CON_UID, GUID FROM V$CONTAINERS ORDER BY CON_ID;
+NAME					CON_ID	   DBID       CON_UID    GUID
+------------- ---------- ---------- ---------- --------------------------------
+APPSPDB 			3          2334035623 2334035623 A01C8AF186AE124EE053107AA8C003ED
+ 
 SQL> exit
 
 #CONFIGURE POSTGRES FDW FOR ORACLE DATABASE
