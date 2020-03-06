@@ -1,0 +1,169 @@
+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
++   POSTGRES CONNECT FOREIGN DATA WRAPPER TO ORACLE 19.6c PLUGABLE DATABASE  +
+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+
+The objective of this procedure is to establish a database environment distributed between postgres database and oracle database, 
+follow the steps
+
+#DOWNLOAD RPMS FILES FROM ORACLE WEBSITE
+oracle-instantclient19.6-basic-19.6.0.0.0-1.x86_64.rpm
+oracle-instantclient19.6-devel-19.6.0.0.0-1.x86_64.rpm
+oracle-instantclient19.6-sqlplus-19.6.0.0.0-1.x86_64.rpm
+oracle-instantclient19.6-tools-19.6.0.0.0-1.x86_64.rpm
+
+#INSTALL RPMS ORACLE-INSTANTCLIENT
+rpm -ivh oracle-instantclient19.6-basic-19.6.0.0.0-1.x86_64.rpm
+rpm -ivh oracle-instantclient19.6-devel-19.6.0.0.0-1.x86_64.rpm
+rpm -ivh oracle-instantclient19.6-sqlplus-19.6.0.0.0-1.x86_64.rpm
+rpm -ivh oracle-instantclient19.6-tools-19.6.0.0.0-1.x86_64.rpm
+
+#ADD PERMISSIONS FOR POSTGRES DIRECTORIES
+chown postgres:postgres -R /usr/local/pgsql/lib/
+chown postgres:postgres -R /usr/local/pgsql/share/extension/
+chown postgres:postgres -R /usr/local/pgsql/share/doc/extension
+
+#CONFIGURE BASH PROFILE FOR USER POSTGRES
+su - postgres
+vi .bash_profile
+export ORACLE_HOME=/usr/lib/oracle/19.6/client64
+export PATH=$PATH:/usr/lib/oracle/19.6/client64/bin
+export LD_LIBRARY_PATH=/usr/lib/oracle/19.6/client64/lib
+export TNS_ADMIN=/usr/lib/oracle/19.6/client64/lib/network/admin
+exit
+
+#INSTALL ORACLE_FDW-1.0.0
+wget http://api.pgxn.org/dist/oracle_fdw/2.2.1/oracle_fdw-2.2.1.zip
+unzip oracle_fdw-2.2.1.zip
+cd oracle_fdw-2.2.1
+
+#CONFIGURE PG_CONFIGURE IN MAKE FILE
+vi Makefile
+MODULE_big = oracle_fdw
+OBJS = oracle_fdw.o oracle_utils.o oracle_gis.o
+EXTENSION = oracle_fdw
+DATA = oracle_fdw--1.1.sql oracle_fdw--1.0--1.1.sql
+DOCS = README.oracle_fdw
+REGRESS = oracle_fdw oracle_gis oracle_import oracle_join
+
+# add include and library paths for both Instant Client and regular Client
+PG_CPPFLAGS = -I$(ORACLE_HOME)/sdk/include -I$(ORACLE_HOME)/oci/include -I$(ORACLE_HOME)/rdbms/public -I/usr/include/oracle/19.6/client -I/usr/include/oracle/19.6/client64 -I/usr/include/oracle/19.3/client -I/usr/include/oracle/19.3/client64 -I/usr/include/oracle/18.5/client -I/usr/include/oracle/18.5/client64 -I/usr/include/oracle/18.3/client -I/usr/include/oracle/18.3/client64 -I/usr/include/oracle/12.2/client -I/usr/include/oracle/12.2/client64 -I/usr/include/oracle/12.1/client -I/usr/include/oracle/12.1/client64 -I/usr/include/oracle/11.2/client -I/usr/include/oracle/11.2/client64 -I/usr/include/oracle/11.1/client -I/usr/include/oracle/11.1/client64 -I/usr/include/oracle/10.2.0.5/client -I/usr/include/oracle/10.2.0.5/client64 -I/usr/include/oracle/10.2.0.4/client -I/usr/include/oracle/10.2.0.4/client64 -I/usr/include/oracle/10.2.0.3/client -I/usr/include/oracle/10.2.0.3/client64
+SHLIB_LINK = -L$(ORACLE_HOME) -L$(ORACLE_HOME)/bin -L$(ORACLE_HOME)/lib -L$(ORACLE_HOME)/lib/amd64 -l$(ORACLE_SHLIB) -L/usr/lib/oracle/19.6/client/lib -L/usr/lib/oracle/19.3/client64/lib -L/usr/lib/oracle/19.3/client/lib -L/usr/lib/oracle/19.3/client64/lib -L/usr/lib/oracle/18.5/client/lib -L/usr/lib/oracle/18.5/client64/lib -L/usr/lib/oracle/18.3/client/lib -L/usr/lib/oracle/18.3/client64/lib -L/usr/lib/oracle/12.2/client/lib -L/usr/lib/oracle/12.2/client64/lib -L/usr/lib/oracle/12.1/client/lib -L/usr/lib/oracle/12.1/client64/lib -L/usr/lib/oracle/11.2/client/lib -L/usr/lib/oracle/11.2/client64/lib -L/usr/lib/oracle/11.1/client/lib -L/usr/lib/oracle/11.1/client64/lib -L/usr/lib/oracle/10.2.0.5/client/lib -L/usr/lib/oracle/10.2.0.5/client64/lib -L/usr/lib/oracle/10.2.0.4/client/lib -L/usr/lib/oracle/10.2.0.4/client64/lib -L/usr/lib/oracle/10.2.0.3/client/lib -L/usr/lib/oracle/10.2.0.3/client64/lib
+
+ifdef NO_PGXS
+subdir = contrib/oracle_fdw
+top_builddir = ../..
+include $(top_builddir)/src/Makefile.global
+include $(top_srcdir)/contrib/contrib-global.mk
+else
+PG_CONFIG = /usr/local/pgsql-9.6.14/bin/pg_config
+PGXS := $(shell $(PG_CONFIG) --pgxs)
+include $(PGXS)
+endif
+
+# Oracle's shared library is oci.dll on Windows and libclntsh elsewhere
+ifeq ($(PORTNAME),win32)
+ORACLE_SHLIB=oci
+else
+ifeq ($(PORTNAME),cygwin)
+ORACLE_SHLIB=oci
+else
+ORACLE_SHLIB=clntsh
+endif
+endif
+
+#COMPILE AND INSTALL oracle_fdw-2.2.1
+make; make install
+
+#CONFIGURE ORACLE TNSNAMES.ORA
+vi /usr/lib/oracle/19.6/client64/lib/network/admin/tnsnames.ora
+APPSPDB =
+  (DESCRIPTION =
+    (ADDRESS = (PROTOCOL = TCP)(HOST = centos7db1)(PORT = 1521))
+    (CONNECT_DATA =
+      (SERVER = DEDICATED)
+      (SERVICE_NAME = appspdb)
+    )
+  )
+
+#TEST CONNECTION SQLPLUS
+sqlplus <USER>/<PASSWORD>@APPSPDB
+
+SQL*Plus: Release 19.0.0.0.0 - Production on Fri Mar 6 13:43:52 2020
+Version 19.6.0.0.0
+
+Copyright (c) 1982, 2019, Oracle.  All rights reserved.
+
+Last Successful login time: Thu Mar 05 2020 16:10:49 -03:00
+
+Connected to:
+Oracle Database 19c Enterprise Edition Release 19.0.0.0.0 - Production
+Version 19.3.0.0.0
+
+SQL>  
+SQL> exit
+
+#CONFIGURE POSTGRES FDW FOR ORACLE DATABASE
+/usr/local/pgsql/bin/psql -U postgres -d <DATABASE> -p <PORT>
+CREATE EXTENSION ORACLE_FDW;
+CREATE SERVER ORATST FOREIGN DATA WRAPPER oracle_fdw OPTIONS (dbserver '//centos7db1:1521/appspdb');
+GRANT USAGE ON FOREIGN SERVER ORATST TO POSTGRES;
+CREATE USER MAPPING FOR POSTGRES SERVER ORATST OPTIONS (user '<USER>', password '<PASSWORD>');
+
+#VALIDATE CONFIGURATION
+SELECT oracle_diag();
+                    oracle_diag                          
+---------------------------------------------------------------
+ oracle_fdw 2.2.0, PostgreSQL 9.6.14, Oracle client 19.6.0.0.0
+(1 row)
+
+#CREATE TABLE CONVERTING TYPES OF DATA BETWEEN ORACLE AND POSTGRES
+CREATE FOREIGN TABLE <SCHEMA>.<TABLE>(
+        COLUMN VARCHAR(8),
+        COLUMN numeric(10,0),
+        COLUMN DATE)
+SERVER ORATST OPTIONS (schema '<SCHEMA>', table '<TABLE>');
+
+#TEST SELECT 
+SELECT COUNT(1) FROM <SCHEMA>.<TABLE>;
+
+#######################################################################################################################################
+These conversions are automatically handled by oracle_fdw:
+
+Oracle type                    | Possible PostgreSQL types
+-------------------------------+---------------------------------------------
+CHAR                           | char, varchar, text
+NCHAR                          | char, varchar, text
+VARCHAR                        | char, varchar, text
+VARCHAR2                       | char, varchar, text
+NVARCHAR2                      | char, varchar, text
+CLOB                           | char, varchar, text
+LONG                           | char, varchar, text
+RAW                            | uuid, bytea
+BLOB                           | bytea
+BFILE                          | bytea (read-only)
+LONG RAW                       | bytea
+NUMBER                         | numeric, float4, float8, char, varchar, text
+NUMBER(n,m) with m<=0          | numeric, float4, float8, int2, int4, int8,
+                               |   boolean, char, varchar, text
+FLOAT                          | numeric, float4, float8, char, varchar, text
+BINARY_FLOAT                   | numeric, float4, float8, char, varchar, text
+BINARY_DOUBLE                  | numeric, float4, float8, char, varchar, text
+DATE                           | date, timestamp, timestamptz, char,
+                               |   varchar, text
+TIMESTAMP                      | date, timestamp, timestamptz, char,
+                               |   varchar, text
+TIMESTAMP WITH TIME ZOME       | date, timestamp, timestamptz, char,
+                               |   varchar, text
+TIMESTAMP WITH LOCAL TIME ZOME | date, timestamp, timestamptz, char,
+                               |   varchar, text
+INTERVAL YEAR TO MONTH         | interval, char, varchar, text
+INTERVAL DAY TO SECOND         | interval, char, varchar, text
+
+If a NUMBER is converted to a boolean, "0" means "false", everything else "true".
+
+NCLOB is currently not supported because Oracle cannot automatically convert
+it to the client encoding.
+
+If you need conversions exceeding the above, define an appropriate view in
+Oracle or PostgreSQL.
+
