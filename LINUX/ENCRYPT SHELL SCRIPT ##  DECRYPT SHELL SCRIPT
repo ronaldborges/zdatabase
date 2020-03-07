@@ -1,0 +1,41 @@
++++++++++++++++++++++++++++++++++++++++++++++++++++++++
++    ENCRYPT SHELL SCRIPT ##  DECRYPT SHELL SCRIPT    +
++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+
+#DOWNLOAD SHC
+wget -q http://www.datsi.fi.upm.es/~frosal/sources/shc-3.8.9.tgz
+tar zxvf shc-3.8.9.tgz
+cd shc-3.8.9
+make
+make install
+
+#CREATE TEST SCRIPT
+vi teste_script.sh
+#!/bin/bash
+# This script is very critical !
+echo "I'm a super critical and private script !"
+PASSWORDROOT="SuPeRrOoTpAsSwOrD"';
+myService --user=root --password=$PASSWORDROOT > /dev/null 2>&1
+
+#GRANT PERMISSION TO RUN
+chmod +x teste_script.sh
+
+#ENCRYPT SHELL SCRIPT
+/usr/bin/shc -f teste_script.sh -o teste
+
+#RUN SCRIPT 
+./teste
+echo "I'm a super critical and private script !"
+
+#DECRYPT SHELL SCRIPT
+#DOWNLOAD SCRIPT unshc.sh
+https://github.com/yanncam/UnSHc/tree/master/latest/unshc.sh
+
+#GRANT PERMISSION TO RUN
+chmod +x unshc.sh
+
+#RUN UNSHC 
+./unshc.sh teste -o teste_script1.sh
+
+#VERIFY TESTE FILE 
+vi teste_script1.sh
