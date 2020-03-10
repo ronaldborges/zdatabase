@@ -61,17 +61,42 @@ CONFIGURATION \ CONTROL
   | [] |  oafm_server1            | oafm_cluster1      | ol7apps1       | RUNNING       | OK           | 7002            |
   +----------------------------------------------------------------------------------------------------------------------+
   [NEW] [CLONE] [DELETE]
+
   
 # CLICK SERVER START ("Sub Tab")
 SETTINGS FOR AOACORE_SERVER1
- CONFIGURATION \ PROTOCOLS\ LOGGING \ DEBUG \ MONITORING \ CONTROL \ DEPLOYMENT \ SERVICES \ SECURITY \ NOTES
- GENERAL \ CLUSTER \ SERVICES \ KEYSTORES \ SSL \ FEDERATION SERVICES \ DEPLOYMENT \ MIGRATION \ TUNING \ OVERLOAD \ HEALTH MONITORING \ SERVER START \ WEB SERVICES 
+>> CONFIGURATION \ PROTOCOLS\ LOGGING \ DEBUG \ MONITORING \ CONTROL \ DEPLOYMENT \ SERVICES \ SECURITY \ NOTES
+>> GENERAL \ CLUSTER \ SERVICES \ KEYSTORES \ SSL \ FEDERATION SERVICES \ DEPLOYMENT \ MIGRATION \ TUNING \ OVERLOAD \ HEALTH MONITORING \ SERVER START \ WEB SERVICES 
 Click the Lock & Edit button in the Change Center to modify the settings on the page.
 [save]
  Use this page to configure general features of the server such as default network communications.
 VIEW JNDI Tree
 
-Name:               oacore_server1            An alphanumeric name for this server instance.
-Machine:            ol7apps1                  The Weblogic Server host name 
+Name:                         oacore_server1            An alphanumeric name for this server instance.
+Machine:                      ol7apps1                  The Weblogic Server host name 
+Cluster:                      oacore_cluster1           The cluster, or group of Weblogic Server instances, to which this server belongs.
+Listen Address:               ol7apps1.appsdba.info     The IP address or DNS name this server uses to listen for incoming connections.
+[v] Listen Port Enabled                                 Specifies whether this server can be reached through the default plain-text(non-SSL) listen port   
+Listen Port:                  7202                      The default TCP port this server uses to listen for regular(non-SSL) incoming connections.
+[] SSL Listen Port Enabled                              Indicates whether the server can be reached through the default SSL
+SSL Listen Port:              7002                      TCP/IP port at which this server listen for SSL connection requests
+[] Client Cert Proxy Enabled                            Specifies whether the HttpClusterServlet proxies the client certificate in a special header.
+Java Compiler:                javac                     The Java compiler to use for all applications hosted on this server that need to compile Java Code.
+Diagnostic Volume             Low                       Specifies the volume of diagnostic data that is automatically produced by WebLogic Server at run time.
+                                                        Note that the WLDF diagnostic volume setting does not affect explicity configured modules. For example,
+                                                        this controls the volume of events generated for JRockit Flight Recorder.
+
+-> Advanced ---------------------------------------------------------------------------------------------------------------------------------------------------
+[Save]
+Click the Lock & Edit button in the Change Center to modify the settings on this page.
 
 
+# CLICK SERVER START ("SUB TAB")
+SETTINGS FOR AOACORE_SERVER1
+>> CONFIGURATION \ PROTOCOLS\ LOGGING \ DEBUG \ MONITORING \ CONTROL \ DEPLOYMENT \ SERVICES \ SECURITY \ NOTES
+ GENERAL \ CLUSTER \ SERVICES \ KEYSTORES \ SSL \ FEDERATION SERVICES \ DEPLOYMENT \ MIGRATION \ TUNING \ OVERLOAD \ HEALTH MONITORING \ >> SERVER START \ WEB SERVICES 
+Click the Lock & Edit button in the Change Center to modify the settings on the page.
+[save]
+ Node Manager is a Weblogic Server utility that you can use to start, suspend, shut down, and restart servers in normal or unexpected conditions. Use this page to configure the startup settings that Node Manager will use to start this server on a remote machine.
+
+Java Home:                   /u01/oracle/PROD/fs1/EBSapps/comn/util/jdk64
