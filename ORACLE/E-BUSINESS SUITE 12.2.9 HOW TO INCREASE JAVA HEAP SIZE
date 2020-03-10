@@ -99,4 +99,52 @@ Click the Lock & Edit button in the Change Center to modify the settings on the 
 [save]
  Node Manager is a Weblogic Server utility that you can use to start, suspend, shut down, and restart servers in normal or unexpected conditions. Use this page to configure the startup settings that Node Manager will use to start this server on a remote machine.
 
-Java Home:                   /u01/oracle/PROD/fs1/EBSapps/comn/util/jdk64
+Java Home:                   /u01/oracle/PROD/fs1/EBSapps/comn/util/jdk64      The Java home directory (path on the machine running Node Manager) to use when starting this server.
+Java Vendor:                 Linux                                             The Java Vendor value to use when starting this server For example, BEA, Sun, HP etc ...
+BEA Home:                                                                      The BEA home directory (path on the machine running Node Manager) to use when starting server. 
+Root Directory:                                                                The directory that this server uses as its root directory. This directory must be on the computer that hosts the Node Manager. 
+                                                                               If you do not specify a Root Directory value, the domain directory is used by default.
+Class Path:
+/u01/oracle/PROD/fs1/FMW_Home/oracle_common/modules/oracle.jdbc_11.1.1/        The classpath (path on the machine running Node Manager) to use when starting this server.
+ojdbc6dms.jar:/u01/oracle/PROD/fs1/FMW_Home/patch_wls1036/profiles/default/
+sys_manifest_classpath/weblogic_path.jar:/u01/oracle/PROD/fs1/EBSapps/comn/
+util/jdk64/lib/tools.jar:/u01/oracle/PROD/fs1/FMW_Home/wlserver_10.3/server/
+lib/weblogic_sp.jar:/u01/oracle/PROD/fs1/FMW_Home/wl ...
+
+Arguments:                                                                     The arguments to use starting this server.
+-XX:PermSize=128m -XX:MaxPermSize=384m -Xms512m -Xmx512m -
+Djava.security.policy=/u01/oracle/PROD/fs1/FMW_Home/wlserver_10.3/server/
+lib/weblogic.policy - Djava.security.egd=file:/dev/./urandom - 
+Dweblogic.ProdictionModeEnabled=true -da -
+Dplatform.home=/u01/oracle/PROD/fs1/FMW_Home/wlserver_10.3
+
+Security Policy File:
+User Name:
+Password:
+Confirm Password:
+[Save]
+Click the Lock & Edit button in the Change Center to modify the settings on this page.
+
+# CLICK LOCK & EDIT
+
+Typical entries are like this:
+-XX:PermSize=128m -XX:MaxPermSize=384m -Xms512m -Xmx512m -Djava.security.policy=u01/oracle/PROD/fs1/FMW_Home/wlserver_10.3/server/lib/weblogic.policy
+Change To:
+-XX:PermSize=128m -XX:MaxPermSize=384m -Xms1024m -Xmx2048m -Djava.security.policy=-Djava.security.policy=u01/oracle/PROD/fs1/FMW_Home/wlserver_10.3/server/lib/weblogic.policy
+
+# CLICK THE 'SAVE' BUTTON TO SAVE THE CONFIGURATION CHANGES.
+
+Once the customizations are complete and saved
+
+# CLICK THE 'ACTIVATE CHANGES' BUTTON IN THE 'CHANGE CENTER' PAINEL TO ACTIVATE THE CHANGES.
+Messages
+V All changes have been activated. No restart are necessary.
+
+#NOTE
+No need for changing the values in the $CONTEXT_FILE of the application tier. No need to bring down any services.
+
+
+
+
+
+
