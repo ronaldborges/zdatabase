@@ -1,0 +1,92 @@
++++++++++++++++++++++++++++++++++++++++++++++++
++   ORACLE DATABASE 19C NETWORK ENCRYPTIOR   +
++++++++++++++++++++++++++++++++++++++++++++++++
+
+Oracle Database is provided with a network infrastructure called Oracle Net Services between the client and the server. 
+Communication between the client and the server on the network is carried in plain text with Oracle Client.
+Only the password field that Oracle uses to authenticate should not be added here.  
+The password field is always encrypted over the network according to the O5Logon protocol.
+
+When we use Oracle Net Service for communication between client and server, we have the ability to encrypt the information transmitted on the network.
+This structure is called “Oracle Data Network Encryption and Integrity“.
+
+Using Oracle’s capabilities, we can both encrypt data on the network and ensure data integrity. 
+We can use AES, DES, 3DES and RC4 symmetric encryption systems to encrypt data in the Oracle database.
+
+|__________________________________________________________________________________|
+|(Algorithm Name)                                       | Configuration Name       |
+|_______________________________________________________|__________________________|
+|RC4 256-bit key                                        |RC4_256                   |                   
+|RC4 128-bit key                                        |RC4_128                   |
+|RC4 56-bit key                                         |RC4_56                    |
+|RC4 40-bit key                                         |RC4_40                    |
+|AES 256-bit key                                        |AES256                    |
+|AES 192-bit key                                        |AES192                    |
+|AES 128-bit key                                        |AES128                    |
+|3-key 3DES                                             |3DES168                   |
+|2-key 3DES                                             |3DES112                   |
+|DES 56-bit key                                         |DES                       |
+|DES 40-bit key                                         |DES40                     |
+|_______________________________________________________|__________________________|
+
+In addition, with Network encryption, we can ensure the integrity of the information on the network.  The algorithm names used to ensure data integrity are listed below.
+
+|__________________________________________________________________________________|
+|(Algorithm Name)                                       | Configuration Name       |
+|_______________________________________________________|__________________________|
+|MD5                                                    |MD5                       |
+|SHA-1                                                  |SHA1                      |
+|SHA-2                                                  |SHA256                    |
+|SHA-2                                                  |SHA384                    |
+|SHA-2                                                  |SHA512                    |
+|_______________________________________________________|__________________________|
+
+With network encryption, we not only monitor data on the network, but also protect against threats called Data Modification Attack and Replay Attack.
+
+#CONFIGURING FOR NETWORK ENCRYPTION
+The configuration for Network Encryption is defined in the “sqlnet.ora” file on the client and server side.  
+Before configuring, Oracle Net installation must be done on both the server and client side.
+Configuration can be done by replacing the file “sqlnet.ora” with the text editor or with the netmgr program.
+ #SERVER
+ SQLNET.ENCRYPTION_SERVER = [accepted | rejected | requested | required ]
+ SQLNET.ENCYRPTION_TYPES_SERVER = (algorithm name)
+ 
+ #CLIENT
+ SQLNET.ENCRYPTION_CLIENT = [ accepted | rejected | requested | required ]
+ SQLNET.ENCYRPTION_TYPES_CLIENT = (algorithm name)
+ 
+With the installation of Oracle Net, all these encryption algorithms are installed.  
+The SQLNET.ENCRYPTION_SERVER and SQLNET.ENCRYPTION_CLIENT parameters are parameters that determine whether to encrypt the client and the server. 
+
+This parameter can take the following values,
+
+    REJECTED
+    ACCEPTED
+    REQUESTED
+    REQUIRED
+
+The default value is ACCEPTED.
+
+REJECRED : This means that the client and server will never establish an encrypted connection.
+ACCEPTED : It means that the client and the server can establish an encrypted connection if there is a request to establish an encrypted connection.
+REQUESTED : It means that the client and the server want to establish an encrypted connection.
+REQUIRED : It means that the client or server is necessarily trying to establish an encrypted connection.  The client and server cannot establish a connection when a connection is requested withouth password.
+
+The parameters used on the client and server side to ensure data integrity are:
+ #SERVER
+ SQLNET.CRYPTO_CHECKSUM_SERVER = [ accepted | rejected | requested | required ]
+ SQLNET.CRYPTO_CHECKSUM_TYPES_SERVER = (algorithm name)
+ 
+ #CLIENT
+ SQLNET.CRYPTO_CHECKSUM_CLIENT = [ accepted | rejected | requested | required ]
+ SQLNET.CRYPTO_CHECKSUM_TYPES_CLIENT = (algorithm name)
+ 
+EXAMPLE SQLNET.ORA CLIENT
+TRACE_LEVEL_CLIENT=10
+SQLNET.ENCRYPTIOEN_CLIENT = Requested
+SQLNET.ENCRYPTIOEN_TYPES_CLIENT = (RC4_256)
+SQLNET.CRYPTO_CHECKSUM_CLIENT = Requested
+SQLNET.CRYPTO_CHECKSUM_TYPES_CLIENT = (MD5)
+
+The postgresql database handles connections similarly using the pg_hba.conf file. 
+But you cannot choose the type of encryption you want to use for authentication or use.
