@@ -1,6 +1,6 @@
-+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-+   RAC 19.3C HOW TO TROUBLESHOOT CONNECTIVITY ISSUE WITH 11GR2 SCAN NAME   +
-+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
++   ORACLE DATABASE 19C RAC HOW TO TROUBLESHOOT CONNECTIVITY ISSUE WITH 19C SCAN NAME   +
++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
 This document is to provide checklist when connection through 11gR2 Grid Infrastructure (CRS) SCAN name to database fails.
 When client program connects to RAC database through SCAN name, SCAN listener will accept t he request and redirect the connection to local listener. 
