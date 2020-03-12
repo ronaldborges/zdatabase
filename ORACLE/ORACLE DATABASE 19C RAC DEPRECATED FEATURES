@@ -1,0 +1,19 @@
++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
++     ORACLE DATABASE 19C RAC DEPRECATED FEATURES       +
++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+
+#CLUSTER_DATABASE_INSTANCES PARAMETER IS DEPRECATED
+The Oracle Database initialization parameter CLUSTER_DATABASE_INSTANCES is deprecated in Oracle Database 19c (19.1)
+The init.ora parameter CLUSTER_DATABASE_INSTANCES specifies the number of configured Oracle Real Application Clusters (Oracle RAC) instances.
+Starting with Oracle Database 19c and later releases, the number of configurable Oracle RAC instances is derived automatically from the Oracle Clusterware resource definitions. 
+There is no replacement for this parameter, because there is no longer a reason to have this parameter.
+
+#SERVICE_NAMES PARAMETER IS DEPRECATED
+Deprecation of the SERVICE_NAMES Initialization Parameter
+Starting with Oracle Database 19c, customer use of the SERVICE_NAMES parameter is deprecated. It can be desupported in a future release.
+The use of the SERVICE_NAMES parameter is no longer actively supported. It must not be used for high availability (HA) deployments. 
+It is not supported to use service names parameter for any HA operations. This restriction includes FAN, load balancing, FAILOVER_TYPE, FAILOVER_RESTORE, SESSION_STATE_CONSISTENCY, and any other uses.
+To manage your services, Oracle recommends that you use the SRVCTL or GDSCTL command line utilities, or the DBMS_SERVICE package.
+
+
+
