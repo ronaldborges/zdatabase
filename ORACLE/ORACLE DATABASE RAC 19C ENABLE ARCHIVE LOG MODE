@@ -1,0 +1,84 @@
++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
++     ORACLE DATABASE RAC 19C ENABLE ARCHIVE LOG MODE       +
++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+
+#NOTE
+In Oracle multitenent database we have redo logs present at container database, there is no redo logs at pluggable database.
+
+#VALIDATION
+SQL> select name,open_mode,log_mode from v$database;
+NAME	    OPEN_MODE	           LOG_MODE
+--------- -------------------- ------------
+APPSCDB   READ WRITE	         NOARCHIVELOG
+
+SQL> archive log list
+Database log mode	          No Archive Mode
+Automatic archival	        Disabled
+Archive destination	        USE_DB_RECOVERY_FILE_DEST
+Oldest online log sequence  5
+Current log sequence	      7
+
+#CONFIGURE PARAMETER
+Run command node 1
+ALTER SYSTEM SET log_archive_dest_1='LOCATION=+FRA' SCOPE=spfile;
+ALTER SYSTEM SET log_archive_format='arch_%t_%s_%r.arc' SCOPE=spfile;
+Run command node 2
+ALTER SYSTEM SET log_archive_dest_1='LOCATION=+FRA' SCOPE=spfile;
+ALTER SYSTEM SET log_archive_format='arch_%t_%s_%r.arc' SCOPE=spfile;
+
+#STOP THE ORACLE RAC DATABASE SERVICE
+srvctl stop database -d appsdba
+srvctl status database -d appsdba
+Instance appsdba1 is not running on node rac1
+Instance appsdba2 is not running on node rac2
+
+#START THE ORACLE RAC DATABASE IN MOUNT STATE.
+srvctl start database -d appsdba -o mount
+srvctl status database -d appsdba
+Instance appsdba1 is running on node rac1
+Instance appsdba2 is running on node rac2
+
+#ENABLE ARCHIVELOG
+#In one of the database nodes
+sqlplus / as sysdba
+SQL> ALTER DATABASE ARCHIVELOG;
+SQL> EXIT;
+
+#STOP THE ORACLE RAC DATABASE SERVICE
+srvctl stop database -d appsdba
+srvctl status database -d appsdba
+Instance appsdba1 is not running on node rac1
+Instance appsdba2 is not running on node rac2
+
+#START THE ORACLE RAC DATABASE
+srvctl start database -d appsdba
+srvctl status database -d appsdba
+Instance appsdba1 is running on node rac1
+Instance appsdba2 is running on node rac2
+
+#CHECK IF ARCHIVELOG HAS BEEN ENABLED
+sqlplus / as sysdba
+SQL> ARCHIVE LOG LIST;
+Database log mode              Archive Mode
+Automatic archival             Enabled
+Archive destination            +FRA
+Oldest online log sequence     18
+Next log sequence to archive   19
+Current log sequence           19
+
+SQL> select log_mode,name from v$database;
+LOG_MODE      NAME
+------------- -----------------
+ARCHIVELOG    ORADBWR
+
+#CHECK DIRECTORY IN ASM
+ASMCMD> ls FRA/
+APPSDBA/
+ASMCMD> ls FRA/APPSDBA/
+ARCHIVELOG/
+ASMCMD> ls FRA/APPSDBA/ARCHIVELOG/
+
+
+
+
+
