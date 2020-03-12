@@ -8,6 +8,16 @@ The init.ora parameter CLUSTER_DATABASE_INSTANCES specifies the number of config
 Starting with Oracle Database 19c and later releases, the number of configurable Oracle RAC instances is derived automatically from the Oracle Clusterware resource definitions. 
 There is no replacement for this parameter, because there is no longer a reason to have this parameter.
 
+#DEPRECATION OF SQLNET.ENCRYPTION_WALLET_LOCATION PARAMETER
+The SQLNET.ENCRYPTION_WALLET_LOCATION sqlnet.ora parameter is deprecated in Oracle Database 19c.
+The SQLNET.ENCRYPTION_WALLET_LOCATION parameter defines the location of the software keystores for Transparent Data Encryption (TDE). 
+To configure the software keystore location, instead of setting SQLNET.ENCRYPTION_WALLET_LOCATION, Oracle recommends that you set the WALLET_ROOT initialization parameter, and the TDE_CONFIGURATION dynamic initialization parameter.
+Oracle recommends that you use the WALLET_ROOT instance initialization parameter as soon as possible, because the value is read once at instance startup time, so all sessions and server background processes share the same path after startup. 
+If the SQLNET.ENCRYPTION_WALLET_LOCATION parameter is used, then it can lead to confusing misconfigurations, because different sessions can have different SQLNET parameter values. 
+Another reason to use WALLET_ROOT is that it is the directory within which you can locate the wallets of other features, such as Oracle Enterprise User Security, and Transport Layer Security. 
+This location can become the principal location for all server-side wallets.
+
+
 #SERVICE_NAMES PARAMETER IS DEPRECATED
 Deprecation of the SERVICE_NAMES Initialization Parameter
 Starting with Oracle Database 19c, customer use of the SERVICE_NAMES parameter is deprecated. It can be desupported in a future release.
