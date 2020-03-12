@@ -1,0 +1,15 @@
++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
++     ORACLE DATABASE 19C RAC DESUPPORTED FEATURES      +
++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+
+º DESUPPORT OF LEAF NODES IN FLEX CLUSTER ARCHITECTURE
+* Leaf nodes are no longer supported in the Oracle Flex Cluster Architecture in Oracle Grid Infrastructure 19c.
+* In Oracle Grid Infrastructure 19c (19.1) and later releases, all nodes in an Oracle Flex Cluster function as hub nodes. 
+The capabilities offered by Leaf nodes in the original implementation of the Oracle Flex Cluster architecture can as easily be served by hub nodes. 
+Therefore, leaf nodes are no longer supported.
+
+DESSUPORT OF ORACLE REAL APPLICATION CLUSTERS FOR STANDARD EDITION 2 (SE2) DATABASE EDITION
+* Starting with Oracle Database 19c, Oracle Real Application Clusters (Oracle RAC) is not supported in Oracle Database Standard Edition 2 (SE2).
+* Upgrading Oracle Database Standard Edition databases that use Oracle Real Application Clusters (Oracle RAC) functionality from earlier releases to Oracle Database 19c is not possible.
+* To upgrade those databases to Oracle Database 19c, either remove the Oracle RAC functionality before starting the upgrade, or upgrade from Oracle Database Standard Edition to Oracle Database Enterprise Edition.
+* For more information see My Oracle Support Note 2504078.1: Desupport of Oracle Real Application Clusters (RAC) with Oracle Database Standard Edition 19c
