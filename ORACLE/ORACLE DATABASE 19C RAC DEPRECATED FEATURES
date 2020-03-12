@@ -17,7 +17,6 @@ If the SQLNET.ENCRYPTION_WALLET_LOCATION parameter is used, then it can lead to 
 Another reason to use WALLET_ROOT is that it is the directory within which you can locate the wallets of other features, such as Oracle Enterprise User Security, and Transport Layer Security. 
 This location can become the principal location for all server-side wallets.
 
-
 #SERVICE_NAMES PARAMETER IS DEPRECATED
 Deprecation of the SERVICE_NAMES Initialization Parameter
 Starting with Oracle Database 19c, customer use of the SERVICE_NAMES parameter is deprecated. It can be desupported in a future release.
