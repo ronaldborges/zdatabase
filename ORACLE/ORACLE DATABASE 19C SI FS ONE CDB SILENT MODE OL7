@@ -337,10 +337,10 @@ NSN_SERVICE={"PLSExtProc"}
 NSN_PROTOCOLS={"TCP;HOSTNAME;1521"}
 
 #CREATE DATABASE 
-dbca -silent -createDatabase -responseFile ./dbca.rsp
+dbca -silent -createDatabase -responseFile /home/oracle/dbca.rsp
 
 #CREATE LISTENER
-netca -silent -responsefile ./netca.rsp
+netca -silent -responsefile /home/oracle/netca.rsp
 
 sqlplus / as sysdba
 
