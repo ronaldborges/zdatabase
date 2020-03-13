@@ -1,0 +1,49 @@
++++++++++++++++++++++++++++++++++++++++++++++
++   ORACLE DATABASE 19C DATAGUARD CHANGES   +
++++++++++++++++++++++++++++++++++++++++++++++
+
+#Automatic Flashback Of Standby Database
+
+ The process of flashing back a physical standby to a point in time that was captured on the primary is
+ simplified by automatically replicating restore points from primary to the standby.
+ These restore points are called replicated restore points.
+ Irrespective of whether a restore point on the primary database is a guaranteed restore point or a normal restore point, the corresponding replicated restore point is
+ always a normal restore point.
+
+#Restore Point Replication From Primary To Standby
+
+ The process of flashing back a physical standby to a point in time that was captured on the primary is
+ simplified by automatically replicating restore points from primary to the standby.
+ These restore points are called replicated restore points.
+ Irrespective of whether a restore point on the primary database is a guaranteed restore point or a normal restore point, the corresponding replicated restore point is
+ always a normal restore point.
+
+#Active Data Guard-DML Redirection
+
+ Allows DML to be executed against the standby database
+ Incidental Data Manipulation Language (DML) operations can be run on Active Data Guard standby databases.This allows more applications to benefit from using an Active Data Guard standby database when some writes are required.On execution the DML operation is passed to the primary database.
+ DML redirection helps in load balancing between the primary and standby databases. When incidental DML is issued on an Active Data Guard standby database, the update is passed to the primary database where it is executed. The resulting redo of the transaction updates the standby database after which control is returned to the application.
+ DML operations on a standby can be transparently redirected to and run on the primary database. This includes DML statements that are part of PL/SQL blocks. The Active Data Guard session waits until the corresponding changes are shipped to and applied to the Active Data Guard standby.
+
+#Tuning Automatic Outage Resolution With Data Guard
+
+ Data Guard maintains internal mechanisms that detect and correct issues with its redo transport and gap resolution processes
+ In case of network or disk I/O problems, these mechanisms prevent those processes from hanging and causing unnecessarily long gaps
+ Oracle Data Guard has several processes on the Primary and Standby databases that handle redo
+ transport and archiving which communicate with each other over the network. In certain failure
+ situations, network hangs, disconnects, and disk I/O issues, these processes can hang potentially
+ causing delays in redo transport and gap resolution. Data Guard has an internal mechanism to detect
+ these hung processes and terminate them allowing the normal outage resolution to occur.
+ The following parameters allow the waits times to be tuned for a specific Data Guard configuration
+ based on the user network and Disk I/O behavior
+
+#Automatically Deleting Flashback Logs
+
+ The COMPATIBLE initialization parameter must be set to 19.0.0 or higher for flashback logs to be automatically deleted.
+ Fast recovery area management and database health are improved by automatically deleting flashback logs that are beyond the retention period.
+ The fast recovery area is critical for databases because it stores backups, online redo logs, archived redo logs, and flashback logs.
+ Because many databases can all use the fast recovery area, multiple databases are impacted when the fast recovery area becomes full.
+ This feature makes flashback space usage become predictable from a storage management perspective, since flashback uses no more space than is required by retention.
+ It also allows you to control cumulative space pressure by adjusting the flashback retention.
+
+
