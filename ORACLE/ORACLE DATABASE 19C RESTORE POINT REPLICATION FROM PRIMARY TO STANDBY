@@ -1,0 +1,20 @@
++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
++   ORACLE DATABASE 19C RESTORE POINT REPLICATION FROM PRIMARY TO STANDBY   +
++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+
+#NOTE
+ *The process of flashing back a physical standby to a point in time that was captured on the primary is
+  simplified by automatically replicating restore points from primary to the standby.
+ *These restore points are called replicated restore points.
+ *Irrespective of whether a restore point on the primary database is a guaranteed restore point or a normal restore point, 
+  the corresponding replicated restore point is always a normal restore point.
+
+#AUTOMATICALLY REPLICATES RESTORE POINTS FROM A PRIMARY DATABASE TO THE STANDBY DATABASE CONDITIONS
+ *Compatible initialization parameter for both the primary database and the standby database is set to 19.0.0 or higher
+ *Primary database is open
+ *A restore point that is created on a primary database when the primary is in mount mode is not replicated. 
+  This restriction is because the restore point information is replicated though the redo.
+
+#NOTE
+#ENABLE ARCHIVELOG AFTER ENABLE FLASHBACK
+
