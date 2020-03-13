@@ -18,7 +18,7 @@ systemctl disable firewalld
 
 #INSTALL PRE-REQUIRES
 yum groupinstall "Development tools" -y
-yum install libtermcap-devel readline-devel gcc bison flex perl libconfig-devel -y
+yum install libtermcap-devel readline-devel gcc bison flex perl libconfig-devel kernel-devel pcre-devel -y
 yum install zlib jzlib zlib-devel -y
 yum install wget -y
 
