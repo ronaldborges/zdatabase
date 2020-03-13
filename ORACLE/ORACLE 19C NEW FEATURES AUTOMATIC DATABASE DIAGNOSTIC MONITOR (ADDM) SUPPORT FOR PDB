@@ -1,0 +1,472 @@
++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
++   ORACLE 19C NEW FEATURES AUTOMATIC DATABASE DIAGNOSTIC MONITOR (ADDM) SUPPORT FOR PDB    +
++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+
+#NOTE
+*This feature is available from Oracle 19c database.
+ You can now use Automatic Database Diagnostic Monitor (ADDM) analysis for pluggable databases (PDBs) in a multitenant environment.
+ ADDM analysis at a PDB level enables you to tune a PDB effectively for better performance.
+*Starting with Oracle Database 12c, ADDM is enabled by default in the root container of a multitenant container database (CDB). 
+ Starting with Oracle Database 19c, you can also use ADDM in a pluggable database (PDB).
+*ADDM is enabled by default in a CDB root.
+ ADDM does not work in a PDB by default, because automatic AWR snapshots are disabled by default in a PDB.
+ To use ADDM in a PDB, you must enable automatic AWR snapshots in the PDB.
+*A user whose current container is the CDB root can view ADDM results for the entire CDB.
+ The ADDM results can include information about multiple PDBs.
+ ADDM results related to a PDB are not included if the PDB is unplugged.
+*In a CDB, ADDM works in the same way as it works in a non-CDB, that is, the ADDM analysis is performed each time an AWR snapshot
+ is taken on a CDB root or a PDB, and the ADDM results are stored on the same database system where the snapshot is taken. 
+ The time period analyzed by ADDM is defined by the last two snapshots (the last hour by default).
+*The ADDM results stored on the CDB root cannot be viewed when the current container is a PDB.
+ ADDM results on a PDB provide only PDB-specific findings and recommendations. 
+ A user whose current container is a PDB can view ADDM results for the current PDB only.
+*The ADDM results exclude findings that apply to the CDB as a whole, for example, 
+ I/O problems relating to the buffer cache size.Enabling AWR snapshots on a PDB does not change the ADDM report on the CDB root.
+ AWR data on a PDB cannot be accessed from the CDB root.
+
+#PDB-LEVEL ADDM RESTRICTIONS
+Unlike in a non-CDB, ADDM does not report the following issues in a PDB, because these issues apply to a CDB as a whole and do not apply to an individual PDB
+
+ - I/O problems due to:
+    * undersized buffer cache
+    * undersized streams pool
+    * excessive temporary writes
+    * excessive checkpoint writes
+    * excessive undo writes
+    * excessive PQ checkpoint writes
+    * excessive truncate writes
+    * excessive tablespace DDL checkpoint
+    * I/O capacity limit
+    
+  - SQL hard parsing issues due to:  
+    * cursor aging
+    * out-of-memory failed parse
+   
+  - SGA sizing issues:
+  ADDM also does not report the following issues in a PDB, because these issues cannot be resolved at a PDB level: 
+    * Cluster messaging related issues, such as network latency, congestion, contention, and lost blocks
+    * Log file switch waits on archiving and on checkpoint incomplete
+    * Too many free-buffer waits
+    * Contention on log buffer waits
+    * Waits due to CPU bottleneck
+    * Operating system VM paging
+    * Session slot wait event
+    * CPU quantum wait event
+    * RMAN related wait events, such as PQ queued wait event, PGA limit wait event, and I/O queue wait event
+
+#ENABLING ADDM IN A ORACLE 19C PLUGGABLE DATABASE
+#NOTE
+To use ADDM in a PDB, you must enable automatic AWR snapshots in the PDB by setting the AWR_PDB_AUTOFLUSH_ENABLED initialization parameter 
+to TRUE and AWR snapshot interval greater than 0.
+
+sqlplus / as sysdba
+SQL*Plus: Release 19.0.0.0.0 - Production on Thu Mar 12 21:32:56 2020
+Version 19.3.0.0.0
+Copyright (c) 1982, 2019, Oracle.  All rights reserved.
+Connected to:
+Oracle Database 19c Enterprise Edition Release 19.0.0.0.0 - Production
+Version 19.3.0.0.0
+
+SQL> alter pluggable database all open;
+Pluggable database altered.
+
+SQL> show pdbs;
+    CON_ID CON_NAME                       OPEN MODE  RESTRICTED
+---------- ------------------------------ ---------- ----------
+         2 PDB$SEED                       READ ONLY  NO
+         3 APPSPDB                        READ WRITE NO
+
+SQL> show parameter AWR_PDB_AUTOFLUSH_ENABLED;
+NAME                                 TYPE        VALUE
+------------------------------------ ----------- ------------------------------
+awr_pdb_autoflush_enabled            boolean     FALSE
+
+SQL> ALTER SYSTEM SET AWR_PDB_AUTOFLUSH_ENABLED=TRUE SCOPE=spfile;
+System altered.
+
+SQL> show parameter AWR_PDB_AUTOFLUSH_ENABLED;
+NAME                                 TYPE        VALUE
+------------------------------------ ----------- ------------------------------
+awr_pdb_autoflush_enabled            boolean     TRUE
+
+SQL> EXEC dbms_workload_repository.modify_snapshot_settings(interval=>60);
+PL/SQL procedure successfully completed.
+
+SQL> EXEC DBMS_WORKLOAD_REPOSITORY.create_snapshot;
+PL/SQL procedure successfully completed.
+
+SQL> alter session set container=APPSPDB;
+Session altered.
+
+SQL> show parameter AWR_PDB_AUTOFLUSH_ENABLED;
+NAME                                 TYPE        VALUE
+------------------------------------ ----------- ------------------------------
+awr_pdb_autoflush_enabled            boolean     FALSE
+
+SQL> ALTER SYSTEM SET AWR_PDB_AUTOFLUSH_ENABLED=TRUE SCOPE=spfile;
+System altered.
+
+SQL> show parameter AWR_PDB_AUTOFLUSH_ENABLED;
+NAME                                 TYPE        VALUE
+------------------------------------ ----------- ------------------------------
+awr_pdb_autoflush_enabled            boolean     TRUE
+
+SQL> EXEC dbms_workload_repository.modify_snapshot_settings(interval=>60);
+PL/SQL procedure successfully completed.
+
+SQL> select SRC_DBNAME ,SNAP_INTERVAL from DBA_HIST_WR_CONTROL;
+
+SRC_DBNAME                          SNAP_INTERVAL
+----------------------------------- -------------------------------------------
+APPSPDB                             +00000 01:00:00.0
+CDB$ROOT                            +00000 01:00:00.0
+
+SQL> EXEC DBMS_WORKLOAD_REPOSITORY.create_snapshot;
+PL/SQL procedure successfully completed.
+
+SQL> select SNAP_ID, DBID, INSTANCE_NUMBER, END_INTERVAL_TIME - BEGIN_INTERVAL_TIME as elapsed from DBA_HIST_SNAPSHOT;
+   SNAP_ID       DBID INSTANCE_NUMBER ELAPSED
+---------- ---------- --------------- ---------------------------------------------
+         1 3878085793               1 +000000000 00:31:33.747
+         2 3878085793               1 +000000000 00:59:06.662
+         3 3878085793               1 +000000000 00:10:15.732
+         4 3878085793               1 +000000000 00:10:33.676
+         6 3878085793               1 +000000000 01:00:05.813
+         5 3878085793               1 +000000000 01:00:16.954
+         7 3878085793               1 +000000000 01:00:06.004
+         8 3878085793               1 +000000000 01:00:06.162
+         9 3878085793               1 +000000000 00:42:14.567
+         1 1253010570               1 +000000000 04:48:12.146
+         2 1253010570               1 +000000000 00:04:05.343
+
+#TESTING STARTED TO TAKE ADDM REPORT ORACLE 19C PDB
+SQL> CREATE TABLE scale_data (section NUMBER NOT NULL,id1 NUMBER NOT NULL,id2 NUMBER NOT NULL);
+Table created.
+
+SQL> INSERT INTO scale_data
+SELECT sections.n, gen.x, CEIL(DBMS_RANDOM.VALUE(0, 100)) 
+  FROM (
+         SELECT level - 1 n
+           FROM DUAL
+        CONNECT BY level < 300) sections
+       , (
+         SELECT level x
+           FROM DUAL
+        CONNECT BY level < 900000) gen
+ WHERE gen.x <= sections.n * 3000;
+ 
+ 133653000 rows created.
+
+SQL> commit;
+Commit complete.
+
+SQL> EXEC DBMS_WORKLOAD_REPOSITORY.create_snapshot;
+PL/SQL procedure successfully completed.
+
+SQL> @?/rdbms/admin/addmrpt.sql
+Current Instance
+~~~~~~~~~~~~~~~~
+
+   DB Id    DB Name      Inst Num Instance
+----------- ------------ -------- ------------
+ 1253010570 APPSCDB             1 appscdb1
+
+ Instances in this Workload Repository schema
+ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  DB Id       Inst Num   DB Name      Instance     Host
+ ------------ ---------- ---------    ----------   ------
+ 1253010570    1         APPSCDB      appscdb1     centos7db1
+
+ Using 1253010570 for database Id
+ Using          1 for instance number
+
+ Specify the number of days of snapshots to choose from
+ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+ Entering the number of days (n) will result in the most recent
+ (n) days of snapshots being listed.  Pressing <return> without
+ specifying a number lists all completed snapshots.
+
+ Listing the last 3 days of Completed Snapshots
+ Instance     DB Name      Snap Id    Snap Started       Snap Level
+ ------------ ------------ ---------- ------------------ ----------
+ appscdb1     APPSCDB               1  12 Mar 2020 21:37    1
+                                    2  12 Mar 2020 21:41    1
+                                    3  12 Mar 2020 21:59    1
+
+ Specify the Begin and End Snapshot Ids
+ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+ Enter value for begin_snap: 1
+ Begin Snapshot Id specified: 1
+
+ Enter value for end_snap: 3
+ End   Snapshot Id specified: 3
+
+ Specify the Report Name
+ ~~~~~~~~~~~~~~~~~~~~~~~
+ The default report file name is addmrpt_1_1_3.txt.  To use this name,
+ press <return> to continue, otherwise enter an alternative.
+
+Using the report name addmrpt_1_1_3.txt
+
+Running the ADDM analysis on the specified pair of snapshots ...
+Generating the ADDM report for this analysis ...
+
+ADDM Report for Task 'TASK_21'
+------------------------------
+
+Analysis Period
+---------------
+AWR snapshot range from 1 to 3.
+Time period starts at 12-MAR-20 09.37.42 PM
+Time period ends at 12-MAR-20 09.59.34 PM
+
+Analysis Target
+---------------
+Database 'APPSCDB' with DB ID 1253010570.
+Database version 19.0.0.0.0.
+ADDM performed an analysis of instance appscdb1, numbered 1 and hosted at
+centos7db1.
+ADDM detected that the system is a PDB.
+
+Activity During the Analysis Period
+-----------------------------------
+Total database time was 412 seconds.
+The average number of active sessions was .31.
+
+Summary of Findings
+-------------------
+Description                               Active Sessions      Recommendations
+                                             Percent of Activity
+   ----------------------------------------  -------------------  ---------------
+1  Top SQL Statements                        .31 | 100            1
+2  PL/SQL Execution                          .05 | 14.63          1
+3  Unusual "Other" Wait Event                .03 | 10.68          3
+4  Top Segments by "User I/O" and "Cluster"  .03 | 9.88           1
+5  Unusual "Other" Wait Event                .02 | 7.49           4
+6  Undersized Redo Log Buffer                .01 | 3.92           0
+
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+
+          Findings and Recommendations
+          ----------------------------
+
+Finding 1: Top SQL Statements
+Impact is .31 active sessions, 100% of total activity.
+------------------------------------------------------
+SQL statements consuming significant database time were found. These
+statements offer a good opportunity for performance improvement.
+
+   Recommendation 1: SQL Tuning
+   Estimated benefit is .31 active sessions, 100% of total activity.
+   -----------------------------------------------------------------
+   Action
+      Run SQL Tuning Advisor on the INSERT statement with SQL_ID
+      "711q7nyk6g2y2". Additionally, investigate this statement for possible
+      performance improvements. You can supplement the information given here
+      with an ASH report for this SQL_ID.
+      Related Object
+         SQL statement with SQL_ID 711q7nyk6g2y2.
+         INSERT INTO scale_data
+         SELECT sections.n, gen.x, CEIL(DBMS_RANDOM.VALUE(0, 100))
+         FROM (
+         SELECT level - 1 n
+         FROM DUAL
+         CONNECT BY level < 300) sections
+         , (
+         SELECT level x
+         FROM DUAL
+         CONNECT BY level < 900000) gen
+         WHERE gen.x <= sections.n * 3000
+   Rationale
+      The SQL spent 65% of its database time on CPU, I/O and Cluster waits.
+      This part of database time may be improved by the SQL Tuning Advisor.
+      Look at data given below and an ASH report for further performance
+      improvements.
+   Rationale
+      Database time for this SQL was divided as follows: 79% for SQL
+      execution, 0% for parsing, 21% for PL/SQL execution and 0% for Java
+      execution.
+   Rationale
+      SQL statement with SQL_ID "711q7nyk6g2y2" was executed 1 times and had
+      an average elapsed time of 409 seconds.
+   Rationale
+      Waiting for event "DLM cross inst call completion" in wait class "Other"
+      accounted for 14% of the database time spent in processing the SQL
+      statement with SQL_ID "711q7nyk6g2y2".
+   Rationale
+      Waiting for event "enq: CR - block range reuse ckpt" in wait class
+      "Other" accounted for 12% of the database time spent in processing the
+      SQL statement with SQL_ID "711q7nyk6g2y2".
+
+
+Finding 2: PL/SQL Execution
+Impact is .05 active sessions, 14.63% of total activity.
+--------------------------------------------------------
+PL/SQL execution consumed significant database time.
+
+   Recommendation 1: SQL Tuning
+   Estimated benefit is .05 active sessions, 14.63% of total activity.
+   -------------------------------------------------------------------
+   Action
+      Tune the entry point PL/SQL ID 15115. Refer to the PL/SQL documentation
+      for addition information.
+   Rationale
+      Subprogam ID 3 of PL/SQL ID 15115 spent 50 seconds in execution.
+
+
+Finding 3: Unusual "Other" Wait Event
+Impact is .03 active sessions, 10.68% of total activity.
+--------------------------------------------------------
+Wait event "DLM cross inst call completion" in wait class "Other" was
+consuming significant database time.
+
+   Recommendation 1: Application Analysis
+   Estimated benefit is .03 active sessions, 10.68% of total activity.
+   -------------------------------------------------------------------
+   Action
+      Investigate the cause for high "DLM cross inst call completion" waits.
+      Refer to Oracle's "Database Reference" for the description of this wait
+      event.
+   Action
+      Look at the "Top SQL Statements" finding for SQL statements consuming
+      significant time on the "DLM cross inst call completion" wait event. For
+      example, the INSERT statement with SQL_ID "711q7nyk6g2y2" is responsible
+      for 100% of these waits.
+
+   Recommendation 2: Application Analysis
+   Estimated benefit is .03 active sessions, 10.68% of total activity.
+   -------------------------------------------------------------------
+   Action
+      Investigate the cause for high "DLM cross inst call completion" waits in
+      Module "sqlplus@centos7db1 (TNS V1-V3)".
+
+   Recommendation 3: Application Analysis
+   Estimated benefit is .03 active sessions, 10.68% of total activity.
+   -------------------------------------------------------------------
+   Action
+      Investigate the cause for high "DLM cross inst call completion" waits in
+      Service "appspdb".
+
+   Symptoms That Led to the Finding:
+   ---------------------------------
+      Wait class "Other" was consuming significant database time.
+      Impact is .06 active sessions, 18.39% of total activity.
+
+
+Finding 4: Top Segments by "User I/O" and "Cluster"
+Impact is .03 active sessions, 9.88% of total activity.
+-------------------------------------------------------
+Individual database segments responsible for significant "User I/O" and
+"Cluster" waits were found.
+
+   Recommendation 1: Segment Tuning
+   Estimated benefit is .03 active sessions, 9.88% of total activity.
+   ------------------------------------------------------------------
+   Action
+      Investigate application logic involving I/O on database object with ID
+      785.
+      Related Object
+         Database object with ID 785.
+   Action
+      Look at the "Top SQL Statements" finding for SQL statements consuming
+      significant I/O on this segment. For example, the INSERT statement with
+      SQL_ID "711q7nyk6g2y2" is responsible for 100% of "User I/O" and
+      "Cluster" waits for this segment.
+
+   Symptoms That Led to the Finding:
+   ---------------------------------
+      Wait class "User I/O" was consuming significant database time.
+      Impact is .03 active sessions, 9.88% of total activity.
+
+
+Finding 5: Unusual "Other" Wait Event
+Impact is .02 active sessions, 7.49% of total activity.
+-------------------------------------------------------
+Wait event "enq: CR - block range reuse ckpt" in wait class "Other" was
+consuming significant database time.
+
+   Recommendation 1: Application Analysis
+   Estimated benefit is .02 active sessions, 7.49% of total activity.
+   ------------------------------------------------------------------
+   Action
+      Investigate the cause for high "enq: CR - block range reuse ckpt" waits.
+      Refer to Oracle's "Database Reference" for the description of this wait
+      event.
+   Action
+      Look at the "Top SQL Statements" finding for SQL statements consuming
+      significant time on the "enq: CR - block range reuse ckpt" wait event.
+      For example, the INSERT statement with SQL_ID "711q7nyk6g2y2" is
+      responsible for 100% of these waits.
+
+   Recommendation 2: Application Analysis
+   Estimated benefit is .02 active sessions, 7.49% of total activity.
+   ------------------------------------------------------------------
+   Action
+      Investigate the cause for high "enq: CR - block range reuse ckpt" waits
+      in Module "sqlplus@centos7db1 (TNS V1-V3)".
+
+   Recommendation 3: Application Analysis
+   Estimated benefit is .02 active sessions, 7.49% of total activity.
+   ------------------------------------------------------------------
+   Action
+      Investigate the cause for high "enq: CR - block range reuse ckpt" waits
+      in Service "appspdb".
+
+   Recommendation 4: Application Analysis
+   Estimated benefit is .02 active sessions, 7.49% of total activity.
+   ------------------------------------------------------------------
+   Action
+      Investigate the cause for high "enq: CR - block range reuse ckpt" waits
+      with P1 ("name|mode") value "1129447430" and P2 ("2") value "65600".
+
+   Symptoms That Led to the Finding:
+   ---------------------------------
+      Wait class "Other" was consuming significant database time.
+      Impact is .06 active sessions, 18.39% of total activity.
+
+
+Finding 6: Undersized Redo Log Buffer
+Impact is .01 active sessions, 3.92% of total activity.
+-------------------------------------------------------
+Waits for redo log buffer space were consuming significant database time.
+
+   No recommendations are available.
+
+   Symptoms That Led to the Finding:
+   ---------------------------------
+      Wait class "Configuration" was consuming significant database time.
+      Impact is .01 active sessions, 4.61% of total activity.
+
+
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+          Additional Information
+          ----------------------
+
+Miscellaneous Information
+-------------------------
+Wait class "Application" was not consuming significant database time.
+Wait class "Commit" was not consuming significant database time.
+Wait class "Concurrency" was not consuming significant database time.
+CPU was not a bottleneck for the DB on this instance.
+Wait class "Network" was not consuming significant database time.
+Session connect and disconnect calls were not consuming significant database
+time.
+Hard parsing of SQL statements was not consuming significant database time.
+
+
+End of Report
+Report written to addmrpt_1_1_3.txt
+SQL>
+
+
+#VIEWS CONTAIN EXTRA INFORMATION
+DBA_ADDM_* and DBA_ADVISOR_*
+
+    
+    
