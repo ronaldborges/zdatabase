@@ -44,6 +44,7 @@ chown postgres:postgres -R /dados
 
 #INIT/CREATE INSTANCE 
 /usr/local/pgsql/bin/initdb -D /usr/local/pgsql/data/       --optional [/usr/local/pgsql/bin/initdb -D $pathdata/data/
+  --EXAMPLE: /usr/local/pgsql/bin/initdb --locale=pt_BR.UTF-8 -D /dados/data/
 ls -ltrh /usr/local/pgsql/data/
 
 ##start instance postgres
