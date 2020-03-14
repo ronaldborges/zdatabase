@@ -161,7 +161,6 @@ SID_LIST_LISTENER =
       (SID_NAME = orcl1)
     )
   )
- )
 
 LISTENER =
   (DESCRIPTION_LIST =
