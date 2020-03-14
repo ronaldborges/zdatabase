@@ -127,6 +127,100 @@ SID_LIST_LISTENER =
     )
   )
 
+#CONFIGURE TNSNAMES.ORA
+vi /u01/app/oracle/product/19.3.0/dbhome_1/network/admin/tnsnames.ora
+#CONFIGURE TNSNAMES.ORA PRIMARY AND STANDBY
+appscdb =
+  (DESCRIPTION =
+    (ADDRESS_LIST =
+      (ADDRESS = (PROTOCOL = TCP)(HOST = 192.168.56.133)(PORT = 1521))
+    )
+    (CONNECT_DATA =
+      (SERVICE_NAME = appscdb)
+    )
+  )
+
+appscdb_clone =
+  (DESCRIPTION =
+    (ADDRESS_LIST =
+      (ADDRESS = (PROTOCOL = TCP)(HOST = 192.168.56.133)(PORT = 1521))
+    )
+    (CONNECT_DATA =
+      (SERVICE_NAME = appscdb)
+    )
+  )
+
+appscdb_dg =
+  (DESCRIPTION =
+    (ADDRESS_LIST =
+      (ADDRESS = (PROTOCOL = TCP)(HOST = 192.168.56.133)(PORT = 1521))
+    )
+    (CONNECT_DATA =
+      (SERVICE_NAME = appscdb_DGMGRL)
+    )
+  )
+
+appscdbstdb =
+  (DESCRIPTION =
+    (ADDRESS_LIST =
+      (ADDRESS = (PROTOCOL = TCP)(HOST = 192.168.56.131)(PORT = 1521))
+    )
+    (CONNECT_DATA =
+      (SERVICE_NAME = appscdbstdb)
+    )
+  )
+
+appscdbstdb_clone =
+  (DESCRIPTION =
+    (ADDRESS_LIST =
+      (ADDRESS = (PROTOCOL = TCP)(HOST = 192.168.56.131)(PORT = 1521))
+    )
+    (CONNECT_DATA =
+      (SERVICE_NAME = appscdbstdb)
+    )
+  )
+
+appscdbstdb_dg =
+  (DESCRIPTION =
+    (ADDRESS_LIST =
+      (ADDRESS = (PROTOCOL = TCP)(HOST = 192.168.56.131)(PORT = 1521))
+    )
+    (CONNECT_DATA =
+       (SERVICE_NAME = appscdbstdb_DGMGRL)
+    )
+  )
+  
+#CREATE STANDBY REDO LOGS ON PRIMARY
+SQL> select name from v$pdbs;
+NAME
+--------------------------------------------------------------------------------
+PDB$SEED
+APPSPDB
+
+SQL> alter session set container=APPSPDB;
+Session altered.
+
+SQL> select open_mode, database_role from v$database;
+OPEN_MODE            DATABASE_ROLE
+-------------------- ----------------
+MOUNTED              PRIMARY
+
+SQL> alter database open;
+Database altered.
+
+SQL> alter session set container=CDB$ROOT;
+Session altered.
+
+SQL> select max(GROUP#) from v$logfile;
+MAX(GROUP#)
+-----------
+          3
+
+#CREATE STANDBY REDO LOG FILES
+SQL> ALTER DATABASE ADD STANDBY LOGFILE ('/u01/app/oracle/oradata/APPSCDB/standby_redo01.log') SIZE 200M;
+SQL> ALTER DATABASE ADD STANDBY LOGFILE ('/u01/app/oracle/oradata/APPSCDB/standby_redo02.log') SIZE 200M;
+SQL> ALTER DATABASE ADD STANDBY LOGFILE ('/u01/app/oracle/oradata/APPSCDB/standby_redo03.log') SIZE 200M;
+
 #ON STANDBY
 
 
