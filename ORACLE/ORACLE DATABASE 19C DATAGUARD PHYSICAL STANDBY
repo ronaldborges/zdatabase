@@ -64,6 +64,70 @@ SQL> alter system set log_archive_max_processes=10 scope=spfile;
 SQL> alter system set fal_client=appscdb scope=spfile;
 SQL> alter system set fal_server=appscdbstdb scope=spfile;
 
+#RESTART DATABASE
+SQL> shu immediate;
+Database closed.
+Database dismounted.
+ORACLE instance shut down.
+SQL> startup;
+ORACLE instance started.
+
+Total System Global Area 2147482944 bytes
+Fixed Size                  9137472 bytes
+Variable Size             486539264 bytes
+Database Buffers         1644167168 bytes
+Redo Buffers                7639040 bytes
+Database mounted.
+Database opened.
+
+SQL> create pfile='/home/oracle/initprod.ora' from spfile;
+
+#CHANGE PARAMETERS FOR STANDBY
+vi /home/oracle/initprod.ora
+*.db_unique_name='appscdbstdb'
+*.fal_client='appscdbstdb'
+*.fal_server='appscdb'
+*.log_archive_config='dg_config=(appscdb,appscdbstdb)'
+*.log_archive_dest_1='location=/u02/app/oracle/oradata/APPSCDB/archivelog valid_for=(all_logfiles,primary_role)'
+*.log_archive_dest_2='service=appscdb lgwr async noaffirm valid_for=(all_logfiles,primary_role) db_unique_name=appscdb'
+*.log_archive_dest_state_1='ENABLE'
+*.log_archive_dest_state_2='ENABLE'
+*.log_archive_format='%t_%s_%r.arc'
+*.log_archive_max_processes=10
+*.remote_login_passwordfile='EXCLUSIVE'
+*.standby_file_management='AUTO'
+
+#COPY PFILE & ORAPW FOR STANDBY
+scp /home/oracle/initprod.ora oracle@ol7db1-stdb:/home/oracle
+oracle@ol7db1-stdb's password:
+initprod.ora                              100% 1726     2.3MB/s   00:00
+
+scp /u01/app/oracle/product/19.3.0/dbhome_1/dbs/orapwappscdb1 oracle@ol7db1-stdb:/home/oracle
+oracle@ol7db1-stdb's password:
+orapwappscdb1                             100% 2048     3.3MB/s   00:00
+
+#CONFIGURE LISTENER.ORA
+vi /u01/app/oracle/product/19.3.0/dbhome_1/network/admin/listener.ora
+SID_LIST_LISTENER =
+ (SID_LIST =
+    (SID_DESC =
+      (GLOBAL_DBNAME = appscdb)
+      (ORACLE_HOME = /u01/app/oracle/product/19.3.0/dbhome_1)
+      (SID_NAME = appscdb1)
+    )
+    (SID_DESC =
+      (GLOBAL_DBNAME = appscdb_DGMGRL)
+      (ORACLE_HOME = /u01/app/oracle/product/19.3.0/dbhome_1)
+      (SID_NAME = appscdb1)
+    )
+    (SID_DESC =
+      (GLOBAL_DBNAME = appscdbstdb_DGMGRL)
+      (ORACLE_HOME = /u01/app/oracle/product/19.3.0/dbhome_1)
+      (SID_NAME = appscdb1)
+    )
+  )
+
+#ON STANDBY
 
 
 
