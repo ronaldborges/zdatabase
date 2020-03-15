@@ -179,7 +179,7 @@ LISTENER =
 
 #STARTUP NOMOUNT STANDBY INSTANCE 
 sqlplus / as sysdba
-STARTUP NOMOUNT PFILE '/home/oracle/pfile_dg.ora';
+STARTUP NOMOUNT PFILE='/home/oracle/pfile_dg.ora';
 exit
 
 #START LISTENER
