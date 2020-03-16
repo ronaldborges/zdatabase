@@ -52,9 +52,9 @@ FORCE_LOGGING
 ---------------------------------------
 YES
 
-SQL> alter system set log_archive_config='dg_config=(appscdb,appscdbstdb)' scope=spfile;
+SQL> alter system set log_archive_config='dg_config=(appscdb,appscdbs)' scope=spfile;
 SQL> alter system set log_archive_dest_1='location=/u02/app/oracle/oradata/APPSCDB/archivelog valid_for=(all_logfiles,primary_role)' scope=spfile;
-SQL> alter system set log_archive_dest_2='service=appscdbstdb lgwr async noaffirm valid_for=(all_logfiles,primary_role) db_unique_name=appscdbstdb' scope=spfile;
+SQL> alter system set log_archive_dest_2='service=appscdbs lgwr async noaffirm valid_for=(all_logfiles,primary_role) db_unique_name=appscdbs' scope=spfile;
 SQL> alter system set log_archive_dest_state_1=enable scope=spfile;
 SQL> alter system set log_archive_dest_state_2=enable scope=spfile;
 SQL> alter system set remote_login_passwordfile=exclusive scope=spfile;
@@ -84,10 +84,10 @@ SQL> create pfile='/home/oracle/initprod.ora' from spfile;
 
 #CHANGE PARAMETERS FOR STANDBY
 vi /home/oracle/initprod.ora
-*.db_unique_name='appscdbstdb'
-*.fal_client='appscdbstdb'
+*.db_unique_name='appscdbs'
+*.fal_client='appscdbs'
 *.fal_server='appscdb'
-*.log_archive_config='dg_config=(appscdb,appscdbstdb)'
+*.log_archive_config='dg_config=(appscdb,appscdbs)'
 *.log_archive_dest_1='location=/u02/app/oracle/oradata/APPSCDB/archivelog valid_for=(all_logfiles,primary_role)'
 *.log_archive_dest_2='service=appscdb lgwr async noaffirm valid_for=(all_logfiles,primary_role) db_unique_name=appscdb'
 *.log_archive_dest_state_1='ENABLE'
@@ -121,7 +121,7 @@ SID_LIST_LISTENER =
       (SID_NAME = appscdb1)
     )
     (SID_DESC =
-      (GLOBAL_DBNAME = appscdbstdb_DGMGRL)
+      (GLOBAL_DBNAME = appscdbs_DGMGRL)
       (ORACLE_HOME = /u01/app/oracle/product/19.3.0/dbhome_1)
       (SID_NAME = appscdb1)
     )
@@ -147,6 +147,7 @@ appscdb_clone =
     )
     (CONNECT_DATA =
       (SERVICE_NAME = appscdb)
+      (UR = A)
     )
   )
 
@@ -160,33 +161,34 @@ appscdb_dg =
     )
   )
 
-appscdbstdb =
+appscdbs =
+  (DESCRIPTION =
+    (ADDRESS_LIST =
+      (ADDRESS = (PROTOCOL = TCP)(HOST = 192.168.56.131)(PORT = 1521))
+    )
+    (CONNECT_DATA =
+      (SERVICE_NAME = appscdbs)
+    )
+  )
+
+appscdbs_clone =
   (DESCRIPTION =
     (ADDRESS_LIST =
       (ADDRESS = (PROTOCOL = TCP)(HOST = 192.168.56.131)(PORT = 1521))
     )
     (CONNECT_DATA =
       (SERVICE_NAME = appscdbstdb)
+      (UR = A)
     )
   )
 
-appscdbstdb_clone =
+appscdbs_dg =
   (DESCRIPTION =
     (ADDRESS_LIST =
       (ADDRESS = (PROTOCOL = TCP)(HOST = 192.168.56.131)(PORT = 1521))
     )
     (CONNECT_DATA =
-      (SERVICE_NAME = appscdbstdb)
-    )
-  )
-
-appscdbstdb_dg =
-  (DESCRIPTION =
-    (ADDRESS_LIST =
-      (ADDRESS = (PROTOCOL = TCP)(HOST = 192.168.56.131)(PORT = 1521))
-    )
-    (CONNECT_DATA =
-       (SERVICE_NAME = appscdbstdb_DGMGRL)
+       (SERVICE_NAME = appscdbs_DGMGRL)
     )
   )
   
@@ -222,6 +224,39 @@ SQL> ALTER DATABASE ADD STANDBY LOGFILE ('/u01/app/oracle/oradata/APPSCDB/standb
 SQL> ALTER DATABASE ADD STANDBY LOGFILE ('/u01/app/oracle/oradata/APPSCDB/standby_redo03.log') SIZE 200M;
 
 #ON STANDBY
+
+#CREATE DIRECTORIES
+mkdir -p /u01/app/oracle/fast_recovery_area/
+mkdir -p /u02/app/oracle/oradata/APPSCDB/archivelog
+mkdir -p /u01/app/oracle/admin/appscdb/adump/
+
+#START DATABASE NOMOUNT
+
+sqlplus / as sysdba
+SQL*Plus: Release 19.0.0.0.0 - Production on Sun Mar 15 20:20:25 2020
+Version 19.3.0.0.0
+Copyright (c) 1982, 2019, Oracle.  All rights reserved.
+Connected to an idle instance.
+SQL> startup nomount pfile='/u01/app/oracle/product/19.3.0/dbhome_1/dbs/initprod.ora';
+ORACLE instance started.
+
+Total System Global Area 2147482944 bytes
+Fixed Size                  9137472 bytes
+Variable Size             486539264 bytes
+Database Buffers         1644167168 bytes
+Redo Buffers                7639040 bytes
+
+#START LISTENER
+lsnrctl start
+
+#CONNECT RMAN
+rman target sys/<_password_>@appscdb_clone auxiliary sys/<_password_>@appscdbs_clone
+
+
+
+
+
+
 
 
 
