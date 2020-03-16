@@ -177,7 +177,7 @@ appscdbs_clone =
       (ADDRESS = (PROTOCOL = TCP)(HOST = 192.168.56.131)(PORT = 1521))
     )
     (CONNECT_DATA =
-      (SERVICE_NAME = appscdbstdb)
+      (SERVICE_NAME = appscdb)
       (UR = A)
     )
   )
@@ -247,10 +247,47 @@ Database Buffers         1644167168 bytes
 Redo Buffers                7639040 bytes
 
 #START LISTENER
+vi /u01/app/oracle/product/19.3.0/dbhome_1/network/admin/listener.ora
+SID_LIST_LISTENER =
+ (SID_LIST =
+    (SID_DESC =
+      (GLOBAL_DBNAME = appscdb)
+      (ORACLE_HOME = /u01/app/oracle/product/19.3.0/dbhome_1)
+      (SID_NAME = appscdb1)
+    )
+    (SID_DESC =
+      (GLOBAL_DBNAME = appscdb_DGMGRL)
+      (ORACLE_HOME = /u01/app/oracle/product/19.3.0/dbhome_1)
+      (SID_NAME = appscdb1)
+    )
+    (SID_DESC =
+      (GLOBAL_DBNAME = appscdbs_DGMGRL)
+      (ORACLE_HOME = /u01/app/oracle/product/19.3.0/dbhome_1)
+      (SID_NAME = appscdb1)
+    )
+  )
+LISTENER =
+        (DESCRIPTION_LIST =
+                (DESCRIPTION =
+                        (ADDRESS = (PROTOCOL = TCP)(HOST = 192.168.56.131)(PORT = 1521))
+                        (ADDRESS = (PROTOCOL = IPC)(KEY = EXTPROC1521))
+                )
+        )
+
 lsnrctl start
 
 #CONNECT RMAN
 rman target sys/<_password_>@appscdb_clone auxiliary sys/<_password_>@appscdbs_clone
+Recovery Manager: Release 19.0.0.0.0 - Production on Sun Mar 15 21:10:55 2020
+Version 19.3.0.0.0
+
+Copyright (c) 1982, 2019, Oracle and/or its affiliates.  All rights reserved.
+
+connected to target database: APPSCDB (DBID=3878429816)
+connected to auxiliary database: APPSCDBS (not mounted)
+
+RMAN> DUPLICATE TARGET DATABASE FOR STANDBY FROM ACTIVE DATABASE DORECOVER SPFILE SET db_unique_name='appscdbs' COMMENT 'Is standby' SET LOG_ARCHIVE_DEST_2='SERVICE=appscdb NOAFFIRM ASYNC VALID_FOR=(ONLINE_LOGFILES,PRIMARY_ROLE) DB_UNIQUE_NAME=appscdb' SET FAL_SERVER='appscdb' COMMENT 'Is primary' NOFILENAMECHECK;
+
 
 
 
