@@ -147,7 +147,6 @@ appscdb_clone =
     )
     (CONNECT_DATA =
       (SERVICE_NAME = appscdb)
-      (UR = A)
     )
   )
 
@@ -177,8 +176,7 @@ appscdbs_clone =
       (ADDRESS = (PROTOCOL = TCP)(HOST = 192.168.56.131)(PORT = 1521))
     )
     (CONNECT_DATA =
-      (SERVICE_NAME = appscdb)
-      (UR = A)
+      (SERVICE_NAME = appscdbs)
     )
   )
 
@@ -251,7 +249,7 @@ vi /u01/app/oracle/product/19.3.0/dbhome_1/network/admin/listener.ora
 SID_LIST_LISTENER =
  (SID_LIST =
     (SID_DESC =
-      (GLOBAL_DBNAME = appscdb)
+      (GLOBAL_DBNAME = appscdbs)
       (ORACLE_HOME = /u01/app/oracle/product/19.3.0/dbhome_1)
       (SID_NAME = appscdb1)
     )
@@ -267,12 +265,11 @@ SID_LIST_LISTENER =
     )
   )
 LISTENER =
-        (DESCRIPTION_LIST =
-                (DESCRIPTION =
-                        (ADDRESS = (PROTOCOL = TCP)(HOST = 192.168.56.131)(PORT = 1521))
-                        (ADDRESS = (PROTOCOL = IPC)(KEY = EXTPROC1521))
-                )
-        )
+  (DESCRIPTION_LIST =
+    (DESCRIPTION =
+      (ADDRESS = (PROTOCOL = TCP)(HOST = 192.168.56.131)(PORT = 1521))
+    )
+  )
 
 lsnrctl start
 
