@@ -274,8 +274,9 @@ LISTENER =
 lsnrctl start
 
 #CONNECT RMAN
-rman target sys/<_password_>@appscdb_clone auxiliary sys/<_password_>@appscdbs_clone
-Recovery Manager: Release 19.0.0.0.0 - Production on Sun Mar 15 21:10:55 2020
+rman target sys/<password>@appscdb_clone auxiliary sys/<password>@appscdbs_clone
+
+Recovery Manager: Release 19.0.0.0.0 - Production on Sun Mar 15 21:42:37 2020
 Version 19.3.0.0.0
 
 Copyright (c) 1982, 2019, Oracle and/or its affiliates.  All rights reserved.
@@ -283,20 +284,414 @@ Copyright (c) 1982, 2019, Oracle and/or its affiliates.  All rights reserved.
 connected to target database: APPSCDB (DBID=3878429816)
 connected to auxiliary database: APPSCDBS (not mounted)
 
-RMAN> DUPLICATE TARGET DATABASE FOR STANDBY FROM ACTIVE DATABASE DORECOVER SPFILE SET db_unique_name='appscdbs' COMMENT 'Is standby' SET LOG_ARCHIVE_DEST_2='SERVICE=appscdb NOAFFIRM ASYNC VALID_FOR=(ONLINE_LOGFILES,PRIMARY_ROLE) DB_UNIQUE_NAME=appscdb' SET FAL_SERVER='appscdb' COMMENT 'Is primary' NOFILENAMECHECK;
+RMAN> DUPLICATE TARGET DATABASE FOR STANDBY FROM ACTIVE DATABASE DORECOVER SPFILE SET db_unique_name='appscdbs' COMMENT 'Is standby' SET                                                                                                     LOG_ARCHIVE_DEST_2='SERVICE=appscdb NOAFFIRM ASYNC VALID_FOR=(ONLINE_LOGFILES,PRIMARY_ROLE) DB_UNIQUE_NAME=appscdb' SET FAL_SERVER='appsc                                                                                                    db' COMMENT 'Is primary' NOFILENAMECHECK;
 
+Starting Duplicate Db at 15-MAR-20
+using target database control file instead of recovery catalog
+allocated channel: ORA_AUX_DISK_1
+channel ORA_AUX_DISK_1: SID=15 device type=DISK
+current log archived
 
+contents of Memory Script:
+{
+   backup as copy reuse
+   passwordfile auxiliary format  '/u01/app/oracle/product/19.3.0/dbhome_1/dbs/orapwappscdb1'   ;
+   restore clone from service  'appscdb_clone' spfile to
+ '/u01/app/oracle/product/19.3.0/dbhome_1/dbs/spfileappscdb1.ora';
+   sql clone "alter system set spfile= ''/u01/app/oracle/product/19.3.0/dbhome_1/dbs/spfileappscdb1.ora''";
+}
+executing Memory Script
 
+Starting backup at 15-MAR-20
+allocated channel: ORA_DISK_1
+channel ORA_DISK_1: SID=38 device type=DISK
+Finished backup at 15-MAR-20
 
+Starting restore at 15-MAR-20
+using channel ORA_AUX_DISK_1
 
+channel ORA_AUX_DISK_1: starting datafile backup set restore
+channel ORA_AUX_DISK_1: using network backup set from service appscdb_clone
+channel ORA_AUX_DISK_1: restoring SPFILE
+output file name=/u01/app/oracle/product/19.3.0/dbhome_1/dbs/spfileappscdb1.ora
+channel ORA_AUX_DISK_1: restore complete, elapsed time: 00:00:01
+Finished restore at 15-MAR-20
 
+sql statement: alter system set spfile= ''/u01/app/oracle/product/19.3.0/dbhome_1/dbs/spfileappscdb1.ora''
 
+contents of Memory Script:
+{
+   sql clone "alter system set  db_unique_name =
+ ''appscdbs'' comment=
+ ''Is standby'' scope=spfile";
+   sql clone "alter system set  LOG_ARCHIVE_DEST_2 =
+ ''SERVICE=appscdb NOAFFIRM ASYNC VALID_FOR=(ONLINE_LOGFILES,PRIMARY_ROLE) DB_UNIQUE_NAME=appscdb'' comment=
+ '''' scope=spfile";
+   sql clone "alter system set  FAL_SERVER =
+ ''appscdb'' comment=
+ ''Is primary'' scope=spfile";
+   shutdown clone immediate;
+   startup clone nomount;
+}
+executing Memory Script
 
+sql statement: alter system set  db_unique_name =  ''appscdbs'' comment= ''Is standby'' scope=spfile
 
+sql statement: alter system set  LOG_ARCHIVE_DEST_2 =  ''SERVICE=appscdb NOAFFIRM ASYNC VALID_FOR=(ONLINE_LOGFILES,PRIMARY_ROLE) DB_UNIQU                                                                                                    E_NAME=appscdb'' comment= '''' scope=spfile
 
+sql statement: alter system set  FAL_SERVER =  ''appscdb'' comment= ''Is primary'' scope=spfile
 
+Oracle instance shut down
 
+connected to auxiliary database (not started)
+Oracle instance started
 
+Total System Global Area    2147482944 bytes
+
+Fixed Size                     9137472 bytes
+Variable Size                486539264 bytes
+Database Buffers            1644167168 bytes
+Redo Buffers                   7639040 bytes
+duplicating Online logs to Oracle Managed File (OMF) location
+
+contents of Memory Script:
+{
+   restore clone from service  'appscdb_clone' standby controlfile;
+}
+executing Memory Script
+
+Starting restore at 15-MAR-20
+allocated channel: ORA_AUX_DISK_1
+channel ORA_AUX_DISK_1: SID=477 device type=DISK
+
+channel ORA_AUX_DISK_1: starting datafile backup set restore
+channel ORA_AUX_DISK_1: using network backup set from service appscdb_clone
+channel ORA_AUX_DISK_1: restoring control file
+channel ORA_AUX_DISK_1: restore complete, elapsed time: 00:00:09
+output file name=/u01/app/oracle/oradata/APPSCDB/control01.ctl
+output file name=/u01/app/oracle/fast_recovery_area/APPSCDB/control02.ctl
+Finished restore at 15-MAR-20
+
+contents of Memory Script:
+{
+   sql clone 'alter database mount standby database';
+}
+executing Memory Script
+
+sql statement: alter database mount standby database
+RMAN-05538: warning: implicitly using DB_FILE_NAME_CONVERT
+RMAN-05158: WARNING: auxiliary (datafile) file name /u01/app/oracle/oradata/APPSCDB/system01.dbf conflicts with a file used by the target database
+RMAN-05158: WARNING: auxiliary (datafile) file name /u01/app/oracle/oradata/APPSCDB/sysaux01.dbf conflicts with a file used by the target database
+RMAN-05158: WARNING: auxiliary (datafile) file name /u01/app/oracle/oradata/APPSCDB/undotbs01.dbf conflicts with a file used by the target database
+RMAN-05158: WARNING: auxiliary (datafile) file name /u01/app/oracle/oradata/APPSCDB/pdbseed/system01.dbf conflicts with a file used by the target database
+RMAN-05158: WARNING: auxiliary (datafile) file name /u01/app/oracle/oradata/APPSCDB/pdbseed/sysaux01.dbf conflicts with a file used by the target database
+RMAN-05158: WARNING: auxiliary (datafile) file name /u01/app/oracle/oradata/APPSCDB/users01.dbf conflicts with a file used by the target database
+RMAN-05158: WARNING: auxiliary (datafile) file name /u01/app/oracle/oradata/APPSCDB/pdbseed/undotbs01.dbf conflicts with a file used by the target database
+RMAN-05158: WARNING: auxiliary (datafile) file name /u01/app/oracle/oradata/APPSCDB/appspdb/system01.dbf conflicts with a file used by the target database
+RMAN-05158: WARNING: auxiliary (datafile) file name /u01/app/oracle/oradata/APPSCDB/appspdb/sysaux01.dbf conflicts with a file used by the target database
+RMAN-05158: WARNING: auxiliary (datafile) file name /u01/app/oracle/oradata/APPSCDB/appspdb/undotbs01.dbf conflicts with a file used by the target database
+RMAN-05158: WARNING: auxiliary (datafile) file name /u01/app/oracle/oradata/APPSCDB/appspdb/users01.dbf conflicts with a file used by the target database
+RMAN-05158: WARNING: auxiliary (tempfile) file name /u01/app/oracle/oradata/APPSCDB/temp01.dbf conflicts with a file used by the target database
+RMAN-05158: WARNING: auxiliary (tempfile) file name /u01/app/oracle/oradata/APPSCDB/pdbseed/temp012020-03-13_15-02-14-903-PM.dbf conflicts with a file used by the target database
+RMAN-05158: WARNING: auxiliary (tempfile) file name /u01/app/oracle/oradata/APPSCDB/appspdb/temp01.dbf conflicts with a file used by the target database
+
+contents of Memory Script:
+{
+   set newname for tempfile  1 to
+ "/u01/app/oracle/oradata/APPSCDB/temp01.dbf";
+   set newname for tempfile  2 to
+ "/u01/app/oracle/oradata/APPSCDB/pdbseed/temp012020-03-13_15-02-14-903-PM.dbf";
+   set newname for tempfile  3 to
+ "/u01/app/oracle/oradata/APPSCDB/appspdb/temp01.dbf";
+   switch clone tempfile all;
+   set newname for datafile  1 to
+ "/u01/app/oracle/oradata/APPSCDB/system01.dbf";
+   set newname for datafile  3 to
+ "/u01/app/oracle/oradata/APPSCDB/sysaux01.dbf";
+   set newname for datafile  4 to
+ "/u01/app/oracle/oradata/APPSCDB/undotbs01.dbf";
+   set newname for datafile  5 to
+ "/u01/app/oracle/oradata/APPSCDB/pdbseed/system01.dbf";
+   set newname for datafile  6 to
+ "/u01/app/oracle/oradata/APPSCDB/pdbseed/sysaux01.dbf";
+   set newname for datafile  7 to
+ "/u01/app/oracle/oradata/APPSCDB/users01.dbf";
+   set newname for datafile  8 to
+ "/u01/app/oracle/oradata/APPSCDB/pdbseed/undotbs01.dbf";
+   set newname for datafile  9 to
+ "/u01/app/oracle/oradata/APPSCDB/appspdb/system01.dbf";
+   set newname for datafile  10 to
+ "/u01/app/oracle/oradata/APPSCDB/appspdb/sysaux01.dbf";
+   set newname for datafile  11 to
+ "/u01/app/oracle/oradata/APPSCDB/appspdb/undotbs01.dbf";
+   set newname for datafile  12 to
+ "/u01/app/oracle/oradata/APPSCDB/appspdb/users01.dbf";
+   restore
+   from  nonsparse   from service
+ 'appscdb_clone'   clone database
+   ;
+   sql 'alter system archive log current';
+}
+executing Memory Script
+
+executing command: SET NEWNAME
+
+executing command: SET NEWNAME
+
+executing command: SET NEWNAME
+
+renamed tempfile 1 to /u01/app/oracle/oradata/APPSCDB/temp01.dbf in control file
+renamed tempfile 2 to /u01/app/oracle/oradata/APPSCDB/pdbseed/temp012020-03-13_15-02-14-903-PM.dbf in control file
+renamed tempfile 3 to /u01/app/oracle/oradata/APPSCDB/appspdb/temp01.dbf in control file
+
+executing command: SET NEWNAME
+
+executing command: SET NEWNAME
+
+executing command: SET NEWNAME
+
+executing command: SET NEWNAME
+
+executing command: SET NEWNAME
+
+executing command: SET NEWNAME
+
+executing command: SET NEWNAME
+
+executing command: SET NEWNAME
+
+executing command: SET NEWNAME
+
+executing command: SET NEWNAME
+
+executing command: SET NEWNAME
+
+Starting restore at 15-MAR-20
+using channel ORA_AUX_DISK_1
+
+channel ORA_AUX_DISK_1: starting datafile backup set restore
+channel ORA_AUX_DISK_1: using network backup set from service appscdb_clone
+channel ORA_AUX_DISK_1: specifying datafile(s) to restore from backup set
+channel ORA_AUX_DISK_1: restoring datafile 00001 to /u01/app/oracle/oradata/APPSCDB/system01.dbf
+channel ORA_AUX_DISK_1: restore complete, elapsed time: 00:00:36
+channel ORA_AUX_DISK_1: starting datafile backup set restore
+channel ORA_AUX_DISK_1: using network backup set from service appscdb_clone
+channel ORA_AUX_DISK_1: specifying datafile(s) to restore from backup set
+channel ORA_AUX_DISK_1: restoring datafile 00003 to /u01/app/oracle/oradata/APPSCDB/sysaux01.dbf
+channel ORA_AUX_DISK_1: restore complete, elapsed time: 00:00:33
+channel ORA_AUX_DISK_1: starting datafile backup set restore
+channel ORA_AUX_DISK_1: using network backup set from service appscdb_clone
+channel ORA_AUX_DISK_1: specifying datafile(s) to restore from backup set
+channel ORA_AUX_DISK_1: restoring datafile 00004 to /u01/app/oracle/oradata/APPSCDB/undotbs01.dbf
+channel ORA_AUX_DISK_1: restore complete, elapsed time: 00:00:16
+channel ORA_AUX_DISK_1: starting datafile backup set restore
+channel ORA_AUX_DISK_1: using network backup set from service appscdb_clone
+channel ORA_AUX_DISK_1: specifying datafile(s) to restore from backup set
+channel ORA_AUX_DISK_1: restoring datafile 00005 to /u01/app/oracle/oradata/APPSCDB/pdbseed/system01.dbf
+channel ORA_AUX_DISK_1: restore complete, elapsed time: 00:00:17
+channel ORA_AUX_DISK_1: starting datafile backup set restore
+channel ORA_AUX_DISK_1: using network backup set from service appscdb_clone
+channel ORA_AUX_DISK_1: specifying datafile(s) to restore from backup set
+channel ORA_AUX_DISK_1: restoring datafile 00006 to /u01/app/oracle/oradata/APPSCDB/pdbseed/sysaux01.dbf
+channel ORA_AUX_DISK_1: restore complete, elapsed time: 00:00:16
+channel ORA_AUX_DISK_1: starting datafile backup set restore
+channel ORA_AUX_DISK_1: using network backup set from service appscdb_clone
+channel ORA_AUX_DISK_1: specifying datafile(s) to restore from backup set
+channel ORA_AUX_DISK_1: restoring datafile 00007 to /u01/app/oracle/oradata/APPSCDB/users01.dbf
+channel ORA_AUX_DISK_1: restore complete, elapsed time: 00:00:03
+channel ORA_AUX_DISK_1: starting datafile backup set restore
+channel ORA_AUX_DISK_1: using network backup set from service appscdb_clone
+channel ORA_AUX_DISK_1: specifying datafile(s) to restore from backup set
+channel ORA_AUX_DISK_1: restoring datafile 00008 to /u01/app/oracle/oradata/APPSCDB/pdbseed/undotbs01.dbf
+channel ORA_AUX_DISK_1: restore complete, elapsed time: 00:00:08
+channel ORA_AUX_DISK_1: starting datafile backup set restore
+channel ORA_AUX_DISK_1: using network backup set from service appscdb_clone
+channel ORA_AUX_DISK_1: specifying datafile(s) to restore from backup set
+channel ORA_AUX_DISK_1: restoring datafile 00009 to /u01/app/oracle/oradata/APPSCDB/appspdb/system01.dbf
+channel ORA_AUX_DISK_1: restore complete, elapsed time: 00:00:18
+channel ORA_AUX_DISK_1: starting datafile backup set restore
+channel ORA_AUX_DISK_1: using network backup set from service appscdb_clone
+channel ORA_AUX_DISK_1: specifying datafile(s) to restore from backup set
+channel ORA_AUX_DISK_1: restoring datafile 00010 to /u01/app/oracle/oradata/APPSCDB/appspdb/sysaux01.dbf
+channel ORA_AUX_DISK_1: restore complete, elapsed time: 00:00:16
+channel ORA_AUX_DISK_1: starting datafile backup set restore
+channel ORA_AUX_DISK_1: using network backup set from service appscdb_clone
+channel ORA_AUX_DISK_1: specifying datafile(s) to restore from backup set
+channel ORA_AUX_DISK_1: restoring datafile 00011 to /u01/app/oracle/oradata/APPSCDB/appspdb/undotbs01.dbf
+channel ORA_AUX_DISK_1: restore complete, elapsed time: 00:00:08
+channel ORA_AUX_DISK_1: starting datafile backup set restore
+channel ORA_AUX_DISK_1: using network backup set from service appscdb_clone
+channel ORA_AUX_DISK_1: specifying datafile(s) to restore from backup set
+channel ORA_AUX_DISK_1: restoring datafile 00012 to /u01/app/oracle/oradata/APPSCDB/appspdb/users01.dbf
+channel ORA_AUX_DISK_1: restore complete, elapsed time: 00:00:04
+Finished restore at 15-MAR-20
+
+sql statement: alter system archive log current
+current log archived
+
+contents of Memory Script:
+{
+   restore clone force from service  'appscdb_clone'
+           archivelog from scn  2586034;
+   switch clone datafile all;
+}
+executing Memory Script
+
+Starting restore at 15-MAR-20
+using channel ORA_AUX_DISK_1
+
+channel ORA_AUX_DISK_1: starting archived log restore to default destination
+channel ORA_AUX_DISK_1: using network backup set from service appscdb_clone
+channel ORA_AUX_DISK_1: restoring archived log
+archived log thread=1 sequence=15
+channel ORA_AUX_DISK_1: restore complete, elapsed time: 00:00:02
+channel ORA_AUX_DISK_1: starting archived log restore to default destination
+channel ORA_AUX_DISK_1: using network backup set from service appscdb_clone
+channel ORA_AUX_DISK_1: restoring archived log
+archived log thread=1 sequence=16
+channel ORA_AUX_DISK_1: restore complete, elapsed time: 00:00:01
+Finished restore at 15-MAR-20
+
+datafile 1 switched to datafile copy
+input datafile copy RECID=4 STAMP=1035150537 file name=/u01/app/oracle/oradata/APPSCDB/system01.dbf
+datafile 3 switched to datafile copy
+input datafile copy RECID=5 STAMP=1035150537 file name=/u01/app/oracle/oradata/APPSCDB/sysaux01.dbf
+datafile 4 switched to datafile copy
+input datafile copy RECID=6 STAMP=1035150538 file name=/u01/app/oracle/oradata/APPSCDB/undotbs01.dbf
+datafile 5 switched to datafile copy
+input datafile copy RECID=7 STAMP=1035150538 file name=/u01/app/oracle/oradata/APPSCDB/pdbseed/system01.dbf
+datafile 6 switched to datafile copy
+input datafile copy RECID=8 STAMP=1035150539 file name=/u01/app/oracle/oradata/APPSCDB/pdbseed/sysaux01.dbf
+datafile 7 switched to datafile copy
+input datafile copy RECID=9 STAMP=1035150540 file name=/u01/app/oracle/oradata/APPSCDB/users01.dbf
+datafile 8 switched to datafile copy
+input datafile copy RECID=10 STAMP=1035150540 file name=/u01/app/oracle/oradata/APPSCDB/pdbseed/undotbs01.dbf
+datafile 9 switched to datafile copy
+input datafile copy RECID=11 STAMP=1035150541 file name=/u01/app/oracle/oradata/APPSCDB/appspdb/system01.dbf
+datafile 10 switched to datafile copy
+input datafile copy RECID=12 STAMP=1035150541 file name=/u01/app/oracle/oradata/APPSCDB/appspdb/sysaux01.dbf
+datafile 11 switched to datafile copy
+input datafile copy RECID=13 STAMP=1035150542 file name=/u01/app/oracle/oradata/APPSCDB/appspdb/undotbs01.dbf
+datafile 12 switched to datafile copy
+input datafile copy RECID=14 STAMP=1035150543 file name=/u01/app/oracle/oradata/APPSCDB/appspdb/users01.dbf
+
+contents of Memory Script:
+{
+   set until scn  2586758;
+   recover
+   standby
+   clone database
+    delete archivelog
+   ;
+}
+executing Memory Script
+
+executing command: SET until clause
+
+Starting recover at 15-MAR-20
+using channel ORA_AUX_DISK_1
+
+starting media recovery
+
+archived log for thread 1 with sequence 15 is already on disk as file /u01/app/oracle/product/19.3.0/dbhome_1/dbs/arch1_15_1034952193.arc
+archived log for thread 1 with sequence 16 is already on disk as file /u01/app/oracle/product/19.3.0/dbhome_1/dbs/arch1_16_1034952193.arc
+archived log file name=/u01/app/oracle/product/19.3.0/dbhome_1/dbs/arch1_15_1034952193.arc thread=1 sequence=15
+archived log file name=/u01/app/oracle/product/19.3.0/dbhome_1/dbs/arch1_16_1034952193.arc thread=1 sequence=16
+media recovery complete, elapsed time: 00:00:11
+Finished recover at 15-MAR-20
+
+contents of Memory Script:
+{
+   delete clone force archivelog all;
+}
+executing Memory Script
+
+released channel: ORA_DISK_1
+released channel: ORA_AUX_DISK_1
+allocated channel: ORA_DISK_1
+channel ORA_DISK_1: SID=38 device type=DISK
+deleted archived log
+archived log file name=/u01/app/oracle/product/19.3.0/dbhome_1/dbs/arch1_15_1034952193.arc RECID=1 STAMP=1035150532
+deleted archived log
+archived log file name=/u01/app/oracle/product/19.3.0/dbhome_1/dbs/arch1_16_1034952193.arc RECID=2 STAMP=1035150534
+Deleted 2 objects
+
+Finished Duplicate Db at 15-MAR-20
+
+RMAN>
+
+sqlplus / as sysdba
+SQL*Plus: Release 19.0.0.0.0 - Production on Sun Mar 15 21:53:07 2020
+Version 19.3.0.0.0
+Copyright (c) 1982, 2019, Oracle.  All rights reserved.
+Connected to:
+Oracle Database 19c Enterprise Edition Release 19.0.0.0.0 - Production
+Version 19.3.0.0.0
+
+SQL> select open_mode, database_role from v$database;
+OPEN_MODE            DATABASE_ROLE
+-------------------- ----------------
+MOUNTED              PHYSICAL STANDBY
+
+#START APPLY PROCESS
+SQL> alter database recover managed standby database disconnect from session;
+Database altered.
+
+#IF YOU NEED TO CANCEL THE SYNCHRONY PROCESS RUN COMMAND
+##ON STANDBY
+SQL> alter database recover managed standby database cancel;
+##ON PRIMARY
+sqlplus / as sysdba
+alter system set log_archive_dest_state_2=defer;
+
+#IF YOU NEED TO RESUME THE ARCHIVES SYNCHRONY PROCESS
+##ON PRIMARY
+alter system set log_archive_dest_state_2=enable;
+##ON STANDBY
+SQL> alter database recover managed standby database disconnect from session;
+
+#TEST LOG TRANSPORT
+#ON PRIMARY
+SQL> alter session set nls_date_format='DD-MON-YYYY HH24:MI:SS';
+SQL> select sequence#, first_time, next_time FROM v$archived_log order by sequence#;
+
+ SEQUENCE# FIRST_TIME           NEXT_TIME
+---------- -------------------- --------------------
+         6 13-MAR-2020 15:41:03 13-MAR-2020 16:35:35
+         7 13-MAR-2020 16:35:35 13-MAR-2020 22:03:18
+         8 13-MAR-2020 22:03:18 14-MAR-2020 06:00:20
+         9 14-MAR-2020 06:00:20 14-MAR-2020 16:09:59
+        10 14-MAR-2020 16:09:59 15-MAR-2020 10:00:27
+        11 15-MAR-2020 10:00:27 15-MAR-2020 20:34:16
+        12 15-MAR-2020 20:34:16 15-MAR-2020 21:13:08
+        13 15-MAR-2020 21:13:08 15-MAR-2020 21:24:54
+        14 15-MAR-2020 21:24:54 15-MAR-2020 21:43:29
+        15 15-MAR-2020 21:43:29 15-MAR-2020 21:48:44
+        16 15-MAR-2020 21:48:44 15-MAR-2020 21:48:48
+
+11 rows selected.
+
+SQL> alter system switch logfile;
+
+#ON STANDNBY
+#CHECK SYNCHRONIZATION
+SQL> SELECT ARCH.THREAD# "Thread", ARCH.SEQUENCE# "Last Sequence Received", APPL.SEQUENCE# "Last Sequence Applied", (ARCH.SEQUENCE# - APPL.SEQUENCE#) "Difference"
+FROM (SELECT THREAD# ,SEQUENCE#
+FROM V$ARCHIVED_LOG
+WHERE (THREAD#,FIRST_TIME ) IN (SELECT THREAD#,MAX(FIRST_TIME)
+FROM V$ARCHIVED_LOG
+GROUP BY THREAD#)) ARCH,
+(SELECT THREAD# ,SEQUENCE#
+FROM V$LOG_HISTORY
+WHERE (THREAD#,FIRST_TIME ) IN (SELECT THREAD#,MAX(FIRST_TIME)
+FROM V$LOG_HISTORY
+GROUP BY THREAD#)) APPL
+WHERE ARCH.THREAD# = APPL.THREAD#
+ORDER BY 1;
+
+    Thread Last Sequence Received Last Sequence Applied Difference
+---------- ---------------------- --------------------- ----------
+         1                     18                    18          0
 
 
 
