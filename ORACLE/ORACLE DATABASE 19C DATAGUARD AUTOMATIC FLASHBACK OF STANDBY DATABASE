@@ -2,3 +2,65 @@
 +   ORACLE DATABASE 19C DATAGUARD AUTOMATIC FLASHBACK OF STANDBY DATABASE   +
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
+#NOTE
+*Oracle Database Release 19c New Features.
+*The process of flashing back a physical standby to a point in time that was captured on the primary is
+ simplified by automatically replicating restore points from primary to the standby.
+*These restore points are called replicated restore points.
+*Irrespective of whether a restore point on the primary database is a guaranteed restore point or a normal restore point, the corresponding replicated restore point is
+ always a normal restore point.
+
+#ON PRIMARY
+sqlplus / as sysdba
+SQL*Plus: Release 19.0.0.0.0 - Production on Tue Mar 17 16:20:13 2020
+Version 19.3.0.0.0
+Copyright (c) 1982, 2019, Oracle.  All rights reserved.
+Connected to an idle instance.
+
+SQL> select status,instance_name,database_role,protection_mode ,flashback_on from v$database,v$instance;
+STATUS	     INSTANCE_NAME    DATABASE_ROLE    PROTECTION_MODE	    FLASHBACK_ON
+------------ ---------------- ---------------- -------------------- ------------------
+OPEN	       appscdb1	        PRIMARY	         MAXIMUM PERFORMANCE  YES
+
+SQL> alter session set container=APPSPDB;
+Session altered.
+
+#CREATE TABLE TO TEST
+SQL> create table oracledbwr as select * from all_objects;
+Table created.
+
+SQL> select count(*) from oracledbwr;
+  COUNT(*)
+----------
+     71253
+
+SQL> select SCN, GUARANTEE_FLASHBACK_DATABASE, TIME, NAME, REPLICATED from v$restore_point;
+no rows selected
+
+#CREATE RESTORE POINT
+SQL> create restore point oracledbwr_appsdba guarantee flashback database;
+Restore point created.
+
+SQL> select SCN, GUARANTEE_FLASHBACK_DATABASE, TIME, NAME, REPLICATED from v$restore_point;
+       SCN GUA TIME									             NAME 											REP
+---------- --- --------------------------------- -------------------------- -----
+   2975066 YES 17-MAR-20 04.31.12.000000000 PM	 ORACLEDBWR_APPSDBA					NO
+
+#ON STANDBY
+sqlplus / as sysdba
+SQL*Plus: Release 19.0.0.0.0 - Production on Tue Mar 17 16:34:02 2020
+Version 19.3.0.0.0
+Copyright (c) 1982, 2019, Oracle.  All rights reserved.
+Connected to:
+Oracle Database 19c Enterprise Edition Release 19.0.0.0.0 - Production
+Version 19.3.0.0.0
+
+SQL> select database_role, open_mode FROM v$database;
+DATABASE_ROLE	 OPEN_MODE
+---------------- --------------------
+PHYSICAL STANDBY MOUNTED
+
+
+
+
+
