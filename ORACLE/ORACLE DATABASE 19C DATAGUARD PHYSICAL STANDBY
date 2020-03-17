@@ -693,7 +693,12 @@ ORDER BY 1;
 ---------- ---------------------- --------------------- ----------
          1                     18                    18          0
 
-
+#TROUBLESHOOTS
+#ON PRIMARY
+select message, to_char(timestamp,'HH:MI:SS') timestamp
+from v$dataguard_status
+where severity in ('Error','Fatal')
+order by timestamp;
 
 
 
