@@ -22,7 +22,7 @@ STATUS	     INSTANCE_NAME    DATABASE_ROLE    PROTECTION_MODE	    FLASHBACK_ON
 ------------ ---------------- ---------------- -------------------- ------------------
 OPEN	       appscdb1	        PRIMARY	         MAXIMUM PERFORMANCE  YES
 
-SQL> alter session set container=APPSPDB;
+SQL> alter session set container=CDB$ROOT;
 Session altered.
 
 #CREATE TABLE TO TEST
@@ -42,9 +42,10 @@ SQL> create restore point oracledbwr_appsdba guarantee flashback database;
 Restore point created.
 
 SQL> select SCN, GUARANTEE_FLASHBACK_DATABASE, TIME, NAME, REPLICATED from v$restore_point;
-       SCN GUA TIME									             NAME 											REP
----------- --- --------------------------------- -------------------------- -----
-   2975066 YES 17-MAR-20 04.31.12.000000000 PM	 ORACLEDBWR_APPSDBA					NO
+       SCN GUA TIME                               NAME                       REP
+---------- --- ---------------------------------- -------------------------- ---
+   3182051 YES 18-MAR-20 04.26.19.000000000 PM    ORACLEDBWR_APPSDBA         NO
+
 
 #ON STANDBY
 sqlplus / as sysdba
@@ -59,6 +60,102 @@ SQL> select database_role, open_mode FROM v$database;
 DATABASE_ROLE	 OPEN_MODE
 ---------------- --------------------
 PHYSICAL STANDBY MOUNTED
+
+SQL> select SCN, GUARANTEE_FLASHBACK_DATABASE, TIME, NAME, REPLICATED from v$restore_point;
+       SCN GUA TIME                                NAME                          REP
+---------- --- ----------------------------------- ----------------------------- ---
+   2977193 NO  17-MAR-20 04.38.15.000000000 PM     ORACLEDBWR_APPSDBA_PRIMARY    YES
+   
+SQL> select status,instance_name,database_role,protection_mode ,flashback_on from v$database,v$instance;
+STATUS       INSTANCE_NAME    DATABASE_ROLE    PROTECTION_MODE      FLASHBACK_ON
+------------ ---------------- ---------------- -------------------- ------------------
+MOUNTED      appscdb1         PHYSICAL STANDBY MAXIMUM PERFORMANCE  NO
+   
+Automatically replicated guarantee restore point from primary to the standby.
+These restore points can be Identified by "_PRIMARY" at the end of the original name and are displayed in V$RESTORE_POINT. 
+This view has been updated and has new column 'REPLICATED'
+
+#TEST CASE1
+#NOTE
+First testing is our standby database is in MOUNT State.
+If our database is in mount state MRP process on the standby database will start and perform the automatic flashback operation on the standby database as well
+
+#ON PRIMARY
+
+SQL> alter session set container=CDB$ROOT;
+Session altered.
+
+SQL> truncate table oracledbwr;
+Table truncated.
+
+SQL> shut immediate;
+Database closed.
+Database dismounted.
+ORACLE instance shut down.
+
+SQL> startup mount;
+ORACLE instance started.
+
+Total System Global Area 2147482944 bytes
+Fixed Size                  9137472 bytes
+Variable Size             486539264 bytes
+Database Buffers         1644167168 bytes
+Redo Buffers                7639040 bytes
+Database mounted.
+
+SQL> select open_mode, database_role from v$database;
+OPEN_MODE            DATABASE_ROLE
+-------------------- ----------------
+MOUNTED              PRIMARY
+
+SQL> flashback database to restore point ORACLEDBWR_APPSDBA;
+Flashback complete.
+
+SQL> alter database open resetlogs;
+Database altered.
+
+SQL> select count(*) from oracledbwr;
+  COUNT(*)
+----------
+     71556
+     
+#CHECK STANDBY DATABASE LEVEL
+#ON STANDBY
+
+SQL> shut immediate;
+ORA-01109: database not open
+
+Database dismounted.
+ORACLE instance shut down.
+SQL> startup;
+ORACLE instance started.
+
+Total System Global Area 2147482944 bytes
+Fixed Size                  9137472 bytes
+Variable Size             486539264 bytes
+Database Buffers         1644167168 bytes
+Redo Buffers                7639040 bytes
+Database mounted.
+Database opened.
+
+SQL> SELECT database_role, open_mode FROM v$database;
+DATABASE_ROLE    OPEN_MODE
+---------------- --------------------
+PHYSICAL STANDBY READ ONLY
+
+SQL> select count(*) from oracledbwr;
+  COUNT(*)
+----------
+     71556
+
+
+
+
+
+
+
+     
+
 
 
 
