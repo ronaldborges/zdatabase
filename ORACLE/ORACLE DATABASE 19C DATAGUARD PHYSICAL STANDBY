@@ -284,7 +284,7 @@ Copyright (c) 1982, 2019, Oracle and/or its affiliates.  All rights reserved.
 connected to target database: APPSCDB (DBID=3878429816)
 connected to auxiliary database: APPSCDBS (not mounted)
 
-RMAN> DUPLICATE TARGET DATABASE FOR STANDBY FROM ACTIVE DATABASE DORECOVER SPFILE SET db_unique_name='appscdbs' COMMENT 'Is standby' SET                                                                                                     LOG_ARCHIVE_DEST_2='SERVICE=appscdb NOAFFIRM ASYNC VALID_FOR=(ONLINE_LOGFILES,PRIMARY_ROLE) DB_UNIQUE_NAME=appscdb' SET FAL_SERVER='appsc                                                                                                    db' COMMENT 'Is primary' NOFILENAMECHECK;
+RMAN> DUPLICATE TARGET DATABASE FOR STANDBY FROM ACTIVE DATABASE DORECOVER SPFILE SET db_unique_name='appscdbs' COMMENT 'Is standby' SET LOG_ARCHIVE_DEST_2='SERVICE=appscdb NOAFFIRM ASYNC VALID_FOR=(ONLINE_LOGFILES,PRIMARY_ROLE) DB_UNIQUE_NAME=appscdb' SET FAL_SERVER='appscdb' COMMENT 'Is primary' NOFILENAMECHECK;
 
 Starting Duplicate Db at 15-MAR-20
 using target database control file instead of recovery catalog
