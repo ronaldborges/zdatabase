@@ -1,0 +1,59 @@
++++++++++++++++++++++++++++++++++++++++++++++++++++
++  E-BUSINESS SUITE 12.2.9 MAINTENANCE UTILITIES  +
++++++++++++++++++++++++++++++++++++++++++++++++++++
+
+#NOTE
+You use Oracle E-Business Suite system maintenance utilities to perform a variety of operations from installing and upgrading Oracle E-Business Suite systems, 
+to updating configuration parameters, to maintaining and patching your database and file system, to producing system reports.
+
+#COMMAND LINE UTILITIES
+The tools generally referred to as Applications DBA (AD) utilities are started and run from the command line. 
+They initiate processes that perform a variety of system maintenance tasks, such as applying and merging patches. 
+As they run, the utilities prompt you for system-specific parameters necessary to perform the maintenance task.
+In addition, many of the utilities produce reports that contain information such as job timing and file versions.
+
+#AD COMMAND LINE UTILITIES
+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+|AD Utility Name					        |Executable or Script	|Description																															                                                             |
+|---------------------------------|---------------------|--------------------------------------------------------------------------------------------------------------------------------------|
+|AD Administration					      |adadmin				      |Performs maintenance tasks for Oracle E-Business Suite.																				                                       |
+|AD Check Digest					        |adchkdig				      |Checks the integrity of Oracle E-Business Suite patches downloaded from My Oracle Support.												                     |
+|AD Configuration					        |adutconf.sql		      |Reports standard information about the installed configuration of Oracle E-Business Suite.												                     |
+|AD Controller						        |adctrl					      |Manages parallel workers in AD Administration and AutoPatch.																			                                     |
+|AD File Identification				    |adident				      |Reports the version and translation level of an Oracle E-Business Suite file.															                           |
+|AD File Character Set Converter	|adncnv					      |Converts a file from one character set to another.																						                                         |
+|AD Merge Patch*					        |admrgpch				      |Merges multiple patches into a single merged patch.																					                                         |
+|AD Relink							          |adrelink.sh		      |Relinks Oracle E-Business Suite executable programs with the Oracle server product libraries.											                   |
+|AD Splicer							          |adsplice				      |Adds off-cycle products.																												                                                       |
+|AD Job Timing 						        |						          |Report Reports a summary of the timing for jobs run by parallel workers.																                               |
+|AutoPatch*							          |adpatch				      |Applies patches and other system updates.																								                                             |
+|Patch Application Assistant*		  |admsi.pl				      |Generates customized installation instructions for a patch.																			                                     |
+|Rapid Install**					        |rapidwiz				      |Provides a wizard for entering parameters that are specific to a new installation or an upgrade of an Oracle E-Business Suite system. |
+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+
+#WEB-BASED UTILITIES
+Oracle Applications Manager (OAM) provides a Web-based interface where system administrators can monitor system status, 
+administer services, examine system configuration, manage Oracle Workflow, view applied patches, and measure system usage.
+It provides a concise overview of the state of your Oracle E-Business Suite system, and serves as a gateway to utilities for tasks such as managing system configuration,
+reviewing patch history, determining which patches will bring your system up to date, registering additional products and languages,
+and other maintenance activities.
+
++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+|OAM Utility Name			      |Description                                                                                                                      |
+|---------------------------|---------------------------------------------------------------------------------------------------------------------------------|
+|Applied Patches**			    |Uses key patch information in the patch history database. You can search the database to create reports in several formats.      |
+|AutoConfig*					      |Use to view current context files, edit parameters contained in the context files, view previous context files,                  |
+|                           |and compare current context files against previous ones.                                                                         |
+|File History**				      |Enables the viewing of files that have been updated by a patch.                                                                  |
+|License Manager*			      |Registers additional Oracle E-Business Suite products, country-specific functionalities, or languages.                           |
+|                           |You can also use License Manager to change the base language for your system.                                                    |
+|Patch Wizard**				      |Determines patches that have not been applied, but that should be applied to keep the system current.                            |
+|                           |Downloads and merges patches from My Oracle Support.                                                                             |
+|Register Flagged Files**	  |Used to record any files in which you have made customizations. Replaces the need to use applcust.txt,                           |
+|                           |which contained the record for all customized files in previous releases.                                                        |
+|Software Updates**			    |Provides an overview of all patching-related information for your system.                                                        |
+|Timing Reports**			      |Helps you monitor jobs that are running or view statistics of completed AutoPatch and AD Administration maintenance sessions.    |
++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+
+
+
