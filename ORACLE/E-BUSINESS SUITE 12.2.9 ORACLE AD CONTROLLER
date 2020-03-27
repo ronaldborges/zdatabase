@@ -1,0 +1,88 @@
+++++++++++++++++++++++++++++++++++++++++++++++++++
++  E-BUSINESS SUITE 12.2.9 ORACLE AD CONTROLLER  +
+++++++++++++++++++++++++++++++++++++++++++++++++++
+
+#NOTE
+AD Controller is ad utilities used to monitor/ control the workers execution.
+
+#HOW TO RUN AD CONTROLLER
+1 - Login as Applications Tier user & run the environment file.
+	su applmgr
+	cd /d01/oracle/prodappl
+	. ./APPSORA.env
+
+2 - Run the following AD controller command.
+[applmgr@appsr12 ~]$ adctrl
+
+#NOTE
+You will be prompted for the location of APPL_TOP location , password of APPLSYS and APPS. After providing the above information the AD controller menu will appear as shown below.
+
+              AD Controller Menu 
+-------------------------------------------------- 
+1. Show worker status 
+2. Tell worker to restart a failed job 
+3. Tell worker to quit 
+4. Tell manager that a worker failed its job 
+5. Tell manager that a worker acknowledges quit
+6. Restart a worker on the current machine 
+7. Exit
+
+Enter your choice [1]
+
+#HOW TO CHECK THE STATUS OF THE WORKERS?
+After adctrl is started, we have to choose the first option "Show worker status".
+
+        Control
+Worker  Code      Context               Filename              Status
+------  --------  --------------------  --------------------  ---------------
+    1   Run       Generic R115          Us.msb                Running
+    2   Run       Generic R115          Us.msb                Running
+    3   Run       Generic R115          Us.msb                Assigned
+    4   Run       Generic R115          Us.msb                Completed
+    5   Run       Generic R115          Us.msb                Running
+    6   Run       Generic R115          Us.msb                Running
+    
+Review the messages above, then press [Return] to continue.
+
+#NOTE
+If there is no session ,used by the workers, then the following message will
+appear:
+Error: The FND_INSTALL_PROCESSES table does not exist.
+
+This table is used for communication with the worker processes, and if it does not exist, it means that the workers are not running, because the ad utility has not started them yet.
+We should check the file adctrl.log for errors. 
+This is because the FND_INSTALL_PROCESSES table is created when AD parallel jobs start (not the AD utility) and is dropped when the task is completed.
+
+#THE MEANING OF EACH WORKER STATUS
++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+|STATUS                |Description                                                                                                   |
+|----------------------|--------------------------------------------------------------------------------------------------------------|
+|Waiting               |The worker is idle.                                                                                           |
+|Assigned              |A job was assigned by the manager to a worker but the worker didn't start the job.                            |
+|Running               |The worker is running a job.                                                                                  |
+|Failed                |The job failed due to an error.                                                                               |
+|Fixed, Restart        |When a jobs restart after the error has been fixed (during this time the worker run the failed job).          |
+|Restarted             |After the error has been fixed, the worker will have the status "Fixed, Restart" and after that "Restarted".  |
+|                      |(The status will not change to "Running")                                                                     |
+|Completed             |The job was completed and the manager did not yet assigned another job to that worker.                        |
++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+
+#DATABASE PROCESSING PHASES CONCEPT
+When a database patch/ operation will run, the tasks are divided into functions of the kind of modification. 
+This is done by Oracle when the patch is created. Suppose a patch will create 4 tables and 4 sequences. 
+In this case the patch driver contains 2 phases, one for tables creation and one for sequences creation. 
+Because the sequences could be created in the same time, this will be done in 
+
+  *Here are some Database Processing Phases
+    seq = create sequence
+    tab = create tables, synonyms, grants privileges on tables
+    pls = create package specification
+    plb = create package body
+    vw = create views
+
+#FIXING A "FAILED" WORKER
+When a job fails for the 1st time, the job is deferred at the end of the phase and another job is assigned to that worker.
+
+
+
+
