@@ -83,6 +83,69 @@ Because the sequences could be created in the same time, this will be done in
 #FIXING A "FAILED" WORKER
 When a job fails for the 1st time, the job is deferred at the end of the phase and another job is assigned to that worker.
 
+  *If the job fails 2nd time
+	- If the run time of the job was < 10 min => the job is deferred at the end of the phase and another job is assigned to that worker.
+	- if the run time of the job was >= 10 min => the job status will be "Failed".
+  *If the job fails 3nd time => the job status will be "Failed".
+	To review the worker log information you have to check into
+	$APPL_TOP/admin/<SID>/log/adworkNNN.log
+	Example: adwork001.log will be the log file for the worker number 1.
+	
+After fixing the error we have to start (if is not already started) AD Controller and to use the option 
 
+2 "Tell worker to restart a failed job". 
+
+When prompted we have to specify the worker which must be restarted. 
+If all the workers are failed, we can type all to restart all the workers.
+
+#RESTARTING A FAILED PATCH PROCESS
+During a patch process (or adadmin process) if a job fails and cannot be restarted the patch must be restarted.
+Here are the steps for doing this
+
+3 Tell worker to quit (for all workers) => to manually shutdown/ quit the workers
+
+4 Tell manager that a worker failed its job
+
+5 Tell manager that a worker acknowledges quit => the manager will stop, the AutoPatch will stop.
+
+restart the patch
+
+#NOTE
+When the patch will restart all the information in the database about this session must be accurate.
+
+#HOW TO DETERMINE IF A PROCESS IS HANGING OR NOT
+[a] We can check the log file to see if some information is added or not to the log file.
+
+[b] We can determine if the worker process is consuming CPU by issuing below command.
+	$ ps -eo pcpu,pid,user,args | grep workerid
+	
+[c] We check if there are any child processes, which are consuming CPU by issuing following command:
+	$ ps -eo pcpu,pid,ppid,user,args | grep <Parent Process> | grep -v grep
+	
+#RESTARTING A HANGING WORKER PROCESS	
+[a] kill at the OS level the processes associated with the Hanging Worker Process.
+	$ kill -9 ProcesssNumber
+	
+[b] fix the problem
+
+[c] Restart the worker (or the job)
+
+#RESTART AN AD UTILITY AFTER A NODE CRASH
+[a] Start AD Controller
+
+[b] Choose "4. Tell manager that a worker failed its job"
+
+[c] Choose "2. Tell worker to restart a failed job"
+
+[d] Restart the AD utility that was running when the node crashed.
+
+#SHUTTING DOWN THE MANAGER
+[a] Start AD Controller
+
+[b] Choose "3. Tell worker to quit"
+
+[c] Verify that no worker processes are running
+
+	
 
 
