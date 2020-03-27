@@ -3,3 +3,53 @@
 +++++++++++++++++++++++++++++++++++++++++++++++++++
 
 #NOTE
+AD Relink is a AD utility that is used to relink oracle Applications AD executables. 
+The other executables must be relinked using adadmin. 
+In other words AD Relink is used to regenerate an Oracle Applications executable. 
+One notable feature of AD relink is that it is not an executable like other Ad utilities. 
+It is a shell script that uses the UNIX
+
+Relinking may be required under various scenarios like an executable getting corrupt or lost. 
+Relinking is also recommended after cloning, upgrades and patching. 
+But mostly Auto Patch will take care of the relinking process at the end of the patching.
+
+	THE FOLLOWING IS THE SYNTAX FOR AD RELINK
+	adrelink.sh force={y | n} [optionalargs]
+	adrelink force={y|n} [<optional args>] <targets> => to relink programs individually.
+	OR
+	adrelink force={y|n} [<optional args>] filelist=<file> => to relink many programs.
+
+Here force option is used to specify whether to relink regardless of the status of the library or object files.
+
+#VALID <OPTIONAL ARGUMENTS> ARE:	
+	* envfile=adsetenv.sh
+	  Used only by the 'adsetup' script
+	* link_debug={y|n}
+	  Will we link executables with debug or not? Default is 'n'
+	* backup_mode={none|all|file}
+	  Default is 'file'. Meanings are:
+	  - none: do not back up any executables
+	  - all : back up all executables
+	  - file: do what $APPL_TOP/admin/adlinkbk.txt says to do  
+
+#NOTE
+adrelink.sh is situated in $AD_TOP/bin/ directory.	  
+
+#AD RELINK EXAMPLES
+To relink adpatch:
+'adrelink.sh force=y "ad adpatch"'
+
+To relink adpatch, adsplice, and adadmin:
+'adrelink.sh force=y "ad adpatch" "ad adsplice" "ad adadmin"'
+
+To relink all AD executables:
+'adrelink.sh force=y "ad all"'
+
+#NOTE
+To relink all executables for a non-AD product: Use the AD Administration Utility, not adrelink.
+
+If you we are relinking files on the Concurrent Processing Server then Shut down
+the Concurrent Managers before relink operation.
+
+If we are relinking files on the Forms Server then all Oracle applications users must
+be logged off before relink operation.
