@@ -1,0 +1,81 @@
++++++++++++++++++++++++++++++++++++++++++++++++
++  E-BUSINESS SUITE 12.2.9 ORACLE AD SPLICER  +
++++++++++++++++++++++++++++++++++++++++++++++++
+
+#NOTE
+AD Splicer registers off-cycle product as a valid Oracle Applications product for the given release
+The splicing process enables AutoPatch and AD Administration to recognize the off-cycle product
+AD Splicer uses control files to manage the splicing process
+	– These are not related to the database control files
+	
+#AD SPLICER CONTROL FILES
+Off-cycle products are generally released as patches. All product files and control files necessary to splice in the product are included in the patch.
+There is one product configuration file, called newprods.txt. The product configuration file must be edited for your specific system before the off-cycle product can be properly spliced.
+
+#NOTE
+The product definition files must not be altered.
+There are two product definition files per off-cycle product. They are
+	* <prod>prod.txt: which contains language-independent information for product <prod>
+	* <prod>terr.txt: which contains language-dependent information for product <prod> <prod> represents the product abbreviation for an Applications product. 
+	  For example GL for General Ledger and PO for Purchasing.
+The AD Splicer control files must copied from the patch to the APPL_TOP/admin directory.
+
+#EDITING NEWPRODS.TXT
+
+Each spliced product in newprods.txt has an entry such as the following:
+	
+	product=zsa
+	base_product_top=*APPL_TOP*
+	oracle_schema=zsa
+	sizing_factor=100
+	main_tspace=*Product_Name*D
+	index_tspace=*Product_Name*X
+	temp_tspace=*Temporary Tablespace*
+	default_tspace=*Product_Name*D
+
+#POST-SPLICE STEPS	
+
+After the new product is spliced in, the files and objects for this product can be installed. To do this you need to:
+	* Log out and log back in so that you are using the new environment file (or registry entries) to set up your environment
+	* Verify that <PROD>_TOP environment variables are set for your newly-spliced product
+	* Run AutoPatch to install files and database objects for your new product
+	
+#EXAMPLE PATCH 6280873 - ADSPLICE PATCH FOR IZU - RELEASE 12	
+
+IZU Splice Preparation Tasks for R12
+Customers with multi-node installations of eBusiness Suite should apply this
+adsplice patch on all nodes.
+
+1. Unzip this patch and you will get directory 6280873.
+
+[applvis@appsdba patches]$ unzip CASLYVG5.zip
+Archive: CASLYVG5.zip
+	inflating: 6280873/README.html
+	inflating: 6280873/u6280873.drv
+	inflating: 6280873/f6280873.ldt
+	inflating: 6280873/izu/admin/izuprod.txt
+	
+	inflating: 6280873/izu/admin/newprods.txt
+   extracting: 6280873/maker1.txt
+	inflating: 6280873/b6280873.ltd
+	inflating: 6280873/README.txt
+	inflating: 6280873/patch_metadata.xml
+	inflating: 6280873/izu/patch/115/manualsteps/izu_r12_splice_tasks.xml	
+	
+2. Copy the following text files from 6280873/izu/admin to the admin directory under APPL_TOP.	
+izuprod.txt
+izuterr.txt
+newprods.txt
+
+[applvis@appsdba ~]$ cd patches/6280873/izu/admin/
+[applvis@appsdba admin]$ ls
+izuprod.txt		izuterr.txt		newsprod.txt
+[applvis@appsdba admin]$ cp * $APPL_TOP/admin
+
+3. Change directory to the admin directory under APPL_TOP.
+Review newprods.txt and verify that the tablespaces listed exist
+and are the ones planned for use by this product.
+If changes are required, edit the file as appropriate and save it.
+
+cd $APPL_TOP/admin
+vi izuprod.txt
