@@ -48,34 +48,144 @@ adsplice patch on all nodes.
 
 1. Unzip this patch and you will get directory 6280873.
 
-[applvis@appsdba patches]$ unzip CASLYVG5.zip
-Archive: CASLYVG5.zip
-	inflating: 6280873/README.html
-	inflating: 6280873/u6280873.drv
-	inflating: 6280873/f6280873.ldt
-	inflating: 6280873/izu/admin/izuprod.txt
-	
-	inflating: 6280873/izu/admin/newprods.txt
-   extracting: 6280873/maker1.txt
-	inflating: 6280873/b6280873.ltd
-	inflating: 6280873/README.txt
-	inflating: 6280873/patch_metadata.xml
-	inflating: 6280873/izu/patch/115/manualsteps/izu_r12_splice_tasks.xml	
+	[applmgr@appsdba patches]$ unzip CASLYVG5.zip
+	Archive: CASLYVG5.zip
+		inflating: 6280873/README.html
+		inflating: 6280873/u6280873.drv
+		inflating: 6280873/f6280873.ldt
+		inflating: 6280873/izu/admin/izuprod.txt
+		
+		inflating: 6280873/izu/admin/newprods.txt
+	   extracting: 6280873/maker1.txt
+		inflating: 6280873/b6280873.ltd
+		inflating: 6280873/README.txt
+		inflating: 6280873/patch_metadata.xml
+		inflating: 6280873/izu/patch/115/manualsteps/izu_r12_splice_tasks.xml	
 	
 2. Copy the following text files from 6280873/izu/admin to the admin directory under APPL_TOP.	
-izuprod.txt
-izuterr.txt
-newprods.txt
-
-[applvis@appsdba ~]$ cd patches/6280873/izu/admin/
-[applvis@appsdba admin]$ ls
-izuprod.txt		izuterr.txt		newsprod.txt
-[applvis@appsdba admin]$ cp * $APPL_TOP/admin
+	izuprod.txt
+	izuterr.txt
+	newprods.txt
+	
+	[applmgr@appsdba ~]$ cd patches/6280873/izu/admin/
+	[applmgr@appsdba admin]$ ls
+	izuprod.txt		izuterr.txt		newsprod.txt
+	[applmgr@appsdba admin]$ cp * $APPL_TOP/admin
 
 3. Change directory to the admin directory under APPL_TOP.
 Review newprods.txt and verify that the tablespaces listed exist
 and are the ones planned for use by this product.
 If changes are required, edit the file as appropriate and save it.
 
-cd $APPL_TOP/admin
-vi izuprod.txt
+	cd $APPL_TOP/admin
+	vi izuprod.txt
+
+	product-izu
+	base_product_top=*APPL_TOP*
+	oracle_schema=izu
+	sizing_factor=100
+	main_tspace=APPS_TS_TX_DATA
+	index_tspace=APPS_TS_TX_IDX
+	temp_tspace=TEMP
+	default_tspace=APPS_TS_TX_DATA
+
+4. You must run "adsplice" from the admin directory under your APPL_TOP.
+When you are asked to enter the name of your AD Splicer control file,
+enter newprods.txt
+
+	adsplice
+	
+	Filename [adsplice.log]
+	
+	The Default directory is [/u03/oracle/VIS/apps/apps_st/appl/admin] :
+
+	Please enter the name of your AD Splice control file [newprods.txt] : 
+	Product top directory for product "izu" exists.
+	Directory is /u03/oracle/VIS/apps/apps_st/appl/izu/12.0.0
+
+	Directory "log" for product "izu" exists.
+	Directory "out" for product "izu" exists.
+	Directory "mesg" for product "izu" exists.
+	Directory "sql" for product "izu" exists.
+		File "sql/IZUNLINS.sql" for product "izu" exists.
+	Directory "admin/sql" for product "izu" exists.
+		File "admin/sql/IZUNLADD.sql" for product "izu" exists.
+	Directory "admin/driver" for product "izu" exists.
+	
+	Do you wish to regenerate your environment file [Yes] ?
+	Checking if AutoConfig is enabled ...
+	Running AutoConfig on : All products ...
+
+	The log file is located at: 
+		/u03/oracle/VIS/apps/apps_st/appl/admin/VIS/log/autoconfig_1.log
+	
+	Please check the log file for more details about the run of AutoConfig.
+	
+	AD Splicer is complete.
+
+Errors and warning are listed in the log file
+/u03/oracle/VIS/apps/apps_st/appl/admin/VIS/log/adsplice.log
+
+and in other log files in the same directory.
+
+5. AD Splicer will regenerate the environment file or registry. If you
+have made manual modifications to your environment file or your registry,
+you will need to apply those changes again.
+
+
+	Verifying splicing of IZU
+	--------------------------
+	1. Log out and log back in so that you are using the new environment
+	file (or registry entries ) to set up your environment
+		exit
+		su - applmgr
+		[applmgr@appsdba ~]$ . ./APPLMGR_linux4.env
+		[applmgr@appsdba ~]$
+	2. Verify that IZU_TOP environment variable is set for your newly-spliced product IZU
+		[applmgr@appsdba ~]$ echo $IZU_TOP
+		/u03/oracle/VIS/apps/apps_st/appl/izu/12.0.0
+	3. Verify that the product has been correctly created in the database by
+	connection as "APPS" user.
+		select fa.APPLICATION_ID, STATUS
+		from fnd_application fa, fnd_product_installations fpi
+		where fa.APPLICATION_ID=fpi.APPLICATION_ID
+		and APPLICATION_SHORT_NAME = 'IZU' ;
+	
+	This statement should return one row:
+		APPLICATION_ID 	S
+		--------------- -
+		278 			I
+	4. Verify you can connect to the database as izu/izu using SQLPLUS.
+		<SQL> 	select fa.APPLICATION_ID, STATUS
+				from fnd_application fa, fnd_product_installations fpi
+				where fa.APPLICATION_ID=fpi.APPLICATION_ID
+				and APPLICATION_SHORT_NAME = 'IZU';
+				
+		  2 3  4
+		APPLICATION_ID S
+		-------------- -
+				   278 I
+				   
+		<SQL>
+		
+#PRE-INSTALL TASKS
+You must shut down all Application tier services before performing the tasks in this section.	
+
+#APPLY THE PATCH
+	[applmgr@appsdba patches]$ cd 6280873
+	[applmgr@appsdba 6280873]$ ls *.drv
+	u6280873.drv
+	
+	cd $ADMIN_SCRIPTS_HOME
+	sh adstpall.sh apps/apps
+	
+	adadmin defaultsfile=$APPL_TOP/admin/$TWO_TASK/adalldefaults.txt logfile=adadmin.log menu_option=ENABLE_MAINT_MODE workers=8
+	
+	*APPLY PATCH
+	adpatch defaultsfile=$APPL_TOP/admin/$TWO_TASK/adalldefaults.txt logfile=u6280873.log patchtop=/home/applvis/patches/6280873 driver=u6280873.drv workers=8
+	adadmin defaultsfile=$APPL_TOP/admin/$TWO_TASK/adalldefaults.txt logfile=adadmin.log menu_option=DISABLE_MAINT_MODE workers=8 
+	cd $ADMIN_SCRIPTS_HOME
+	sh adstrtal.sh apps/apps
+
+	
+	
