@@ -1,0 +1,301 @@
++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
++    TKE - TENCENT KUBERNETES ENGINE ACCESS MANAGEMENT   	+
++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+
+#USER MANAGEMENT
+
+#CONCEPT
+Here users can manage users and policies
+
+#STEPS
+	New user
+	Login to TKEStack
+	Switch to the platform management console and select Business Managemente > Access Management > User Management.
+	Click the [New] button. As shown below:
+	
+	User Management
+		
+		+-----+
+	>	|[New]|
+		+-----+
+		
+		User ID / name					Connect phone			Associated mailbox			operating
+		-----------------------------------------------------------------------------------------------
+		admin / Administrator			-						-							delete
+		-----------------------------------------------------------------------------------------------
+		
+	|---------------------------------------------------------------|
+	|Add user                                                   	|
+	|                                                           	|
+	|user account*		________________________________________	|
+	|                                                           	|
+	|user name*			________________________________________	|
+	|																|
+	|user password*		________________________________________	|
+	|																|
+	|confirm password*	________________________________________	|
+	|																|
+	|phone number*		________________________________________	|
+	|					                                  			|
+	|mailbox			________________________________________	|
+	|---------------------------------------------------------------|
+
+	*User account: 3 to 32 characters, lowercase letters or numbers at the beginning and end, including lowercase letters, numbers,
+	*User name: The length must be less than 256 characters. The user name will be displayed in the upper right corner of the page.
+	*User password: 10 ~ 16 characters, including uppercase and lowercase letters and numbers
+	*Confirm password: Enter the password again.
+	*Phone number: Enter the user's phone number
+	*Email: Enter the user email
+	
+#DATA FOR EXAMPLE
+oper
+operator
+***********
+***********
+null
+operator@gmail.com
+
+	User Management
+		
+		+-----+
+		| New |
+		+-----+
+		
+		User ID / name					Connect phone			Associated mailbox			operating
+		-----------------------------------------------------------------------------------------------
+		oper / Operator					-						-						  > [change Password] delete
+		-----------------------------------------------------------------------------------------------
+		admin / Administrator			-						-							delete
+		-----------------------------------------------------------------------------------------------	
+		
+Enter the new password in the pop-up change password window and confirm it. As shown below:
+
+	|--------------------------------|
+	|change Password                 |
+	|                                |
+	|user password 	  ______________ |
+	|					             |
+	|confirm password ______________ |	
+	|								 | 
+	|	+----+		+------+		 |
+	|	|Save|		|cancel|		 |
+	|	+----+		+------+		 |
+	|--------------------------------|
+	
+	*Please enter the user password 10 ~ 16 digits, including uppercase and lowercase letters and numbers
+	
+	Edit user basic information
+	Login to TKEStack
+	Switch to the platform management console and select Business Managemente > Access Management > User Management to view the list of users.
+	Click the user name in the list. As shown below:
+	
+	<- User Management
+		
+			Basic Information > [edit]
+			
+			User account	oper
+			User name		operator
+			Phone number	-
+			Email			operator@gmail.com
+			Created			2020-03-29 22:34:26
+			   +----+		+------+
+			   |Save|		|cancel|
+			   +----+		+------+
+			Association strategy
+			Strategy name					description						Types of
+
+											no content yet
+
+	delete users
+	Login to TKEStack
+	Switch to the platform management console and select Business Managemente > Access Management > User Management to view the list of users.
+	Click the [Delete] button at the far right of the user list. As shown below:
+	
+		User Management
+		
+		+-----+
+		| New |
+		+-----+
+		
+		User ID / name					Connect phone			Associated mailbox			operating
+		-----------------------------------------------------------------------------------------------
+		oper / Operator					-						-						    change Password > [delete]
+		-----------------------------------------------------------------------------------------------
+		admin / Administrator			-						-							delete
+		-----------------------------------------------------------------------------------------------	
+		
+		|------------------------------------------------------------------------------------------|
+		| Are you sure you want to delete the currently selected user?                             |
+		| After deletion, all configurations of user oper will be cleared and cannot be restored.  |
+		|                                                                                          |
+		|			+-----------+		+-----------+                                              |
+		|			|> [delete]	|		| 	cancel	|	                                           |
+		|			+-----------+		+-----------+                                              |
+		|------------------------------------------------------------------------------------------|
+		
+						Sucessfull deleted 
+
+#STRATEGY MANAGEMENT
+#CONCEPT
+Here users can manage platform policies
+
+	New strategy
+	Login to TKEStack
+	Switch to the platform management console and select Business Managemente > Access Management > Policy Management.
+	Click the [New] button. As shown below: 
+	
+	Strategy Management
+	
+		+-----+															Please enter a strategy name _________________ [search]
+	>	|[New]|
+		+-----+
+	
+		Strategy name						description									Service type							operating
+		ClusterFullAccess					This strategy allows you to manage 			cluster									delete Associated User					
+											cluster-related resources within the 
+											platform tenant, including cluster 
+											management, nodes, and priorities 
+
+		AuthFullAccess						This policy allows you to manage all 		auth									delete Associated User	
+											users in the platform tenant and their 
+											permissions
+
+		ReadOnly							Access This policy allows you read-only 	common									delete Associated User
+											access to all container service assets 
+											in your account that support 
+											interface-level or resource-level 
+											authentication
+
+		VolumeFullAccess					This strategy allows you to manage 			volume									delete Associated User
+											platform tenant cloud disk resources
+
+		AddonFullAccess						This strategy allows you to manage 			addon									delete Associated User
+											resources related to extension components
+											within the platform tenant, such 
+											as Helm, prometheus, etc.
+											
+		MonitorFullAccess					This policy allows you to manage platform 	monitor									delete Associated User
+											tenant monitoring alert policies
+
+		ApplicationFullAccess				This strategy allows you to manage 			application								delete Associated User
+											workload related resources in the cluster
+											under the platform tenant business, 
+											such as deployment, daemonset, pod, etc.
+
+		ConfigFullAccess					This policy allows you to manage platform	config									delete Associated User
+											tenant k8s configuration group resources, 
+											including configmap, secret, etc.
+
+		NotifyFullAccess					This policy allows you to manage platform	notify									delete Associated User
+											tenant notification settings
+
+		NetworkFullAccess					This policy allows you to manage network 	network									delete Associated User
+											resources within the platform tenant, 
+											such as network policies, services,
+											ignress, etc.
+
+		ProjectFullAccess					This strategy allows you to manage 			project									delete Associated User
+											platform tenant business related 
+											resources, such as editing project, 
+											namespace, resource quota, etc.
+
+		AdministratorAccess					This policy allows management of all 		common									delete Associated User
+											users in the platform tenant and their 
+											permissions, container service assets
+
+		RegistryFullAccess					This policy allows you to manage 			registry								delete Associated User
+											platform tenant image warehouse
+											resources
+
+		A total of 13 Xiang																							Display lines per page 20 1 / 1 page
+
+
+	New strategy
+	
+		Strategy name*		________________________
+		
+		effect*				( ) Allow  ( ) Refuse
+		
+		service*			[Please select a service]
+								 Extended component management
+								 Application management
+							   > Users and permissions
+								 Cluster management
+								 Configuration group management
+								 Monitoring alerts
+								 Network management
+								 Notification service
+								 Business and namespace
+								 Mirror repository
+								 Persistent storage
+		
+		operating*			[Please select Action]																	Selected (2)
+							Action name						description												Action name				description
+																													createGroup				Create User Group ...		(x)
+							createApikey					Create access credentials
+							createApikey Password			Requesting access credentials using a password	
+							createApikeyToken				Apply for access credentials using Token
+							.....................			..............................................
+						[v]	createGroup						Create User Group ...
+
+		Supports multiple selections by holding down the shift key
+		Please select Action
+		
+		Resources*	[New resources]
+		Use segmented description: key1: val1 / key2: val2 / *, support for * fuzzy matching syntax, such as cluster: cls-123 / deployment: deploy-123 / *
+		
+		description	_______________________________________________
+					Introduce this strategy
+
+	*Strategy name: less than 256 characters
+	*Effect: policy action, allow / deny
+	*Services: Choose which service the policy applies to
+	*Operation: Select the operation permissions of the corresponding service
+	*Resource: Enter the resource label and support fuzzy matching. The strategy will be applied to the matched resource.
+	*Description: Enter a description of the policy
+	
+	
+	Associated User
+	Login to TKEStack
+	Switch to the platform management console and select Business Managemente > Access Management > Policy Management to view the policy list.
+	Click the [Associated User] button on the far right in the list. As shown below:
+	
+	Strategy Management
+	
+		+-----+															Please enter a strategy name _________________ [search]
+		|[New]|
+		+-----+
+	
+		Strategy name						description									Service type							operating
+		test								-											auth									delete > [Associated User]
+		
+	Associated User
+	
+
+		 Associated User						Select(1)
+		|-------------------------------|	|------------------| 
+		|Oper				(x) [search]|	| user             |
+		|[v] user                       |   |                  |
+		|[v] oper(operator)             |   |                  |
+	    |-------------------------------|   |------------------|
+		Supports multiple selections by holding down the shift key 
+	
+					+------------+			+------+
+					|>[determine]|			|cancel|
+					+------------+			+------+
+					
+	Delete policy
+	Login to TKEStack
+	Switch to the platform management console and select Access Management-> Policy Management to view the policy list.
+	Click the [Delete] button on the far right in the list. As shown below:		
+	
+	Strategy Management
+	
+    	+-----+															Please enter a strategy name _________________ [search]
+    	|[New]|
+    	+-----+
+    
+    	Strategy name						description									Service type							operating
+    	test								-											auth									> [delete] Associated User
+		
+		

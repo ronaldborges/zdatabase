@@ -1,0 +1,28 @@
+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
++    TKE - TENCENT KUBERNETES ENGINE DEPLOYMENT ARCHITECTURE   +
+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+
+#Architecture description
+	The open source version of Container Services uses the design philosophy of Kubernetes on Kubernetes.
+	
+	There is only one physical machine process kubelet on the host, and other Kubernetes components are containers. 
+	The architecture is divided into global clusters and business clusters. 
+	The Global cluster runs the components required by the entire container service open source version platform itself, and the business cluster runs user services. 
+	In the actual deployment process, adjustments can be made according to the actual situation.
+
+#Module description
+	*Installer: The node running the tke-installer installer, which is used to provide a Web UI to guide users to deploy the TKEStacl console in the Global cluster;
+	*Global Cluster: Kubernetes cluster running TKEStack console;
+	*Cluster: a Kubernetes cluster running a business, which can be created or imported through the TKEStack console;
+	*Dashboard: run TKEStack console web service;
+	*Auth: authority authentication component, which provides user authentication and authority connection related functions;
+	*Gateway: Realize unified entrance and unified authentication related functions of the cluster background;
+	*Platform: Cluster management component, providing global cluster management functions related to multiple business clusters;
+	*Business: business management component, providing background services for platform business management related functions;
+	*Network Controller: Network service component that supports Galaxy network functions;
+	*Monitor: Monitoring service component, which provides monitoring collection, reporting, and alarm related services;
+	*Notify: Notification function component, which provides functions related to message notification;
+	*Registry: image service component, providing platform image warehouse service;
+	
+
+	

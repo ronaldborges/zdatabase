@@ -1,0 +1,21 @@
+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
++     TKE - Tencent Kubernetes Engine Deployment environment requirements	   +
+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+
+#HARDWARE REQUIREMENTS
+	*Minimization department allocation:
+		Installer node: CPU: 2 cores, memory: 4G, system disk: 50G, 1
+		Global cluster: CPU: 8 cores, memory: 16G, system disk: 100G, 1
+		Business cluster:
+			- Master & etcd node: CPU: 4 cores, memory: 8G, system disk: 100G, 1
+			- Node: CPU: 8 cores, memory: 16G, system disk: 100G, 3
+	*Recommended configuration:
+		Installer node: CPU: 2 cores, memory: 4G, system disk: 50G, 1
+		Global cluster: CPU: 8 cores, memory: 16G, system disk: 100G, 3 units
+		Business cluster:
+			- Master & etcd nodes: CPU: 8 cores, memory: 16G, system disk: 50G, data disk: 100G (/ var / lib / docker), 3
+			- Node: CPU: 16 cores, memory: 32G, system disk: 100G, data disk: 100G (/ var / lib / docker),> 3 (add based on traffic)
+#SOFTWARE REQUIREMENTS
+Operating system: centos 7.2+ (recommended centos 7.5), ubuntu 14.04+ (recommended ubuntu 16.04), tlinux2.2 (select the standard installation version for the operating system).
+Ports: All node firewalls must be open for SSH (default 22), 80, 8080, 443, 6443 ports. 
+Ensure that the Installer node and its container, the Global cluster node and its container, and the business cluster node and its container can be ssh interconnected.
