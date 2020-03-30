@@ -19,25 +19,25 @@ Here users can manage users and policies
 	>	|[New]|
 		+-----+
 		
-		User ID / name					Connect phone			Associated mailbox			operating
-		-----------------------------------------------------------------------------------------------
-		admin / Administrator			-						-							delete
-		-----------------------------------------------------------------------------------------------
+		User ID / name			Connect phone		Associated mailbox		operating
+		--------------------------------------------------------------------------------------------------
+		admin / Administrator		-			-				delete
+		--------------------------------------------------------------------------------------------------
 		
 	|---------------------------------------------------------------|
 	|Add user                                                   	|
 	|                                                           	|
-	|user account*		________________________________________	|
+	|user account*		_______________________________________ |
 	|                                                           	|
-	|user name*			________________________________________	|
-	|																|
-	|user password*		________________________________________	|
-	|																|
-	|confirm password*	________________________________________	|
-	|																|
-	|phone number*		________________________________________	|
-	|					                                  			|
-	|mailbox			________________________________________	|
+	|user name*		_______________________________________ |
+	|								|
+	|user password*		_______________________________________	|
+	|								|
+	|confirm password*	_______________________________________	|
+	|								|
+	|phone number*		_______________________________________	|
+	|					                        |
+	|mailbox		_______________________________________ |
 	|---------------------------------------------------------------|
 
 	*User account: 3 to 32 characters, lowercase letters or numbers at the beginning and end, including lowercase letters, numbers,
@@ -61,12 +61,12 @@ operator@gmail.com
 		| New |
 		+-----+
 		
-		User ID / name					Connect phone			Associated mailbox			operating
-		-----------------------------------------------------------------------------------------------
-		oper / Operator					-						-						  > [change Password] delete
-		-----------------------------------------------------------------------------------------------
-		admin / Administrator			-						-							delete
-		-----------------------------------------------------------------------------------------------	
+		User ID / name			Connect phone		Associated mailbox		operating
+		-------------------------------------------------------------------------------------------------------------------
+		oper / Operator			-			-				> [change Password] delete
+		-------------------------------------------------------------------------------------------------------------------
+		admin / Administrator		-			-				delete
+		-------------------------------------------------------------------------------------------------------------------	
 		
 Enter the new password in the pop-up change password window and confirm it. As shown below:
 
@@ -74,12 +74,12 @@ Enter the new password in the pop-up change password window and confirm it. As s
 	|change Password                 |
 	|                                |
 	|user password 	  ______________ |
-	|					             |
+	|				 |
 	|confirm password ______________ |	
-	|								 | 
-	|	+----+		+------+		 |
-	|	|Save|		|cancel|		 |
-	|	+----+		+------+		 |
+	|				 | 
+	|	+----+		+------+ |
+	|	|Save|		|cancel| |
+	|	+----+		+------+ |
 	|--------------------------------|
 	
 	*Please enter the user password 10 ~ 16 digits, including uppercase and lowercase letters and numbers
@@ -102,9 +102,9 @@ Enter the new password in the pop-up change password window and confirm it. As s
 			   |Save|		|cancel|
 			   +----+		+------+
 			Association strategy
-			Strategy name					description						Types of
+			Strategy name			description			Types of
 
-											no content yet
+							no content yet
 
 	delete users
 	Login to TKEStack
@@ -117,20 +117,20 @@ Enter the new password in the pop-up change password window and confirm it. As s
 		| New |
 		+-----+
 		
-		User ID / name					Connect phone			Associated mailbox			operating
-		-----------------------------------------------------------------------------------------------
-		oper / Operator					-						-						    change Password > [delete]
-		-----------------------------------------------------------------------------------------------
-		admin / Administrator			-						-							delete
-		-----------------------------------------------------------------------------------------------	
+		User ID / name			Connect phone		Associated mailbox		operating
+		------------------------------------------------------------------------------------------------------------------
+		oper / Operator			-			-				change Password > [delete]
+		------------------------------------------------------------------------------------------------------------------
+		admin / Administrator		-			-				delete
+		------------------------------------------------------------------------------------------------------------------	
 		
 		|------------------------------------------------------------------------------------------|
 		| Are you sure you want to delete the currently selected user?                             |
 		| After deletion, all configurations of user oper will be cleared and cannot be restored.  |
 		|                                                                                          |
-		|			+-----------+		+-----------+                                              |
-		|			|> [delete]	|		| 	cancel	|	                                           |
-		|			+-----------+		+-----------+                                              |
+		|			+-----------+		+-----------+                              |
+		|			|> [delete] |		| cancel    |	                           |
+		|			+-----------+		+-----------+                              |
 		|------------------------------------------------------------------------------------------|
 		
 						Sucessfull deleted 
@@ -150,62 +150,62 @@ Here users can manage platform policies
 	>	|[New]|
 		+-----+
 	
-		Strategy name						description									Service type							operating
+		Strategy name						description						Service type								operating
 		ClusterFullAccess					This strategy allows you to manage 			cluster									delete Associated User					
-											cluster-related resources within the 
-											platform tenant, including cluster 
-											management, nodes, and priorities 
+									cluster-related resources within the 
+									platform tenant, including cluster 
+									management, nodes, and priorities 
 
-		AuthFullAccess						This policy allows you to manage all 		auth									delete Associated User	
-											users in the platform tenant and their 
-											permissions
+		AuthFullAccess						This policy allows you to manage all 			auth									delete Associated User	
+									users in the platform tenant and their 
+									permissions
 
-		ReadOnly							Access This policy allows you read-only 	common									delete Associated User
-											access to all container service assets 
-											in your account that support 
-											interface-level or resource-level 
-											authentication
+		ReadOnly						Access This policy allows you read-only 		common									delete Associated User
+									access to all container service assets 
+									in your account that support 
+									interface-level or resource-level 
+									authentication
 
 		VolumeFullAccess					This strategy allows you to manage 			volume									delete Associated User
-											platform tenant cloud disk resources
+									platform tenant cloud disk resources
 
 		AddonFullAccess						This strategy allows you to manage 			addon									delete Associated User
-											resources related to extension components
-											within the platform tenant, such 
-											as Helm, prometheus, etc.
+									resources related to extension components
+									within the platform tenant, such 
+									as Helm, prometheus, etc.
 											
-		MonitorFullAccess					This policy allows you to manage platform 	monitor									delete Associated User
-											tenant monitoring alert policies
+		MonitorFullAccess					This policy allows you to manage platform 		monitor									delete Associated User
+									tenant monitoring alert policies
 
-		ApplicationFullAccess				This strategy allows you to manage 			application								delete Associated User
-											workload related resources in the cluster
-											under the platform tenant business, 
-											such as deployment, daemonset, pod, etc.
+		ApplicationFullAccess					This strategy allows you to manage 			application								delete Associated User
+									workload related resources in the cluster
+									under the platform tenant business, 
+									such as deployment, daemonset, pod, etc.
 
-		ConfigFullAccess					This policy allows you to manage platform	config									delete Associated User
-											tenant k8s configuration group resources, 
-											including configmap, secret, etc.
+		ConfigFullAccess					This policy allows you to manage platform		config									delete Associated User
+									tenant k8s configuration group resources, 
+									including configmap, secret, etc.
 
-		NotifyFullAccess					This policy allows you to manage platform	notify									delete Associated User
-											tenant notification settings
+		NotifyFullAccess					This policy allows you to manage platform		notify									delete Associated User
+									tenant notification settings
 
-		NetworkFullAccess					This policy allows you to manage network 	network									delete Associated User
-											resources within the platform tenant, 
-											such as network policies, services,
-											ignress, etc.
+		NetworkFullAccess					This policy allows you to manage network 		network									delete Associated User
+									resources within the platform tenant, 
+									such as network policies, services,
+									ignress, etc.
 
 		ProjectFullAccess					This strategy allows you to manage 			project									delete Associated User
-											platform tenant business related 
-											resources, such as editing project, 
-											namespace, resource quota, etc.
+									platform tenant business related 
+									resources, such as editing project, 
+									namespace, resource quota, etc.
 
-		AdministratorAccess					This policy allows management of all 		common									delete Associated User
-											users in the platform tenant and their 
-											permissions, container service assets
+		AdministratorAccess					This policy allows management of all 			common									delete Associated User
+									users in the platform tenant and their 
+									permissions, container service assets
 
 		RegistryFullAccess					This policy allows you to manage 			registry								delete Associated User
-											platform tenant image warehouse
-											resources
+									platform tenant image warehouse
+									resources
 
 		A total of 13 Xiang																							Display lines per page 20 1 / 1 page
 
@@ -230,11 +230,11 @@ Here users can manage platform policies
 								 Persistent storage
 		
 		operating*			[Please select Action]																	Selected (2)
-							Action name						description												Action name				description
+							Action name				description												Action name				description
 																													createGroup				Create User Group ...		(x)
-							createApikey					Create access credentials
+							createApikey				Create access credentials
 							createApikey Password			Requesting access credentials using a password	
-							createApikeyToken				Apply for access credentials using Token
+							createApikeyToken			Apply for access credentials using Token
 							.....................			..............................................
 						[v]	createGroup						Create User Group ...
 
@@ -272,12 +272,12 @@ Here users can manage platform policies
 	Associated User
 	
 
-		 Associated User						Select(1)
+		 Associated User			Select(1)
 		|-------------------------------|	|------------------| 
-		|Oper				(x) [search]|	| user             |
-		|[v] user                       |   |                  |
-		|[v] oper(operator)             |   |                  |
-	    |-------------------------------|   |------------------|
+		|Oper		(x) [search]	|	| user             |
+		|[v] user                       |  	|                  |
+		|[v] oper(operator)             |  	|                  |
+	   	|-------------------------------|  	|------------------|
 		Supports multiple selections by holding down the shift key 
 	
 					+------------+			+------+
@@ -296,6 +296,6 @@ Here users can manage platform policies
     	+-----+
     
     	Strategy name						description									Service type							operating
-    	test								-											auth									> [delete] Associated User
+    	test								-									auth								> [delete] Associated User
 		
 		
