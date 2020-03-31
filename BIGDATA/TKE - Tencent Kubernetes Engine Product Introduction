@@ -1,0 +1,40 @@
++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
++    TKE - TENCENT KUBERNETES ENGINE PRODUCT INTRODUCTION  	+
++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+
+#PRODUCT INTRODUCTION
+Tencent Kubernetes Engine (TKE) is a highly scalable, high-performance container management service that allows you to easily
+run applications on a hosted cloud server instance cluster. With this service, you don't need to install, operate, 
+and extend your cluster management infrastructure. You can start and stop Docker applications, query the complete status of the cluster, 
+and use various cloud services with simple API calls. You can arrange the placement of containers in a cluster based on 
+resource requirements and availability requirements to meet the specific requirements of your business or application.
+
+Based on native Kubernetes, Tencent Cloud Container Service provides a container-centric solution to solve the environmental problems 
+of user development, testing, and operation and maintenance, helping users reduce costs and improve efficiency. Tencent Cloud Container
+Service is fully compatible with the native Kubernetes API, and has expanded Kubernetes plug-ins such as Tencent Cloud ’s cloud disks 
+and load balancing. At the same time, based on the Tencent Cloud private network, a highly reliable and high-performance network solution 
+is implemented.
+
+#OVERALL PRODUCT ARCHITECTURE                                                              
++----------+ +------------------------------------------------------------------------------------+
+|USER      | |      TECENTCLOUD API           KUBERNETES API             KUBECTL                  |
+|ACESS     | |                                                                                    |
++----------+ +------------------------------------------------------------------------------------+
++----------+ +------------------------------------------------------------------------------------+
+|CORE      | |     CLUSTER MANAGEMENT        CONTAINER NEWTORK          APPLICATION MANAGEMENT    |
+|FEATURES  | |     INDEPENDENT DEPLOYMENT    GLOBAL MODE                HELM CHART                |
+|          | |     CUSTOM OS                 VPC MODE                   IMAGE REGISTRY            |
+|          | |     IPVS                      PERSISTENT STORAGE         OPS MANAGEMENT            |
+|          | |     VERSION UPGRADE           DISK STORAGE               MONITORING AND ALARMING   |
+|          | |     GPU                       FILE STORAGE               LOG COLLECTION            |
+|          | |                               OBJECT STORAGE             EVENT PERSISTENCE         |
++----------+ +------------------------------------------------------------------------------------+
++----------+ +------------------------------------------------------------------------------------+
+|INTEGRATED| |     IAS                                    PASS                                    |
+|PRODUCTS  | | CVM  BM  VPC  ENI                      CM  THUB  CLS                               |
+|          | | CLB  CBS CFS  COS                      ES  KAFKA TSF                               |
++----------+ +------------------------------------------------------------------------------------+
+
+
+
+
