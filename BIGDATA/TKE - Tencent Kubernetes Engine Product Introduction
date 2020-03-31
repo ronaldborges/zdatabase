@@ -35,6 +35,63 @@ is implemented.
 |          | | CLB  CBS CFS  COS                      ES  KAFKA TSF                               |
 +----------+ +------------------------------------------------------------------------------------+
 
+#PRODUCT FEATURES
 
+*CLUSTER MANAGEMENT
+  Cluster composition
+    Support all models of CVM, you can add and add existing hosts in the cluster. 
+    Support cross-zone deployment. Support two annual billing and pay-as-you-go billing modes. User exclusive cluster, 
+    VPC security isolation, custom cluster network, container network. Flexible configuration
 
+  Cluster management
+    Support cluster dynamic scaling, node elevation and allocation with rich monitoring indicators, 
+    and support for custom alarm strategies
 
+  Kubernetes management
+    Support multiple versions of kubernetes, provide version upgrade function, Kubernetes certificate management, 
+    kubectl directly operate the cluster console, and simply manage the namespace
+
+*APPLICATION MANAGEMENT
+  Application composition
+    Support TKE Multiple service types Support multiple resources such as Kubernetes Deployment, DamentSet
+
+  Application management
+    The application supports my templates and the template market is quickly created.
+    Supports updating applications. Real-time comparison. Viewing in-app services. One-click deployment / stop.
+
+  Template management
+    Support my template, template market template support one-click copy
+    
+ *SERVICE MANAGEMENT   
+ Service deployment
+    Support single-instance multi-container service deployment Support multiple service access 
+     methods Support in-service instances deployment across Availability Zones Support setting affinity and anti-affinity scheduling
+
+  Service management
+    Support for rolling updates and fast updates of services Dynamic support for dynamic expansion 
+    and scaling of services Support for remote login to the service container
+
+  Service operation and maintenance
+    Support to view detailed monitoring indicators of the service Support to view the stdout and stderr logs of the service container
+    Support to set the service alarm policy Support to set two health check methods for survival 
+    check and readiness check Container abnormal recovery automatically
+
+*CONFIGURATION ITEM MANAGEMENT
+
+  Configuration item management
+    Configuration items support multiple versions, support for both visual and YAML editing forms
+
+  Configuration item use
+    Configuration items are mounted to the container directory as data volumes. 
+    Configuration items are imported into environment variable configuration items instead of application template variables.
+    
+*IMAGE MANAGEMENT
+  Image management
+    Support for creating private image repositoriesSupport for viewing and using DockerHub Image repositoriesSupport
+    for viewing and using TencentHub image repositoriesSupport for managing multiple image namespaces
+
+  Mirror use
+    Provide high-speed intranet channels for image creation services, support public network download and download images
+
+  CI / CD
+  Support for setting up private mirrorsAutomatically build triggers for setting up mirrors
