@@ -49,10 +49,10 @@ On the cluster management page, click [New Independent Cluster]. As shown below:
       +-------------------------------------------------------------------------------------------------------------------+
       
 *Cluster name: 			Support Chinese , less than 60 characters
-*Kubernetes version: 	Select the appropriate kubernetes version. 
-      						For feature comparison between versions, see Supported Versions of the Kubernetes Documentation
-*NIC name: 				   up to 63 characters, can only contain lowercase letters, numbers, and separators ('-'), 
-						      and must start with a lowercase letter and end with a number or lowercase letter
+*Kubernetes version: 		Select the appropriate kubernetes version. 
+      				For feature comparison between versions, see Supported Versions of the Kubernetes Documentation
+*NIC name: 			up to 63 characters, can only contain lowercase letters, numbers, and separators ('-'), 
+				and must start with a lowercase letter and end with a number or lowercase letter
 
 *VIP:
 
@@ -62,14 +62,14 @@ On the cluster management page, click [New Independent Cluster]. As shown below:
 
 *vGPU:
 
-*Container network: 	   IP addresses in the container network address range will be assigned to the cluster inner container. 
+*Container network: 	   	IP addresses in the container network address range will be assigned to the cluster inner container. 
 						      You can customize the three private network segments as the container network. 
 						      Based on the upper limit of the number of services in the cluster you choose, 
 						      the CIDR segment of the appropriate size is automatically allocated Used for kubernetes service; 
 						      according to the maximum number of pods / nodes you select, an appropriate size network segment is 
 						      automatically assigned to each cloud server in the cluster for the host to assign a Pod IP address.
 						
-*CIDR:                  Network segment where resources such as services and pods in the cluster are located.
+*CIDR:                  	Network segment where resources such as services and pods in the cluster are located.
                         
                         
                         
