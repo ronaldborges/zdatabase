@@ -154,17 +154,16 @@ you will need to apply those changes again.
 	This statement should return one row:
 		APPLICATION_ID 	S
 		--------------- -
-		278 			I
+		278 		I
 	4. Verify you can connect to the database as izu/izu using SQLPLUS.
 		<SQL> 	select fa.APPLICATION_ID, STATUS
 				from fnd_application fa, fnd_product_installations fpi
 				where fa.APPLICATION_ID=fpi.APPLICATION_ID
 				and APPLICATION_SHORT_NAME = 'IZU';
-				
-		  2 3  4
+		  
 		APPLICATION_ID S
 		-------------- -
-				   278 I
+		278 	       I
 				   
 		<SQL>
 		
