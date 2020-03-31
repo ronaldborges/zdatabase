@@ -258,6 +258,10 @@ oracle.install.db.config.asm.ASMSNMPPassword=
 cd $ORACLE_HOME
 ./runInstaller -silent -responseFile /home/oracle/db_install.rsp
 
+#RUN COMMAND AS ROOT
+        1. /u01/app/oraInventory/orainstRoot.sh
+        2. /u01/app/oracle/product/19.3.0/dbhome_1/root.sh
+
 #CREATE dbca.rsp response file
 vi dbca.rsp
 responseFileVersion=/oracle/assistants/rspfmt_dbca_response_schema_v12.2.0
