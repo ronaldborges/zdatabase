@@ -1,0 +1,46 @@
++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
++    TKE - TENCENT KUBERNETES ENGINE CLUSTER MANAGEMENT     +
++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+
+#CREATE NEW INDEPENDENT CLUSTER
+
+Steps
+New independent cluster
+Login to TKEStack
+Switch to the platform management console
+On the cluster management page, click [New Independent Cluster]. As shown below:
+
+   Cluster management
+    
+    [Import Cluster]      >[New Independent Cluster]
+    
+    ID / name	    monitor	    status	    K8S version	    Cluster type	    Creation time         	operating
+    global                    Running     1.16.6          cluster           2020-03-02 16:29:40     delete [View cluster credentials] 
+    TKE 
+
+
+    New independent cluster
+    
+    Cluster name
+    Kubernetes version
+    Nic name
+    VIP                 [ ]
+    GPU                 [ ]
+    Container network   CDIR                                      10 . 224 . 0 . 0 / 16 
+                        Maximum number of Pods / node             256
+                        Maximum number of services / cluster      256
+                        Under the current container network configuration, the cluster has a maximum of 255 nodes
+                        
+                        Targer machine
+                                         Multiple machuines IPs can be entered, separated by ";"
+                        SSH port         22
+                        Host label       [add to]
+                                         Set a label for the host, which can be used to specify container scheduling
+                        
+                        
+                        
+                        
+                        
+                        
+                        
+                        
