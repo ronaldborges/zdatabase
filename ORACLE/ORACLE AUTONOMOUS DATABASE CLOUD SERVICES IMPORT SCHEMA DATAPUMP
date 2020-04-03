@@ -23,7 +23,6 @@ END;
 #SET DEFAULT_CREDENTIAL AUTONOMOUS DATABASE 	
 alter database property set default_credential='ADMIN.DEF_CRED_NAME';
 
-
 #IMPORT DUMP TO AUTONOMOUS DATABASE 		
 impdp admin/password@ADW_high \
 	directory=data_pump_dir \
