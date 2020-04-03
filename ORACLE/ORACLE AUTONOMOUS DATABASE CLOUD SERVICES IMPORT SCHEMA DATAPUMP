@@ -1,0 +1,47 @@
+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
++  ORACLE AUTONOMOUS DATABASE CLOUD SERVICES IMPORT SCHEMA DATAPUMP  +
+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+
+#EXPORT SCHEMA CORE DATABASE
+expdp sh/sh@orcl \
+	exclude=index, cluster, indextype, materialized_view, materialized_view_log \
+	materialized_zonemap, db_link \ data_options=group_partition_table_data \
+	parallel=16 \
+	schemas=sh \
+	dumpfile=export%u.dmp
+	
+#CREATE CREDENTIAL AUTONOMOUS DATABASE 	
+BEGIN
+	DBMS_CLOUD.CREATE_CREDENTIAL(
+	credential_name => 'DEF_CRED_NAME',
+	username => 'adwc_user@oracle.com',
+	password => 'password'
+	);
+END;
+/
+
+#SET DEFAULT_CREDENTIAL AUTONOMOUS DATABASE 	
+alter database property set default_credential='ADMIN.DEF_CRED_NAME';
+
+
+#IMPORT DUMP TO AUTONOMOUS DATABASE 		
+impdp admin/password@ADW_high \
+	directory=data_pump_dir \
+	credential=def_cred_name \
+	dumpfile=https://swiftobjectstorage.us-phoenix-1.oraclecloud.com/v1/adwc/adwc_user/export%u,dump \
+	parallel=16 \
+	partition_options=merge \
+	transform=segment_attributes:n \
+	transform=dwcs_cvt_iots:y transform=constraint_use_default_index:y \
+	exclude=index, cluster, indextype, materialized_view \
+	materialized_view_log, materialized_zonemap, db_link
+
+#LOAD LOG FILE TO OBJECT STORAGE ORACLE CLOUD
+BEGIN
+	DBMS_CLOUD.PUT_OBJECT(
+	credential_name => 'DEF_CRED_NAME',
+	object_uri => 'https://swiftobjectstorage.us-phoenix-1.oraclecloud.com/v1/adwc/adwc_user/import.log',
+	directory_name => 'DATA_PUMP_DIR',
+	file_name => 'import.log');
+	END;
+/
