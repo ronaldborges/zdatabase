@@ -8,7 +8,8 @@ expdp sh/sh@orcl \
 	materialized_zonemap, db_link \ data_options=group_partition_table_data \
 	parallel=16 \
 	schemas=sh \
-	dumpfile=export%u.dmp
+	dumpfile=export%u.dmp \
+	directory=DATA_PUMP_DIR
 	
 #CREATE CREDENTIAL AUTONOMOUS DATABASE 	
 BEGIN
