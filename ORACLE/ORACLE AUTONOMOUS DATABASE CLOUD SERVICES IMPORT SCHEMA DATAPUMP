@@ -11,7 +11,7 @@ expdp sh/sh@orcl \
 	dumpfile=export%u.dmp \
 	directory=DATA_PUMP_DIR
 	
-#CREATE CREDENTIAL AUTONOMOUS DATABASE 	
+#CREATE CREDENTIAL AUTONOMOUS DATABASE (like directory)
 BEGIN
 	DBMS_CLOUD.CREATE_CREDENTIAL(
 	credential_name => 'DEF_CRED_NAME',
