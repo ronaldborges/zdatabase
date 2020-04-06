@@ -141,5 +141,45 @@ Successfully installed PyYAML-5.1.2 arrow-0.14.7 backports.functools-lru-cache-1
 -- Installation successful.
 -- Run the CLI with /root/bin/oci --help
 
+#CONFIGURE OCI ACCESS
+/root/bin/oci setup config
+    This command provides a walkthrough of creating a valid CLI config file.
 
+    The following links explain where to find the information required by this
+    script:
+
+    User API Signing Key, OCID and Tenancy OCID:
+
+        https://docs.cloud.oracle.com/Content/API/Concepts/apisigningkey.htm#Other
+
+    Region:
+
+        https://docs.cloud.oracle.com/Content/General/Concepts/regions.htm
+
+    General config documentation:
+
+        https://docs.cloud.oracle.com/Content/API/Concepts/sdkconfig.htm
+
+
+Enter a location for your config [/root/.oci/config]:
+Enter a user OCID: ****************************************************************************
+Enter a tenancy OCID: *******************************************************************************
+Enter a region (e.g. ap-melbourne-1, ap-mumbai-1, ap-osaka-1, ap-seoul-1, ap-sydney-1, ap-tokyo-1, ca-montreal-1, ca-toronto-1, eu-amsterdam-1, eu-frankfurt-1, eu-zurich-1, me-jeddah-1, sa-saopaulo-1, uk-gov-london-1, uk-london-1, us-ashburn-1, us-gov-ashburn-1, us-gov-chicago-1, us-gov-phoenix-1, us-langley-1, us-luke-1, us-phoenix-1): sa-saopaulo-1
+Do you want to generate a new API Signing RSA key pair? (If you decline you will be asked to supply the path to an existing key.) [Y/n]: y
+Enter a directory for your keys to be created [/root/.oci]:
+Enter a name for your key [oci_api_key]:
+Public key written to: /root/.oci/oci_api_key_public.pem
+Enter a passphrase for your private key (empty for no passphrase):
+Repeat for confirmation:
+Private key written to: /root/.oci/oci_api_key.pem
+Fingerprint: 71:c5:04:a8:76:f2:06:d8:9b:d7:42:26:69:3a:f6:b0
+Do you want to write your passphrase to the config file? (if not, you will need to supply it as an argument to the CLI) [y/N]: y
+Config written to /root/.oci/config
+
+
+    If you haven't already uploaded your API Signing public key through the
+    console, follow the instructions on the page linked below in the section
+    'How to upload the public key':
+
+        https://docs.cloud.oracle.com/Content/API/Concepts/apisigningkey.htm#How2
 
