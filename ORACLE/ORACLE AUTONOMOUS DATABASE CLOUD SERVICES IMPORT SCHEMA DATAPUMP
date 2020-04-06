@@ -2,7 +2,7 @@
 +  ORACLE AUTONOMOUS DATABASE CLOUD SERVICES IMPORT SCHEMA DATAPUMP  +
 ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
-#EXPORT SCHEMA CORE DATABASE
+#EXPORT SCHEMA CORE DATABASE (the version parameter is useful when the source is in a position in front of the target autonomous database)
 expdp sh/sh@orcl \
 	exclude=index, cluster, indextype, materialized_view, materialized_view_log \
 	materialized_zonemap, db_link \ data_options=group_partition_table_data \
@@ -10,6 +10,7 @@ expdp sh/sh@orcl \
 	schemas=sh \
 	dumpfile=export%u.dmp \
 	directory=DATA_PUMP_DIR
+	VERSION=18.4
 	
 #CREATE CREDENTIAL AUTONOMOUS DATABASE (like directory)
 BEGIN
