@@ -1,0 +1,49 @@
+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
++  CREATE DATABASE LINKS FROM ORACLE DATABASE TO ORACLE AUTONOMOUS DATABASE  +
+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+
+#DOWNLOAD YOUR AUTONOMOUS DATABASE WALLET
+
+#UNZIP WALLET.ZIP
+unzip Wallet_name1.zip
+        Archive: Wallet_name1.zip  
+          inflating: cwallet.sso
+          inflating: tnsnames.ora    
+          inflating: truststore.jks            
+          inflating: ojdbc.properties          
+          inflating: sqlnet.ora
+          inflating: ewallet.p12
+          inflating: keystore.jks
+          
+#SET GLOBAL NAMES TO FALSE
+sqlplus / as sysdba
+SQL> ALTER SYSTEM SET GLOBAL_NAMES = FALSE;
+ 
+System altered.
+
+SQL> SHOW PARAMETER GLOBAL_NAMES
+NAME                     TYPE        VALUE
+----------------------   ----------- -----------
+global_names             boolean     FALSE
+
+#CREATE THE DATABASE LINK TO THE TARGET AUTONOMOUS DATA WAREHOUSE DATABASE
+
+CREATE DATABASE LINK ADBLINK 
+   CONNECT TO NAME1 IDENTIFIED BY ************ 
+   USING
+'(description=(retry_count=20)(retry_delay=3)
+     (address=(protocol=tcps)(port=1522)(host=example1.oraclecloud.com))     
+     (connect_data=(service_name=example2_high.adwc.oraclecloud.com))     
+     (security=(my_wallet_directory=/home/oracle/targetwallet)
+        (ssl_server_dn_match=true)
+        (ssl_server_cert_dn="CN=example2.oraclecloud.com,OU=Oracle
+          BMCS US,O=Oracle Corporation,L=Redwood City,ST=California,C=US")))';
+
+Database link created.
+
+SQL > SELECT * FROM employees@ADBLINK;
+
+
+
+
+
