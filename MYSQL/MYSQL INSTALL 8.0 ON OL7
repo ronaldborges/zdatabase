@@ -107,7 +107,7 @@ mysqladmin -u root -p shutdown
 Enter password: 
 [1]+  Done                    /usr/sbin/mysqld --skip-grant-tables --skip-networking
 
-mv /etc/my.cnf /etc/my.cnf-bkp; sed '/user=root/d' /etc/my.cnf-bkp > /etc/my.cnf; rm -vf /etc/my.cnf-bkp; chown mysql:mysql /etc/my.cnf; chown mysql:mysql -R /var/lib/mysql/
+sed -i '/user=root/d' /etc/my.cnf; chown mysql:mysql /etc/my.cnf; chown mysql:mysql -R /var/lib/mysql/
 systemctl start mysqld.service
 
 #TRY CONNECT 
@@ -181,3 +181,6 @@ Reload privilege tables now? (Press y|Y for Yes, any other key for No) : Y
 Success.
 
 All done! 
+
+#REMOVE TEMPORARY PASSWORD FROM LOG MYSQL
+sed -i '/password/d' /var/log/mysqld.log
