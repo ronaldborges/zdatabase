@@ -43,6 +43,9 @@ systemctl restart sshd
 
 #TEST CONNECTION
 ssh -i keys-ssh/id_rsa cononly@IP
+sudo su -
+
+
 
 
 
