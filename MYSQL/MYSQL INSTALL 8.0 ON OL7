@@ -1,0 +1,183 @@
++++++++++++++++++++++++++++++++++++
++   	MYSQL INSTALL 8.0 ON OL7   	+
++++++++++++++++++++++++++++++++++++
+
+#STOP FIREWALL AND DISABLE SELINUX
+sed -i 's/SELINUX=.*/SELINUX=disabled/' /etc/sysconfig/selinux && setenforce 0
+systemctl stop firewalld && systemctl disable firewalld
+
+#CONFIGURE STATIC NETWORK
+TYPE=Ethernet
+PROXY_METHOD=none
+BROWSER_ONLY=no
+BOOTPROTO=none
+DEFROUTE=yes
+IPV4_FAILURE_FATAL=no
+IPV6INIT=no
+IPV6_AUTOCONF=yes
+IPV6_DEFROUTE=yes
+IPV6_FAILURE_FATAL=no
+IPV6_ADDR_GEN_MODE=stable-privacy
+NAME=enp0s3
+UUID=49c279da-7065-40f5-b914-176973db2a0a
+DEVICE=enp0s3
+ONBOOT=yes
+IPADDR=192.168.1.130
+PREFIX=24
+GATEWAY=192.168.1.1
+DNS1=8.8.8.8
+
+#CONFIGURE HOSTNAME
+hostnamectl 
+hostnamectl set-hostname ol7mysql1
+hostnamectl --static 
+
+#ADD NAME TO /etc/hosts
+echo "192.168.1.130   ol7mysql1" >> /etc/hosts
+
+#UNISTALL PACKAGE MARIADB-LIBS
+rpm -qa | grep "mariadb-libs"
+mariadb-libs-5.5.64-1.el7.x86_64
+yum remove -y mariadb-libs-5.5.64-1.el7.x86_64
+
+#DOWNLOAD MYSQL
+wget https://cdn.mysql.com//Downloads/MySQL-8.0/mysql-community-common-8.0.19-1.el7.x86_64.rpm
+wget https://cdn.mysql.com//Downloads/MySQL-8.0/mysql-community-libs-8.0.19-1.el7.x86_64.rpm
+wget https://cdn.mysql.com//Downloads/MySQL-8.0/mysql-community-client-8.0.19-1.el7.x86_64.rpm
+wget https://cdn.mysql.com//Downloads/MySQL-8.0/mysql-community-server-8.0.19-1.el7.x86_64.rpm
+
+#INSTALL MYSQL 
+rpm -ivh mysql-community-common-8.0.19-1.el7.x86_64.rpm
+rpm -ivh mysql-community-libs-8.0.19-1.el7.x86_64.rpm
+rpm -ivh mysql-community-client-8.0.19-1.el7.x86_64.rpm
+rpm -ivh mysql-community-server-8.0.19-1.el7.x86_64.rpm
+
+rpm -qa | grep "mysql*"
+mysql-community-libs-8.0.19-1.el7.x86_64
+mysql-community-client-8.0.19-1.el7.x86_64
+mysql-community-server-8.0.19-1.el7.x86_64
+mysql-community-common-8.0.19-1.el7.x86_64
+
+#START SERVICE
+systemctl start mysqld.service
+systemctl enable mysqld
+
+#CHECK STATUS SERVICE
+systemctl status mysqld
+● mysqld.service - MySQL Server
+   Loaded: loaded (/usr/lib/systemd/system/mysqld.service; enabled; vendor preset: disabled)
+   Active: active (running)
+   
+#CONNECT MYSQL
+mysql -u root
+ERROR 1045 (28000): Access denied for user 'root'@'localhost' (using password: NO)
+
+#THE PASSWORD SET UP AFTER INSTALLATION CAN BE INDENTIFIED IN THE FILE
+grep 'temporary password' /var/log/mysqld.log
+[Note] [MY-010454] [Server] A temporary password is generated for root @ localhost: weB<e/R6AJgA
+
+#IF YOU DO NOT IDENTIFY THE TEMPORARY PASSWORD IT IS POSSIBLE TO RESET THE ROOT USER PASSWORD
+systemctl stop mysqld.service
+echo "user=root" >> /etc/my.cnf 
+/usr/sbin/mysqld --skip-grant-tables --skip-networking &
+
+#SET ROOT PASSWORD
+mysql -u root
+Welcome to the MySQL monitor.  Commands end with ; or \g.
+Your MySQL connection id is 7
+Server version: 8.0.19 MySQL Community Server - GPL
+Copyright (c) 2000, 2020, Oracle and/or its affiliates. All rights reserved.
+Oracle is a registered trademark of Oracle Corporation and/or its
+affiliates. Other names may be trademarks of their respective
+owners.
+
+Type 'help;' or '\h' for help. Type '\c' to clear the current input statement.
+
+mysql> ALTER USER 'root'@'localhost' IDENTIFIED BY '********';
+Query OK, 0 rows affected (0.23 sec)
+
+mysql> FLUSH PRIVILEGES;
+Query OK, 0 rows affected (0.15 sec)
+
+mysql> exit
+Bye
+
+#RESTART SERVICE
+mysqladmin -u root -p shutdown
+Enter password: 
+[1]+  Done                    /usr/sbin/mysqld --skip-grant-tables --skip-networking
+
+mv /etc/my.cnf /etc/my.cnf-bkp; sed '/user=root/d' /etc/my.cnf-bkp > /etc/my.cnf; rm -vf /etc/my.cnf-bkp; chown mysql:mysql /etc/my.cnf; chown mysql:mysql -R /var/lib/mysql/
+systemctl start mysqld.service
+
+#TRY CONNECT 
+mysql -u root -p
+Enter password: 
+Welcome to the MySQL monitor.  Commands end with ; or \g.
+Your MySQL connection id is 11
+Server version: 8.0.19 MySQL Community Server - GPL
+
+Copyright (c) 2000, 2020, Oracle and/or its affiliates. All rights reserved.
+
+Oracle is a registered trademark of Oracle Corporation and/or its
+affiliates. Other names may be trademarks of their respective
+owners.
+
+Type 'help;' or '\h' for help. Type '\c' to clear the current input statement.
+
+mysql> exit
+Bye
+
+#SECURE INSTALATION
+mysql_secure_installation 
+
+Securing the MySQL server deployment.
+
+Enter password for user root: 
+The 'validate_password' component is installed on the server.
+The subsequent steps will run with the existing configuration
+of the component.
+Using existing password for root.
+
+Estimated strength of the password: 100 
+Change the password for root ? ((Press y|Y for Yes, any other key for No) : n
+
+ ... skipping.
+By default, a MySQL installation has an anonymous user,
+allowing anyone to log into MySQL without having to have
+a user account created for them. This is intended only for
+testing, and to make the installation go a bit smoother.
+You should remove them before moving into a production
+environment.
+
+Remove anonymous users? (Press y|Y for Yes, any other key for No) : Y
+Success.
+
+
+Normally, root should only be allowed to connect from
+'localhost'. This ensures that someone cannot guess at
+the root password from the network.
+
+Disallow root login remotely? (Press y|Y for Yes, any other key for No) : Y
+Success.
+
+By default, MySQL comes with a database named 'test' that
+anyone can access. This is also intended only for testing,
+and should be removed before moving into a production
+environment.
+
+
+Remove test database and access to it? (Press y|Y for Yes, any other key for No) : Y
+ - Dropping test database...
+Success.
+
+ - Removing privileges on test database...
+Success.
+
+Reloading the privilege tables will ensure that all changes
+made so far will take effect immediately.
+
+Reload privilege tables now? (Press y|Y for Yes, any other key for No) : Y
+Success.
+
+All done! 
