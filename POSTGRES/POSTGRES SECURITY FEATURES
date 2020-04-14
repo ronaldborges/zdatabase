@@ -1,0 +1,101 @@
+++++++++++++++++++++++++++++++++++++++
++     POSTGRES SECURITY FEATURES     +
+++++++++++++++++++++++++++++++++++++++
+
+1. DO NOT USE TRUST SECURITY.
+#CONFIGURE PG_HBA TO MD5
+vi /etc/pg_hba.conf
+HOST      DATABASE      USER      IP/PORT       MD5
+
+/usr/local/pgsql-*version*/bin/pg_ctl reload -D *data_directory*/data
+
+2. USE HASH-BASED COLUMN ENCRYPTION FOR VALUES THAT DON'T NEED TO BE DECRYPTED.
+#USE EXTENSION pgcrypto
+postgres=# CREATE EXTENSION IF NOT EXISTS pgcrypto;
+CREATE EXTENSION
+
+postgres=# CREATE TABLE users (
+postgres(#   id SERIAL PRIMARY KEY,
+postgres(#   email TEXT NOT NULL UNIQUE,
+postgres(#   password TEXT NOT NULL
+postgres(# );
+CREATE TABLE
+
+postgres=# INSERT INTO users (email, password) VALUES ('admin@mail.com', crypt('admpasswd', gen_salt('bf')));
+INSERT 0 1
+
+postgres=# select * from users;
+ id |     email      |                           password                           
+----+----------------+--------------------------------------------------------------
+  1 | admin@mail.com | $2a$06$Hx.twNch9/IFTUMLEyIs7eDPhK/zMEWZHNb59J4I5MiEoUAPtnF5y
+(1 row)
+
+3. USE PHYSICAL SEPARATION TO ISOLATE DATASETS THAT NEED TO BE KEPT APART.
+By using pg_hba and RBAC (Role Based Access Control) to control access to physically disparate databases, 
+you ensure that data in two tables cannot be accessed/viewed simultaneously. 
+Of course, this will break SQL joins, 
+so only use in appropriate scenarios that require physical access separation during the life of a login session.
+
+4. LOCK DOWN PORT-LEVEL ACCESS TO THE POSTGRESQL DATABASE.
+A limited set of ports should have network access to the database: 
+the database port itself and any necessary management ports. 
+All other ports that allow network access to the database should be locked down.
+
+#CHANGE DEFAULT PORT OF POSTGRES CLUSTER ON *data_directory*/data/postgresql.conf
+sed -i 's/port = 5432/port = 5441/g' /dados/data/postgresql.conf
+
+5. USE PG_HBA.CONF TO SPECIFY WHICH HOSTS CAN USE SSL-ENCRYPTED AND UNENCRYPTED CONNECTIONS.
+* ON SERVER DATABASE
+su - postgres
+cd /dados/data/
+openssl genrsa -out rootCA.key 2048
+
+openssl req -x509 -new -key rootCA.key -days 365 -out rootCA.crt
+
+openssl genrsa -out server.key 2048
+
+openssl req -new -key server.key -out server.csr
+Common Name []: server-database-hostname
+
+openssl x509 -req -in server.csr -CA rootCA.crt -CAkey rootCA.key -CAcreateserial -out server.crt -days 365
+
+openssl genrsa -out client.key 2048
+
+openssl req -new -key client.key -out client.csr
+Common Name []: client-machine-hostname
+
+openssl x509 -req -in client.csr -CA rootCA.crt -CAkey rootCA.key -CAcreateserial -out client.crt -days 365
+
+chmod 600 server.key
+
+vi /dados/data/postgresql.conf
+ssl = on
+ssl_cert_file = 'server.crt'
+ssl_key_file = 'server.key'
+ssl_ca_file = 'rootCA.crt'
+
+vi /dados/data/pg_hba.conf
+#secure client
+hostssl   database   user   IP/PORTA    md5 clientcert=1
+
+/usr/local/pgsql-12.2/bin/pg_ctl reload -D /dados/data
+
+scp rootCA.crt client.crt client.key user@client-machine-hostname:/diretctory
+
+*ON CLIENT
+chmod 600 client.key
+psql port=5441 host=server-database-hostname user=user sslcert=client.crt sslkey=client.key sslrootcert=rootCA.crt sslmode=verify-ca
+
+
+
+
+
+
+
+
+
+
+
+
+
+
