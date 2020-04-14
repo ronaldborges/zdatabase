@@ -184,3 +184,13 @@ All done!
 
 #REMOVE TEMPORARY PASSWORD FROM LOG MYSQL
 sed -i '/password/d' /var/log/mysqld.log
+
+#CONFIGURE SECURITY PARAMETERS
+#disable function that allows access to the underlying filesystem from within MySQL
+local-infile=0
+
+#LOCK /etc/my.cnf FILE
+chattr +i /etc/my.cnf
+
+#RESTART MYSQL SERVICE
+systemctl restart mysqld.service
