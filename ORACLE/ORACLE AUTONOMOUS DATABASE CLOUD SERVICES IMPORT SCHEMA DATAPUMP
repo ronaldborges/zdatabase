@@ -5,7 +5,8 @@
 #EXPORT SCHEMA CORE DATABASE (the version parameter is useful when the source is in a position in front of the target autonomous database)
 expdp sh/sh@orcl \
 	exclude=index, cluster, indextype, materialized_view, materialized_view_log \
-	materialized_zonemap, db_link \ data_options=group_partition_table_data \
+	materialized_zonemap, db_link \ 
+	data_options=group_partition_table_data \
 	parallel=16 \
 	schemas=sh \
 	dumpfile=export%u.dmp \
