@@ -13,12 +13,34 @@ expdp sh/sh@orcl \
 	encryption_pwd_prompt=yes \
 	directory=DATA_PUMP_DIR
 	
+#UPLOAD DUMP TO OBJECT STORAGE ORACLE
+1 - In order to upload the .dmp file on object storage log in into your cloud console and click object storage:
+2 - Select the compartment that you want to use and create a bucket
+3 - Click on the bucket and click upload to upload the .dmp file.
+
+#NOTE
+At this point either you can use CLI (Command line Interface) or GUI (Graphic User interface) to upload the .dmp file. 
+If your .dmp file is larger that 2Gib then you have to use CLI
+
+4 - Select the .dmp file that you want to upload to object storage and then click upload object.
+
+#CREATE AUTHENTICATION TOKEN
+#NOTE
+Authentication Token will help us access Object Storage from Autonomous DB. 
+
+1 - Under Governance and Administration Section, Click on Identity tab and go to users
+2 - Click on authorized user id and then click on Auth Token under resources on the left side to generate the Auth token.
+3 - Click Generate Token, give it a description, and then click Generate token again and it will create the token for you. Remember to save the token. 
+    Once the token is created and saved, you won't be able to retrieve it again.     
+4 - You can click on the copy button and copy the token to a notepad. 
+
+
 #CREATE CREDENTIAL AUTONOMOUS DATABASE (like directory)
 BEGIN
 	DBMS_CLOUD.CREATE_CREDENTIAL(
 	credential_name => 'DEF_CRED_NAME',
 	username => 'adwc_user@oracle.com',
-	password => 'password'
+	password => 'password' <-----------------------  (Use Authentication token Value here instead of the password)
 	);
 END;
 /
