@@ -1,0 +1,86 @@
+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
++  ORACLE AUTONOMOUS DATABASE CLOUD LOAD DATA FROM AN OBJECT STORE (DBMS_CLOUD)  +
+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+
+ORACLE AUTONOMOUS DATABASE CLOUD LOAD DATA FROM AN OBJECT STORE (DBMS_CLOUD)
+
+#CREATE A NEW USER
+
+--DROP USER DWP CASCADE;
+CREATE USER DW IDENTIFIED BY "passwdwp";
+GRANT dwrole TO DWP;
+
+#CREATE TABLE
+
+CREATE TABLE channels (
+    channel_id                  NUMBER          NOT NULL,
+    channel_desc                VARCHAR2(20)    NOT NULL,
+    channel_class               VARCHAR2(20)    NOT NULL,
+    channel_class_id            NUMBER          NOT NULL,
+    channel_total               VARCHAR2(13)    NOT NULL,
+    channel_total_id            NUMBER          NOT NULL);
+
+ALTER TABLE channels
+  ADD CONSTRAINT channels_pk
+  PRIMARY KEY (channel_id)
+  RELY DISABLE NOVALIDATE;
+  
+#UPLOAD FILES TO OBJECT STORAGE (DBMS_CLOUD)
+#FILES IN ZIP FILE
+https://www.oracle.com/webfolder/technetwork/tutorials/obe/cloud/adwc/OBE_Loading%20Your%20Data/files/datafiles_for_SH_tables.zip
+
+#CREATE CREDENTIALS
+
+BEGIN
+  DBMS_CLOUD.drop_credential(credential_name => 'DEF_CRED_NAME');
+END;
+/
+
+BEGIN
+	DBMS_CLOUD.CREATE_CREDENTIAL(
+	credential_name => 'DEF_CRED_NAME',
+	username => 'adwc_user@oracle.com',
+	password => 'password'
+	);
+END;
+/
+
+#LOAD DATA
+
+BEGIN
+ DBMS_CLOUD.COPY_DATA(
+    table_name =>'CHANNELS',
+    credential_name =>'DEF_CRED_NAME',
+    file_uri_list =>'https://swiftobjectstorage.us-phoenix-1.oraclecloud.com/v1/adwc/adwc_user/chan_v3.dat',
+    format => json_object('ignoremissingcolumns' value 'true', 'removequotes' value 'true')
+ );
+END;
+/
+
+SELECT * FROM channels;
+
+CHANNEL_ID CHANNEL_DESC         CHANNEL_CLASS        CHANNEL_CLASS_ID CHANNEL_TOTAL CHANNEL_TOTAL_ID
+---------- -------------------- -------------------- ---------------- ------------- ----------------
+         3 Direct Sales         Direct                             12 Channel total                1
+         9 Tele Sales           Direct                             12 Channel total                1
+         5 Catalog              Indirect                           13 Channel total                1
+         4 Internet             Indirect                           13 Channel total                1
+         2 Partners             Others                             14 Channel total                1
+         
+#CHECK USER OPERATIONS
+
+SELECT * FROM  user_load_operations WHERE type = 'COPY' ORDER BY id;
+
+#CHECK OPERATIONS ERRORS
+
+SELECT * FROM copy$1_log;
+SELECT * FROM copy$1_bad;
+
+#CLEAN OPERATIONS REGISTERS
+
+BEGIN
+  DBMS_CLOUD.delete_operation(id => 1);
+  DBMS_CLOUD.delete_all_operations(type => 'COPY');
+END;
+/
+
