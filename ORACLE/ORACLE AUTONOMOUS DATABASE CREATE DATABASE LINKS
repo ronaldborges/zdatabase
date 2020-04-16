@@ -1,6 +1,6 @@
-++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-+  CREATE DATABASE LINKS FROM ORACLE DATABASE TO ORACLE AUTONOMOUS DATABASE  +
-++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+++++++++++++++++++++++++++++++++++++++++++++++++++++++
++  ORACLE AUTONOMOUS DATABASE CREATE DATABASE LINKS  +
+++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
 #DOWNLOAD YOUR AUTONOMOUS DATABASE WALLET
 
