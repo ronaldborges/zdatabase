@@ -10,7 +10,6 @@ expdp sh/sh@orcl \
 	schemas=sh \
 	dumpfile=export%u.dmp \
 	directory=DATA_PUMP_DIR
-	VERSION=18.4
 	
 #CREATE CREDENTIAL AUTONOMOUS DATABASE (like directory)
 BEGIN
