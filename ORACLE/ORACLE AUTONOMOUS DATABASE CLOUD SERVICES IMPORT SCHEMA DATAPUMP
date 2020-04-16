@@ -26,6 +26,13 @@ END;
 #SET DEFAULT_CREDENTIAL AUTONOMOUS DATABASE 	
 alter database property set default_credential='ADMIN.DEF_CRED_NAME';
 
+#NOTE
+In Oracle Data Pump version 18.3 and later, the credential argument authenticates Data Pump to the Cloud Object Storage service 
+you are using for your source files. The dumpfile argument is a comma delimited list of URLs for your Data Pump files.
+In Oracle Data Pump, if your source files reside on Oracle Cloud Infrastructure Object Storage you can use Oracle Cloud Infrastructure 
+native URIs, Swift URIs, or pre-authenticated URIs. See DBMS_CLOUD Package File URI Formats for details on these file URI formats.
+EXAMPLE : https://objectstorage.us-phoenix-1.oraclecloud.com/p/2xN-uDtWJNsiD910UCYGue/n/namespace-string/b/bucketname/o/channels.txt
+
 #IMPORT DUMP TO AUTONOMOUS DATABASE 		
 impdp admin/password@ADW_high \
 	directory=data_pump_dir \
@@ -38,6 +45,10 @@ impdp admin/password@ADW_high \
 	transform=dwcs_cvt_iots:y transform=constraint_use_default_index:y \
 	exclude=index, cluster, indextype, materialized_view \
 	materialized_view_log, materialized_zonemap, db_link
+
+#NOTE
+For the best import performance use the HIGH database service for your import connection and set the PARALLEL parameter 
+to the number of OCPUs in your Autonomous Data Warehouse
 
 #LOAD LOG FILE TO OBJECT STORAGE ORACLE CLOUD
 BEGIN
