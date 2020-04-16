@@ -10,6 +10,7 @@ expdp sh/sh@orcl \
 	parallel=16 \
 	schemas=sh \
 	dumpfile=export%u.dmp \
+	encryption_pwd_prompt=yes \
 	directory=DATA_PUMP_DIR
 	
 #CREATE CREDENTIAL AUTONOMOUS DATABASE (like directory)
@@ -31,6 +32,7 @@ impdp admin/password@ADW_high \
 	credential=def_cred_name \
 	dumpfile=https://swiftobjectstorage.us-phoenix-1.oraclecloud.com/v1/adwc/adwc_user/export%u,dump \
 	parallel=16 \
+	encryption_pwd_prompt=yes \
 	partition_options=merge \
 	transform=segment_attributes:n \
 	transform=dwcs_cvt_iots:y transform=constraint_use_default_index:y \
