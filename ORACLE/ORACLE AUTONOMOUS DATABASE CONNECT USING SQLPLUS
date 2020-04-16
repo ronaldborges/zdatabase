@@ -1,0 +1,54 @@
++++++++++++++++++++++++++++++++++++++++++++++++++++++
++  ORACLE AUTONOMOUS DATABASE CONNECT USING SQLPLUS +
++++++++++++++++++++++++++++++++++++++++++++++++++++++
+
+#DOWNLOAD WALLET FILE FROM AUTONOMOUS DATABASE
+
+1 - Navigate to the Autonomous Data Warehouse details page.
+2 - Click DB Connection.
+3 - On the Database Connection page select the Wallet Type:
+Instance Wallet: Wallet for a single database only; this provides a database-specific wallet.
+Regional Wallet: Wallet for all Autonomous Databases for a given tenant and region (this includes all service instances that a cloud account owns).
+
+4 - Click Download Wallet.
+5 - In the Download Wallet dialog, enter a wallet password in the Password field and confirm the password in the Confirm Password field.
+The password must be at least 8 characters long and must include at least 1 letter and either 1 numeric character or 1 special character. This password protects the downloaded Client Credentials wallet.
+6 - Click Download to save the client security credentials zip file.
+By default the filename is: Wallet_databasename.zip. You can save this file as any filename you want.
+You must protect this file to prevent unauthorized database access.
+
+#UNZIP WALLET.ZIP
+unzip Wallet_name1.zip
+        Archive: Wallet_name1.zip  
+          inflating: cwallet.sso
+          inflating: tnsnames.ora    
+          inflating: truststore.jks            
+          inflating: ojdbc.properties          
+          inflating: sqlnet.ora
+          inflating: ewallet.p12
+          inflating: keystore.jks
+
+#EDIT SQLNET.ORA FILE
+vi sqlnet.ora
+WALLET_LOCATION = (SOURCE = (METHOD = file) (METHOD_DATA = (DIRECTORY="/home/oracle/Wallet_name1")))
+SSL_SERVER_DN_MATCH=yes
+
+#EXPORT VARIABLE TNS_ADMIN (SET LOCATION TNSNAMESFILE)
+export TNS_ADMIN=/home/oracle/Wallet_name1
+
+#CONNECT TO DATABASE 
+sqlplus admin@ADW_low
+
+SQL*Plus: Release 18.0.0.0.0 - Production on Tue Mar 17 16:20:13 2020
+Version 18.3.0.0.0
+Copyright (c) 1982, 2019, Oracle.  All rights reserved.
+Enter password:
+Last Sucessful login time: Tue Mar 17 16:16:08 2020
+Connected to:
+Oracle Database 18c Enterprise Edition Release 18.3.0.0.0 - 64bit Production
+
+SQL> 
+
+
+
+
