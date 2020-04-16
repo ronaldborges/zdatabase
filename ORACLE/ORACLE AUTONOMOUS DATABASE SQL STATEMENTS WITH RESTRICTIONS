@@ -1,0 +1,111 @@
++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
++   ORACLE AUTONOMOUS DATABASE SQL STATEMENTS WITH RESTRICTIONS   +
++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+
+#NOTE
+This section provides a list of SQL command limitations that are required to protect security and for performance integrity in Autonomous Data Warehouse. Most of the standard SQL and PL/SQL syntax and constructs used with the Oracle Database work in Autonomous Data Warehouse.
+If you try to use a restricted SQL command the system reports:
+ORA-01031: insufficient privileges
+This error indicates that you are not allowed to run the SQL command in Autonomous Data Warehouse.
+The following SQL statements are not available in Autonomous Data Warehouse:
+ADMINISTER KEY MANAGEMENT
+ALTER PROFILE
+ALTER TABLESPACE
+CREATE DATABASE LINK  (Use DBMS_CLOUD_ADMIN.CREATE_DATABASE_LINK to create database links in Autonomous Data Warehouse)
+CREATE PROFILE
+CREATE TABLESPACE
+DROP TABLESPACE
+
++ ----------------------------------------------+-----------------------------------------------------------------------------------------+
+|SQL Command                                    | Restrictions                                                                            |
++-----------------------------------------------+-----------------------------------------------------------------------------------------+
+ ALTER PLUGGABLE DATABASE and ALTER DATABASE    | "Only the following clauses are allowed:                                                
+                                                |  DATAFILE AUTOEXTEND ON
+                                                |  DATAFILE AUTOEXTEND OFF
+                                                |  DATAFILE RESIZE
+                                                |  DEFAULT EDITION
+                                                |  SET TIME_ZONE
+                                                |  SET CMU_WALLET"
+__________________________________________________________________________________________________________________________________________ 
+ALTER SESSION                                   | "Only the following clauses are allowed:
+                                                | ADVISE COMMIT, ADVISE ROLLBACK, ADVISE NOTHING
+                                                | CLOSE DATABASE LINK
+                                                | ENABLE COMMIT IN PROCEDURE, DISABLE COMMIT IN PROCEDURE
+                                                | ENABLE PARALLEL <QUERY|DDL|DML>, DISABLE PARALLEL <QUERY|DDL|DML>, FORCE PARALLEL <QUERY|DDL|DML>
+                                                | ENABLE RESUMABLE, DISABLE RESUMABLE
+                                                | SET DEFAULT_COLLATION
+                                                | SET EDITION
+                                                | SET ISOLATION_LEVEL
+                                                | SET ROW ARCHIVAL VISIBILITY
+                                                | SET TIME_ZONE"
+__________________________________________________________________________________________________________________________________________
+ALTER SYSTEM                                    | ALTER SYSTEM is not allowed except ALTER SYSTEM SET and ALTER SYSTEM KILL SESSION. 
+                                                | SET can only be used to set parameters listed in Restrictions for 
+                                                | Database Initialization Parameters.
+__________________________________________________________________________________________________________________________________________
+ALTER USER                                      | "The following clauses are ignored:
+                                                | DEFAULT TABLESPACE
+                                                | PROFILE
+                                                | IDENTIFIED with the EXTERNALLY clause is not supported."
+__________________________________________________________________________________________________________________________________________
+ALTER TABLE                                     | For restrictions, see ALTER TABLE Restrictions.
+__________________________________________________________________________________________________________________________________________
+CREATE TABLE                                    | For restrictions, see CREATE TABLE Restrictions.
+__________________________________________________________________________________________________________________________________________
+CREATE USER                                     | "The following clauses are ignored:
+                                                | DEFAULT TABLESPACE
+                                                | PROFILE
+                                                | IDENTIFIED with the EXTERNALLY clause is not supported."
+__________________________________________________________________________________________________________________________________________
+
+
+#CREATE TABLE Restrictions
+#NOTE
+XMLType tables are not allowed.
+The clauses not in this list are allowed.
+
++ -------------------------------------------------------------------------------------+
+| Clause                    |	Comment 
++---------------------------+----------------------------------------------------------+                                                
+physical_properties         | Ignored
+logging_clause              | Ignored
+inmemory_table_clause       | Ignored
+ilm_clause                  | Ignored
+organization index          | Ignored
+organization external       | Ignored
+cluster                     | Ignored
+LOB_storage_clause          | Ignored
+_________________________________________________________________________________________
+
+#ALTER TABLE Restrictions
+
++ -------------------------------------------------------------------------------------+
+| Clause                    |	Comment 
++---------------------------+----------------------------------------------------------+                                                
+physical_attributes_clause  | Ignored
+logging_clause              | Ignored
+inmemory_table_clause       | Ignored
+ilm_clause                  | Ignored
+allocate_extent_clause      | Ignored
+deallocate_unused_clause    | Ignored
+shrink_clause               | Ignored
+alter_iot_clauses           | Ignored
+modify_LOB_storage_clause   | Ignored
+_________________________________________________________________________________________
+
+#RESTRICTIONS FOR DATA TYPES
+Autonomous Data Warehouse allows most of the data types available in the Oracle Database. 
+To ensure the security and the performance of Autonomous Data Warehouse, some data types are restricted.
+The following data types are not supported or have limited support in Autonomous Data Warehouse:
+Media types are not supported (Oracle Multimedia is desupported)
+Oracle Spatial and Graph types are supported with restrictions. See Restrictions for Oracle Spatial and Graph for more information.
+By default Autonomous Data Warehouse uses Hybrid Columnar Compression (HCC), and the following types are not supported 
+for columns in tables created with HCC:
+
+LONG
+LONG RAW
+
+#NOTE
+If you create tables without compression, with NOCOMPRESS, or use another compression method other than HCC, 
+then LONG and LONG RAW are supported.
+
