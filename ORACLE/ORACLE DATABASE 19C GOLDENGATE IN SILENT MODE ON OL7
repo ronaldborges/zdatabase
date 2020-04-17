@@ -98,6 +98,21 @@ GGSCI (ol7db1) 1> info mgr
 
 Manager is running (IP port TCP:ol7db1.7809, Process ID 16561).
 
+#STOP/START GOLDENGATE
+GGSCI (ol7db1) 1> info all
+Program     Status      Group       Lag at Chkpt  Time Since Chkpt
+MANAGER     RUNNING
+
+GGSCI (ol7db1) 2> STOP MANAGER
+Manager process is required by other GGS processes.
+Are you sure you want to stop it (y/n)?y
+
+Sending STOP request to MANAGER ...
+Request processed.
+Manager stopped.
+
+GGSCI (ol7db1) 3> exit
+
 
 
 
