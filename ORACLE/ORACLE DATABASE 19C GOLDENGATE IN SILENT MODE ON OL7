@@ -1,0 +1,108 @@
+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
++   ORACLE DATABASE 19C GOLDENGATE IN SILENT MODE ON OL7     +
+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+
+#NOTE
+Oracle GoldenGate is a real-time change data capture application that provides guaranteed data capture, 
+routing, transformation, and delivery across heterogeneous business systems. 
+The application uses a lowoverhead architecture to capture transactions non-intrusively from a source database by reading online
+transaction logs, transforming the data when needed, and applying those transactions with guaranteed integrity
+to a target database in real time.1 Oracle GoldenGate’s processes run continuously—even bi-directionally—and
+support high-volume, rapidly changing environments, moving tens of thousands of transactions per second with
+very low impact. The target database is a fully functional database open in read/write mode and is a transactional
+replica at a logical level, which can be leveraged for multiple applications, including a rolling database upgrade.
+
+#CREATE DIRETORY FOR GOLDENGATE
+mkdir -p /u01/app/oracle/product/gg
+
+#CREATE RESPONSE FILE TO INSTALL GOLDENGATE SOFTWARE IN SILENT MODE
+vi /home/oracle/oggcore.rsp
+oracle.install.responseFileVersion=/oracle/install/rspfmt_ogginstall_response_schema_v19_1_0
+INSTALL_OPTION=ORA19c
+SOFTWARE_LOCATION=/u01/app/oracle/product/gg
+START_MANAGER=true
+MANAGER_PORT=7809
+DATABASE_LOCATION=/u01/app/oracle/product/19.3.0/dbhome_1
+INVENTORY_LOCATION=/u01/app/oraInventory/
+UNIX_GROUP_NAME=oinstall
+
+#ADD GOLDENGATE VARIABLES TO BASH_PROFILE
+cd /home/oracle/scripts
+vi setEnv.sh
+
+#VALIDATE
+source .bash_profile
+echo $GGATE
+/u01/app/oracle/product/gg
+cd /u01/app/oracle/product/gg
+
+#DOWNLOAD SOFTWARE GOLDENGATE
+wget https://download.oracle.com/otn/goldengate/191000/191004_fbo_ggs_Linux_x64_shiphome.zip?AuthParam=1587092260_2f2c8c93592f924eeddd0bd7aedabad6
+
+ls -ltr
+total 543212
+-rw-r--r--. 1 oracle oinstall 556240981 Oct 24 00:53 191004_fbo_ggs_Linux_x64_shiphome.zip
+
+#UNZIP FILE 
+unzip 191004_fbo_ggs_Linux_x64_shiphome.zip
+
+ls -ltr
+total 543548
+-rw-r--r--. 1 oracle oinstall      1413 May 29  2019 OGG-19.1.0.0-README.txt
+drwxr-xr-x. 3 oracle oinstall      4096 Oct 18 10:20 fbo_ggs_Linux_x64_shiphome
+-rw-r--r--. 1 oracle oinstall    332523 Oct 21 11:01 OGG_WinUnix_Rel_Notes_19.1.0.0.4.pdf
+-rw-r--r--. 1 oracle oinstall 556240981 Oct 24 00:53 191004_fbo_ggs_Linux_x64_shiphome.zip
+
+#NAVIGATE TO 
+cd /u01/app/oracle/product/gg/fbo_ggs_Linux_x64_shiphome/Disk1
+ls -ltr 
+total 16
+drwxr-xr-x.  4 oracle oinstall 4096 Oct 18 10:20 install
+drwxr-xr-x. 12 oracle oinstall 4096 Oct 18 10:20 stage
+-rwxr-xr-x.  1 oracle oinstall  918 Oct 18 10:20 runInstaller
+drwxrwxr-x.  2 oracle oinstall 4096 Apr 16 23:59 response
+
+#RUN INSTALLER
+./runInstaller -silent -responseFile /home/oracle/oggcore.rsp
+
+Starting Oracle Universal Installer...
+
+Checking Temp space: must be greater than 120 MB.   Actual 9121 MB    Passed
+Checking swap space: must be greater than 150 MB.   Actual 3965 MB    Passed
+Preparing to launch Oracle Universal Installer from /tmp/OraInstall2020-04-17_12-06-27AM. Please wait ...
+[WARNING] [INS-75003] The specified directory /u01/app/oracle/product/gg is not empty.
+   CAUSE: The directory specified /u01/app/oracle/product/gg contains files.
+   ACTION: Clean up the specified directory or enter a new directory location.
+You can find the log of this install session at:
+ /u01/app/oraInventory/logs/installActions2020-04-17_12-06-27AM.log
+WARNING:OUI-10030:You have specified a non-empty directory to install this product. 
+It is recommended to specify either an empty or a non-existent directory. 
+You may, however, choose to ignore this message if the directory contains Operating System generated files or subdirectories like lost+found.
+Do you want to proceed with installation in this Oracle Home?
+The installation of Oracle GoldenGate Core was successful.
+Please check '/u01/app/oraInventory/logs/silentInstall2020-04-17_12-06-27AM.log' for more details.
+Successfully Setup Software.
+
+#LOGIN GOLDENGATE
+cd $GGATE
+./ggsci
+
+Oracle GoldenGate Command Interpreter for Oracle
+Version 19.1.0.0.4 OGGCORE_19.1.0.0.0_PLATFORMS_191017.1054_FBO
+Linux, x64, 64bit (optimized), Oracle 19c on Oct 17 2019 21:16:29
+Operating system character set identified as UTF-8.
+
+Copyright (C) 1995, 2019, Oracle and/or its affiliates. All rights reserved.
+
+GGSCI (ol7db1) 1> info mgr
+
+Manager is running (IP port TCP:ol7db1.7809, Process ID 16561).
+
+
+
+
+
+
+
+
+
