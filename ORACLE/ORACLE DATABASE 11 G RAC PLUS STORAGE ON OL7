@@ -1,0 +1,219 @@
+++++++++++++++++++++++++++++++++++++++++++++++++++++
++   ORACLE DATABASE 11 G RAC PLUS STORAGE ON OL7   +
+++++++++++++++++++++++++++++++++++++++++++++++++++++
+
+
+#Software
+
+p13390677_112040_platform_1of7.zip (Oracle Database, including Oracle RAC components)
+p13390677_112040_platform_2of7.zip (Oracle Database, including Oracle RAC components)
+p13390677_112040_platform_3of7.zip (Oracle Grid Infrastructure, includes: Oracle ASM, Oracle Clusterware, Oracle Restart)
+
+Direct Download 
+http://app.beg.inf.br/pub/oracle/11/
+
+#create nodes of RAC
+New vm >
+3 networks interfaces
+NAT
+HOST-ONLY ADAPTER
+INTERNAL NETWORK
+1 disk 30gb
+/boot 300m - swap 6gb - / 23gb
+6gb ram
+S.O Redhat EL 7 x86_64
+SERVER WITH GUI INSTALATION
+
+#install VirtualBox Guest Additions
+yum update kernel* -y
+init 6
+cd /run/media/root/VBox_GAs_6.0.8
+./VBoxLinuxAdditions.run
+init 6
+
+#install and configure oracle envoriments
+sed -i 's/SELINUX=enforcing/SELINUX=disabled/g' /etc/selinux/config
+systemctl stop firewalld
+systemctl disable firewalld
+systemctl stop chronyd.service
+systemctl disable chronyd.service
+mv /etc/chrony.conf /etc/chrony.conf.bak
+yum install -y oracle-rdbms-server-11gR2-preinstall.x86_64
+yum install -y kmod-oracleasm.x86_64 oracleasm-support.x86_64 
+yum install -y https://download.oracle.com/otn_software/asmlib/oracleasmlib-2.0.12-1.el7.x86_64.rpm
+vi /etc/pam.d/su
+vi /etc/pam.d/system-auth
+vi /etc/pam.d/sshd
+vi /etc/pam.d/login
+session required        pam_limits.so
+session required        pam_unix.so
+vi /etc/security/limits.conf
+oracle   soft   nofile    1024
+oracle   hard   nofile    65536
+oracle   soft   nproc    16384
+oracle   hard   nproc    16384
+oracle   soft   stack    10240
+oracle   hard   stack    32768
+oracle   hard   memlock    134217728
+oracle   soft   memlock    134217728
+
+#configure user 
+groupadd -g 54321 oinstall
+groupadd -g 54322 dba
+groupadd -g 54323 oper
+groupadd -g 54324 backupdba
+groupadd -g 54325 dgdba
+groupadd -g 54326 kmdba
+groupadd -g 54327 asmdba
+groupadd -g 54328 asmoper
+groupadd -g 54329 asmadmin
+groupadd -g 54330 racdba
+userdel oracle
+useradd -m -u 54331 -g oinstall -G dba,oper,backupdba,dgdba,kmdba,asmdba,asmadmin,racdba -d /home/oracle -s /bin/bash  oracle
+useradd -m -u 54332 -g oinstall -G dba,asmadmin,asmdba,asmoper -d /home/grid -s /bin/bash  grid
+id oracle
+id grid
+passwd oracle
+passwd grid
+mkdir -p /u01/app/grid
+mkdir -p /u01/app/19.3/grid
+mkdir -p /u01/app/oracle
+mkdir -p /u01/app/oracle/product/19.3
+chmod -R 775 /u01
+chown -R grid:oinstall /u01
+chown -R oracle:oinstall /u01/app/oracle
+chown oracle:oinstall -R /home/oracle
+
+#configure static ip
+ls -ltr /etc/sysconfig/network-scripts/ifcfg-*
+-rw-r--r--. 1 root root 254 Mar 29  2019 /etc/sysconfig/network-scripts/ifcfg-lo
+-rw-r--r--. 1 root root 312 Jan 21 10:07 /etc/sysconfig/network-scripts/ifcfg-enp0s3
+-rw-r--r--. 1 root root 307 Apr 19 15:24 /etc/sysconfig/network-scripts/ifcfg-Wired_connection_1
+-rw-r--r--. 1 root root 307 Apr 19 15:24 /etc/sysconfig/network-scripts/ifcfg-Wired_connection_2
+
+cp /etc/sysconfig/network-scripts/ifcfg-enp0s3 /etc/sysconfig/network-scripts/ifcfg-enp0s3-bkp
+vi /etc/sysconfig/network-scripts/ifcfg-enp0s3
+#####PUBLIC
+TYPE="Ethernet"
+PROXY_METHOD="none"
+BROWSER_ONLY="no"
+BOOTPROTO="none"
+DEFROUTE="yes"
+IPV4_FAILURE_FATAL="no"
+IPV6INIT="no"
+IPV6_AUTOCONF="no"
+IPV6_DEFROUTE="no"
+IPV6_FAILURE_FATAL="no"
+IPV6_ADDR_GEN_MODE="stable-privacy"
+NAME="enp0s3"
+UUID="e117208b-8a1b-4bdd-aa07-4a7aa9650a65"
+DEVICE="enp0s3"
+ONBOOT="yes"
+IPADDR=192.168.1.116
+PREFIX=24
+GATEWAY=192.168.1.1
+
+cp /etc/sysconfig/network-scripts/ifcfg-Wired_connection_1 /etc/sysconfig/network-scripts/ifcfg-Wired_connection_1-bkp
+vi /etc/sysconfig/network-scripts/ifcfg-Wired_connection_1
+#####VIP
+HWADDR=08:00:27:B4:9B:9F
+TYPE=Ethernet
+PROXY_METHOD=none
+BROWSER_ONLY=no
+BOOTPROTO=none
+DEFROUTE=yes
+IPV4_FAILURE_FATAL=no
+IPV6INIT=no
+IPV6_AUTOCONF=no
+IPV6_DEFROUTE=no
+IPV6_FAILURE_FATAL=no
+IPV6_ADDR_GEN_MODE=stable-privacy
+NAME="Wired connection 1"
+UUID=fb503afb-e01e-4086-a76d-23642c4fa4f6
+ONBOOT=yes
+IPADDR=192.168.1.118
+PREFIX=24
+GATEWAY=192.168.1.1
+
+cp /etc/sysconfig/network-scripts/ifcfg-Wired_connection_2 /etc/sysconfig/network-scripts/ifcfg-Wired_connection_2-bkp
+vi /etc/sysconfig/network-scripts/ifcfg-Wired_connection_2
+#####PRIVATE
+HWADDR=08:00:27:AE:32:E6
+TYPE=Ethernet
+PROXY_METHOD=none
+BROWSER_ONLY=no
+BOOTPROTO=none
+DEFROUTE=yes
+IPV4_FAILURE_FATAL=no
+IPV6INIT=no
+IPV6_AUTOCONF=no
+IPV6_DEFROUTE=no
+IPV6_FAILURE_FATAL=no
+IPV6_ADDR_GEN_MODE=stable-privacy
+NAME="Wired connection 2"
+UUID=4c36d486-f66c-4c32-8582-af8f8b111568
+ONBOOT=yes
+IPADDR=192.168.0.100
+PREFIX=24
+GATEWAY=192.168.1.1
+
+#check network 
+ifconfig
+enp0s3: flags=4163<UP,BROADCAST,RUNNING,MULTICAST>  mtu 1500
+        inet 192.168.1.116  netmask 255.255.255.0  broadcast 192.168.1.255
+        inet6 fe80::a00:27ff:fe5d:be9f  prefixlen 64  scopeid 0x20<link>
+        ether 08:00:27:5d:be:9f  txqueuelen 1000  (Ethernet)
+        RX packets 97  bytes 13224 (12.9 KiB)
+        RX errors 0  dropped 0  overruns 0  frame 0
+        TX packets 88  bytes 13824 (13.5 KiB)
+        TX errors 0  dropped 0 overruns 0  carrier 0  collisions 0
+
+enp0s8: flags=4163<UP,BROADCAST,RUNNING,MULTICAST>  mtu 1500
+        inet 192.168.1.118  netmask 255.255.255.0  broadcast 192.168.1.255
+        inet6 fe80::a00:27ff:feb4:9b9f  prefixlen 64  scopeid 0x20<link>
+        ether 08:00:27:b4:9b:9f  txqueuelen 1000  (Ethernet)
+        RX packets 2  bytes 1180 (1.1 KiB)
+        RX errors 0  dropped 0  overruns 0  frame 0
+        TX packets 44  bytes 6456 (6.3 KiB)
+        TX errors 0  dropped 0 overruns 0  carrier 0  collisions 0
+
+enp0s9: flags=4163<UP,BROADCAST,RUNNING,MULTICAST>  mtu 1500
+        inet 192.168.0.100  netmask 255.255.255.0  broadcast 192.168.0.255
+        inet6 fe80::a00:27ff:feae:32e6  prefixlen 64  scopeid 0x20<link>
+        ether 08:00:27:ae:32:e6  txqueuelen 1000  (Ethernet)
+        RX packets 0  bytes 0 (0.0 B)
+        RX errors 0  dropped 0  overruns 0  frame 0
+        TX packets 44  bytes 7273 (7.1 KiB)
+        TX errors 0  dropped 0 overruns 0  carrier 0  collisions 0
+
+#set hostname
+hostnamectl 
+hostnamectl set-hostname oraclerac11gn1
+hostnamectl --static 
+
+#configure /etc/hosts
+# bridge
+# Public Network - (eth0)
+192.168.1.116 oraclerac11gn1.appsdba.info oraclerac11gn1
+192.168.1.117 oraclerac11gn2.appsdba.info oraclerac11gn2
+
+# Internal Network
+# Private Interconnect - (eth1)
+192.168.0.100 oraclerac11gn1-priv.appsdba.info oraclerac11gn1-priv
+192.168.0.101 oraclerac11gn2-priv.appsdba.info oraclerac11gn2-priv
+
+# Public Virtual IP (VIP) addresses for - (eth0)
+192.168.1.118 oraclerac11gn1-vip.appsdba.info oraclerac11gn1-vip
+192.168.1.119 oraclerac11gn2-vip.appsdba.info oraclerac11gn2-vip
+
+# Scan IP´s
+192.168.1.120 oraclerac11g-scan.appsdba.info oraclerac11g-scan
+192.168.1.121 oraclerac11g-scan.appsdba.info oraclerac11g-scan
+
+
+
+
+
+
+
+
