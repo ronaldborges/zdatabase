@@ -220,9 +220,157 @@ addn-hosts=/etc/racdns
 vi /etc/resolv.conf
 nameserver 127.0.0.1
 search appsdba.info
+nameserver 192.168.1.1
+
 chattr +i /etc/resolv.conf
 systemctl start dnsmasq
 systemctl enable dnsmasq
+
+#check resolve name
+
+nslookup oraclerac11g-scan
+Server:         127.0.0.1
+Address:        127.0.0.1#53
+
+Name:   oraclerac11g-scan.appsdba.info
+Address: 192.168.1.120
+Name:   oraclerac11g-scan.appsdba.info
+Address: 192.168.1.121
+Name:   oraclerac11g-scan.appsdba.info
+Address: 192.168.1.121
+Name:   oraclerac11g-scan.appsdba.info
+Address: 192.168.1.120
+
+nslookup oraclerac11gn1
+Server:         127.0.0.1
+Address:        127.0.0.1#53
+
+Name:   oraclerac11gn1.appsdba.info
+Address: 192.168.1.116
+
+nslookup oraclerac11gn1-priv
+Server:         127.0.0.1
+Address:        127.0.0.1#53
+
+Name:   oraclerac11gn1-priv.appsdba.info
+
+#add disks to create asm
+sdb     10GB    Shareable disk
+sdc     10GB    Shareable disk
+sdd     10GB    Shareable disk
+
+fdisk -l
+Disk /dev/sdd: 10.7 GB, 10737418240 bytes, 20971520 sectors
+Units = sectors of 1 * 512 = 512 bytes
+Sector size (logical/physical): 512 bytes / 512 bytes
+I/O size (minimum/optimal): 512 bytes / 512 bytes
+
+Disk /dev/sdb: 10.7 GB, 10737418240 bytes, 20971520 sectors
+Units = sectors of 1 * 512 = 512 bytes
+Sector size (logical/physical): 512 bytes / 512 bytes
+I/O size (minimum/optimal): 512 bytes / 512 bytes
+
+Disk /dev/sdc: 10.7 GB, 10737418240 bytes, 20971520 sectors
+Units = sectors of 1 * 512 = 512 bytes
+Sector size (logical/physical): 512 bytes / 512 bytes
+I/O size (minimum/optimal): 512 bytes / 512 bytes
+
+#partition the disks
+fdisk /dev/sdd
+Welcome to fdisk (util-linux 2.23.2).
+
+Changes will remain in memory only, until you decide to write them.
+Be careful before using the write command.
+
+Device does not contain a recognized partition table
+Building a new DOS disklabel with disk identifier 0x6db98611.
+
+Command (m for help): n
+Partition type:
+   p   primary (0 primary, 0 extended, 4 free)
+   e   extended
+Select (default p): p
+Partition number (1-4, default 1): 1
+First sector (2048-20971519, default 2048):
+Using default value 2048
+Last sector, +sectors or +size{K,M,G} (2048-20971519, default 20971519):
+Using default value 20971519
+Partition 1 of type Linux and of size 10 GiB is set
+
+Command (m for help): w
+The partition table has been altered!
+
+Calling ioctl() to re-read partition table.
+Syncing disks.
+
+#configure user envoriments
+vi /home/grid/.bash_profile
+PATH=$PATH:$HOME/.local/bin:$HOME/bin
+export ORACLE_SID=+ASM1
+export ORACLE_BASE=/u01/app/grid
+export ORACLE_HOME=/u01/app/11.2/grid
+export PATH=$ORACLE_HOME/bin:$ORACLE_HOME/OPatch:$PATH
+umask 22
+
+vi /home/oracle/.bash_profile
+PATH=$PATH:$HOME/.local/bin:$HOME/bin
+export ORACLE_SID=oradbc
+export ORACLE_BASE=/u01/app/oracle
+export ORACLE_HOME=$ORACLE_BASE/product/11.2/dbhome_1
+export PATH=$ORACLE_HOME/bin:$ORACLE_HOME/OPatch:$PATH
+umask 22
+
+vi /root/.bash_profile
+PATH=$PATH:$HOME/bin
+export ORACLE_HOME=/u01/app/11.2/grid
+export PATH=$ORACLE_HOME/bin:$ORACLE_HOME/OPatch:$PATH
+
+#configure asm disks
+source /root/.bash_profile
+oracleasm configure -i
+Configuring the Oracle ASM library driver.
+
+This will configure the on-boot properties of the Oracle ASM library
+driver.  The following questions will determine whether the driver is
+loaded on boot and what permissions it will have.  The current values
+will be shown in brackets ('[]').  Hitting <ENTER> without typing an
+answer will keep that current value.  Ctrl-C will abort.
+
+Default user to own the driver interface []: oracle
+Default group to own the driver interface []: oinstall
+Start Oracle ASM library driver on boot (y/n) [n]: y
+Scan for Oracle ASM disks on boot (y/n) [y]: y
+Writing Oracle ASM library driver configuration: done
+
+#identify uid disks
+/usr/lib/udev/scsi_id -g -u -d /dev/sdb1
+1ATA_VBOX_HARDDISK_VB40355d90-daab0c3a
+/usr/lib/udev/scsi_id -g -u -d /dev/sdc1
+1ATA_VBOX_HARDDISK_VBf8a04d01-017a7000
+/usr/lib/udev/scsi_id -g -u -d /dev/sdd1
+1ATA_VBOX_HARDDISK_VB17fcea21-810ea673
+
+#configure rules file for create symbolic link
+vi /etc/udev/rules.d/99-oracle-asmdevices.rules
+KERNEL=="sd?1", SUBSYSTEM=="block", PROGRAM=="/usr/lib/udev/scsi_id -g -u -d /dev/$parent", RESULT=="1ATA_VBOX_HARDDISK_VB40355d90-daab0c3a", SYMLINK+="asm-disk1", OWNER="grid", GROUP="asmadmin", MODE="0660"
+KERNEL=="sd?1", SUBSYSTEM=="block", PROGRAM=="/usr/lib/udev/scsi_id -g -u -d /dev/$parent", RESULT=="1ATA_VBOX_HARDDISK_VBf8a04d01-017a7000", SYMLINK+="asm-disk2", OWNER="grid", GROUP="asmadmin", MODE="0660"
+KERNEL=="sd?1", SUBSYSTEM=="block", PROGRAM=="/usr/lib/udev/scsi_id -g -u -d /dev/$parent", RESULT=="1ATA_VBOX_HARDDISK_VB17fcea21-810ea673", SYMLINK+="asm-disk3", OWNER="grid", GROUP="asmadmin", MODE="0660"
+
+#check configuration of device
+udevadm test /block/sdb/sdb1
+udevadm test /block/sdc/sdc1
+udevadm test /block/sdd/sdd1
+
+#validade configuration
+ls -ltr /dev/asm-disk*
+lrwxrwxrwx 1 root root 4 Apr 19 17:56 /dev/asm-disk1 -> sdb1
+lrwxrwxrwx 1 root root 4 Apr 19 17:56 /dev/asm-disk2 -> sdc1
+lrwxrwxrwx 1 root root 4 Apr 19 17:56 /dev/asm-disk3 -> sdd1
+
+#shutdown node1 and clone to node2
+#change personal configuration and ips on interfaces
+#up two node machines
+
 
 
 
