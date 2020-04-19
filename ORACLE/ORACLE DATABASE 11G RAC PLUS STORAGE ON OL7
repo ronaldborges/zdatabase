@@ -155,7 +155,6 @@ UUID=4c36d486-f66c-4c32-8582-af8f8b111568
 ONBOOT=yes
 IPADDR=192.168.0.100
 PREFIX=24
-GATEWAY=192.168.1.1
 
 #check network 
 ifconfig
@@ -192,17 +191,18 @@ hostnamectl set-hostname oraclerac11gn1
 hostnamectl --static 
 
 #configure /etc/hosts
+vi /etc/hosts
 # bridge
-# Public Network - (eth0)
+# Public Network - (enp0s3)
 192.168.1.116 oraclerac11gn1.appsdba.info oraclerac11gn1
 192.168.1.117 oraclerac11gn2.appsdba.info oraclerac11gn2
 
 # Internal Network
-# Private Interconnect - (eth1)
+# Private Interconnect - (enp0s9)
 192.168.0.100 oraclerac11gn1-priv.appsdba.info oraclerac11gn1-priv
 192.168.0.101 oraclerac11gn2-priv.appsdba.info oraclerac11gn2-priv
 
-# Public Virtual IP (VIP) addresses for - (eth0)
+# Public Virtual IP (VIP) addresses for - (enp0s8)
 192.168.1.118 oraclerac11gn1-vip.appsdba.info oraclerac11gn1-vip
 192.168.1.119 oraclerac11gn2-vip.appsdba.info oraclerac11gn2-vip
 
@@ -210,6 +210,19 @@ hostnamectl --static
 192.168.1.120 oraclerac11g-scan.appsdba.info oraclerac11g-scan
 192.168.1.121 oraclerac11g-scan.appsdba.info oraclerac11g-scan
 
+#configure resolve name
+vi /etc/racdns
+192.168.1.120 oraclerac11g-scan.appsdba.info oraclerac11g-scan
+192.168.1.121 oraclerac11g-scan.appsdba.info oraclerac11g-scan
+vi /etc/dnsmasq.conf | grep addn-hosts
+addn-hosts=/etc/racdns
+
+vi /etc/resolv.conf
+nameserver 127.0.0.1
+search appsdba.info
+chattr +i /etc/resolv.conf
+systemctl start dnsmasq
+systemctl enable dnsmasq
 
 
 
