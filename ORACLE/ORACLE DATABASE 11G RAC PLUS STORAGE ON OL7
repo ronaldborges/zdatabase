@@ -314,7 +314,7 @@ umask 22
 
 vi /home/oracle/.bash_profile
 PATH=$PATH:$HOME/.local/bin:$HOME/bin
-export ORACLE_SID=oradbc
+export ORACLE_SID=oradbc1
 export ORACLE_BASE=/u01/app/oracle
 export ORACLE_HOME=$ORACLE_BASE/product/11.2/dbhome_1
 export PATH=$ORACLE_HOME/bin:$ORACLE_HOME/OPatch:$PATH
@@ -360,6 +360,8 @@ KERNEL=="sd?1", SUBSYSTEM=="block", PROGRAM=="/usr/lib/udev/scsi_id -g -u -d /de
 udevadm test /block/sdb/sdb1
 udevadm test /block/sdc/sdc1
 udevadm test /block/sdd/sdd1
+udevadm control --reload-rules
+/sbin/udevadm trigger
 
 #validade configuration
 ls -ltr /dev/asm-disk*
@@ -368,8 +370,22 @@ lrwxrwxrwx 1 root root 4 Apr 19 17:56 /dev/asm-disk2 -> sdc1
 lrwxrwxrwx 1 root root 4 Apr 19 17:56 /dev/asm-disk3 -> sdd1
 
 #shutdown node1 and clone to node2
-#change personal configuration and ips on interfaces
 #up two node machines
+#change personal configuration like variables, hostname, ips and uid disks in rules file
+
+#ssh key exchange
+su - root -c "ssh-keygen -t rsa"
+su - oracle -c "ssh-keygen -t rsa"
+su - grid -c "ssh-keygen -t rsa"
+
+su - root -c "cat /root/.ssh/id_rsa.pub > /root/.ssh/authorized_keys"
+su - oracle -c "cat /home/oracle/.ssh/id_rsa.pub > /home/oracle/.ssh/authorized_keys"
+su - grid -c "cat /home/grid/.ssh/id_rsa.pub > /home/grid/.ssh/authorized_keys"
+chmod 600 /root/.ssh/authorized_keys
+chmod 600 /home/oracle/.ssh/authorized_keys
+chmod 600 /home/grid/.ssh/authorized_keys
+
+
 
 
 
