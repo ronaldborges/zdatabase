@@ -1,6 +1,6 @@
-+++++++++++++++++++++++++++++
-+   HADOOP MULTI-NODE OL7   +
-+++++++++++++++++++++++++++++
+++++++++++++++++++++++++++++++
++   HADOOP MULTI-NODE OL7    +
+++++++++++++++++++++++++++++++
 
 THE APACHE HADOOP FRAMEWORK CONSISTS OF THE FOLLOWING MODULES:
 * HADOOP COMMON - CONTAINS THE COMMON LIBRARIES AND FILES NEEDED FOR ALL HADOOP MODULES.
