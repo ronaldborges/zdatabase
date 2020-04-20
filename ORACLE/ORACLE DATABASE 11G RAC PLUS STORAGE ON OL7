@@ -209,13 +209,13 @@ vi /etc/hosts
 192.168.1.119 oraclerac11gn2-vip.appsdba.info oraclerac11gn2-vip
 
 # Scan IP´s
-192.168.1.120 oraclerac11g-scan.appsdba.info oraclerac11g-scan
-192.168.1.121 oraclerac11g-scan.appsdba.info oraclerac11g-scan
+192.168.1.120 oraclerac11g-scan oraclerac11g-scan.appsdba.info 
+192.168.1.121 oraclerac11g-scan oraclerac11g-scan.appsdba.info 
 
 #configure resolve name
 vi /etc/racdns
-192.168.1.120 oraclerac11g-scan.appsdba.info oraclerac11g-scan
-192.168.1.121 oraclerac11g-scan.appsdba.info oraclerac11g-scan
+192.168.1.120 oraclerac11g-scan oraclerac11g-scan.appsdba.info 
+192.168.1.121 oraclerac11g-scan oraclerac11g-scan.appsdba.info 
 vi /etc/dnsmasq.conf | grep addn-hosts
 addn-hosts=/etc/racdns
 
@@ -391,16 +391,26 @@ chmod 600 /home/grid/.ssh/authorized_keys
 
 #copy software
 
+#install cvuqdisk (install node 1 and node 2)
+cd /u01/app/11.2/grid/rpm/
+rpm -ivh cvuqdisk-1.0.9-1.rpm                   
+
 #validate all configuration (run runcluvfy.sh)
 su - grid
 cd /u01/app/11.2/grid/
-
-#change CV_ASSUME_DISTID
-vi /u01/app/11.2/grid/stage/cvu/cv/admin/cvu_config
-CV_ASSUME_DISTID=OEL7
-
-#run pre install check
 ./runcluvfy.sh stage -pre crsinst -n oraclerac11gn1,oraclerac11gn2 -fixup -verbose
+
+#run install grid
+su –
+xhost +
+su – grid
+export DISPLAY=:0.0
+cd /u01/app/11.2/grid/
+./runInstaller
+
+
+
+
 
 
 
