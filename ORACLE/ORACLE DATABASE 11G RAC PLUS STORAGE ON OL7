@@ -368,18 +368,27 @@ chmod 600 /root/.ssh/authorized_keys
 chmod 600 /home/oracle/.ssh/authorized_keys
 chmod 600 /home/grid/.ssh/authorized_keys
 
+#Change redhat-release
+vi /etc/redhat-release
+Red Hat Enterprise Linux Server release 6.7
+#Red Hat Enterprise Linux Server release 7.7 (Maipo)
+
 * go to node 2 and copy the contents of the id_rsa.pub files from the respective root, grid, oracle users to authorized_keys on node 1
 
 #copy software
 
 #install cvuqdisk (install node 1 and node 2)
 cd /u01/app/11.2/grid/rpm/
-rpm -ivh cvuqdisk-1.0.9-1.rpm                   
+rpm -ivh cvuqdisk-1.0.9-1.rpm    
 
 #validate all configuration (run runcluvfy.sh)
 su - grid
 cd /u01/app/11.2/grid/
 ./runcluvfy.sh stage -pre crsinst -n oraclerac11gn1,oraclerac11gn2 -fixup -verbose
+
+#change cvu_config
+vi /u01/app/11.2/grid/stage/cvu/cv/admin/cvu_config
+CV_ASSUME_DISTID=OEL6
 
 #run install grid
 su –
