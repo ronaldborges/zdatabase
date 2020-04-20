@@ -115,28 +115,6 @@ IPADDR=192.168.1.116
 PREFIX=24
 GATEWAY=192.168.1.1
 
-cp /etc/sysconfig/network-scripts/ifcfg-Wired_connection_1 /etc/sysconfig/network-scripts/ifcfg-Wired_connection_1-bkp
-vi /etc/sysconfig/network-scripts/ifcfg-Wired_connection_1
-#####VIP
-HWADDR=08:00:27:B4:9B:9F
-TYPE=Ethernet
-PROXY_METHOD=none
-BROWSER_ONLY=no
-BOOTPROTO=none
-DEFROUTE=yes
-IPV4_FAILURE_FATAL=no
-IPV6INIT=no
-IPV6_AUTOCONF=no
-IPV6_DEFROUTE=no
-IPV6_FAILURE_FATAL=no
-IPV6_ADDR_GEN_MODE=stable-privacy
-NAME="Wired connection 1"
-UUID=fb503afb-e01e-4086-a76d-23642c4fa4f6
-ONBOOT=yes
-IPADDR=192.168.1.118
-PREFIX=24
-GATEWAY=192.168.1.1
-
 cp /etc/sysconfig/network-scripts/ifcfg-Wired_connection_2 /etc/sysconfig/network-scripts/ifcfg-Wired_connection_2-bkp
 vi /etc/sysconfig/network-scripts/ifcfg-Wired_connection_2
 #####PRIVATE
@@ -408,7 +386,178 @@ export DISPLAY=:0.0
 cd /u01/app/11.2/grid/
 ./runInstaller
 
+-- After starting or installing follow the steps below always advancing the screens
 
+# screen 1
+
+Select any of the following installation options
+
+(@) Install and Configure Oracle Grid Infrastructure for a Cluster
+( ) Configure Oracle Grid Infrastructure for a Standalone Server
+( ) Upgrade Oracle Grid Infrastructure or Oracle Automatic Storage Management
+( ) Install Oracle Grid Infrastructure Software Only
+
+# screen 2
+
+( ) Typical Installation 
+    Perform a full grid infrastructure installation with basic configuration
+(@) Advanced Installation 
+    Allows advanced configuration options such as alternative storage choices, additional networking flexibility, integration with IPMI,
+    and more role allocation of Oracle Automatic Storage Management system privilleges.
+
+# screen 3
+
+Single Client Access Name (SCAN) allows clients to use one name in connection strings to connect to the cluster as a whole. 
+Client connect request to the SCAN name can be handled by any cluster node.
+
+Cluster Name:   oraclerac11g
+SCAN Name:      oraclerac11g-scan
+SCAN Port:      1521
+
+[ ] Configure GNS
+    GNS Sub Domain:  _________________
+    GNS VIP Address: _________________
+    
+# screen 4
+
+Provide the list of nodes to be managed by Oracle Grid Infrastructure with their Public Hostname and Virtual Hostname.
+If Oracle Grid Naming Service (GNS) has been select and DHCP is enabled, 
+then the Virtual Hostname is automatically configured for each Public Node.
+
++-----------------------------------+---------------------------------------+
+| Public Hostname                   | Virtual Hostname                      |
++-----------------------------------+---------------------------------------+
+| oraclerac11gn1.appsdba.info       | oraclerac11gn1-vip.appsdba.info       |
++-----------------------------------+---------------------------------------+
+| oraclerac11gn2.appsdba.info       | oraclerac11gn2-vip.appsdba.info       |
++-----------------------------------+---------------------------------------+
+
+SSH connectivity...          Use Cluster Configuration File...       Add...  Edit... Remove
+
+# screen 4
+
+Identify the planned use for each global interfaces shown in the box bellow as Public, Private, or Do Not Use. 
+Private interfaces are used by Oracle Grid Infrastructure for internode traffic.
+
+If there is more than one subnet associated with an interface, 
+then change the interface´s attributes to associate the interface name with the additional subnets.
+
++---------------------+-----------------------+-----------------------------+
+| Interface Name      |       Subnet          |       Use for               |
++---------------------+-----------------------+-----------------------------+
+| enp0s3              |       192.168.1.0     |       Public                |
++---------------------+-----------------------+-----------------------------+
+| enp0s9              |       192.168.0.0     |       Private               | 
++---------------------+-----------------------+-----------------------------+
+| virb0               |       192.168.122.0   |       Do not Use            |
++---------------------+-----------------------+-----------------------------+
+
+# screen 5
+
+You can place Oracle Cluster Registry (OCR) files and voting disk files on Oracle ASM storage, or a file system.
+
+(@) Oracle Automatic Storage Management (Oracle ASM)
+    Choose this option to configure OCR and voting disk files on Oracle ASM storage.
+
+( ) Shared File System
+    Choose this option to configure OCR and voting disk files on an existing shared file system.
+    
+# screen 6
+
+Select Disk Group Characteristic and select disks:
+Disk Group Name         DATA
+Redundancy              ( ) High     ( ) Normal     (@) External
+AU Size                 1 MB
+
+  Add Disks
+  ( ) Candidate Disks   (@) All Disks
+  +----+----------------------------------------------------------------+---------------+------------+
+  |[ ] | Disk Path                                                      | Size (in MB)  | Status     |
+  +----+----------------------------------------------------------------+---------------+------------+
+  |[X] | /dev/asm-disk1                                                 | 10239         | Candidate  |
+  +----+----------------------------------------------------------------+---------------+------------+
+  |[X] | /dev/asm-disk2                                                 | 10239         | Candidate  |
+  +----+----------------------------------------------------------------+---------------+------------+
+  |[X] | /dev/asm-disk3                                                 | 10239         | Candidate  |
+  +----+----------------------------------------------------------------+---------------+------------+
+  
+Change Disk Discovery Path
+Changing the Diks Discovery Path will affect ALL Disk Groups
+Disk Discovey Path:     /dev/asm-disk*
+                                          > OK   CANCEL
+                                          
+# screen 7
+
+The new Oracle Automatic Storage Management (Oracle ASM) instance requires its own SYS user with SYSASM privileges for administration.
+Oracle recommends that you create a less privileged ASMSNMP user with SYSDBA privileges to monitor the ASM instance.
+
+Specify the password for these user accounts.
+
+( ) Use different password for these accounts.
+
+                Password                Confirm Password
+     SYS        _______________________ _______________________
+     ASMSNMP    _______________________ _______________________
+     
+(@) Use same passwords for these accounts
+        
+    Specify Password: ****************     Confirm Passowrd: ****************
+
+# screen 8
+    
+Choose one of the following Failure Isolation Support options.
+
+( ) Use Intelligent Platform Management Interface (IPM)
+
+    To ensure sucessful instalation with IPMI enabled, ensure your IPMI drivers are properly installed and enabled
+        User Name: ________________
+        Password:  ________________
+        
+(@) Do not use Intelligent Platform Management Interface (IPMI)
+
+# screen 9
+
+Select the name of the operating system group, of which the user you are running this installation is a 
+member, that you want to use for operating system authentication to Oracle Automatic Storage Management.
+
+Oracle ASM DBA (OSDBA FOR ASM) Group                            asmdba
+Oracle ASM Operator (OSOPER for ASM) Group (Optional)           asmoper
+Oracle ASM Administrator (OSASM) Group                          asmadmin
+
+# screen 10
+
+Specify the Oracle Grid infrastructure for a Cluster Oracle base. By default, Oracle Grid Infrastructure is installed in a path
+indicating the Oracle Grid Infrastructure release and grid infrastructure software owner.
+
+Oracle Base: /u01/app/grid                              Browse...
+
+Specify a location for string Oracle software files separate from configuration files in the Oracle base directory.
+This software directory is the Oracle Grid Infrastructure home directory.
+
+Software location: /u01/app/11.2/grid
+
+# screen 11
+
+You are starting your frist installation on this host. Specify a directory for installation files.
+This directory is called the "inventory directory". 
+The installer automatically sets up subdirectories for each product to contain inventory data.
+The subdirectory for each product typically requires 150 kilobytes of disk space.
+
+Inventory Directory: /u01/app/oraInventory              Browse...
+
+Members of the following operating system group (the primary group) will have write permission to the inventory directory (oraInventory).
+oraInventory Group Name: oinstall
+  
+# screen 12
+
+
+  
+  
+
+
+
+
+    
 
 
 
