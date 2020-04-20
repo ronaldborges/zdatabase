@@ -14,14 +14,13 @@ http://app.beg.inf.br/pub/oracle/11/
 
 #create nodes of RAC
 New vm >
-3 networks interfaces
-NAT
-HOST-ONLY ADAPTER
+2 networks interfaces
+BRIDGE
 INTERNAL NETWORK
 1 disk 30gb
 /boot 300m - swap 6gb - / 23gb
 6gb ram
-S.O Redhat EL 7 x86_64
+S.O Oracle Enterprise Linux 7 x86_64
 SERVER WITH GUI INSTALATION
 
 #install VirtualBox Guest Additions
