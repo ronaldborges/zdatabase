@@ -552,6 +552,20 @@ Members of the following operating system group (the primary group) will have wr
 oraInventory Group Name: oinstall
   
 # screen 12
+Verification Result
+Some of the minimun requirements for installation completed.
+
+Check Again     Fix & Check Again     Show Failed      All Nodes     [x] Ignore All
++--+--------------------------------------------+
+|  | Checks       | Status        | Fixable     |
++--+--------------------------------------------+
+
+# screen 13
+Save Response File...
+Install
+
+# instaltion sucessfully
+
 
 
   
