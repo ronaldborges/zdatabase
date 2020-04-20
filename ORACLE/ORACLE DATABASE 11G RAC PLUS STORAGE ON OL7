@@ -41,6 +41,8 @@ mv /etc/chrony.conf /etc/chrony.conf.bak
 yum install -y oracle-rdbms-server-11gR2-preinstall.x86_64
 yum install -y kmod-oracleasm.x86_64 oracleasm-support.x86_64 
 yum install -y https://download.oracle.com/otn_software/asmlib/oracleasmlib-2.0.12-1.el7.x86_64.rpm
+yum install -y elfutils-libelf-devel.x86_64
+
 vi /etc/pam.d/su
 vi /etc/pam.d/system-auth
 vi /etc/pam.d/sshd
