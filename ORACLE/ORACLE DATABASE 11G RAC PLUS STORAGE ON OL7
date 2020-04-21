@@ -80,7 +80,7 @@ id grid
 passwd oracle
 passwd grid
 mkdir -p /u01/app/grid
-mkdir -p /u01/app/19.3/grid
+mkdir -p /u01/app/11.2/grid
 mkdir -p /u01/app/oracle
 mkdir -p /u01/app/oracle/product/19.3
 chmod -R 775 /u01
