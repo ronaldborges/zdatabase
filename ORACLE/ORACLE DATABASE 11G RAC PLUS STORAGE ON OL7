@@ -572,6 +572,158 @@ Check Again     Fix & Check Again     Show Failed      All Nodes     [x] Ignore 
 Save Response File...
 Install
 
+# scrren 14
+Execute Configuration scripts
+
+The following configuration scripts need to be executed as the "root" user in each new cluster node. 
+Each script in the list below is followed by a list of nodes.
+
+Script to be executed:
++--------+-------------------------------------------+---------------------------------+
+|NUMBER  | Script Location                           | Nodes                            
++--------+-------------------------------------------+---------------------------------+
+|1       | /U01/app/oraIventory/orainstRoot.sh       | oraclerac11gn1, oraclerac11gn2  |
++--------+-------------------------------------------+---------------------------------+
+|2       | /u01/app/11.2/grid/root.sh                | oraclerac11gn1, oraclerac11gn2  |
++--------+-------------------------------------------+---------------------------------+
+
+To execute the configuration scripts:
+        1. Open a terminal window
+        2. Log in as "root"
+        3. Run the script in each cluster node
+        4. Return to this window and click "OK" to continue
+        
+Run the script on the local node first. After sucessful completion, you can run the script in parallel on all other nodes.
+
+#execution scripts
+/u01/app/oraInventory/orainstRoot.sh
+Changing permissions of /u01/app/oraInventory.
+Adding read,write permissions for group.
+Removing read,write,execute permissions for world.
+
+Changing groupname of /u01/app/oraInventory to oinstall.
+The execution of the script is complete.
+
+/u01/app/11.2/grid/root.sh
+Performing root user operation for Oracle 11g
+
+The following environment variables are set as:
+    ORACLE_OWNER= grid
+    ORACLE_HOME=  /u01/app/11.2/grid
+
+Enter the full pathname of the local bin directory: [/usr/local/bin]:
+   Copying dbhome to /usr/local/bin ...
+   Copying oraenv to /usr/local/bin ...
+   Copying coraenv to /usr/local/bin ...
+
+Creating /etc/oratab file...
+Entries will be added to the /etc/oratab file as needed by
+Database Configuration Assistant when a database is created
+Finished running generic part of root script.
+Now product-specific root actions will be performed.
+Using configuration parameter file: /u01/app/11.2/grid/crs/install/crsconfig_params
+Creating trace directory
+User ignored Prerequisites during installation
+Installing Trace File Analyzer
+OLR initialization - successful
+  root wallet
+  root wallet cert
+  root cert export
+  peer wallet
+  profile reader wallet
+  pa wallet
+  peer wallet keys
+  pa wallet keys
+  peer cert request
+  pa cert request
+  peer cert
+  pa cert
+  peer root cert TP
+  profile reader root cert TP
+  pa root cert TP
+  peer pa cert TP
+  pa peer cert TP
+  profile reader pa cert TP
+  profile reader peer cert TP
+  peer user cert
+  pa user cert
+Adding Clusterware entries to inittab
+ohasd failed to start
+Failed to start the Clusterware. Last 20 lines of the alert log follow:
+2020-04-21 21:11:02.499:
+[client(13146)]CRS-2101:The OLR was formatted using version 3.
+
+###################### HOW TO RESOLVE THE PROBLEM #################################
+
+vi /etc/systemd/system/oracle-ohasd.service
+
+# Copyright (c) 2014, Oracle and/or its affiliates. All rights reserved.
+#
+# Oracle OHASD startup
+
+[Unit]
+Description=Oracle High Availability Services
+After=syslog.target network.target remote-fs.target
+
+[Service]
+ExecStart=/etc/init.d/init.ohasd run >/dev/null 2>&1 </dev/null
+Type=simple
+Restart=always
+
+[Install]
+WantedBy=multi-user.target graphical.target
+
+systemctl start oracle-ohasd
+systemctl status oracle-ohasd
+● oracle-ohasd.service - Oracle High Availability Services
+   Loaded: loaded (/etc/systemd/system/oracle-ohasd.service; disabled; vendor preset: disabled)
+   Active: active (running) since Tue 2020-04-21 21:23:53 -03; 6s ago
+ Main PID: 14924 (init.ohasd)
+    Tasks: 1
+   CGroup: /system.slice/oracle-ohasd.service
+           └─14924 /bin/sh /etc/init.d/init.ohasd run >/dev/null 2>&1 </dev/null
+
+Apr 21 21:23:53 oraclerac11gn1 systemd[1]: Started Oracle High Availability Services.
+
+
+####################### THE PROBLEM WAS SOLVED ######################################
+
+CRS-2672: Attempting to start 'ora.mdnsd' on 'oraclerac11gn1'
+CRS-2676: Start of 'ora.mdnsd' on 'oraclerac11gn1' succeeded
+CRS-2672: Attempting to start 'ora.gpnpd' on 'oraclerac11gn1'
+CRS-2676: Start of 'ora.gpnpd' on 'oraclerac11gn1' succeeded
+CRS-2672: Attempting to start 'ora.cssdmonitor' on 'oraclerac11gn1'
+CRS-2672: Attempting to start 'ora.gipcd' on 'oraclerac11gn1'
+CRS-2676: Start of 'ora.cssdmonitor' on 'oraclerac11gn1' succeeded
+CRS-2676: Start of 'ora.gipcd' on 'oraclerac11gn1' succeeded
+CRS-2672: Attempting to start 'ora.cssd' on 'oraclerac11gn1'
+CRS-2672: Attempting to start 'ora.diskmon' on 'oraclerac11gn1'
+CRS-2676: Start of 'ora.diskmon' on 'oraclerac11gn1' succeeded
+CRS-2676: Start of 'ora.cssd' on 'oraclerac11gn1' succeeded
+
+ASM created and started successfully.
+
+Disk Group DATA created successfully.
+
+clscfg: -install mode specified
+Successfully accumulated necessary OCR keys.
+Creating OCR keys for user 'root', privgrp 'root'..
+Operation successful.
+CRS-4256: Updating the profile
+Successful addition of voting disk 7a600ec0e9334fc1bf14d33cce970fb7.
+Successfully replaced voting disk group with +DATA.
+CRS-4256: Updating the profile
+CRS-4266: Voting file(s) successfully replaced
+##  STATE    File Universal Id                File Name Disk group
+--  -----    -----------------                --------- ---------
+ 1. ONLINE   7a600ec0e9334fc1bf14d33cce970fb7 (/dev/asm-disk1) [DATA]
+Located 1 voting disk(s).
+CRS-2672: Attempting to start 'ora.asm' on 'oraclerac11gn1'
+CRS-2676: Start of 'ora.asm' on 'oraclerac11gn1' succeeded
+CRS-2672: Attempting to start 'ora.DATA.dg' on 'oraclerac11gn1'
+CRS-2676: Start of 'ora.DATA.dg' on 'oraclerac11gn1' succeeded
+Configure Oracle Grid Infrastructure for a Cluster ... succeeded
+
 # instaltion sucessfully
 
 
