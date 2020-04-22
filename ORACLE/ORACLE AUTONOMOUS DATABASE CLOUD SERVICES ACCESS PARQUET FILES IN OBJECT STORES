@@ -1,0 +1,219 @@
++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
++  ORACLE AUTONOMOUS DATABASE CLOUD SERVICES ACCESS PARQUET FILES IN OBJECT STORES  +
++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+
+#NOTE
+Parquet is a file format that is commonly used by the Hadoop ecosystem.  
+Unlike CSV, which may be easy to generate but not necessarily efficient to process, parquet is really a “database” file type.  
+Data is stored in compressed, columnar format and has been designed for efficient data access.  
+It provides predicate pushdown (i.e. extract data based on a filter expression), column pruning and other optimizations.
+Autonomous Database now supports querying and loading data from parquet files stored in object stores 
+and takes advantage of these query optimizations.
+
+#DOWNLOAD FILE EXAMPLE
+https://cdn.app.compendium.com/uploads/user/e7c690e8-6ff9-102a-ac6d-e4aebca50425/e8f3928c-7512-4a66-82ed-f88dfefaf4c6/File/af5d8b41591ced60e59d3ecc9f1026ad/sales_extended.parquet
+
+#REVIEW THE PARQUET FILE
+#NOTE 
+A CSV file can be read by any tool 
+
+$ parquet-tools schema sales_extended.parquet
+message hive_schema {
+  optional int32 prod_id;
+  optional int32 cust_id;
+  optional binary time_id (UTF8);
+  optional int32 channel_id;
+  optional int32 promo_id;
+  optional int32 quantity_sold;
+  optional fixed_len_byte_array(5) amount_sold (DECIMAL(10,2));
+  optional binary gender (UTF8);
+  optional binary city (UTF8);
+  optional binary state_province (UTF8);
+  optional binary income_level (UTF8);
+}
+
+#NOTE
+You  can see the parquet file’s columns and data types, including prod_id, cust_id, income_level and more.  
+To view the actual contents of the file, we’ll use another option to the parquet-tools utility:
+
+#REFERENCE
+https://github.com/apache/parquet-mr/tree/master/parquet-tools
+
+$ parquet-tools head sales_extended.parquet
+prod_id = 13
+cust_id = 987
+time_id = 1998-01-10
+channel_id = 3
+promo_id = 999
+quantity_sold = 1
+amount_sold = 1232.16
+gender = M
+city = Adelaide
+state_province = South Australia
+income_level = K: 250,000 - 299,999
+prod_id = 13
+cust_id = 1660
+time_id = 1998-01-10
+channel_id = 3
+promo_id = 999
+quantity_sold = 1
+amount_sold = 1232.16
+gender = M
+city = Dolores
+state_province = CO
+income_level = L: 300,000 and above
+prod_id = 13
+cust_id = 1762
+time_id = 1998-01-10
+channel_id = 3
+promo_id = 999
+quantity_sold = 1
+amount_sold = 1232.16
+gender = M
+city = Cayuga
+state_province = ND
+income_level = F: 110,000 - 129,999
+
+#CREATE AN ADW TABLE
+#NOTE
+We want to make this data available to our data warehouse.  
+ADW makes it really easy to access parquet data stored in object stores using external tables. 
+Using the DBMS_CLOUD package, we will first create a credential using an auth token that has access to the data:
+
+begin
+  DBMS_CLOUD.create_credential (
+    credential_name => 'OBJ_STORE_CRED',
+    username => user@oracle.com',
+    password => 'the-password'
+  );
+end;
+/
+
+#NOTE
+Next, create the external table.  
+Notice, you don’t need to know anything about the structure of the data.  
+Simply point to the file, and ADW will examine its properties and automatically derive the schema:
+
+begin
+    dbms_cloud.create_external_table (
+       table_name =>'sales_extended_ext',
+       credential_name =>'OBJ_STORE_CRED',
+       file_uri_list =>'https://swiftobjectstorage.<datacenter>.oraclecloud.com/v1/<obj-store-namespace>/<bucket>/sales_extended.parquet',
+       format =>  '{"type":"parquet",  "schema": "first"}'
+    );
+end;
+/
+
+#NOTE
+A couple of things to be aware of. 
+First, the URI for the file needs to follow a specific format – and this is well documented here
+https://docs.oracle.com/en/cloud/paas/autonomous-data-warehouse-cloud/user/dbmscloud-reference.html#GUID-5D3E1614-ADF2-4DB5-B2B2-D5613F10E4FA
+You can also use wildcards (“*” and “?”) or simply list the files using comma separated values.
+
+#SELECT DATA
+
+desc sales_extended_ext;
+
+Name           Null? Type           
+-------------- ----- -------------- 
+PROD_ID              NUMBER(10)     
+CUST_ID              NUMBER(10)     
+TIME_ID              VARCHAR2(4000) 
+CHANNEL_ID           NUMBER(10)     
+PROMO_ID             NUMBER(10)     
+QUANTITY_SOLD        NUMBER(10)     
+AMOUNT_SOLD          NUMBER(10,2)   
+GENDER               VARCHAR2(4000) 
+CITY                 VARCHAR2(4000) 
+STATE_PROVINCE       VARCHAR2(4000) 
+INCOME_LEVEL         VARCHAR2(4000)
+
+select prod_id, quantity_sold, gender, city, income_level from sales_extended_ext where rownum < 5;
++--------+---------------+--------+----------+----------------------+
+|PROD_ID | QUANTITY_SOLD | GENDER | CITY     | INCOME_LEVEL         | 
++--------+---------------+--------+----------+----------------------+
+|13      | 1             | M      | Adelaide | K: 250,000 - 299,999 |
+|13      | 1             | M      | Dolores  | L: 300,000 and above |
+|13      | 1             | M      | Cayuga   | F: 110,000 - 129,999 |
+|13      | 1             | M      | Neuss    | C: 50,000  - 69,000  |
+|13      | 1             | M      | Darwin   | J: 190,000 - 249,999 | 
++--------+---------------+--------+----------+----------------------+
+
+#QUERY OPTIMIZATION WITH PARQUET FILES
+#NOTE
+As mentioned at the beginning of this post, parquet files support column pruning and predicate pushdown.  
+This can drastically reduce the amount of data that is scanned and returned by a query and improve query performance.  
+Let’s take a look at an example of column pruning.  
+This file has 11 columns – but imagine there were 911 columns instead and you were interested in querying only one.  
+Instead of scanning and returning all 911 columns in the file – column pruning will only process the single column 
+that was selected by the query.
+
+#NOTE
+Here, we’ll query similar data – one file is delimited text while the 
+other is parquet (interestingly, the parquet file is a superset of the text file – yet is one-fourth the size due to compression).  
+We will vary the number of columns used for each query: 
+
+#EXAMPLE
+1. Query a single parquet column
+2. Query all parquet columns
+3. Query a single text column
+4. Query all the text columns
+
+  +----------------------------------------------------------------------------------------------------------+-----------+
+  |SQL TEXT                                                                                                  | I/O BYTES |
+  +----------------------------------------------------------------------------------------------------------+-----------+
+1   CREATE TABLE TEST_PARQUET_ONE AS SELECT /*+ MONITOR NO_RESULT_CACHE*/CUST_ID FROM SALES_EXTENDED_EXT     | 3.36 MB   |
+__________________________________________________________________________________________________________________________
+2   CREATE TABLE TEST_PARQUET_ALL AS SELECT /*+ MONITOR NO_RESULT_CACHE*/* FROM SALES_EXTENDED_EXT           | 15.7 MB   |
+__________________________________________________________________________________________________________________________
+3   CREATE TABLE TEST_CSV_ONE AS SELECT /*+ MONITOR NO_RESULT_CACHE*/CUST_ID FROM SALES_EXTENDED_EXT         | 59.13 MB  |
+__________________________________________________________________________________________________________________________
+4   CREATE TABLE TEST_CSV_ALL AS SELECT /*+ MONITOR NO_RESULT_CACHE*/* FROM SALES_EXTENDED_EXT               | 60.13 MB  |
+
+#NOTE
+The above table was captured from the ADW Monitored SQL Activity page.  
+Notice that the I/O bytes for text remains unchanged – regardless of the number of columns processed. 
+The parquet queries on the other hand process the columnar source efficiently – only retrieving the columns that were requested by the query.  
+As a result, the parquet query eliminated nearly 80% of the data stored in the file.  
+
+#FINAL SOLUTION
+After examining the data, we now know it looks good and will load it into a table using 
+another DBMS_CLOUD procedure – COPY_DATA.  First, create the table and load it from the source:
+
+CREATE TABLE SALES_EXTENDED (
+    PROD_ID NUMBER,
+    CUST_ID NUMBER,
+    TIME_ID VARCHAR2(30),
+    CHANNEL_ID NUMBER,
+    PROMO_ID NUMBER,
+    QUANTITY_SOLD NUMBER(10,0),
+    AMOUNT_SOLD NUMBER(10,2),
+    GENDER VARCHAR2(1),
+    CITY VARCHAR2(30),
+    STATE_PROVINCE VARCHAR2(40),
+    INCOME_LEVEL VARCHAR2(30)
+   );
+   
+-- Load data<font></font>
+begin
+ dbms_cloud.copy_data(
+    table_name => SALES_EXTENDED',
+    credential_name =>'OBJ_STORE_CRED',
+    file_uri_list =>'https://swiftobjectstorage.<datacenter>.oraclecloud.com/v1/<obj-store-namespace>/<bucket>/sales_extended.parquet',
+    format =>  '{"type":"parquet",  "schema": "first"}'
+ );
+ end;
+ /
+ 
+ #NOTE
+ The data has now been loaded. 
+ There is no mapping between source and target columns required; the procedure will do a column name match. 
+ If a match is not found, the column will be ignored.
+ 
+ 
+
+
+
+
+
+
