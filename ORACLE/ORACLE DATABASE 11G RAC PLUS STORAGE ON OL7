@@ -728,6 +728,9 @@ Configure Oracle Grid Infrastructure for a Cluster ... succeeded
 
 # instaltion sucessfully
 
+#pos install check
+cluvfy stage -post crsinst -n oraclerac11gn1,oraclerac11gn2
+
 
 
   
