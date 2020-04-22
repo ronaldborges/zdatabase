@@ -684,7 +684,9 @@ systemctl status oracle-ohasd
            └─14924 /bin/sh /etc/init.d/init.ohasd run >/dev/null 2>&1 </dev/null
 
 Apr 21 21:23:53 oraclerac11gn1 systemd[1]: Started Oracle High Availability Services.
-
+systemctl enable oracle-ohasd
+Created symlink from /etc/systemd/system/multi-user.target.wants/oracle-ohasd.service to /etc/systemd/system/oracle-ohasd.service.
+Created symlink from /etc/systemd/system/graphical.target.wants/oracle-ohasd.service to /etc/systemd/system/oracle-ohasd.service.
 
 ####################### THE PROBLEM WAS SOLVED ######################################
 
