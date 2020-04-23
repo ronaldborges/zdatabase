@@ -191,11 +191,13 @@ vi /etc/hosts
 # Scan IP´s
 #192.168.1.120 oraclerac11g-scan oraclerac11g-scan.appsdba.info 
 #192.168.1.121 oraclerac11g-scan oraclerac11g-scan.appsdba.info 
+#192.168.1.122 oraclerac11g-scan oraclerac11g-scan.appsdba.info 
 
 #configure resolve name
 vi /etc/racdns
 192.168.1.120 oraclerac11g-scan oraclerac11g-scan.appsdba.info 
 192.168.1.121 oraclerac11g-scan oraclerac11g-scan.appsdba.info 
+192.168.1.122 oraclerac11g-scan oraclerac11g-scan.appsdba.info 
 vi /etc/dnsmasq.conf | grep addn-hosts
 addn-hosts=/etc/racdns
 
