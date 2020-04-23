@@ -156,8 +156,8 @@ chown oracle:oinstall -R /home/oracle
 vi /etc/hosts
 # bridge
 # Public Network - (eth0)
-10.5.150.120 oraclerac19cn1.appsdba.info oraclerac19cn1
-10.5.150.121 oraclerac19cn2.appsdba.info oraclerac19cn2
+192.168.1.120 oraclerac19cn1.appsdba.info oraclerac19cn1
+192.168.1.121 oraclerac19cn2.appsdba.info oraclerac19cn2
 
 # Internal Network
 # Private Interconnect - (eth1)
@@ -165,16 +165,14 @@ vi /etc/hosts
 192.168.0.101 oraclerac19cn2-priv.appsdba.info oraclerac19cn2-priv
 
 # Public Virtual IP (VIP) addresses for - (eth0)
-10.5.150.122 oraclerac19cn1-vip.appsdba.info oraclerac19cn1-vip
-10.5.150.123 oraclerac19cn2-vip.appsdba.info oraclerac19cn2-vip
-
-# Scan IP´s
-#10.5.150.124 oraclerac19c-scan.appsdba.info oraclerac19c-scan
-#10.5.150.125 oraclerac19c-scan.appsdba.info oraclerac19c-scan
+192.168.1.122 oraclerac19cn1-vip.appsdba.info oraclerac19cn1-vip
+192.168.1.123 oraclerac19cn2-vip.appsdba.info oraclerac19cn2-vip
 
 vi /etc/racdns
-10.5.150.124 oraclerac19c-scan.appsdba.info oraclerac19c-scan
-10.5.150.125 oraclerac19c-scan.appsdba.info oraclerac19c-scan
+192.168.1.124 oraclerac19c-scan.appsdba.info oraclerac19c-scan
+192.168.1.125 oraclerac19c-scan.appsdba.info oraclerac19c-scan
+192.168.1.126 oraclerac19c-scan.appsdba.info oraclerac19c-scan
+192.168.1.127 oraclerac19c-scan.appsdba.info oraclerac19c-scan
 vi /etc/dnsmasq.conf | grep addn-hosts
 addn-hosts=/etc/racdns
 
@@ -263,8 +261,8 @@ yum install -y iscsi-initiator-utils gnome-boxes udisks2-iscsi
 
 -- login iscsi
 
-iscsiadm -m discovery -t sendtargets -p 10.5.150.74
-10.5.150.74:3260,1 iqn.2003-01.org.linux-iscsi.fsociety.x8664:sn.99ab4c5406de
+iscsiadm -m discovery -t sendtargets -p 192.168.1.74
+192.168.1.74:3260,1 iqn.2003-01.org.linux-iscsi.fsociety.x8664:sn.99ab4c5406de
 
 cat /etc/iscsi/initiatorname.iscsi
 RACN1 InitiatorName=iqn.1994-05.com.redhat:c42daa2882f
@@ -274,8 +272,8 @@ RACN2 InitiatorName=iqn.1994-05.com.redhat:c42daa2882f
 mv /etc/iscsi/initiatorname.iscsi /var/tmp/initiatorname.iscsi.backup
 echo "InitiatorName=`/sbin/iscsi-iname`" > /etc/iscsi/initiatorname.iscsi
 
-RACN1  iscsiadm -m node -T iqn.2003-01.org.linux-iscsi.fsociety.x8664:sn.4150a462cb3e -p 10.5.150.74 -l
-RACN2  iscsiadm -m node -T iqn.2003-01.org.linux-iscsi.fsociety.x8664:sn.4150a462cb3e -p 10.5.150.74 -l
+RACN1  iscsiadm -m node -T iqn.2003-01.org.linux-iscsi.fsociety.x8664:sn.4150a462cb3e -p 192.168.1.74 -l
+RACN2  iscsiadm -m node -T iqn.2003-01.org.linux-iscsi.fsociety.x8664:sn.4150a462cb3e -p 192.168.1.74 -l
 
 iscsiadm -m node -T iqn.2003-01.org.linux-iscsi.fsociety.x8664:sn.2cd6fdb213d9 -p 192.168.56.1 -o update -n node.startup -v automatic
 
@@ -386,11 +384,6 @@ export DISPLAY=:0.0
 cd /u01/app/19.3/grid
 ./grid_Setup.sh
 
-http://www.appsdba.info/dba/docs/rac/Install_RAC_using_OracleVM_on_OEL5.8_2users.pdf
-https://www.lab128.com/rac12_installation_using_vb/article_text.html
-https://www.lab128.com/rac_installation_using_vb/article_text.html
-https://asanga-pradeep.blogspot.com/2019/04/installing-18c-183-rac-on-rhel-7-with.html
-
 -- After starting or installing follow the steps below always advancing the screens
 
 # screen 1
@@ -452,7 +445,7 @@ Private interfaces are used by Oracle Grid infrastructure for internode traffic.
 +---------------------+-----------------------+-----------------------------+
 | Interface Name      |       Subnet          |       Use for               |
 +---------------------+-----------------------+-----------------------------+
-| enp0s3              |       10.5.150.0      |       Public                |
+| enp0s3              |       192.168.1.0      |       Public                |
 +---------------------+-----------------------+-----------------------------+
 | enp0s8              |       192.168.0.0     |       ASM & Private         |
 +---------------------+-----------------------+-----------------------------+
