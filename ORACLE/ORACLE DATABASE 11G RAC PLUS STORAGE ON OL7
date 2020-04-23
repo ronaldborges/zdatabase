@@ -188,16 +188,17 @@ vi /etc/hosts
 192.168.1.118 oraclerac11gn1-vip.appsdba.info oraclerac11gn1-vip
 192.168.1.119 oraclerac11gn2-vip.appsdba.info oraclerac11gn2-vip
 
-# Scan IP´s
-#192.168.1.120 oraclerac11g-scan oraclerac11g-scan.appsdba.info 
-#192.168.1.121 oraclerac11g-scan oraclerac11g-scan.appsdba.info 
-#192.168.1.122 oraclerac11g-scan oraclerac11g-scan.appsdba.info 
+#NOTE
+It is essential to provide 3 digitization ips or more to successfully install the grid and smooth operation of the round robin
+https://www.oracle.com/technetwork/database/options/clustering/overview/scan-129069.pdf. 
+In this example, 2 interfaces will be started on each node for scans
 
 #configure resolve name
 vi /etc/racdns
 192.168.1.120 oraclerac11g-scan oraclerac11g-scan.appsdba.info 
 192.168.1.121 oraclerac11g-scan oraclerac11g-scan.appsdba.info 
 192.168.1.122 oraclerac11g-scan oraclerac11g-scan.appsdba.info 
+192.168.1.123 oraclerac11g-scan oraclerac11g-scan.appsdba.info
 vi /etc/dnsmasq.conf | grep addn-hosts
 addn-hosts=/etc/racdns
 
