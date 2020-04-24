@@ -1,5 +1,5 @@
 ++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-+   ORACLE DATABASE 11.2.3 G RAC PLUS STORAGE ON OL7   +
++   ORACLE DATABASE 11.2.0.4 G RAC PLUS STORAGE ON OL7   +
 ++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
 
@@ -732,7 +732,218 @@ Configure Oracle Grid Infrastructure for a Cluster ... succeeded
 # instaltion sucessfully
 
 #pos install check
+su - grid
 cluvfy stage -post crsinst -n oraclerac11gn1,oraclerac11gn2
+
+Performing post-checks for cluster services setup
+Checking node reachability...
+Node reachability check passed from node "oraclerac11gn2"
+Checking user equivalence...
+User equivalence check passed for user "grid"
+Checking node connectivity...
+Checking hosts config file...
+Verification of the hosts config file successful
+Check: Node connectivity for interface "enp0s3"
+Node connectivity passed for interface "enp0s3"
+TCP connectivity check passed for subnet "192.168.1.0"
+Check: Node connectivity for interface "enp0s8"
+Node connectivity passed for interface "enp0s8"
+TCP connectivity check passed for subnet "192.168.0.0"
+Checking subnet mask consistency...
+Subnet mask consistency check passed for subnet "192.168.1.0".
+Subnet mask consistency check passed for subnet "192.168.0.0".
+Subnet mask consistency check passed.
+Node connectivity check passed
+Checking multicast communication...
+Checking subnet "192.168.1.0" for multicast communication with multicast group "230.0.1.0"...
+Check of subnet "192.168.1.0" for multicast communication with multicast group "230.0.1.0" passed.
+Checking subnet "192.168.0.0" for multicast communication with multicast group "230.0.1.0"...
+Check of subnet "192.168.0.0" for multicast communication with multicast group "230.0.1.0" passed.
+Check of multicast communication passed.
+Time zone consistency check passed
+Checking Oracle Cluster Voting Disk configuration...
+ASM Running check passed. ASM is running on all specified nodes
+Oracle Cluster Voting Disk configuration check passed
+Checking Cluster manager integrity...
+Checking CSS daemon...
+Oracle Cluster Synchronization Services appear to be online.
+Cluster manager integrity check passed
+UDev attributes check for OCR locations started...
+UDev attributes check passed for OCR locations
+UDev attributes check for Voting Disk locations started...
+UDev attributes check passed for Voting Disk locations
+Default user file creation mask check passed
+Checking cluster integrity...
+Cluster integrity check passed
+Checking OCR integrity...
+Checking the absence of a non-clustered configuration...
+All nodes free of non-clustered, local-only configurations
+ASM Running check passed. ASM is running on all specified nodes
+Checking OCR config file "/etc/oracle/ocr.loc"...
+OCR config file "/etc/oracle/ocr.loc" check successful
+Disk group for ocr location "+DATA" available on all the nodes
+NOTE:
+This check does not verify the integrity of the OCR contents. Execute 'ocrcheck' as a privileged user to verify the contents of OCR.
+OCR integrity check passed
+Checking CRS integrity...
+Clusterware version consistency passed
+CRS integrity check passed
+Checking node application existence...
+Checking existence of VIP node application (required)
+VIP node application check passed
+Checking existence of NETWORK node application (required)
+NETWORK node application check passed
+Checking existence of GSD node application (optional)
+GSD node application is offline on nodes "oraclerac11gn2,oraclerac11gn1"
+Checking existence of ONS node application (optional)
+ONS node application check passed
+Checking Single Client Access Name (SCAN)...
+Checking TCP connectivity to SCAN Listeners...
+TCP connectivity to SCAN Listeners exists on all cluster nodes
+Checking name resolution setup for "oraclerac11g-scan"...
+Checking integrity of name service switch configuration file "/etc/nsswitch.conf" ...
+All nodes have same "hosts" entry defined in file "/etc/nsswitch.conf"
+Check for integrity of name service switch configuration file "/etc/nsswitch.conf" passed
+Verification of SCAN VIP and Listener setup passed
+Checking OLR integrity...
+Checking OLR config file...
+OLR config file check successful
+Checking OLR file attributes...
+OLR file check successful
+WARNING:
+This check does not verify the integrity of the OLR contents. Execute 'ocrcheck -local' as a privileged user to verify the contents of OLR.
+OLR integrity check passed
+User "grid" is not part of "root" group. Check passed
+Checking if Clusterware is installed on all nodes...
+Check of Clusterware install passed
+Checking if CTSS Resource is running on all nodes...
+CTSS resource check passed
+Querying CTSS for time offset on all nodes...
+Query of CTSS for time offset passed
+Check CTSS state started...
+CTSS is in Active state. Proceeding with check of clock time offsets on all nodes...
+Check of clock time offsets passed
+Oracle Cluster Time Synchronization Services check passed
+Checking VIP configuration.
+Checking VIP Subnet configuration.
+Check for VIP Subnet configuration passed.
+Checking VIP reachability
+Check for VIP reachability passed.
+
+Post-check for cluster services setup was successful.
+
+# Install Software database Oracle 11g
+xhost +
+su - oracle
+export DISPLAY=:0.0
+
+#descompress database software
+unzip p13390677_112040_Linux-x86-64_1of7_database.zip
+unzip p13390677_112040_Linux-x86-64_2of7_database.zip
+ls -ltr
+drwxr-xr-x 7 oracle oinstall       4096 Aug 27  2013 database
+vi /home/oracle/database/stage/cvu/cv/admin/cvu_config
+CV_ASSUME_DISTID=OEL6
+
+cd database
+./runInstaller
+
+# screen 1
+
+Dowload software updates for this installation. Software updates consist of recommended updates to the installer system checks,
+PatchSet Updates (PSUs), and other recommended patches.
+
+Select one of the following options:
+( ) Use My Oracle Support credentials for download
+    My Oracle Support user name: _______________________________
+    My Oracle Support password:  _______________________________
+                                                                        Proxy Settings...       Test Connection
+
+ ( ) Use pre-download software updates
+     Location: _______________________________________________________________________________  Browse ...
+
+ (@) Skip software updates
+ 
+# screen 2
+
+Select any of the following install options.
+
+Note: If you want to upgrade an existing Oracle Database 11g Release 2 instance select "Upgrade an existing database" option
+
+  (@) Create and configure a database
+  
+  ( ) Install database software only
+  
+  ( ) Upgrade an existing database
+
+# screen 3
+
+  ( ) Desktop Class
+      Choose this option if you are installing on a laptop or desktop class system. This option includes a starter database and allows
+      minimal configuration
+
+  (@) Server Class
+      Choose this option if you are installing on a server class system, which Oracle defines as a system used in a production data center.
+      This option allows for more advanced configuration options:
+
+# screen 4
+
+   Select the type of database installation you want to perform.
+   
+   ( ) Seçect instance database installation
+   
+   (@) Oracle Real Application Clusters database installation
+   
+   ( ) Oracle RAC One Node database installation
+   
+   Select nodes (in addition to the local node) in the cluster where the installer should install Oracle RAC or Oracle RAC One.
+   
+   +---+----+-------------------------------------------+
+   |   |    | Node Name                                 |
+   +---+----+-------------------------------------------+
+   |[x]| 1  | oraclerac11gn1                            |
+   +---+----+-------------------------------------------+
+   |[x]| 2  | oraclerac11gn2                            |
+   +---+----+-------------------------------------------+
+   SSH Connectivity...         Select All   Deselect All
+   
+# screen 5
+
+    (@) Typical install
+        Perform full Oracle Database installation with basic configuration
+        
+    ( ) Advanced install
+        Allows advanced selections such as different passwords for SYS,SYSMAN,SYSTEM and DBSNMP accounts, database character set,
+        products languages, automated backups, custom installation, and alternative storage options such as Oracle Automatic Storage Management.
+        
+ # screen 6
+     
+     Perform full Database installation with basic configuration.
+     
+     Oracle base: /u01/app/oracle                                                       Browse
+     Software location: /u01/app/oracle/product/11.2/dbhome_1                           Browse
+     Storage location: Oracle Automatic Storage Management
+     Database file location: DATA                                                       Browse
+     ASMSNMP Password: ***********
+     Database edition: Enterprise Edition (4,7GB)
+     OSDBA_Group: dba
+     Global database name: oradbc.appsdba.info
+     Administrative password: ***********
+     Confirm Password: ***********
+     Service Name:
+ 
+#FINISH
+
+
+
+
+  
+
+
+
+
+
+
 
 
 
