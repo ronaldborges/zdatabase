@@ -1,6 +1,6 @@
-+++++++++++++++++++++++++++++++++++
-+       Kubernetes on OL7         +
-+++++++++++++++++++++++++++++++++++
++++++++++++++++++++++++++++++++++
++ SINGLE CLUSTER KUBERNETES OL7 +
++++++++++++++++++++++++++++++++++
 
 #KUBERNETES IS AN OPEN SOURCE PRODUCT USED TO AUTOMATE THE IMPLEMENTATION, DIMENSIONING AND MANAGEMENT OF CONTAINER APPLICATIONS
 
@@ -22,6 +22,7 @@ gpgcheck=1
 enabled=1
 
 #LIST REPOSITORIES
+yum repolist
 Loaded plugins: langpacks, ulninfo
 ol7_UEKR5                                                                                                                                                                                                                                                | 2.5 kB  00:00:00     
 ol7_addons                                                                                                                                                                                                                                               | 2.5 kB  00:00:00     
@@ -191,19 +192,29 @@ as root:
 
   kubeadm-setup.sh join 192.168.1.116:6443 --token 06ewe6.5b8l9qorhwzwbmhn --discovery-token-ca-cert-hash sha256:3f786c0d6c581232c65d6c4d7834ce3f123a2493c2cce1ef3d07f82e6e446637                                                                                                                                     h sha256:3f786c0d6c581232c65d6c4d7834ce3f123a2493c2cce1ef3d07f82e6e446637
 
-#CREATE A USER ORACLE GROUP DOCKER
-adduser -g docker oracle
-passwd oracle
-
 #COPY USER ENVORIMENTS ROOT FILES TO EXECUTE COMMANDS ON KUBERNETES
-su - oracle
 mkdir -p $HOME/.kube
-logout
-cp -i /etc/kubernetes/admin.conf /home/oracle/.kube/config
-chown oracle:docker /home/oracle/.kube/config
-su - oracle
+sudo cp -i /etc/kubernetes/admin.conf $HOME/.kube/config
+sudo chown $(id -u):$(id -g) $HOME/.kube/config
 export KUBECONFIG=$HOME/.kube/config
 echo 'export KUBECONFIG=$HOME/.kube/config' >> $HOME/.bashrc
+
+#VERIFY SERVICE MANAGER 
+
+kubectl get pods -n kube-system
+NAME                                   READY   STATUS     RESTARTS   AGE
+coredns-6d5cc884f4-hqdl8               1/1     Running    0          5m12s
+coredns-6d5cc884f4-z2pfg               1/1     Running    0          2m16s
+etcd-kubemaster                        1/1     Running    0          5m12s
+kube-apiserver-kubemaster              1/1     Running    2          105s
+kube-controller-manager-kubemaster     1/1     Running    1          104s
+kube-flannel-ds-gq9r4                  0/1     Init:0/1   0          32s
+kube-flannel-ds-lnfgr                  1/1     Running    2          5m13s
+kube-proxy-k4c8f                       1/1     Running    0          32s
+kube-proxy-mvmr8                       1/1     Running    0          5m16s
+kube-scheduler-kubemaster              1/1     Running    1          108s
+kubernetes-dashboard-f6b58ff9c-fbxql   1/1     Running    0          5m13s
+
 
 ### CONFIGURE WORKER SERVER ###
 
@@ -327,7 +338,6 @@ NAME          STATUS   ROLES    AGE     VERSION
 kubermaster   Ready    master   48m     v1.12.10+1.0.10.el7
 kuberworker   Ready    <none>   3m57s   v1.12.10+1.0.10.el7
 
-
 kubectl get pods -n kube-system
 NAME                                   READY   STATUS    RESTARTS   AGE
 coredns-6d5cc884f4-xbqr8               1/1     Running   0          50m
@@ -342,8 +352,186 @@ kube-proxy-q2vjc                       1/1     Running   0          50m
 kube-scheduler-kubermaster             1/1     Running   1          47m
 kubernetes-dashboard-f6b58ff9c-r7vmz   1/1     Running   0          50m
 
+#TOKEN LIST
+kubeadm token list
+TOKEN                     TTL       EXPIRES                     USAGES                   DESCRIPTION   EXTRA GROUPS
+7kd319.bm6eo2n3w8ca8wfo   23h       2020-04-27T18:56:04-03:00   authentication,signing   <none>        system:bootstrappers:kubeadm:default-node-token
+
+#NOTE
+By default, tokens expire after 24 hours. 
+If you are joining a node to the cluster after the current token has expired, 
+you can create a new token by running the following command on the master node:
+
+kubeadm token create
+I0426 19:05:08.563508    5600 version.go:236] remote version is much newer: v1.18.2; falling back to: stable-1.12
+l3xh3w.r5aitpw45gey52pl
+
+#LIST NODES
+kubectl get nodes
+NAME         STATUS   ROLES    AGE     VERSION
+kubemaster   Ready    master   10m     v1.12.10+1.0.11.el7
+kubework     Ready    <none>   5m17s   v1.12.10+1.0.11.el7
+
 #YOUR CLUSTER IS UP AND RUNNING 
 #SEE THAT SOME CLOUD NATIVE SERVICE ARE ALREADY DELIVERED BY DEFAULT BY ORACLE (CoreDNS, Flannel)
+
+#STOP KUBERNETS 
+#RUN ON MASTER AND WORKER
+
+kubeadm-setup.sh stop
+Stopping kubelet now ...
+Stopping containers now ...
+
+#RUN BACKUP SINGLE MASTER KLUSTER
+
+kubeadm-setup.sh backup /backups
+Creating backup at directory /backup ...
+Using container-registry.oracle.com/kubernetes/etcd:3.2.24-1
+Checking if container-registry.oracle.com/kubernetes/etcd:3.2.24-1 is available
+Trying to pull repository container-registry.oracle.com/kubernetes/etcd ...
+3.2.24-1: Pulling from container-registry.oracle.com/kubernetes/etcd
+Digest: sha256:6d802fffc0bbf18d53e718eb860cac9a957b99abd710d9a80634b491b3786516
+Status: Image is up to date for container-registry.oracle.com/kubernetes/etcd:3.2.24-1
+container-registry.oracle.com/kubernetes/etcd:3.2.24-1
+f9b3323562e5236d5963e83a4e76ecb735697d4e1cfb901ca6744d1b0e540c24  /var/run/kubeadm/backup/etcd-backup-1587939009.tar
+7a88d4f7fb10eeac506f8b77dba6b9a0d25a0bbdc4934491c48f6cfe26f45966  /var/run/kubeadm/backup/k8s-master-0-1587939009.tar
+Backup is successfully stored at /backup/master-backup-v1.12.10-1-0-1587939009.tar ...
+You can restart your cluster now by doing:
+# kubeadm-setup.sh restart
+
+ls -ltrh /backup/
+-rw-r--r-- 1 root root 78M Apr 26 19:10 master-backup-v1.12.10-1-0-1587939009.tar
+
+#RESTORE THE CLUSTER CONFIGURATION AND STATE
+
+yum install kubeadm kubectl kubelet
+
+kubeadm-setup.sh restore /backup/master-backup-v1.12.10-1-0-1587939009.tar
+
+kubeadm-setup.sh restart
+
+sudo cp /etc/kubernetes/admin.conf $HOME/ 
+$ sudo chown $(id -u):$(id -g) $HOME/admin.conf
+$ export KUBECONFIG=$HOME/admin.conf
+echo 'export KUBECONFIG=$HOME/admin.conf' >> $HOME/.bashrc
+
+kubectl get nodes
+NAME         STATUS   ROLES    AGE     VERSION
+kubemaster   Ready    master   10m     v1.12.10+1.0.11.el7
+kubework     Ready    <none>   5m17s   v1.12.10+1.0.11.el7
+
+#REMOVE WORKER NODE FROM THE CLUSTER
+#ON WORKER
+kubeadm-setup.sh down
+Stopping kubelet now ...
+Stopping containers now ...
+[root@kubework ~]# kubeadm-setup.sh down
+[WARNING] This action will RESET this node !!!!
+          Since this is a worker node, please also run the following on the master (if not already done)
+          # kubectl delete node kubework
+          Please select 1 (continue) or 2 (abort) :
+1) continue
+2) abort
+#? 1
+#? 1
+[reset] WARNING: changes made to this host by 'kubeadm init' or 'kubeadm join' will be reverted.
+[reset] are you sure you want to proceed? [y/N]: [preflight] running pre-flight checks
+[reset] stopping the kubelet service
+[reset] unmounting mounted directories in "/var/lib/kubelet"
+[reset] no etcd manifest found in "/etc/kubernetes/manifests/etcd.yaml". Assuming external etcd
+[reset] please manually reset etcd to prevent further issues
+[reset] deleting contents of stateful directories: [/var/lib/kubelet /etc/cni/net.d /var/lib/dockershim /var/run/kubernetes]
+[reset] deleting contents of config directories: [/etc/kubernetes/manifests /etc/kubernetes/pki]
+[reset] deleting files: [/etc/kubernetes/admin.conf /etc/kubernetes/kubelet.conf /etc/kubernetes/bootstrap-kubelet.conf /etc/kubernetes/controller-manager.conf /etc/kubernetes/scheduler.conf]
+deleting flannel.1 ip link ...
+removing /etc/kubernetes directory ...
+
+#ON MASTER
+kubectl delete node kubework
+node "kubework" deleted
+
+#RUN APPLICATION IN A POD
+kubectl create deployment --image nginx hello-world
+deployment.apps/hello-world created
+kubectl get pods
+NAME                           READY   STATUS    RESTARTS   AGE
+hello-world-5f55779987-kh5dr   0/1     Pending   0          17s
+
+kubectl describe pods
+Name:               hello-world-5f55779987-kh5dr
+Namespace:          default
+Priority:           0
+PriorityClassName:  <none>
+Node:               <none>
+Labels:             app=hello-world
+                    pod-template-hash=5f55779987
+Annotations:        <none>
+Status:             Pending
+IP:
+Controlled By:      ReplicaSet/hello-world-5f55779987
+Containers:
+  nginx:
+    Image:        nginx
+    Port:         <none>
+    Host Port:    <none>
+    Environment:  <none>
+    Mounts:
+      /var/run/secrets/kubernetes.io/serviceaccount from default-token-ljsq4 (ro)
+Conditions:
+  Type           Status
+  PodScheduled   False
+Volumes:
+  default-token-ljsq4:
+    Type:        Secret (a volume populated by a Secret)
+    SecretName:  default-token-ljsq4
+    Optional:    false
+QoS Class:       BestEffort
+Node-Selectors:  <none>
+Tolerations:     node.kubernetes.io/not-ready:NoExecute for 300s
+                 node.kubernetes.io/unreachable:NoExecute for 300s
+Events:
+  Type     Reason            Age                From               Message
+  ----     ------            ----               ----               -------
+  Warning  FailedScheduling  52s (x2 over 52s)  default-scheduler  0/1 nodes are available: 1 node(s) had taints that the pod didn't tolerate.
+
+#SCALE POD DEPLOYMENT
+kubectl scale deployment --replicas=2 hello-world
+deployment.extensions/hello-world scaled
+
+#LIST PODS
+kubectl get pods
+NAME                           READY   STATUS    RESTARTS   AGE
+hello-world-5f55779987-jpxjw   0/1     Pending   0          23s
+hello-world-5f55779987-kh5dr   0/1     Pending   0          96s
+
+#EXPOSE A SERVICE OBJECT FOR YOUR APPLICATION
+
+kubectl expose deployment hello-world --port 80 --type=LoadBalancer
+service/hello-world exposed
+
+kubectl get services
+NAME          TYPE           CLUSTER-IP     EXTERNAL-IP   PORT(S)        AGE
+hello-world   LoadBalancer   10.99.39.243   <pending>     80:30799/TCP   4s
+kubernetes    ClusterIP      10.96.0.1      <none>        443/TCP        28m
+
+#DELETE SERVICE
+kubectl delete services hello-world
+service "hello-world" deleted
+
+#DELETE DEPLOYMENT
+kubectl delete deployment hello-world
+deployment.extensions "hello-world" deleted
+
+
+
+
+
+
+
+
+
+
+
 
 
 
