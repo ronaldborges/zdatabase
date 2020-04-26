@@ -1,0 +1,70 @@
++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
++  ORACLE AUTONOMOUS DATABASE PARTITIONED EXTERNAL TABLES AND HYBRID PARTITIONED TABLES +
++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+
+#NOTE
+Only use of DBMS_CLOUD syntax is supported
+
+#STORE YOUR OBJECT STORE CREDENTIALS
+BEGIN
+  DBMS_CLOUD.CREATE_CREDENTIAL(
+    credential_name => 'DEF_CRED_NAME',
+    username => 'adwc_user@example.com',
+    password => 'password' );
+END;
+/
+
+#EXAMPLE
+
+BEGIN DBMS_CLOUD.CREATE_EXTERNAL_PART_TABLE(
+table_name =>'PET1’,
+credential_name =>'DEF_CRED_NAME’,
+format => json_object('delimiter' value ‘,’,
+'recorddelimiter' value 'newline’,
+'characterset' value 'us7ascii’),
+column_list => 'col1 number, col2 number, col3 number’partitioning_clause => 'partition by range (col1) 
+(partition p1 values less than (1000) location (
+‘https://swiftobjectstorage.us-ashburn-1 ... /file_01.txt') , 
+partition p2 values less than (2000) location (
+'https://swiftobjectstorage.us-ashburn-1 ... /file_02.txt'') , 
+partition p3 values less than (3000) location (
+'https://swiftobjectstorage.us-ashburn-1 ... /file_03.txt'') )
+)
+END;
+/
+
+#HYBRID PARTITIONED TABLES
+
+#NOTE
+Single table contains both internal (RDBMS) and external partitions
+• Full functional support, such as partial indexing, partial read only, constraints, etc.
+
+Partition maintenance for information lifecycle management
+• Currently limited support
+• Enhancements in progress
+
+Data in any object store can be accessed
+• Oracle Object Store, AWS S3 or Azure 
+
+Explicit authentication or pre-authenticated URIs
+(Admittedly not a specific Partitioning feature,but cool nevertheless)
+
+#EXAMPLE
+
+BEGIN DBMS_CLOUD.CREATE_HYBRID_PART_TABLE(
+table_name =>'HPT1’,
+credential_name =>'OBJ_STORE_CRED’,
+format => json_object('delimiter' value ',', ‘
+recorddelimiter' value 'newline', ‘
+characterset' value 'us7ascii’),
+column_list => 'col1 number, col2 number, col3 number’
+partitioning_clause => 'partition by range (col1)
+(partition p1 values less than (1000) external location (
+'https://swiftobjectstorage.us-ashburn-1 .../file_01.txt') ,
+partition p2 values less than (2000) external location (
+‘https://swiftobjectstorage.us-ashburn-1 .../file_02.txt') ,
+partition p3 values less than (3000) ) )
+END;
+
+
+
