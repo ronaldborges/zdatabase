@@ -101,4 +101,15 @@ and provide your user login and Swift auth token. Curl with GET:
 curl -O -v -X GET -u 'user1@example.com:auth_token' \
    https://swiftobjectstorage.us-ashburn-1.oraclecloud.com/v1/namespace-string/bucketname/exp01.dmp
    
-     
+#ACCESS LOG FILES FOR DATA PUMP EXPORT
+
+BEGIN
+  DBMS_CLOUD.PUT_OBJECT(
+    credential_name => 'DEF_CRED_NAME',
+    object_uri => 'https://objectstorage.us-ashburn-1.oraclecloud.com/n/namespace-string/b/bucketname/o/import.log',
+    directory_name  => 'DATA_PUMP_DIR',
+    file_name => 'export.log');
+END;
+/
+
+
