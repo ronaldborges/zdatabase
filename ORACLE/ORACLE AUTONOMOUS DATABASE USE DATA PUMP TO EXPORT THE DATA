@@ -1,6 +1,6 @@
-++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-+  ORACLE AUTONOMOUS DATABASE USE DATA PUMP TO EXPORT THE DATA +
-++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
++ ORACLE AUTONOMOUS DATABASE USE DATA PUMP TO EXPORT THE DATA +
++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
 #MAKE DUMP FILE COM EXPDP
 
