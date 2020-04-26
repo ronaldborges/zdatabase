@@ -66,5 +66,26 @@ partition p2 values less than (2000) external location (
 partition p3 values less than (3000) ) )
 END;
 
+#VALIDATE EXTERNAL PARTITION TABLE
+
+BEGIN
+  DBMS_CLOUD.VALIDATE_EXTERNAL_PART_TABLE (
+     table_name => 'PET1',
+     rowcount => 100 
+     stop_on_error => FALSE );
+END; 
+/
+
+
+#VALIDATE HYBRID PARTITIONED TABLES
+
+BEGIN 
+  DBMS_CLOUD.VALIDATE_HYBRID_PART_TABLE (
+     table_name => 'HPT1',
+     rowcount => 100 
+     stop_on_error => FALSE );
+END; 
+/
+
 
 
