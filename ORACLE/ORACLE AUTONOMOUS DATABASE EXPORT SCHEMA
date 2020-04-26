@@ -1,0 +1,104 @@
+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
++  ORACLE AUTONOMOUS DATABASE USE DATA PUMP TO EXPORT THE DATA +
+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+
+#MAKE DUMP FILE COM EXPDP
+
+expdp sales/password@ADWC1_high 
+directory=data_pump_dir 
+dumpfile=exp%U.dmp 
+parallel=16
+encryption_pwd_prompt=yes
+filesize=1G
+logfile=export.log
+
+#LIST FILES
+SELECT * FROM DBMS_CLOUD.LIST_FILES('DATA_PUMP_DIR');
+
+OBJECT_NAME                 BYTES  CHECKSUM                   CREATED          LAST_MODIFIED  
+---------------------- ---------- ----–---- –------------------------–----- --------------------
+exp01.dmp                   12288               12-NOV-19 06.10.47.0 PM GMT       12-NOV-19...
+exp02.dmp                    8192               12-NOV-19 06.10.48.0 PM GMT       12-NOV-19...
+exp03.dmp                 1171456               12-NOV-19 06.10.48.0 PM GMT       12-NOV-19...
+exp04.dmp                  348160               12-NOV-19 06.10.48.0 PM GMT       12-NOV-19...
+export.log                   1663               12-NOV-19 06.10.50.0 PM GMT       12-NOV-19...
+
+#CREATE CREDENTIALS
+
+BEGIN
+  DBMS_CLOUD.CREATE_CREDENTIAL(
+    credential_name => 'DEF_CRED_NAME',
+    username => 'adwc_user@example.com',
+    password => 'password'
+  );
+END;
+/
+
+#MOVE DUMP FILE TO YOUR CLOUD OBJECT STORAGE
+
+BEGIN
+   DBMS_CLOUD.PUT_OBJECT(credential_name => 'DEF_CRED_NAME',
+     object_uri => 'https://objectstorage.us-phoenix-1.oraclecloud.com/n/namespace-string/b/bucketname/o/exp01.dmp',
+     directory_name => 'DATA_PUMP_DIR',
+     file_name => 'exp01.dmp');
+   DBMS_CLOUD.PUT_OBJECT(credential_name => 'DEF_CRED_NAME',
+     object_uri => 'https://objectstorage.us-phoenix-1.oraclecloud.com/n/namespace-string/b/bucketname/o/exp02.dmp',
+     directory_name => 'DATA_PUMP_DIR',
+     file_name => 'exp02.dmp');
+   DBMS_CLOUD.PUT_OBJECT(credential_name => 'DEF_CRED_NAME',
+     object_uri => 'https://objectstorage.us-phoenix-1.oraclecloud.com/n/namespace-string/b/bucketname/o/exp03.dmp',
+     directory_name => 'DATA_PUMP_DIR',
+     file_name => 'exp03.dmp');
+   DBMS_CLOUD.PUT_OBJECT(credential_name => 'DEF_CRED_NAME',
+     object_uri => 'https://objectstorage.us-phoenix-1.oraclecloud.com/n/namespace-string/b/bucketname/o/exp04.dmp',
+     directory_name => 'DATA_PUMP_DIR',
+     file_name => 'exp04.dmp');
+END;
+/
+
+#USE ORACLE DATA PUMP TO EXPORT DATA TO OBJECT STORE (VERSION 19.7 OR LATER)
+
+#CREATE CREDENTIALS
+
+BEGIN
+  DBMS_CLOUD.CREATE_CREDENTIAL(
+    credential_name => 'DEF_CRED_NAME',
+    username => 'user1@example.com',
+    password => 'password'
+  );
+END;
+/
+
+#EXPORT DUMP FILE WITH PARAMETER CREDENTIAL
+
+expdp admin/password@ADWC1_high \
+filesize=5GB \
+credential=def_cred_name \
+dumpfile=https://objectstorage.us-ashburn-1.oraclecloud.com/n/namespace-string/b/bucketname/o/exp%U.dmp \
+parallel=16 \
+encryption_pwd_prompt=yes \
+logfile=export.log \
+directory=data_pump_dir
+
+#NOTE 
+This example shows the recommended parameters for exporting from Autonomous Data Warehouse. 
+For these expdp parameters, note the following:
+
+* The maximum filesize parameter value is 10000MB for Oracle Cloud Infrastructure Object Storage exports.
+* The maximum filesize parameter value is 20GB for Oracle Cloud Infrastructure Object Storage Classic exports.
+* If the specified filesize is too large, the export shows the error message:
+ORA-17500: ODM err:ODM HTTP Request Entity Too Large
+* The directory parameter specifies the directory data_pump_dir for the specified log file, export.log. 
+  See Access Log Files for Data Pump Export for more information.
+  
+Oracle Data Pump divides each dump file into smaller chunks for faster uploads. 
+Downloading the zero byte dump file from the console or Oracle Cloud Infrastructure CLI does not give you the full dump file. 
+To download the dump files from the Object Store, use a tool that supports Swift such as curl, 
+and provide your user login and Swift auth token. Curl with GET:  
+
+#EXAMPLE
+
+curl -O -v -X GET -u 'user1@example.com:auth_token' \
+   https://swiftobjectstorage.us-ashburn-1.oraclecloud.com/v1/namespace-string/bucketname/exp01.dmp
+   
+     
