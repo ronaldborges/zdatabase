@@ -25,6 +25,21 @@ SELECT * FROM DBMS_CLOUD.list_files('ROOT_DIR');
 
 #NOTE
 Use the database DROP DIRECTORY command to drop a directory object. 
+The DROP DIRECTORY command does not delete files in the directory. 
+If you want to delete the directory and the files in the directory, 
+first use the procedure DBMS_CLOUD.DELETE_FILE to delete the files. See DELETE_FILE Procedure for more information.
+To drop a directory, you must have the DROP ANY DIRECTORY system privilege.
+
+DROP DIRECTORY staging;
+
+#NOTE
+Use the function DBMS_CLOUD.LIST_FILES to list the contents of a directory. 
+
+SELECT * FROM DBMS_CLOUD.LIST_FILES('STAGE');
+
+
+
+
 
 
 
