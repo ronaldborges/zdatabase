@@ -1,0 +1,32 @@
+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
++  ORACLE AUTONOMOUS DATABASE CREATE AND DROP DIRECTORY  +
+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+
+#NOTE
+CREATE DIRECTORY creates the database directory object and also creates the file system directory if it does not already exist
+To add a directory, you must have the CREATE ANY DIRECTORY system privilege.
+
+CREATE DIRECTORY staging AS 'stage';
+
+#NOTE
+You can also create subdirectories. 
+
+CREATE DIRECTORY sales_staging AS 'stage/sales';
+
+#NOTE
+You can create a directory in the root file system to see all the files with the following commands:
+
+CREATE OR REPLACE DIRECTORY ROOT_DIR AS '';
+
+#NOTE
+After you create the ROOT_DIR directory, use the following command to list all files: 
+
+SELECT * FROM DBMS_CLOUD.list_files('ROOT_DIR');
+
+#NOTE
+Use the database DROP DIRECTORY command to drop a directory object. 
+
+
+
+
+
