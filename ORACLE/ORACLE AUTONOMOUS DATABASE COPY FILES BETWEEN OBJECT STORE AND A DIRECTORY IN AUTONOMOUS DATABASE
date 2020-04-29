@@ -1,0 +1,16 @@
++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
++ ORACLE AUTONOMOUS DATABASE COPY FILES BETWEEN OBJECT STORE AND A DIRECTORY IN AUTONOMOUS DATABASE +
++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+
+#NOTE
+Use the procedure DBMS_CLOUD.PUT_OBJECT to copy a file from a directory to Object Store. 
+Use the procedure DBMS_CLOUD.GET_OBJECT to copy a file from Object Store to a directory. 
+
+BEGIN
+   DBMS_CLOUD.GET_OBJECT(
+   credential_name => 'DEF_CRED_NAME',
+   object_uri => 'https://objectstorage.usphoenix-1.oraclecloud.com/n/namespace-string/b/bucketname/o/cwallet.sso',
+   directory_name => 'STAGE');
+END;
+/
+
