@@ -1,0 +1,92 @@
++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
++ ORACLE AUTONOMOUS DATABASE SENDING MAIL WITH EMAIL DELIVERY +
++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+
+#NOTE
+The only supported email provider is Oracle Cloud Infrastructure Email Delivery service.
+
+#IDENTIFY YOUR SMTP CONNECTION ENDPOINT FOR EMAIL DELIVERY
+You may need to subscribe to additional Oracle Cloud Infrastructure regions if Email Delivery is not available in your current region.
+For example, select one of the following for the SMTP connection endpoint:
+
+smtp.us-phoenix-1.oraclecloud.com
+smtp.us-ashburn-1.oraclecloud.com
+smtp.email.uk-london-1.oci.oraclecloud.com
+smtp.email.eu-frankfurt-1.oci.oraclecloud.com
+
+#GENERATE SMTP CREDENTIALS FOR EMAIL DELIVERY
+UTL_SMTP uses credentials to authenticate with Email Delivery servers when you send email.
+See Generate SMTP Credentials for a User for more information.
+
+#CREATE AN APPROVED SENDER FOR EMAIL DELIVERY
+Complete this step for all email addresses you use as the "From" with UTL_SMTP.MAIL.
+See Managing Approved Senders for more information.
+
+#ALLOW SMTP ACCESS FOR ADMIN USER BY APPENDING AN ACCESS CONTROL ENTRY (ACE).
+BEGIN
+  -- Allow SMTP access for user ADMIN
+  DBMS_NETWORK_ACL_ADMIN.APPEND_HOST_ACE(
+    host => ’www.us.example.com’,
+    lower_port => 587,
+    upper_port => 587,
+    ace => xs$ace_type(privilege_list => xs$name_list('SMTP'),
+                       principal_name => 'ADMIN',
+                       principal_type => xs_acl.ptype_db));
+END;
+/
+
+#CREATE A PL/SQL procedure to send email.
+For example, see the sample code shown in SMTP Send Mail Sample Code.
+
+CREATE OR REPLACE PROCEDURE SEND_MAIL (
+  msg_to varchar2,
+  msg_subject varchar2,
+  msg_text varchar2 ) 
+IS
+
+  mail_conn utl_smtp.connection;
+  username varchar2(1000):= 'ocid1.user.oc1.username';
+  passwd varchar2(50):= 'password';
+  msg_from varchar2(50) := 'adam@example.com';
+  mailhost VARCHAR2(50) := 'smtp.us-ashburn-1.oraclecloud.com';
+
+BEGIN
+  mail_conn := UTL_smtp.open_connection(mailhost, 587);
+  utl_smtp.starttls(mail_conn);
+  
+  UTL_SMTP.AUTH(mail_conn, username, passwd, schemes => 'PLAIN');
+  
+  utl_smtp.mail(mail_conn, msg_from);
+  utl_smtp.rcpt(mail_conn, msg_to);
+  
+  UTL_smtp.open_data(mail_conn);
+ 
+  UTL_SMTP.write_data(mail_conn, 'Date: ' || TO_CHAR(SYSDATE, 'DD-MON-YYYY HH24:MI:SS') || UTL_TCP.crlf);
+  UTL_SMTP.write_data(mail_conn, 'To: ' || msg_to || UTL_TCP.crlf);
+  UTL_SMTP.write_data(mail_conn, 'From: ' || msg_from || UTL_TCP.crlf);
+  UTL_SMTP.write_data(mail_conn, 'Subject: ' || msg_subject || UTL_TCP.crlf);
+  UTL_SMTP.write_data(mail_conn, 'Reply-To: ' || msg_to || UTL_TCP.crlf || UTL_TCP.crlf);
+  UTL_SMTP.write_data(mail_conn, msg_text || UTL_TCP.crlf || UTL_TCP.crlf);
+  
+  UTL_smtp.close_data(mail_conn);
+  UTL_smtp.quit(mail_conn);
+
+EXCEPTION
+  WHEN UTL_smtp.transient_error OR UTL_smtp.permanent_error THEN
+    UTL_smtp.quit(mail_conn);
+    dbms_output.put_line(sqlerrm);
+  WHEN OTHERS THEN
+    UTL_smtp.quit(mail_conn);
+    dbms_output.put_line(sqlerrm);
+END;
+/
+
+#SEND A TESTE EMAIL USING THE PL/SQL PROCEDURE YOU CREATED
+
+execute send_mail('admindba@example.com', 'Email from Oracle Autonomous Database', 'Sent using UTL_SMTP');
+
+
+
+
+
+
