@@ -1,6 +1,6 @@
-++++++++++++++++++++++++++++
-+ ZOS MASTER THE MAINFRAME +
-++++++++++++++++++++++++++++
++++++++++++++++++++++++++++++++++++
++ ZOS MASTER THE MAINFRAME CHL 01 +
++++++++++++++++++++++++++++++++++++
 
 #Required Workstation Software Preparation
 yum isntall x3270-text x3270-x11 x3270
