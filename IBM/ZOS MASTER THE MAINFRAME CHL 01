@@ -32,10 +32,10 @@ DIGITE ENTER
  1  View          	 	Display source data or listings         	Time. . . : 08:26   
  2  Edit          		Create or change source data            	Terminal. : 3278    
  3  Utilities     		Perform utility functions               	Screen. . : 1       
- 4  Foreground  	    Interactive language processing         	Language. : ENGLISH 
+ 4  Foreground  	    Interactive language processing         	   Language. : ENGLISH 
  5  Batch         		Submit job for language processing      	Appl ID . : ISR     
  6  Command    	      Enter TSO or Workstation commands         TSO logon : DBPROCCG
- 7  Dialog Test  	    Perform dialog testing                  	TSO prefix: Z#####  
+ 7  Dialog Test  	    Perform dialog testing                  	   TSO prefix: Z#####  
  8  LM Facility   	  Library administrator functions         	System ID : S0W1    
  9  IBM Products  	  IBM program development products        	MVS acct. : FB3     
  10 SCLM          	  SW Configuration Library Manager        	Release . : ISPF 7.3
@@ -92,13 +92,13 @@ ENTER
     V 	Display VTOC information           	PV 	Print VTOC information       
                                                                              
  Enter one or both of the parameters below:                                  
-    Dsname Level . . . Z#####_____________________________________________________________________                                                    
+    Dsname Level   . . . Z#####_____________________________________________________________________                                                    
     Volume serial    . . ___________________________________________________________________________                                                       
                                                                              
  Data set list options
-    Initial View                 	Enter "/" to select option                  
+    Initial View             Enter "/" to select option                  
     1  1. Volume                 	/  	Confirm Data Set Delete                  
-       2. Space                   /  	Confirm Member Delete                    
+       2. Space                     /  	Confirm Member Delete                    
        3. Attrib                 	/  	Include Additional Qualifiers            
        4. Total                  	/  	Display Catalog Name                     
                                     		Display Total Tracks                     
@@ -129,7 +129,7 @@ ENTER
           Z#####.PDS.DATA                                                		MTM003 
           Z#####.SEQ.DATA                                                		MTM003 
           Z#####.S0W1.ISPF.ISPPROF                                       		MTM001 
-          Z#####.S0W1.SPFLOG1.LIST                                       	  VPWRKA 
+          Z#####.S0W1.SPFLOG1.LIST                                       	   VPWRKA 
  ***************************** End of Data Set list ***************************************************************************************
                                                                                                                                                                                                                 
   F1=Help    F2=Split   F3=Exit    F5=Rfind   F7=Up      F8=Down    F9=Swap  F10=Left   F11=Right  F12=Cancel                                               
