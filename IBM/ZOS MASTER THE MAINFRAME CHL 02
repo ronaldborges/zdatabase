@@ -1,0 +1,116 @@
++++++++++++++++++++++++++++++++++++
++ ZOS MASTER THE MAINFRAME CHL 02 +
++++++++++++++++++++++++++++++++++++
+
+#NOTE
+SDSF is a panel driven interface
+SDSF is used frequently throughout the contest
+Familiarity with SDSF is needed to complete challenge #02 and future challenges
+
+#NOTE
+run command: sd 
+to open System Display and Search Facility (SDSF) 
+
+   Menu  Utilities  Compilers  Options  Status  Help                            
+ ------------------------------------------------------------------------------ 
+                            ISPF Primary Option Menu                            
+ Option ===> sd________________________________________________________________ 
+                                            More:     +                         
+ 0  Settings      Terminal and user parameters            User ID . : Z58359    
+ 1  View          Display source data or listings         Time. . . : 21:11     
+ 2  Edit          Create or change source data            Terminal. : 3278      
+ 3  Utilities     Perform utility functions               Screen. . : 1         
+ 4  Foreground    Interactive language processing         Language. : ENGLISH   
+ 5  Batch         Submit job for language processing      Appl ID . : ISR       
+ 6  Command       Enter TSO or Workstation commands       TSO logon : DBPROCCG  
+ 7  Dialog Test   Perform dialog testing                  TSO prefix: Z58359    
+ 8  LM Facility   Library administrator functions         System ID : S0W1      
+ 9  IBM Products  IBM program development products        MVS acct. : FB3       
+ 10 SCLM          SW Configuration Library Manager        Release . : ISPF 7.3  
+ 11 Workplace     ISPF Object/Action Workplace                                  
+                                                                                
+                  ------ Other Install Products ------                          
+ FA IDI           Fault Analyzer 13.1.0                                         
+  D Debug Tool  Debug Tool Utility V14.1                                        
+ SD SDSF          System Display and Search Facility                            
+ IP IPCS          Inter Problem Control Facility                                
+ IS ISMF          Inter Storage Management Facility                             
+ SM SMP/E         SMP/E and CBIPO Dialogs                                       
+ HC HCD           HW Configuration Definition Dialog                            
+  R RACF          Resource Access Control Facility                              
+  S DFSORT        Data Facility Sort                                            
+ OE OEDIT         OpenEdition MVS Edit files                                    
+ OB OBROWSE       OpenEdition MVS Browse files                                  
+ OS OSHELL        OpenEdition MVS ISPF Shell                                    
+ BR READ          BookManager READ/MVS                                          
+ BB BUILD         BookManager BUILD/MVS                                         
+ BI READ INDEX    BookManager Index Utility                                     
+ DA DXT ADMIN     Invoke DXT Administrative Dialogs                             
+ DE DXT END USER  Invoke DXT End User Dialogs                                   
+ DU MVS/DITTO     MVS/DITTO Utility                                             
+ IN INSPECT       INSPECT for C/370 and PL/I                                    
+ D2 DB2I          Perform DB2 Interactive functions                             
+ PM DB2PM         DATABASE 2 Performance Monitor                                
+ MQ MQ            MQ 9.0.1 operations and control panels                        
+  F1=Help      F2=Split     F3=Exit      F7=Backward  F8=Forward   F9=Swap      
+ F10=Actions  F12=Cancel                                                           
+   
+#NOTE
+Run command: prefix * ; owner z##### ; st 
+to display status of all jobs owned by your ID
+
+   Display  Filter  View  Print  Options  Search  Help                         
+ ------------------------------------------------------------------------------
+ SDSF MENU V2R3M0    SVSCPLEX  S0W1                     LINE 1-38 (49)         
+ COMMAND INPUT ===> prefix * ; owner z##### ; st        SCROLL ===> PAGE
+ NP   NAME     Description              Group    Status                        
+      DA       Active users             Jobs                                   
+      I        Input Queue              Jobs                                   
+      O        Output Queue             Output                                 
+      H        Held output Queue        Output                                 
+      ST       Status of jobs           Jobs                                   
+      JG       Job groups               JES                                    
+      SYM      System symbols           System                                 
+      LOG      System log               Log                                    
+      SR       System requests          Log                                    
+      MAS      Members in the MAS       JES                                    
+      JC       Job classes              JES                                    
+      SE       Scheduling environments  WLM                                    
+      RES      WLM resources            WLM                                    
+      ENC      Enclaves                 WLM                                    
+      PS       Processes                OMVS                                   
+      SYS      System information       System                                 
+      ENQ      Enqueues                 System                                 
+      DYNX     Dynamic exits            System                                 
+      AS       Address space memory     Jobs                                   
+      INIT     Initiators               JES                                    
+      PR       Printers                 JES                                    
+      PUN      Punches                  JES                                    
+      RDR      Readers                  JES                                    
+      LINE     Lines                    Network                                
+      NODE     Nodes                    Network                                
+      SO       Spool offload            JES                                    
+      SP       Spool volumes            JES                                    
+      NS       Network servers          Network                                
+┌─────────────────────────────────────────────┐                                
+│ Licensed Materials - Property of IBM        │                                
+│ 5650-ZOS                                    │                                
+│ Copyright IBM Corp. 1981, 2017.             │                                
+│ Copyright Rocket Software, Inc. 2015, 2017. │                                
+│ US Government Users Restricted Rights -     │                                
+│ Use, duplication or disclosure restricted   │                                
+│ by GSA ADP Schedule Contract with IBM Corp. │                                
+└─────────────────────────────────────────────┘     5=IFIND     6=BOOK         
+ PF 7=UP        8=DOWN      9=SWAP     10=LEFT     11=RIGHT    12=RETRIEVE     
+
+   Display  Filter  View  Print  Options  Search  Help                         
+ ------------------------------------------------------------------------------
+ SDSF STATUS DISPLAY ALL CLASSES                        LINE 1-2 (2)           
+ COMMAND INPUT ===>                                            SCROLL ===> PAGE
+ NP   JOBNAME  JobID    Owner    Prty Queue      C  Pos  SAff  ASys Status     
+      Z58359   TSU02130 Z58359     15 EXECUTION          S0W1  S0W1            
+      Z58359DA JOB02141 Z58359      1 PRINT      A  1150      
+      
+#NOTE 
+run command: tso submit 'zos.public.jcl(pgm01a)' 
+to submit a background job to be processed
