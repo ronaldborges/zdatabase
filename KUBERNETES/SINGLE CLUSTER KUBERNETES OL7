@@ -522,8 +522,47 @@ service "hello-world" deleted
 kubectl delete deployment hello-world
 deployment.extensions "hello-world" deleted
 
+#PROXY ACCESS
+#START PROXY
+kubectl proxy
+systemctl enable --now kubectl-proxy
 
+#GET TOKEN
+kubectl -n kube-system describe $(kubectl -n kube-system get secret -n kube-system -o name | grep namespace) | grep token:
+token:      eyJhbGciOiJSUzI1NiIsImtpZCI6IiJ9.eyJpc3MiOiJrdWJlcm5ldGVzL3NlcnZpY2VhY2NvdW50Iiwia3ViZXJuZXRlcy5pby9zZXJ2aWNlYWNjb3VudC9uYW1lc3BhY2UiOiJrdWJlLXN5c3RlbSIsImt1YmVybmV0ZXMuaW8vc2VydmljZWFjY291bnQvc2VjcmV0Lm5hbWUiOiJuYW1lc3BhY2UtY29udHJvbGxlci10b2tlbi03NGN3ZiIsImt1YmVybmV0ZXMuaW8vc2VydmljZWFjY291bnQvc2VydmljZS1hY2NvdW50Lm5hbWUiOiJuYW1lc3BhY2UtY29udHJvbGxlciIsImt1YmVybmV0ZXMuaW8vc2VydmljZWFjY291bnQvc2VydmljZS1hY2NvdW50LnVpZCI6IjdiMThlMjdhLThlZWQtMTFlYS04MzU1LTA4MDAyNzVkYmU5ZiIsInN1YiI6InN5c3RlbTpzZXJ2aWNlYWNjb3VudDprdWJlLXN5c3RlbTpuYW1lc3BhY2UtY29udHJvbGxlciJ9.YIuicBpWi65TXpdHM67oSVRd_qN951E-wMrJSSrMl3eiscl4_5L5oGbaoD_IAZe7HhivAlRZhPI5GfpA-l7_M1vVEJLi_3fepoHdqchk0e0l3Gotc8sboEDNso9X5pXB6Io5HUe8_jvUgo0MgPljJZ5fqeGjT0fMc70nNafncT3kQlKqPlVN2iAKIwTxncNtnANgrRNI3NXAUNVNvx6EwdbBYL3r0kjXjxuz6nk_cYP1rqgnFM45n2pSCPp4HvxPcAl-QNZQJ7q4CXUXKY2rvYrCO-yvx_0t4750GFfFECuslk-B9iUvUVYie-fuKHr20R8y9Wwpl_tqFH7yYr51Ag
 
+#ACCESS HTTP
+http://localhost:8001/api/v1/namespaces/kube-system/services/https:kubernetes-dashboard:/proxy/
+#NOTE
+PAST THE TOKEN ON THE LOGIN PAGE
+
+#CREATE ADMIN USER
+kubectl create serviceaccount dashboard-admin-sa
+serviceaccount/dashboard-admin-sa created
+
+kubectl create clusterrolebinding dashboard-admin-sa --clusterrole=cluster-admin --serviceaccount=default:dashboard-admin-sa
+clusterrolebinding.rbac.authorization.k8s.io/dashboard-admin-sa created
+
+kubectl get secrets
+NAME                             TYPE                                  DATA   AGE
+dashboard-admin-sa-token-rrp67   kubernetes.io/service-account-token   3      10m
+default-token-jjwvc              kubernetes.io/service-account-token   3      62m
+
+#GET TOLKEN
+kubectl describe secret dashboard-admin-sa-token-rrp67
+Name:         dashboard-admin-sa-token-rrp67
+Namespace:    default
+Labels:       <none>
+Annotations:  kubernetes.io/service-account.name: dashboard-admin-sa
+              kubernetes.io/service-account.uid: bb2e6b2c-8ef4-11ea-8355-0800275dbe9f
+
+Type:  kubernetes.io/service-account-token
+
+Data
+====
+ca.crt:     1025 bytes
+namespace:  7 bytes
+token:      eyJhbGciOiJSUzI1NiIsImtpZCI6IiJ9.eyJpc3MiOiJrdWJlcm5ldGVzL3NlcnZpY2VhY2NvdW50Iiwia3ViZXJuZXRlcy5pby9zZXJ2aWNlYWNjb3VudC9uYW1lc3BhY2UiOiJkZWZhdWx0Iiwia3ViZXJuZXRlcy5pby9zZXJ2aWNlYWNjb3VudC9zZWNyZXQubmFtZSI6ImRhc2hib2FyZC1hZG1pbi1zYS10b2tlbi1ycnA2NyIsImt1YmVybmV0ZXMuaW8vc2VydmljZWFjY291bnQvc2VydmljZS1hY2NvdW50Lm5hbWUiOiJkYXNoYm9hcmQtYWRtaW4tc2EiLCJrdWJlcm5ldGVzLmlvL3NlcnZpY2VhY2NvdW50L3NlcnZpY2UtYWNjb3VudC51aWQiOiJiYjJlNmIyYy04ZWY0LTExZWEtODM1NS0wODAwMjc1ZGJlOWYiLCJzdWIiOiJzeXN0ZW06c2VydmljZWFjY291bnQ6ZGVmYXVsdDpkYXNoYm9hcmQtYWRtaW4tc2EifQ.bgFAJ1CaF-sue7x5RlIR_3L8tLdn47RCR4wKKmP-TP_eUpYljslkbaecP_GI6bIS-tIuCcRkHSdfblc3rdIqwbFQV5KG2fQBIDqiTV5FBa8QkFtuD4jGT4z8Id3tIGS8VXCLG7T5r_vXGUbVpkF8uBTxtWCuKMmfC8bojZ2cvS8Tgr42uXUKChCcLUFy16zEuMCkxQySoWohi-YHu_-2JlNnT3aj-0dIsDJWsKwFWqMY02GhdnpgjzFk0jBOQQpB7KnFNk1CEcPfv9VfDn-sAA8Jnp0CJGj9z50-eFv0E2Dh29CxvspIyD0fp2kCfx8Uqr_Bhm77bBUaClqCi8vxtg
 
 
 
