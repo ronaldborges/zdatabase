@@ -19,7 +19,7 @@ INSTALL PRE-INSTALL PACKAGES
 yum install http://yum.oracle.com/repo/OracleLinux/OL7/latest/x86_64/getPackage/oracle-database-preinstall-19c-1.0-1.el7.x86_64.rpm
 
 #DISABLE SELINUX AND FIREWALLD
-sed -i 's/SELINUX=.*/SELINUX=disabled/' /etc/sysconfig/selinux && setenforce 0
+sed -i 's/SELINUX=.*/SELINUX=disabled/' /etc/selinux/config && setenforce 0
 systemctl stop firewalld && systemctl disable firewalld
 
 #CONFIGURE STATIC NETWORK
