@@ -20,10 +20,10 @@ apt-get install libavcodec-dev libavformat-dev libswscale-dev libv4l-dev
 apt-get install libxvidcore-dev libx264-dev
 
 * How to install TensorFlow 2.0 on Ubuntu
-sudo apt-get install libopenblas-dev libatlas-base-dev liblapack-dev gfortran
+apt-get install libopenblas-dev libatlas-base-dev liblapack-dev gfortran
 
 * How to install TensorFlow 2.0 on Ubuntu
-sudo apt-get install libhdf5-serial-dev
+apt-get install libhdf5-serial-dev
 
 * How to install TensorFlow 2.0 on Ubuntu
 apt-get install python3-dev python3-tk python-imaging-tk
