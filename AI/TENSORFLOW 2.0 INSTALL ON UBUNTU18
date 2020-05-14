@@ -6,7 +6,7 @@ apt-get upgrade
 
 * How to install TensorFlow 2.0 on Ubuntu
 apt-get install build-essential cmake unzip pkg-config
-apt-get install gcc-10 g++-10
+apt-get install gcc-6 g++-6
 
 * How to install TensorFlow 2.0 on Ubuntu
 apt-get install screen
