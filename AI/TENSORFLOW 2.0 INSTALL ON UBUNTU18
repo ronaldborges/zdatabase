@@ -80,6 +80,12 @@ sudo cp -P lib64/* /usr/local/cuda/lib64/
 sudo cp -P include/* /usr/local/cuda/include/
 cd ~
 
+Step #3: Install pip and virtual environments
+
+* How to install TensorFlow 2.0 on Ubuntu
+apt-get install python3-widgetsnbextension
+apt-get install python3-testresources
+
 * How to install TensorFlow 2.0 on Ubuntu
 wget https://bootstrap.pypa.io/get-pip.py
 sudo python3 get-pip.py
@@ -91,8 +97,8 @@ pip3 install virtualenv virtualenvwrapper
 # virtualenv and virtualenvwrapper
 export WORKON_HOME=$HOME/.local/bin/.virtualenvs
 export VIRTUALENVWRAPPER_PYTHON=/usr/bin/python3
-export VIRTUALENVWRAPPER_VIRTUALENV=$HOME/.local/bin/virtualenv
-source $HOME/.local/bin/virtualenvwrapper.sh
+export VIRTUALENVWRAPPER_VIRTUALENV=/usr/local/bin/virtualenv
+source /usr/local/bin/virtualenvwrapper.sh
 
 * How to install TensorFlow 2.0 on Ubuntu
 mkvirtualenv dl4cv -p python3
