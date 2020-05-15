@@ -1,0 +1,18 @@
+
+workon dl4cv
+(dl4cv) root@ubuntu20:~# python
+Python 3.6.9 (default, Apr 18 2020, 01:56:04)
+[GCC 8.4.0] on linux
+Type "help", "copyright", "credits" or "license" for more information.
+>>> import tensorflow as tf
+>>> msg = tf.constant('Hello and welcome to Tensorflow world')
+2020-05-14 21:28:46.435819: I tensorflow/core/platform/profile_utils/cpu_utils.cc:94] CPU Frequency: 3292530000 Hz
+2020-05-14 21:28:46.436335: I tensorflow/compiler/xla/service/service.cc:168] XLA service 0x4059150 executing computations on platform Host. Devices:
+2020-05-14 21:28:46.436568: I tensorflow/compiler/xla/service/service.cc:175]   StreamExecutor device (0): Host, Default Version
+>>> print(msg)
+tf.Tensor(b'Hello and welcome to Tensorflow world', shape=(), dtype=string)
+>>> tf.print(msg)
+Hello and welcome to Tensorflow world
+>>>
+
+
