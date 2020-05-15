@@ -1,4 +1,5 @@
 
+source /usr/local/bin/virtualenvwrapper.sh
 workon dl4cv
 (dl4cv) root@ubuntu20:~# python
 Python 3.6.9 (default, Apr 18 2020, 01:56:04)
