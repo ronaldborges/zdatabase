@@ -75,3 +75,18 @@ minikube start --vm-driver=none
 * Enabled addons: default-storageclass, storage-provisioner
 * Done! kubectl is now configured to use "minikube"
 * For best results, install kubectl: https://kubernetes.io/docs/tasks/tools/install-kubectl/
+
+#MINIKUBE LIST PODS
+minikube kubectl -- get po -A
+NAMESPACE     NAME                                            READY   STATUS    RESTARTS   AGE
+kube-system   coredns-66bff467f8-kz92r                        1/1     Running   0          6m27s
+kube-system   coredns-66bff467f8-r486l                        1/1     Running   0          6m27s
+kube-system   etcd-localhost.localdomain                      1/1     Running   0          6m31s
+kube-system   kube-apiserver-localhost.localdomain            1/1     Running   0          6m31s
+kube-system   kube-controller-manager-localhost.localdomain   1/1     Running   0          6m31s
+kube-system   kube-proxy-f4g7x                                1/1     Running   0          6m27s
+kube-system   kube-scheduler-localhost.localdomain            1/1     Running   0          6m31s
+kube-system   storage-provisioner                             1/1     Running   0          6m32s
+
+
+
