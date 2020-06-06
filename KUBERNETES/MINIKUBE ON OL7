@@ -40,6 +40,7 @@ repolist: 16,724
 #INSTALL CONNTRACK + DOCKER-ENGINE
 yum install -y conntrack
 yum install -y docker-engine
+yum install -y kubectl
 systemctl enable docker
 Created symlink from /etc/systemd/system/multi-user.target.wants/docker.service to /usr/lib/systemd/system/docker.service.
 systemctl start docker
