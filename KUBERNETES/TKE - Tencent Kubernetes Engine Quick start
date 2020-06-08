@@ -4,7 +4,7 @@
 
 Quick start
 TKEStack is an open source container orchestration engine for private environments. 
-In this tutorial, you will learn how to create a TKEStack console, 
+In this tutorial, you will learn how to create a TKEStack console,
 and use the console to create and manage container clusters to quickly and flexibly deploy your services within the cluster.
 
    Cluster management
