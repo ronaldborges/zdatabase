@@ -1,0 +1,23 @@
++++++++++++++++++++++++++++++++++++++++++++++++
++   ORACLE PHYSICAL BACKUP 12-19C CDB & PDB   +
++++++++++++++++++++++++++++++++++++++++++++++++
+
+* The routine performs three tasks, two are daily, and the afternoon is only performed on Sunday. 
+* A full Sunday backup, incremental backups on other days of the week, and archive backups every two hours.
+* Routines can be scheduled in crontab or oracle schedules jobs
+
+#CRONTAB SCHEDULE
+
+30 00 * * 6             su - oracle -c /u01/backup/scripts/bkp_level0.sh
+30 00 * * 0,1,2,3,4,5   su - oracle -c /u01/backup/scripts/bkp_level2.sh
+00 02,04,06,08,10,12,14,16,18,20,22 * * * su - oracle -c /u01/backup/scripts/bkp_archive.sh
+
+#SCRIPT FULL BACKUP
+vi /u01/backup/scripts/bkp_level0.sh
+export data=$(date +"_%Y%m%d%H%M%S")
+rman target / log=/u01/backup/logs/full_$data.log cmdfile=/u01/backup/scripts/bkp_level0.rman
+find /u01/backup/control/ -name "control*.bkp" -mtime +7 -exec rm -vf {} \;
+
+
+
+
