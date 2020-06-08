@@ -1,5 +1,5 @@
 +++++++++++++++++++++++++++++++++++++++++++++++
-+   ORACLE PHYSICAL BACKUP 12-19C CDB & PDB   +
++   ORACLE PHYSICAL BACKUP 19C CDB & PDB   +
 +++++++++++++++++++++++++++++++++++++++++++++++
 
 * The routine performs three tasks, two are daily, and the afternoon is only performed on Sunday. 
