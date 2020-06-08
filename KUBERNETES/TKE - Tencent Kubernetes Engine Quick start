@@ -1,0 +1,59 @@
++++++++++++++++++++++++++++++++++++++++++++++++++++++++
++    TKE - Tencent Kubernetes Engine Quick start      +
++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+
+Quick start
+TKEStack is an open source container orchestration engine for private environments. 
+In this tutorial, you will learn how to create a TKEStack console, 
+and use the console to create and manage container clusters to quickly and flexibly deploy your services within the cluster.
+
+   Cluster management
+    
+    [Import Cluster]      [New Independent Cluster]
+    
+    ID / name	    monitor	    status	    K8S version	    Cluster type	    Creation time         	operating
+    >[global]                 Running     1.16.6          cluster           2020-03-02 16:29:40     delete [View cluster credentials]
+    TKE 
+    
+Note: Newly created independent clusters and imported existing clusters belong to the business cluster in the TKEStack architecture.    
+
+#CREATE A NEW BUSINESS
+
+    Platform              <-- New business  
+    Management              
+                                           business name      pg_bussines
+                                           Business member    The current account can be assigned the following responsible persons
+    Business                                                                             1 item selected
+    Management                                                [V] ID/Name                ID/Name
+                                                              [V] Administrator(admin)   Administrator(admin)       x
+                                                              
+                                           Cluster            Global(TKE)    Fill in resource limits X
+                                                              New cluster
+                                           Superior business  no_data                   
+
+                                           [carry out]    [cancel]
+
+
+    Platform                 Business Management    
+    Management                                    New businessSet     Administrator
+                                                  ID/Name             monitor	            Superior business	        status	      member	      Creation time	        operating
+    Business                                     ->[prj-m69pfn5v]                         no                        Active	      admin         2020-06-08 18:14:20	  delete
+    management                                    pg_bussines                         
+
+
+    Platform                <-- pg_bussines (prj-m69pfn5v) 
+    Management                  Business information    >[Namespace list]
+                                        
+    Business                       >[New Namespace] 
+    management
+                                   name         pg-namespace
+                                                Please enter a name
+                                               
+                                   business     prj-m69pfn5v (pg_bussines)
+                                   Cluster      Resource limit
+
+                                  name	        Owned         cluster	status	        Resource quota	        Creation time	          operating                   
+                                  pg-namespace  global        Pending	                Unlimited	              2020-06-08 18:36:26	    delete Edit resource limits
+                                   
+                                   
+                                   
