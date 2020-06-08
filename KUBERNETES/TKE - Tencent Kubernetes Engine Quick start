@@ -11,8 +11,8 @@ and use the console to create and manage container clusters to quickly and flexi
     
     [Import Cluster]      [New Independent Cluster]
     
-    ID / name	    monitor	    status	    K8S version	    Cluster type	    Creation time         	operating
-    >[global]                 Running     1.16.6          cluster           2020-03-02 16:29:40     delete [View cluster credentials]
+    ID / name	    monitor	    status	    K8S version	  Cluster type	    Creation time         	operating
+    >[global]                  Running     1.16.6          cluster          2020-03-02 16:29:40    delete [View cluster credentials]
     TKE 
     
 Note: Newly created independent clusters and imported existing clusters belong to the business cluster in the TKEStack architecture.    
