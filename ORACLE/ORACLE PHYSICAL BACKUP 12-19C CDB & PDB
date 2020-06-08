@@ -8,16 +8,114 @@
 
 #CRONTAB SCHEDULE
 
-30 00 * * 6             su - oracle -c /u01/backup/scripts/bkp_level0.sh
-30 00 * * 0,1,2,3,4,5   su - oracle -c /u01/backup/scripts/bkp_level2.sh
-00 02,04,06,08,10,12,14,16,18,20,22 * * * su - oracle -c /u01/backup/scripts/bkp_archive.sh
+30 00 * * 6             su - oracle -c /backup/scripts/bkp_level0.sh
+30 00 * * 0,1,2,3,4,5   su - oracle -c /backup/scripts/bkp_level2.sh
+00 02,04,06,08,10,12,14,16,18,20,22 * * * su - oracle -c /backup/scripts/bkp_archive.sh
 
-#SCRIPT FULL BACKUP
-vi /u01/backup/scripts/bkp_level0.sh
+#CREATE DIRECTORIES
+su - oracle
+mkdir -p /backup/scripts
+mkdir -p /backup/logs
+mkdir -p /backup/control
+mkdir -p /backup/rman/dados/cdb
+mkdir -p /backup/rman/dados/root
+mkdir -p /backup/rman/dados/pdb
+mkdir -p /backup/rman/archives
+
+#SCRIPT FULL BACKUP CDB + PDBS
+vi /backup/scripts/bkp_level0.sh
 export data=$(date +"_%Y%m%d%H%M%S")
-rman target / log=/u01/backup/logs/full_$data.log cmdfile=/u01/backup/scripts/bkp_level0.rman
-find /u01/backup/control/ -name "control*.bkp" -mtime +7 -exec rm -vf {} \;
+rman target / log=/backup/logs/full_$data.log cmdfile=/backup/scripts/bkp_level0.rman
+find /backup/control/ -name "control*.bkp" -mtime +7 -exec rm -vf {} \;
 
+#GRANT EXECUTION
+chmod +x /backup/scripts/bkp_level0.sh
 
+vi /backup/scripts/bkp_level0.rman
+RUN
+{
+CROSSCHECK BACKUP;
+CROSSCHECK ARCHIVELOG ALL;
+BACKUP AS COMPRESSED BACKUPSET INCREMENTAL LEVEL=0 DATABASE TAG='BKP_FULL' FORMAT '/backup/rman/dados/cdb/DADOS_FULL_%D_%Y%M%D_%U.BKP';
+BACKUP AS COMPRESSED BACKUPSET ARCHIVELOG ALL DELETE ALL INPUT FORMAT '/backup/rman/archives/ARC_%D_%Y%M%D_%U.BKP' TAG='BKP_ARC';
+COPY CURRENT CONTROLFILE TO '/backup/control/CONTROL01_%D_%Y%M%D.BKP';
+DELETE NOPROMPT OBSOLETE;
+}
 
+#SCRIPT INCREMENTAL BACKUP CDB + PDBS
+vi /backup/scripts/bkp_level2.sh
+export data=$(date +"_%Y%m%d%H%M%S")
+rman target / log=/backup/logs/incremental_$data.log cmdfile=/backup/scripts/bkp_level2.rman
+
+#GRANT EXECUTION
+chmod +x /backup/scripts/bkp_level2.sh
+
+vi /backup/scripts/bkp_level2.rman
+RUN
+{
+CROSSCHECK BACKUP;
+CROSSCHECK ARCHIVELOG ALL;
+BACKUP AS COMPRESSED BACKUPSET INCREMENTAL LEVEL=2 CUMULATIVE DATABASE TAG='BKP_CUM' FORMAT '/backup/rman/dados/cdb/DADOS_CUM_%D_%Y%M%D_%U.BKP';
+BACKUP AS COMPRESSED BACKUPSET ARCHIVELOG ALL DELETE ALL INPUT FORMAT '/backup/rman/archives/ARC_%D_%Y%M%D.BKP_%U' TAG='BKP_ARC';
+COPY CURRENT CONTROLFILE TO '/backup/control/CONTROL01_%D_%Y%M%D.BKP';
+DELETE NOPROMPT OBSOLETE;
+}
+
+#SCRIPT BACKUP ARCHIVELOG
+vi /backup/scripts/bkp_archive.sh
+export data=$(date +"_%Y%m%d%H%M%S")
+rman target / log=/backup/logs/archive_$data.log cmdfile=/backup/scripts/bkp_archive.rman
+
+#GRANT EXECUTION
+chmod +x /backup/scripts/bkp_archive.sh
+
+vi /backup/scripts/bkp_archive.rman
+RUN
+{
+CROSSCHECK ARCHIVELOG ALL;
+BACKUP AS COMPRESSED BACKUPSET ARCHIVELOG ALL DELETE ALL INPUT FORMAT '/backup/rman/archives/ARC_%D_%Y%M%D_%U.BKP' TAG='BKP_ARC';
+COPY CURRENT CONTROLFILE TO '/backup/control/CONTROL01_%D_%Y%M%D.BKP';
+DELETE NOPROMPT OBSOLETE;
+}
+
+* Beyond backup setup it is necessary to parameter the backup full retention that is the main resume consumer on server.
+* Oracle allows to configure this retention automatically by two parameters or command line on linux.
+
+CONFIGURE RETENTION POLICY TO REDUNDANCY 1;  --- WILL KEEP ONLY THE LAST SUCCESSFUL BACKUP FULL
+CONFIGURE RETENTION POLICY TO RECOVERY WINDOW OF 7 DAYS;  --- WILL KEEP ULTIMATE FULL BACKUP SUCCESSFUL FOR 7 DAYS
+CONFIGURE DEFAULT DEVICE TYPE TO DISK;  -- DEFINES THAT THE BACKUP WILL BE WRITTEN TO DISK
+CONFIGURE CONTROLFILE AUTOBACKUP ON;  -- CONFIGURE AUTOMATIC BACKUP OF CONTROLFILE
+
+rman target /
+Recovery Manager: Release 19.0.0.0.0 - Production on Mon Jun 8 14:31:39 2020
+Version 19.3.0.0.0
+Copyright (c) 1982, 2019, Oracle and/or its affiliates.  All rights reserved.
+connected to target database: APPSCDB (DBID=3881398398)
+RMAN> show all;
+
+using target database control file instead of recovery catalog
+RMAN configuration parameters for database with db_unique_name APPSCDB are:
+CONFIGURE RETENTION POLICY TO REDUNDANCY 1; # default
+CONFIGURE BACKUP OPTIMIZATION OFF; # default
+CONFIGURE DEFAULT DEVICE TYPE TO DISK; # default
+CONFIGURE CONTROLFILE AUTOBACKUP ON; # default
+CONFIGURE CONTROLFILE AUTOBACKUP FORMAT FOR DEVICE TYPE DISK TO '%F'; # default
+CONFIGURE DEVICE TYPE DISK PARALLELISM 1 BACKUP TYPE TO BACKUPSET; # default
+CONFIGURE DATAFILE BACKUP COPIES FOR DEVICE TYPE DISK TO 1; # default
+CONFIGURE ARCHIVELOG BACKUP COPIES FOR DEVICE TYPE DISK TO 1; # default
+CONFIGURE MAXSETSIZE TO UNLIMITED; # default
+CONFIGURE ENCRYPTION FOR DATABASE OFF; # default
+CONFIGURE ENCRYPTION ALGORITHM 'AES128'; # default
+CONFIGURE COMPRESSION ALGORITHM 'BASIC' AS OF RELEASE 'DEFAULT' OPTIMIZE FOR LOAD TRUE ; # default
+CONFIGURE RMAN OUTPUT TO KEEP FOR 7 DAYS; # default
+CONFIGURE ARCHIVELOG DELETION POLICY TO NONE; # default
+CONFIGURE SNAPSHOT CONTROLFILE NAME TO '/u01/app/oracle/product/19.3.0/dbhome_1/dbs/snapcf_appscdb1.f'; # default
+
+#EXTRA BACKUPS (IF NECESSARY)
+#BACKUP ONLY ROOT CONTAINER BACKUP
+rman target=/
+RMAN> BACKUP DATABASE ROOT;
+
+#BACKUP ONLY OR MULTIPLE PLUGGABLES DATABASES
+RMAN> BACKUP PLUGGABLE DATABASE appspdb, fusionpdb;
 
