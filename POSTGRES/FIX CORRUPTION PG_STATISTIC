@@ -1,0 +1,34 @@
+++++++++++++++++++++++++++++++++++
++   FIX CORRUPTION PG_STATISTIC  +
+++++++++++++++++++++++++++++++++++
+
+#ERROR LOG
+missing chunk number 0 for toast value 96269 in pg_toast_2619
+
+#FIX
+#STOP DATABASE
+/usr/local/pgsql-9.6.18/bin/pg_ctl -D /dados/data stop -m fast
+
+#START DATABASE 
+/usr/local/pgsql-9.6.18/bin/pg_ctl -D /dados/data/ start -o -O
+
+#TRUNCATE TABLE PG_STATISTIC
+/usr/local/pgsql-9.6.18/bin/psql -U postgres
+TRUNCATE pg_statistic;
+ANALYZE pg_statistic;
+select count(1) from pg_statistic;
+0 rows
+
+#STOP DATABASE
+/usr/local/pgsql-9.6.18/bin/pg_ctl -D /dados/data stop -m fast
+
+#START DATABASE
+/usr/local/pgsql-9.6.18/bin/pg_ctl -D /dados/data start -l logstart
+
+#VACUUM & ANALYZE ALL DATABASES
+/usr/local/pgsql-9.6.18/bin/vacuumdb --all --analyze-in-stages
+
+#FINISH STATISTICS UPDATED
+/usr/local/pgsql-9.6.18/bin/psql -U postgres
+select count(1) from pg_statistic;
+384
