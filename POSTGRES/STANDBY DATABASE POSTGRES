@@ -21,6 +21,7 @@ max_wal_senders = 5                                     #static
 wal_keep_segments = 32                                  #dynamic
 archive_mode = on                                       #static
 archive_command = 'gzip -c %p > /$path/wals/%f.gz'   #static
+archive_timeout = 600
 
 ## enable lines in pg_hab.conf
 host    replication     postgres        127.0.0.1/32            trust
