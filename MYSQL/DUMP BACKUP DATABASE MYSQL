@@ -6,11 +6,11 @@
 00 02 * * * $path/backup_dump.sh > $path/backup_dump.log 2>&1
 
 #/bin/bash
-export ISREADY=`mysql -u root -sN -e "show status like 'Conn%';" | awk -F 'Connections' '{print $2}'`
+export ISREADY=`mysql -u root -p<password> -sN -e "show status like 'Conn%';" | awk -F 'Connections' '{print $2}'`
 if [ -n $ISREADY ]; then
 for dbname in $(mysql -u root -sN -e "show databases;"); do
 echo $dbname
-mysqldump -u root $dbname | gzip > $path/dump/${dbname}_`date +%d%m%y_%H%M`.sql.gz
+mysqldump -u root -p<password> $dbname | gzip > $path/dump/${dbname}_`date +%d%m%y_%H%M`.sql.gz
 done
 else
 export BKP_LOGICO=`echo -e "FALHA"`
