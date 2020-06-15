@@ -10,7 +10,7 @@ export ISREADY=`ps -ef | grep "mysqld" | grep -v grep | wc -l`
 if [ $ISREADY -eq 0 ]; then
 for dbname in $(mysql -u root -p<password> -sN -e "show databases;"); do
 echo $dbname
-mysqldump -u root -p<password> $dbname | gzip > $path/dump/${dbname}_`date +%d%m%y_%H%M`.sql.gz
+mysqldump -u root -p<password> $dbname --skip-lock-tables | gzip > $path/dump/${dbname}_`date +%d%m%y_%H%M`.sql.gz
 done
 else
 export BKP_LOGICO=`echo -e "FALHA"`
