@@ -12,6 +12,7 @@ for dbname in $(mysql -u root -p<password> -sN -e "show databases;"); do
 echo $dbname
 mysqldump -u root -p<password> $dbname --skip-lock-tables | gzip > $path/dump/${dbname}_`date +%d%m%y_%H%M`.sql.gz
 done
+find $path/dump/ -name "*.sql.gz" -mtime +<days> -exec rm -vf {} \;
 else
 export BKP_LOGICO=`echo -e "FALHA"`
         export SAIDABOT=`echo -e "BACKUP DUMP DB :" $BKP_LOGICO`
