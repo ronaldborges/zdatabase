@@ -355,6 +355,9 @@ hdfs dfs -ls
 Found 1 items
 drwxr-xr-x   - hadoop supergroup          0 2020-01-29 17:02 books
 
+#REPORT CLUSTER STATUS
+hdfs dfsadmin -report
+
 #REMOVE FILE ON DIRECTORY HDFS
 hdfs dfs -rmdir <directory_path>
 hdfs dfs -rm -R <directory_path>
