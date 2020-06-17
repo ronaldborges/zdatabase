@@ -1,0 +1,31 @@
++++++++++++++++++++++++++++++++++++
++   	MYSQL SLOW QUERY LOG        +
++++++++++++++++++++++++++++++++++++
+
+#CREATE DIRECTORY TO STORE LOGS
+mkdir -p /mysql/log/
+
+#CONNECT ON MYSQL AND CHANGE THESE PARAMETERS
+
+mysql> SET GLOBAL slow_query_log = 'ON';
+Query OK, 0 rows affected (0.07 sec)
+
+mysql> SET GLOBAL long_query_time = 30;
+Query OK, 0 rows affected (0.00 sec)
+
+SET GLOBAL slow_query_log_file = '/mysql/log/log_slow_queries';
+
+#TEST LOG SLOW QUERY
+mysql> SELECT SLEEP(35);
+
+#CHECK LOGFILE
+cat /mysql/log/log_slow_queries
+/usr/sbin/mysqld, Version: 5.7.24 (MySQL Community Server (GPL)). started with:
+Tcp port: 3306  Unix socket: /var/lib/mysql/mysql.sock
+Time                 Id Command    Argument
+# Time: 2020-06-17T17:36:17.797884Z
+# User@Host: skip-grants user[root] @ localhost []  Id: 13036
+# Query_time: 35.010588  Lock_time: 0.000000 Rows_sent: 1  Rows_examined: 0
+SET timestamp=1592415377;
+SELECT SLEEP(35);
+
