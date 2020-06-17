@@ -1,0 +1,51 @@
++++++++++++++++++++++++++++++++++++
++   	MYSQL DEFRAGMENT TABLES   	+
++++++++++++++++++++++++++++++++++++
+
+#IDENTIFY BIGGEST DATABASE
+mysql> SELECT table_schema AS "Database", ROUND(SUM(data_length + index_length) / 1024 / 1024, 2) AS "Size (MB)" 
+FROM information_schema.TABLES GROUP BY table_schema;
+
++--------------------+-----------+
+| Database           | Size (MB) |
++--------------------+-----------+
+| test               |   4370.08 |
++--------------------+-----------+
+
+#IDENTIFY LARGEST TABLES
+mysql> SELECT table_schema AS `Database`, table_name AS `Table`, round(((data_length + index_length) / 1024 / 1024), 2) `Size in MB` 
+FROM information_schema.TABLES ORDER BY (data_length + index_length) DESC;
+
++--------------------+------------------------------------------------------------+------------+
+| Database           | Table                                                      | Size in MB |
++--------------------+------------------------------------------------------------+------------+
+| test               | test_logs                                                  |    3797.41 |
++--------------------+------------------------------------------------------------+------------+
+
+#CONNECT BIGGEST DATABASE
+mysql> use test;
+
+#DISPLAY HOW MUCH USUSED SPACE ARE AVAILABLE IN EVERY TABLE
+mysql> select table_name,round(data_length/1024/1024) as data_length_mb, round(data_free/1024/1024) as data_free_mb 
+from information_schema.tables where round(data_free/1024/1024) > 500 order by data_free_mb;
+
++------------+----------------+--------------+
+| table_name | data_length_mb | data_free_mb |
++------------+----------------+--------------+
+| test_logs  |        3797.41 |         2099 |
++------------+----------------+--------------+
+
+#OPTIMYZE TABLE IDENTIFIED
+mysql> optimize table test_logs;
+
+#DEFRAG USING MYSQLCHECK COMMAND
+mysqlcheck -o test test_logs -u root -p<password>
+test test_logs OK
+
+#DEFRAG ALL DATABASES 
+mysqlcheck -o --all-databases -u root -p<password>
+
+
+
+
+ 
