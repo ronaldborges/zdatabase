@@ -1,5 +1,5 @@
 +++++++++++++++++++++++++++++++++++
-+   	MYSQL INSTALL 8.0 ON OL7   	+
++     MYSQL INSTALL 8.0 ON OL7    +
 +++++++++++++++++++++++++++++++++++
 
 #STOP FIREWALL AND DISABLE SELINUX
