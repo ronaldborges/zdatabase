@@ -1,0 +1,25 @@
++++++++++++++++++++++++++++++
++   	MYSQL TABLE IN USE   	+
++++++++++++++++++++++++++++++
+
+#CHECK TABLES IN USE
+mysql> SHOW OPEN TABLES in test LIKE 'test_logs';
++----------+-----------+--------+-------------+
+| Database | Table     | In_use | Name_locked |
++----------+-----------+--------+-------------+
+| test     | test_logs |      3 |           0 |
++----------+-----------+--------+-------------+
+1 row in set (0.00 sec)
+
+#LIST SESSION ACTIVES
+mysql> show processlist;
++-------+------+-----------+------+---------+------+----------------+---------------------------------+
+| Id    | User | Host      | db   | Command | Time | State          | Info                            |
++-------+------+-----------+------+---------+------+----------------+---------------------------------+
+| 15155 | root | localhost | test | Query   | 1813 | altering table | optimize table glpi_logs        |
+| 17472 | root | localhost | test | Query   |    0 | starting       | show processlist                |
++-------+------+-----------+------+---------+------+----------------+---------------------------------+
+
+#KILL SESSION IN MYSQL
+kill query 15155;
+
