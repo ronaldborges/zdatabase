@@ -45,6 +45,10 @@ test test_logs OK
 #DEFRAG ALL DATABASES 
 mysqlcheck -o --all-databases -u root -p<password>
 
+#IF NEEDED RUN TABLE ANALYZE, DO
+mysql> use test;
+mysql> analyze table test_logs;
+
 
 
 
