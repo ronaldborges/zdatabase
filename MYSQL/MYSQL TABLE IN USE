@@ -1,6 +1,6 @@
-+++++++++++++++++++++++++++++
-+   	MYSQL TABLE IN USE   	+
-+++++++++++++++++++++++++++++
+++++++++++++++++++++++++++++++
++     MYSQL TABLE IN USE     +
+++++++++++++++++++++++++++++++
 
 #CHECK TABLES IN USE
 mysql> SHOW OPEN TABLES in test LIKE 'test_logs';
