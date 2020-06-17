@@ -38,6 +38,15 @@ from information_schema.tables where round(data_free/1024/1024) > 500 order by d
 #OPTIMYZE TABLE IDENTIFIED
 mysql> optimize table test_logs;
 
++----------------+----------+----------+-------------------------------------------------------------------+
+| Table          | Op       | Msg_type | Msg_text                                                          |
++----------------+----------+----------+-------------------------------------------------------------------+
+| glpi.glpi_logs | optimize | note     | Table does not support optimize, doing recreate + analyze instead |
+| glpi.glpi_logs | optimize | status   | OK                                                                |
++----------------+----------+----------+-------------------------------------------------------------------+
+2 rows in set (45 min 1.67 sec)
+
+
 #DEFRAG USING MYSQLCHECK COMMAND
 mysqlcheck -o test test_logs -u root -p<password>
 test test_logs OK
