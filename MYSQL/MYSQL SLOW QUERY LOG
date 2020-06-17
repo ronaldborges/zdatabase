@@ -1,6 +1,6 @@
-+++++++++++++++++++++++++++++++++++
-+   	MYSQL SLOW QUERY LOG        +
-+++++++++++++++++++++++++++++++++++
+++++++++++++++++++++++++++++++++++
++     MYSQL SLOW QUERY LOG       +
+++++++++++++++++++++++++++++++++++
 
 #CREATE DIRECTORY TO STORE LOGS
 mkdir -p /mysql/log/
