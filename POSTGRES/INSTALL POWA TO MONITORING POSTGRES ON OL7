@@ -1,6 +1,6 @@
-+++++++++++++++++++++++++++++++++++++++++++
-+   INSTALL POWA TO MONITORING POSTGRES   +
-+++++++++++++++++++++++++++++++++++++++++++
+++++++++++++++++++++++++++++++++++++++++++++++++++
++   INSTALL POWA TO MONITORING POSTGRES ON OL7   +
+++++++++++++++++++++++++++++++++++++++++++++++++++
 
 #PRE-REQUIRES
 yum install -y python-pip python-devel python-psycopg2
@@ -54,6 +54,11 @@ CREATE EXTENSION IF NOT EXISTS powa;
 CREATE EXTENSION IF NOT EXISTS pg_qualstats;
 CREATE EXTENSION IF NOT EXISTS pg_stat_kcache;
 CREATE EXTENSION IF NOT EXISTS pg_wait_sampling;
+\q
+exit
+
+#RUN POWA
+nohup /usr/bin/powa-web > /var/log/powa-web.log 2>&1 & 
 
 
 
