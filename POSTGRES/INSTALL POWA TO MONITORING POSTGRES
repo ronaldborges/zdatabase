@@ -1,0 +1,11 @@
++++++++++++++++++++++++++++++++++++++++++++
++   INSTALL POWA TO MONITORING POSTGRES   +
++++++++++++++++++++++++++++++++++++++++++++
+
+#PRE-REQUIRES
+yum install -y python-pip python-devel python-psycopg2
+
+#INSTALL
+pip install --upgrade pip
+pip install powa-web
+
