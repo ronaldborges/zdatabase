@@ -44,14 +44,18 @@ cp usr/pgsql-<$version>/share/extension/pg_wait_sampling* /usr/local/pgsql-<$ver
 su - postgres
 vi /dados/data/postgresql.conf
 shared_preload_libraries='pg_stat_statements,powa,pg_stat_kcache,pg_qualstats,pg_wait_sampling'
+track_io_timing = on
 /usr/local/pgsql-<$version>/bin/psql -U postgres
-CREATE DATABASE powa;
+CREATE DATABASE IF NOT EXISTS powa;
 \c powa
-CREATE EXTENSION pg_stat_statements;
-CREATE EXTENSION btree_gist;
-CREATE EXTENSION powa;
-CREATE EXTENSION pg_qualstats;
-CREATE EXTENSION pg_stat_kcache;
+CREATE EXTENSION IF NOT EXISTS pg_stat_statements;
+CREATE EXTENSION IF NOT EXISTS btree_gist;
+CREATE EXTENSION IF NOT EXISTS powa;
+CREATE EXTENSION IF NOT EXISTS pg_qualstats;
+CREATE EXTENSION IF NOT EXISTS pg_stat_kcache;
+CREATE EXTENSION IF NOT EXISTS pg_wait_sampling;
+
+
 
 
 
