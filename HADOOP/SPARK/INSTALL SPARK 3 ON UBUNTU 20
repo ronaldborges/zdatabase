@@ -1,0 +1,87 @@
+++++++++++++++++++++++++++++++++++
++  INSTALL SPARK 3 ON UBUNTU 20  +
+++++++++++++++++++++++++++++++++++
+
+#ADD REPOSITORY JAVA
+apt-add-repository ppa:webupd8team/java
+
+#UPDATE REPOSITORIES LIST
+apt-get update
+
+#INSTALL JAVA
+apt-get install oracle-java8-installer
+
+#CHECK JAVA VERSION
+java -version
+
+#DOWNLOAD SPARK
+wget http://ftp.unicamp.br/pub/apache/spark/spark-3.0.0/spark-3.0.0-bin-hadoop3.2.tgz
+
+#DECOMPACT PRE-BUILD FILE SPARK
+tar -xzvf spark-3.0.0-bin-hadoop3.2.tgz
+
+#MOVE TO A DIRECTORY OF INTEREST OR LEAVE AT YOUR USER'S HOME
+mv spark-3.0.0-bin-hadoop3.2 /usr/local/spark-3.0.0-bin-hadoop3.2
+
+#ENTER ON DIRECTORY
+cd /usr/local/spark-3.0.0-bin-hadoop3.2/bin
+
+#RUN PYSPARK
+./pyspark
+
+Welcome to
+      ____              __
+     / __/__  ___ _____/ /__
+    _\ \/ _ \/ _ `/ __/  '_/
+   /__ / .__/\_,_/_/ /_/\_\   version 3.0.0
+      /_/
+
+Using Python version 2.7.17 (default, Apr 15 2020 17:20:14)
+SparkSession available as 'spark'.
+>>> quit()
+
+#OR RUN SHELL SPARK
+./spark-shell
+Welcome to
+      ____              __
+     / __/__  ___ _____/ /__
+    _\ \/ _ \/ _ `/ __/  '_/
+   /___/ .__/\_,_/_/ /_/\_\   version 3.0.0
+      /_/
+
+Using Scala version 2.12.10 (OpenJDK 64-Bit Server VM, Java 11.0.7)
+Type in expressions to have them evaluated.
+Type :help for more information.
+
+scala> :help
+All commands can be abbreviated, e.g., :he instead of :help.
+:completions <string>    output completions for the given string
+:edit <id>|<line>        edit history
+:help [command]          print this summary or command-specific help
+:history [num]           show the history (optional num is commands to show)
+:h? <string>             search the history
+:imports [name name ...] show import history, identifying sources of names
+:implicits [-v]          show the implicits in scope
+:javap <path|class>      disassemble a file or class name
+:line <id>|<line>        place line(s) at the end of history
+:load <path>             interpret lines in a file
+:paste [-raw] [path]     enter paste mode or paste a file
+:power                   enable power user mode
+:quit                    exit the interpreter
+:replay [options]        reset the repl and replay all previous commands
+:require <path>          add a jar to the classpath
+:reset [options]         reset the repl to its initial state, forgetting all session entries
+:save <path>             save replayable session to a file
+:sh <command line>       run a shell command (result is implicitly => List[String])
+:settings <options>      update compiler options, if possible; see reset
+:silent                  disable/enable automatic printing of results
+:type [-v] <expr>        display the type of an expression without evaluating it
+:kind [-v] <type>        display the kind of a type. see also :help kind
+:warnings                show the suppressed warnings from the most recent line which had any
+
+scala> :quit
+
+#GOD RDD´s
+#FINISH
+
+
