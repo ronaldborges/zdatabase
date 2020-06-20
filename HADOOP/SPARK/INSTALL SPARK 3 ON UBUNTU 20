@@ -42,6 +42,7 @@ SparkSession available as 'spark'.
 
 #OR RUN SHELL SPARK
 ./spark-shell
+
 Welcome to
       ____              __
      / __/__  ___ _____/ /__
