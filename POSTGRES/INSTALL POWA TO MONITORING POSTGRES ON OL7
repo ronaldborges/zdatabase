@@ -75,6 +75,14 @@ CREATE EXTENSION IF NOT EXISTS pg_track_settings;
 \q
 exit
 
+#THE POWA-ARCHIVIST COLLECTS DATA FROM VARIOUS STATS EXTENSIONS
+    pg_stat_statements
+    pg_qualstats
+    pg_stat_kcache
+    pg_wait_sampling
+    pg_track_settings
+#ALL THOSE EXTENSIONS HAVE TO BE INSTALLED ON THE DEDICATED DATABASE OF THE MONITORED SERVER.
+
 #PG_STAT_KCACHE
 IS A POSTGRESQL EXTENSION GATHERING STATISTICS ON SYSTEM METRICS
 CPU (USER TIME AND SYSTEM TIME)
@@ -94,10 +102,28 @@ select powa_kcache_register();
 THE PG_STAT_STATEMENTS EXTENSION RECORDS STATITSTICS OF ALL SQL QUERIES (AKA "statements”) EXECUTED ON A GIVEN PostgreSQL SERVER.
 
 #CONFIGURATION FILES
+vi /etc/powa-web.conf 
+servers={
+  'main': {
+    'host': 'pg_primary',
+    'port': '5432',
+    'database': 'powa'
+  }
+}
+cookie_secret="*********"
+
+vi /etc/powa-collector.conf
+{
+    "repository": {
+        "dsn": "postgresql://postgres@localhost:5432/powa"
+    },
+    "debug": false
+}
+
 
 #RUN POWA
 nohup /usr/bin/powa-web > /var/log/powa-web.log 2>&1 & 
-
+nohup /usr/bin/powa-collector.py > /var/log/powa-collector & 
 
 
 
