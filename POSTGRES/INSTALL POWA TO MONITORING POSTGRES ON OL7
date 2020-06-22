@@ -3,11 +3,12 @@
 ++++++++++++++++++++++++++++++++++++++++++++++++++
 
 #PRE-REQUIRES
-yum install -y python-pip python-devel python-psycopg2
+yum install -y python-pip python-devel python-psycopg2 git
 
 #INSTALL
 pip install --upgrade pip
 pip install powa-web
+pip install powa-collector
 
 #DOWNLOAD AND UPDATE POSTGRES EXTENSIONS
 wget https://github.com/powa-team/powa-archivist/archive/REL_4_0_0.tar.gz
@@ -40,12 +41,27 @@ rpm2cpio pg_wait_sampling_<$version>.1.1-1.<$SO>.x86_64.rpm | cpio -idmv
 cp usr/pgsql-<$version>/lib/pg_wait_sampling.so /usr/local/pgsql-<$version>/lib/
 cp usr/pgsql-<$version>/share/extension/pg_wait_sampling* /usr/local/pgsql-<$version>/share/extension/
 
+wget https://github.com/HypoPG/hypopg/archive/master.zip
+mv master.zip hypopg.zip
+unzip hypopg.zip
+cd hypopg
+vi Makefile
+PG_CONFIG ?= /usr/local/pgsql-<$version>/bin/pg_config
+make
+cp hypopg.so /usr/local/pgsql-<$version>/lib/
+cp hypopg.control hypopg--2.0.0beta.sql hypopg--1.1.2.sql /usr/local/pgsql-<$version>/share/extension/
+
+wget https://github.com/rjuju/pg_track_settings/archive/2.0.0.tar.gz -O pg_track_settings-2.0.0.tar.gz
+tar xvfz pg_track_settings-2.0.0.tar.gz
+cd pg_track_settings-2.0.0
+cp pg_track_settings.control pg_track_settings--2.0.0.sql pg_track_settings--1.1.0.sql pg_track_settings--1.0.1.sql pg_track_settings--1.0.1--1.1.0.sql pg_track_settings--1.0.0.sql pg_track_settings--1.0.0--1.0.1.sql /usr/local/pgsql-<$version>/share/extension/
+
 #CREATE DATABASE POWA
 su - postgres
 vi /dados/data/postgresql.conf
 shared_preload_libraries='pg_stat_statements,powa,pg_stat_kcache,pg_qualstats,pg_wait_sampling'
 track_io_timing = on
-/usr/local/pgsql-<$version>/bin/psql -U postgres
+/usr/local/pgsql-<$version>/bin/psql -U postgres -d powa
 CREATE DATABASE IF NOT EXISTS powa;
 \c powa
 CREATE EXTENSION IF NOT EXISTS pg_stat_statements;
@@ -54,11 +70,35 @@ CREATE EXTENSION IF NOT EXISTS powa;
 CREATE EXTENSION IF NOT EXISTS pg_qualstats;
 CREATE EXTENSION IF NOT EXISTS pg_stat_kcache;
 CREATE EXTENSION IF NOT EXISTS pg_wait_sampling;
+CREATE EXTENSION IF NOT EXISTS hypopg;
+CREATE EXTENSION IF NOT EXISTS pg_track_settings;
 \q
 exit
 
+#PG_STAT_KCACHE
+IS A POSTGRESQL EXTENSION GATHERING STATISTICS ON SYSTEM METRICS
+CPU (USER TIME AND SYSTEM TIME)
+PHYSICAL DISK ACCESS (READ AND WRITE)
+
+HIT RATIO
+SHARED BUFFER HIT RATIO: PERCENT OF BLOCKS READ FROM SHARED BUFFER (MEMORY)
+SYSTEM CACHE HIT RATIO: PERCENT OF BLOCKS READ FROM THE SYSTEM CACHE (MEMORY)
+DISK HIT RATIO: PERCENTAGE OF BLOCKS WHICH NEEDED A PHYSICAL DISK READ
+TO ENABLE THIS EXTENSION DO
+
+/usr/local/pgsql-<$version>/bin/psql -U postgres -d powa
+select powa_kcache_register();
+\q
+
+#PG_STAT_STATEMENTS
+THE PG_STAT_STATEMENTS EXTENSION RECORDS STATITSTICS OF ALL SQL QUERIES (AKA "statements”) EXECUTED ON A GIVEN PostgreSQL SERVER.
+
+#CONFIGURATION FILES
+
 #RUN POWA
 nohup /usr/bin/powa-web > /var/log/powa-web.log 2>&1 & 
+
+
 
 
 
