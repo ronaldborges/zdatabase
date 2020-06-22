@@ -130,11 +130,12 @@ vi /etc/powa-collector.conf
     "debug": false
 }
 
-
 #RUN POWA
 nohup /usr/bin/powa-web > /var/log/powa-web.log 2>&1 & 
 nohup /usr/bin/powa-collector.py > /var/log/powa-collector & 
 
+#ACCESS WEB
+http://ip:8888
 
 
 
