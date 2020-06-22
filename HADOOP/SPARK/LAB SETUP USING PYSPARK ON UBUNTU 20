@@ -1,0 +1,38 @@
+++++++++++++++++++++++++++++++++++++++++++
++  LAB SETUP USING PYSPARK ON UBUNTU 20  +
+++++++++++++++++++++++++++++++++++++++++++
+
+#INSTALL PIP2
+apt install python-pip
+
+#INSTALL WGET
+pip2 install wget
+
+#ENTER ON DIRECTORY
+cd /usr/local/spark-3.0.0-bin-hadoop3.2/bin
+
+#RUN PYSPARK
+./pyspark
+
+Welcome to
+      ____              __
+     / __/__  ___ _____/ /__
+    _\ \/ _ \/ _ `/ __/  '_/
+   /__ / .__/\_,_/_/ /_/\_\   version 3.0.0
+      /_/
+
+Using Python version 2.7.17 (default, Apr 15 2020 17:20:14)
+SparkSession available as 'spark'.
+
+#DOWNLOAD LAB DATA
+>>> import wget
+>>> url = 'https://s3-api.us-geo.objectstorage.softlayer.net/cf-courses-data/CognitiveClass/BD0211EN/data/LabData.zip'
+>>> filename = wget.download(url)
+
+#EXTRACT FILE LabData.zip
+>>> import zipfile;
+>>> zf = zipfile.ZipFile("LabData.zip")
+>>> zf.extractall()
+
+
+
