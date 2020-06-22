@@ -63,6 +63,14 @@ listen_addresses = '*'
 port = 5432
 shared_preload_libraries='pg_stat_statements,powa,pg_stat_kcache,pg_qualstats,pg_wait_sampling'
 track_io_timing = on
+pg_qualstats.sample_rate = 1
+#------------------------------------------------------------------------------
+# POWA MONITORING
+# -----------------------------------------------------------------------------
+powa.frequency = 2min
+powa.retention = 1d
+# -----------------------------------------------------------------------------
+
 /usr/local/pgsql-<$version>/bin/psql -U postgres -d powa
 CREATE DATABASE IF NOT EXISTS powa;
 \c powa
