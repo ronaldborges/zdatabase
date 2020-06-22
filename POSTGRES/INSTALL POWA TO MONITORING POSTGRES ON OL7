@@ -115,7 +115,7 @@ cookie_secret="*********"
 vi /etc/powa-collector.conf
 {
     "repository": {
-        "dsn": "postgresql://postgres@localhost:5432/powa"
+        "dsn": "postgresql://postgres@pg_primary:5432/powa"
     },
     "debug": false
 }
