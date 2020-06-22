@@ -3,15 +3,23 @@
 ++++++++++++++++++++++++++++++++++++++++++
 
 #INSTALL PIP2
+
 apt install python-pip
 
 #INSTALL WGET
+
 pip2 install wget
 
+#INSTALL FINDSPARK
+
+pip2 install findspark
+
 #ENTER ON DIRECTORY
+
 cd /usr/local/spark-3.0.0-bin-hadoop3.2/bin
 
 #RUN PYSPARK
+
 ./pyspark
 
 Welcome to
@@ -25,14 +33,73 @@ Using Python version 2.7.17 (default, Apr 15 2020 17:20:14)
 SparkSession available as 'spark'.
 
 #DOWNLOAD LAB DATA
+
 >>> import wget
 >>> url = 'https://s3-api.us-geo.objectstorage.softlayer.net/cf-courses-data/CognitiveClass/BD0211EN/data/LabData.zip'
 >>> filename = wget.download(url)
 
 #EXTRACT FILE LabData.zip
+
 >>> import zipfile;
 >>> zf = zipfile.ZipFile("LabData.zip")
 >>> zf.extractall()
+
+#IMPORT LIBRARY TO SEARCH DATASETS FILES
+#PYSPARK ISN’T ON SYS.PATH BY DEFAULT, BUT THAT DOESN’T MEAN IT CAN’T BE USED AS A REGULAR LIBRARY
+#USE findspark.init() TO RESOLVE THIS
+#pyspark.SparkContext WE CAN SAY APACHE SPARK SPARKCONTEXT IS A HEART OF SPARK APPLICATION. 
+#IT IS THE MAIN ENTRY POINT TO SPARK FUNCTIONALITY. 
+#GENERATING, SPARKCONTEXT IS A MOST IMPORTANT TASK FOR SPARK DRIVER APPLICATION AND SET UP 
+#INTERNAL SERVICES AND ALSO CONSTRUCTS A CONNECTION TO SPARK EXECUTION ENVIRONMENT. 
+#THIS IS ESSENTIALLY A CLIENT OF SPARK’S EXECUTION ENVIRONMENT, 
+#THAT ACTS AS A MASTER OF SPARK APPLICATION.
+#getOrCreate THIS FUNCTION MAY BE USED TO GET OR INSTANTIATE A SPARKCONTEXT AND REGISTER IT AS A SINGLETON OBJECT
+
+>>> import findspark
+>>> import pyspark
+>>> findspark.init()
+>>> sc = pyspark.SparkContext.getOrCreate()
+>>> readme = sc.textFile("LabData/README.md")
+
+#VALIDATION OF ACCESS TO FILES
+#THE RDD ACTION RETURNED A VALUE OF 98
+>>> readme.count()
+98
+
+#FIND THE FIRST ITEM IN THE RDD:
+>>> readme.first()
+u'# Apache Spark'
+
+#NOW LET’S TRY A TRANSFORMATION. 
+#USE THE FILTER TRANSFORMATION TO RETURN A NEW RDD WITH A SUBSET OF THE ITEMS IN THE FILE.
+#YOU CAN EVEN CHAIN TOGETHER TRANSFORMATIONS AND ACTIONS. 
+#TO FIND OUT HOW MANY LINES CONTAINS THE WORD “SPARK”
+
+>>> linesWithSpark = readme.filter(lambda line: "Spark" in line)
+>>> readme.filter(lambda line: "Spark" in line).count()
+18
+
+#YOU WILL SEE THAT RDD CAN BE USED FOR MORE COMPLEX COMPUTATIONS. 
+#YOU WILL FIND THE LINE FROM THAT "README.MD" FILE WITH THE MOST WORDS IN IT
+#map() MAP IS DEFINED IN ABSTRACT CLASS RDD IN SPARK AND IT IS A TRANSFORMATION KIND OF OPERATION
+#lambda A LAMBDA EXPRESSION IS A FUNCTION DEFINED ON THE LINE AND IS CALLED ON EACH ITEM IN A LIST OR MATRIX. 
+#IT IS VERY USEFUL FOR DATA MANIPULATION.
+#SPLIT A STRING INTO A LIST WHERE EACH WORD IS A LIST ITEM
+
+>>> readme.map(lambda line: len(line.split())).reduce(lambda a, b: a if (a > b) else b)
+14
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
