@@ -191,8 +191,8 @@ host    powa            all            <$ip SERVER COLLECTOR>/32         md5
 vi /etc/powa-collector.conf
 {
     "repository": {
-        "dsn": "postgresql://postgres@<$remote_collector>:<$port>/powa"
-    }
+        "dsn": "postgresql://postgres@pg_primary:5432/powa"
+    },
     "debug": false
 }
 
