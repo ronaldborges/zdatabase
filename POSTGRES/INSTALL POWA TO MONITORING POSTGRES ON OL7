@@ -183,9 +183,9 @@ vi /etc/hosts
 <$remote_collector>		<$ip>
 
 #CONFIGURE DATABASE ACCESS
-vi /dados/data/pg_hba.conf
+vi /dados-prim/data/pg_hba.conf
 host    powa            all            <$ip SERVER COLLECTOR>/32         md5
-/usr/local/<$version>/bin/pg_ctl reload -D /dados/data/"
+/usr/local/<$version>/bin/pg_ctl reload -D /dados-prim/data/"
 
 #CONFIGURE COLLECTOR
 vi /etc/powa-collector.conf
@@ -203,6 +203,11 @@ nohup /usr/bin/powa-collector.py > /var/log/powa-collector &
 vi /etc/hosts
 <$ip>  <$hostname>
 <$ip>  <$remote_server>
+
+#GRANT CONNECT NO SERVER COLLECTOR
+vi /dados/data/pg_hba.conf
+host    powa            all             <$remote_server>/32         md5
+/usr/local/<$version>/bin/pg_ctl reload -D /dados-prim/data/"
 
 #REGISTER DATABASE ON REMOTE SERVER COLLECTOR
 /usr/local/<$version>/bin/psql -U postgres -d powa
