@@ -201,8 +201,8 @@ nohup /usr/bin/powa-collector.py > /var/log/powa-collector &
 
 #CONFIGURE HOSTNAME
 vi /etc/hosts
-<$hostname>     <$ip>
-<$remote_server>	<$ip>
+<$ip>  <$hostname>
+<$ip>  <$remote_server>
 
 #REGISTER DATABASE ON REMOTE SERVER COLLECTOR
 /usr/local/<$version>/bin/psql -U postgres -d powa
