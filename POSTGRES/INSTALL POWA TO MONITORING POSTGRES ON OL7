@@ -132,7 +132,7 @@ vi /etc/powa-collector.conf
 
 #RUN POWA
 nohup /usr/bin/powa-web > /var/log/powa-web.log 2>&1 & 
-nohup /usr/bin/powa-collector.py > /var/log/powa-collector & 
+nohup /usr/bin/powa-collector.py > /var/log/powa-collector 2>&1 & 
 
 #ACCESS WEB
 http://ip:8888
@@ -197,7 +197,7 @@ vi /etc/powa-collector.conf
 }
 
 #RUN COLLECTOR
-nohup /usr/bin/powa-collector.py > /var/log/powa-collector & 
+nohup /usr/bin/powa-collector.py > /var/log/powa-collector 2>&1 & 
 
 #CONFIGURE HOSTNAME
 vi /etc/hosts
