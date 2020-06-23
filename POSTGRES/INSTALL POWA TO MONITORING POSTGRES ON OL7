@@ -137,9 +137,85 @@ nohup /usr/bin/powa-collector.py > /var/log/powa-collector &
 #ACCESS WEB
 http://ip:8888
 
+********************************************************************************************************************************************************************************
 
+#HOW TO MONITORING ANOTHER PRIMARY HOST DATABASE
 
+#PRE-REQUIRES
+yum install -y python-pip python-devel python-psycopg2
 
+#INSTALL
+pip install --upgrade pip
+pip install powa-web
+pip install powa-collector
 
+#DOWNLOAD AND UPDATE POSTGRES EXTENSIONS
+
+#DATABASE SETUP
+su - postgres 
+/usr/local/<$version>/bin/psql -U postgres
+CREATE DATABASE powa;	
+CREATE ROLE powa SUPERUSER LOGIN PASSWORD '************';
+\c powa
+create extension btree_gist;
+create extension powa;
+create extension hypopg;            
+create extension pg_qualstats;      
+create extension pg_stat_statements;
+create extension pg_stat_kcache;   
+create extension pg_track_settings; 
+create extension pg_wait_sampling; 
+create extension plpgsql;           
+
+\c <other databases>
+create extension hypopg;            
+create extension pg_qualstats;      
+create extension pg_stat_statements;
+create extension pg_stat_kcache;    
+create extension pg_track_settings; 
+create extension pg_wait_sampling; 
+\q
+exit
+
+#CONFIGURE HOSTNAME
+vi /etc/hosts
+<$hostname>     <$ip>
+<$remote_collector>		<$ip>
+
+#CONFIGURE DATABASE ACCESS
+vi /dados/data/pg_hba.conf
+host    powa            all            <$ip SERVER COLLECTOR>/32         md5
+/usr/local/<$version>/bin/pg_ctl reload -D /dados/data/"
+
+#CONFIGURE COLLECTOR
+vi /etc/powa-collector.conf
+{
+    "repository": {
+        "dsn": "postgresql://postgres@<$remote_collector>:<$port>/powa"
+    }
+    "debug": false
+}
+
+#RUN COLLECTOR
+nohup /usr/bin/powa-collector.py > /var/log/powa-collector & 
+
+#CONFIGURE HOSTNAME
+vi /etc/hosts
+<$hostname>     <$ip>
+<$remote_server>	<$ip>
+
+#REGISTER DATABASE ON REMOTE SERVER COLLECTOR
+/usr/local/<$version>/bin/psql -U postgres -d powa
+SELECT powa_register_server(hostname => 'pg_prim-stdb',
+    alias => 'example-prim',
+    password => '************',
+    extensions => '{pg_stat_kcache,pg_qualstats,pg_wait_sampling,pg_track_settings,hypopg,pg_stat_statements}');
+
+#REMOVE REMOTE SERVER 		
+SELECT powa_delete_and_purge_server(<$ID>);
+
+********************************************************************************************************************************************************************************
+
+#HOW TO MONITORING ANOTHER STANDBY HOST DATABASE
 
 
