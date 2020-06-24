@@ -71,7 +71,8 @@ powa.frequency = 2min
 powa.retention = 1d
 # -----------------------------------------------------------------------------
 
-/usr/local/pgsql-<$version>/bin/psql -U postgres -d powa
+/usr/local/pgsql-<$version>/bin/psql -U postgres
+CREATE ROLE powa SUPERUSER LOGIN PASSWORD '************';
 CREATE DATABASE IF NOT EXISTS powa;
 \c powa
 CREATE EXTENSION IF NOT EXISTS pg_stat_statements;
@@ -154,8 +155,8 @@ pip install powa-collector
 #DATABASE SETUP
 su - postgres 
 /usr/local/<$version>/bin/psql -U postgres
-CREATE DATABASE powa;	
 CREATE ROLE powa SUPERUSER LOGIN PASSWORD '************';
+CREATE DATABASE powa;	
 \c powa
 create extension btree_gist;
 create extension powa;
@@ -176,28 +177,6 @@ create extension pg_track_settings;
 create extension pg_wait_sampling; 
 \q
 exit
-
-#CONFIGURE HOSTNAME
-vi /etc/hosts
-<$hostname>     <$ip>
-<$remote_collector>		<$ip>
-
-#CONFIGURE DATABASE ACCESS
-vi /dados-prim/data/pg_hba.conf
-host    powa            all            <$ip SERVER COLLECTOR>/32         md5
-/usr/local/<$version>/bin/pg_ctl reload -D /dados-prim/data/"
-
-#CONFIGURE COLLECTOR
-vi /etc/powa-collector.conf
-{
-    "repository": {
-        "dsn": "postgresql://postgres@pg_primary:5432/powa"
-    },
-    "debug": false
-}
-
-#RUN COLLECTOR
-nohup /usr/bin/powa-collector.py > /var/log/powa-collector 2>&1 & 
 
 #CONFIGURE HOSTNAME
 vi /etc/hosts
@@ -228,6 +207,7 @@ allow_ui_connection => true,
 extensions => '{pg_stat_kcache,pg_qualstats,pg_wait_sampling}');    
 select * from powa_servers;
 SELECT powa_wait_sampling_register(<$ID>);
+select public.powa_activate_extension(<$ID>, 'pg_track_settings');
 
 #REMOVE REMOTE SERVER 	
 /usr/local/<$version>/bin/psql -U postgres -d powa
