@@ -226,11 +226,19 @@ powa_coalesce => 100,
 retention => '00:00:00'::interval, 
 allow_ui_connection => true, 
 extensions => '{pg_stat_kcache,pg_qualstats,pg_wait_sampling}');    
+select * from powa_servers;
+SELECT powa_wait_sampling_register(<$ID>);
 
 #REMOVE REMOTE SERVER 	
 /usr/local/<$version>/bin/psql -U postgres -d powa
 select * from powa_servers;
 SELECT powa_delete_and_purge_server(<$ID>);
+
+#FORCE TAKE SNAPSHOT WAINT AND RUN AGAIN (THE TOOL NEEDS TWO SNAPSHOTS TO DISPLAY BREAK DATA)
+select * from powa_servers;
+select public.powa_take_snapshot(<$ID>);
+select public.powa_take_snapshot(<$ID>);
+
 
 ********************************************************************************************************************************************************************************
 
