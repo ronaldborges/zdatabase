@@ -210,13 +210,26 @@ host    powa            all             <$remote_server>/32         md5
 /usr/local/<$version>/bin/pg_ctl reload -D /dados-prim/data/"
 
 #REGISTER DATABASE ON REMOTE SERVER COLLECTOR
-/usr/local/<$version>/bin/psql -U postgres -d powa
-SELECT powa_register_server(hostname => 'pg_prim-stdb',
-    alias => 'example-prim',
-    password => '************',
-    extensions => '{pg_stat_kcache,pg_qualstats,pg_wait_sampling,pg_track_settings,hypopg,pg_stat_statements}');
 
-#REMOVE REMOTE SERVER 		
+##PARAMETES##
+(hostname text, port integer DEFAULT 5432, alias text DEFAULT NULL::text, username text DEFAULT 'powa'::text, password text DEFAULT NULL::text, dbname text DEFAULT 'powa'::text, frequency integer DEFAULT 300, powa_coalesce integer DEFAULT 100, retention interval DEFAULT '1 day'::interval, allow_ui_connection boolean DEFAULT true, extensions text[] DEFAULT NULL::text[])
+
+/usr/local/<$version>/bin/psql -U postgres -d powa
+SELECT powa_register_server(hostname 'pg_prim-stdb', 
+port => 5432, 
+alias 'example-prim'::text, 
+username => 'powa'::text, 
+password => '************'::text, 
+dbname => 'powa'::text, 
+frequency => 120, 
+powa_coalesce => 100, 
+retention => '00:00:00'::interval, 
+allow_ui_connection => true, 
+extensions => '{pg_stat_kcache,pg_qualstats,pg_wait_sampling}');    
+
+#REMOVE REMOTE SERVER 	
+/usr/local/<$version>/bin/psql -U postgres -d powa
+select * from powa_servers;
 SELECT powa_delete_and_purge_server(<$ID>);
 
 ********************************************************************************************************************************************************************************
