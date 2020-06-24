@@ -178,14 +178,10 @@ create extension pg_wait_sampling;
 \q
 exit
 
-#CONFIGURE HOSTNAME
-vi /etc/hosts
-<$ip>  <$hostname>
-<$ip>  <$remote_server>
-
 #GRANT CONNECT NO SERVER COLLECTOR
 vi /dados/data/pg_hba.conf
-host    powa            all             <$remote_server>/32         md5
+host    all      powa            <$remote_server>/32         md5
+
 /usr/local/<$version>/bin/pg_ctl reload -D /dados-prim/data/"
 
 #REGISTER DATABASE ON REMOTE SERVER COLLECTOR
