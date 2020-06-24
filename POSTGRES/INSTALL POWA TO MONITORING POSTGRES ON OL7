@@ -56,7 +56,7 @@ tar xvfz pg_track_settings-2.0.0.tar.gz
 cd pg_track_settings-2.0.0
 cp pg_track_settings.control pg_track_settings--2.0.0.sql pg_track_settings--1.1.0.sql pg_track_settings--1.0.1.sql pg_track_settings--1.0.1--1.1.0.sql pg_track_settings--1.0.0.sql pg_track_settings--1.0.0--1.0.1.sql /usr/local/pgsql-<$version>/share/extension/
 
-#CREATE DATABASE POWA
+#DATABASE SETUP
 su - postgres
 vi /dados/data/postgresql.conf
 listen_addresses = '*'
@@ -71,6 +71,7 @@ powa.frequency = 2min
 powa.retention = 1d
 # -----------------------------------------------------------------------------
 
+#CREATE DATABASE POWA
 /usr/local/pgsql-<$version>/bin/psql -U postgres
 CREATE ROLE powa SUPERUSER LOGIN PASSWORD '************';
 CREATE DATABASE IF NOT EXISTS powa;
@@ -154,6 +155,19 @@ pip install powa-collector
 
 #DATABASE SETUP
 su - postgres 
+vi /dados/data/postgresql.conf
+listen_addresses = '*'
+port = 5432
+shared_preload_libraries='pg_stat_statements,powa,pg_stat_kcache,pg_qualstats,pg_wait_sampling'
+track_io_timing = on
+pg_qualstats.sample_rate = 1
+#------------------------------------------------------------------------------
+# POWA MONITORING
+# -----------------------------------------------------------------------------
+powa.frequency = 2min
+powa.retention = 1d
+# -----------------------------------------------------------------------------
+
 /usr/local/<$version>/bin/psql -U postgres
 CREATE ROLE powa SUPERUSER LOGIN PASSWORD '************';
 CREATE DATABASE powa;	
