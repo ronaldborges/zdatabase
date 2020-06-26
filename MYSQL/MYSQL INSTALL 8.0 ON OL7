@@ -63,8 +63,8 @@ mysql-community-server-8.0.19-1.el7.x86_64
 mysql-community-common-8.0.19-1.el7.x86_64
 
 #DOWNLOAD AND INSTALL MYSQL-WORKBENCH-COMMUNITY
-yum install https://repo.mysql.com//mysql80-community-release-el8-1.noarch.rpm
-yum install mysql-workbench-community-debuginfo.x86_64 mysql-workbench-community.x86_64
+yum install -y https://repo.mysql.com//mysql80-community-release-el8-1.noarch.rpm
+yum install -y mysql-workbench-community-debuginfo.x86_64 mysql-workbench-community.x86_64
 
 #START SERVICE
 systemctl start mysqld.service
