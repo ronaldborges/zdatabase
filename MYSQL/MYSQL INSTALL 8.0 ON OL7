@@ -49,21 +49,22 @@ wget https://cdn.mysql.com//Downloads/MySQL-8.0/mysql-community-common-8.0.19-1.
 wget https://cdn.mysql.com//Downloads/MySQL-8.0/mysql-community-libs-8.0.19-1.el7.x86_64.rpm
 wget https://cdn.mysql.com//Downloads/MySQL-8.0/mysql-community-client-8.0.19-1.el7.x86_64.rpm
 wget https://cdn.mysql.com//Downloads/MySQL-8.0/mysql-community-server-8.0.19-1.el7.x86_64.rpm
-wget https://cdn.mysql.com//Downloads/MySQLGUITools/mysql-workbench-community-8.0.219-1.el7.x86_64.rpm
 
 #INSTALL MYSQL 
 rpm -ivh mysql-community-common-8.0.19-1.el7.x86_64.rpm
 rpm -ivh mysql-community-libs-8.0.19-1.el7.x86_64.rpm
 rpm -ivh mysql-community-client-8.0.19-1.el7.x86_64.rpm
 rpm -ivh mysql-community-server-8.0.19-1.el7.x86_64.rpm
-yum install -y mysql-workbench-community-8.0.219-1.el7.x86_64.rpm
 
 rpm -qa | grep "mysql*"
 mysql-community-libs-8.0.19-1.el7.x86_64
 mysql-community-client-8.0.19-1.el7.x86_64
 mysql-community-server-8.0.19-1.el7.x86_64
 mysql-community-common-8.0.19-1.el7.x86_64
-mysql-workbench-community-8.0.219-1.el7.x86_64
+
+#DOWNLOAD AND INSTALL MYSQL-WORKBENCH-COMMUNITY
+yum install https://repo.mysql.com//mysql80-community-release-el8-1.noarch.rpm
+yum install mysql-workbench-community-debuginfo.x86_64 mysql-workbench-community.x86_64
 
 #START SERVICE
 systemctl start mysqld.service
