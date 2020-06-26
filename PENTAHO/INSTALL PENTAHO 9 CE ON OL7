@@ -1,1 +1,94 @@
-.
+++++++++++++++++++++++++++++++++++++
++   INSTALL PENTAHO 9 CE ON OL7    +
+++++++++++++++++++++++++++++++++++++
+
+sed -i 's/SELINUX=.*/SELINUX=disabled/' /etc/selinux/config && setenforce 0
+systemctl stop firewalld && systemctl disable firewalld
+
+hostnamectl set-hostname ol7pentaho
+hostnamectl --static 
+
+vi /etc/yum.repos.d/oracle-linux-ol7.repo
+
+[ol7_optional_developer]
+name=Developer Preview of Oracle Linux $releasever Optional ($basearch)
+baseurl=https://yum.oracle.com/repo/OracleLinux/OL7/optional/developer/$basearch/
+gpgkey=file:///etc/pki/rpm-gpg/RPM-GPG-KEY-oracle
+gpgcheck=1
+enabled=1
+
+[ol7_developer_EPEL]
+name=Oracle Linux $releasever Development Packages ($basearch)
+baseurl=https://yum.oracle.com/repo/OracleLinux/OL7/developer_EPEL/$basearch/
+gpgkey=file:///etc/pki/rpm-gpg/RPM-GPG-KEY-oracle
+gpgcheck=1
+enabled=1
+
+yum repolist
+
+yum install webkitgtk.x86_64
+
+java -version
+openjdk version "1.8.0_222-ea"
+OpenJDK Runtime Environment (build 1.8.0_222-ea-b03)
+OpenJDK 64-Bit Server VM (build 25.222-b03, mixed mode)
+
+adduser pentaho
+su - pentaho
+vi .bash_profile
+export PENTAHO_JAVA_HOME=/usr/lib/jvm/java-1.8.0-openjdk-1.8.0.222.b03-1.el7.x86_64
+export PENTAHO_INSTALLED_LICENSE_PATH=/home/pentaho/.pentaho/.installedLicenses.xml
+source .bash_profile
+env | grep PENTAHO_JAVA_HOME
+PENTAHO_JAVA_HOME=/usr/lib/jvm/java-1.8.0-openjdk-1.8.0.222.b03-1.el7.x86_64
+env | grep PENTAHO_INSTALLED_LICENSE_PATH
+PENTAHO_INSTALLED_LICENSE_PATH=/home/pentaho/.pentaho/.installedLicenses.xml
+
+wget https://ufpr.dl.sourceforge.net/project/pentaho/Pentaho%209.0/server/pentaho-server-ce-9.0.0.0-423.zip
+wget https://ufpr.dl.sourceforge.net/project/pentaho/Pentaho%209.0/client-tools/pdi-ce-9.0.0.0-423.zip
+
+mkdir -p /home/pentaho/pentaho/server/
+mkdir -p /home/pentaho/.pentaho
+
+mv pentaho-server-ce-9.0.0.0-423.zip /home/pentaho/pentaho/server/
+cd /home/pentaho/pentaho/server/
+unzip pentaho-server-ce-9.0.0.0-423.zip
+
+mv pdi-ce-9.0.0.0-423.zip /home/pentaho/pentaho/server/
+cd /home/pentaho/pentaho/server/
+unzip pdi-ce-9.0.0.0-423.zip
+
+exit
+
+yum install openssl-devel libtermcap-devel readline-devel gcc bison flex perl libconfig-devel kernel-devel rsync -y
+yum install zlib jzlib zlib-devel -y
+wget https://ftp.postgresql.org/pub/source/v11.4/postgresql-11.4.tar.gz
+tar xvfz postgresql-11.4.tar.gz
+cd postgresql-11.4
+mkdir -p /usr/local/
+./configure --prefix=/usr/local/pgsql-11.4 --with-openssl
+make
+make install
+cd contrib/
+make
+make install
+cd ~
+mkdir -p /dados/data
+chown postgres:postgres -R /dados
+adduser postgres
+su - postgres
+/usr/local/pgsql-11.4/bin/initdb --locale=pt_BR.UTF-8 -D /dados/data/
+vi 
+/usr/local/pgsql-11.4/bin/pg_ctl -D /dados/data -l logfile start_pentaho_pg
+exit
+
+
+
+
+
+
+
+
+
+
+
