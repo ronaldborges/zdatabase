@@ -42,6 +42,7 @@ yum remove -y mariadb-libs-5.5.64-1.el7.x86_64
 
 #PRERQUIRE PACKAGE
 yum install -y perl
+yum install -y glibc-all-langpacks.x86_64
 
 #DOWNLOAD MYSQL
 wget https://cdn.mysql.com//Downloads/MySQL-8.0/mysql-community-common-8.0.19-1.el7.x86_64.rpm
