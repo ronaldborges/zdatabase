@@ -1,0 +1,118 @@
++++++++++++++++++++++++++++++++++++++++++
++    PGPOOL II HIGH AVAILABLE ON OL7    +
++++++++++++++++++++++++++++++++++++++++++
+
+#CLUSTER SYSTEM CONFIGURATION
+MACHINE             HOSTNAME            IP               
+OL7_PGPOOL2_PRIM    pgpool2_prim        192.168.1.126   
+OL7_PGPOOL2_STDB1   pgpool2_stdb1       192.168.1.127
+OL7_PGPOOL2_STDB2   pgpool2_stdb2       192.168.1.128
+
+#DISABLE SELINUX AND FIREWALLD
+
+sed -i 's/SELINUX=.*/SELINUX=disabled/' /etc/selinux/config && setenforce 0
+systemctl stop firewalld && systemctl disable firewalld
+
+#REPEAT CONFIGURATION FOR OTHER MACHINES
+
+#CONFIGURE STATIC NETWORK
+TYPE=Ethernet
+PROXY_METHOD=none
+BROWSER_ONLY=no
+BOOTPROTO=none
+DEFROUTE=yes
+IPV4_FAILURE_FATAL=no
+IPV6INIT=no
+IPV6_AUTOCONF=yes
+IPV6_DEFROUTE=yes
+IPV6_FAILURE_FATAL=no
+IPV6_ADDR_GEN_MODE=stable-privacy
+NAME=enp0s3
+UUID=49c279da-7065-40f5-b914-176973db2a0a
+DEVICE=enp0s3
+ONBOOT=yes
+IPADDR=192.168.1.126
+PREFIX=24
+GATEWAY=192.168.1.1
+
+#REPEAT CONFIGURATION FOR OTHER MACHINES
+
+#CONFIGURE HOSTNAME
+hostnamectl 
+hostnamectl set-hostname pgpool2_prim
+hostnamectl --static
+
+#REPEAT CONFIGURATION FOR OTHER MACHINES
+
+#REPEAT CONFIGURATION FOR OTHER MACHINES
+
+#CONFIGURE /ETC/HOSTS
+vi /etc/hosts
+192.168.1.126   pgpool2_prim
+192.168.1.127   pgpool2_stdb1
+192.168.1.128   pgpool2_stdb2
+
+#REPEAT CONFIGURATION FOR OTHER MACHINES
+
+#CONFIGURE DNS
+vi /etc/resolv.conf
+nameserver 8.8.8.8
+nameserver 8.8.4.4
+
+#REPEAT CONFIGURATION FOR OTHER MACHINES
+
+#CONFIGURE AND INSTALL SOFTWARE POSTGRESQL
+vi /etc/yum.repos.d/oracle-linux-ol7.repo
+
+[ol7_optional_developer]
+name=Developer Preview of Oracle Linux $releasever Optional ($basearch)
+baseurl=https://yum.oracle.com/repo/OracleLinux/OL7/optional/developer/$basearch/
+gpgkey=file:///etc/pki/rpm-gpg/RPM-GPG-KEY-oracle
+gpgcheck=1
+enabled=1
+
+[ol7_developer_EPEL]
+name=Oracle Linux $releasever Development Packages ($basearch)
+baseurl=https://yum.oracle.com/repo/OracleLinux/OL7/developer_EPEL/$basearch/
+gpgkey=file:///etc/pki/rpm-gpg/RPM-GPG-KEY-oracle
+gpgcheck=1
+enabled=1
+
+yum install openssl-devel libtermcap-devel readline-devel gcc bison flex perl libconfig-devel kernel-devel rsync -y
+yum install zlib jzlib zlib-devel -y
+yum install wget -y
+yum install libmemcached libmemcached-devel memcached.x86_64 memcached-devel libpqxx -y 
+
+systemctl enable memcached
+systemctl start memcached
+
+#GET SFW DATABASE POSTGRES
+wget https://ftp.postgresql.org/pub/source/$VERSION/postgresql-$VERSION.tar.gz
+tar xvfz postgresql-$VERSION.tar.gz
+cd postgresql-$VERSION
+
+#INSTALL SFW DATABASE POSTGRES
+## install in default path /usr/local/pgsql using port 5432
+./configure --with-openssl
+example [./configure --prefix=$path/pgsql-$VERSION --with-openssl]
+make
+make install
+cd contrib/
+make
+make install
+ls -l /usr/local/pgsql/
+
+#INSTALL SFW DATABASE PGPOOL
+wget https://www.pgpool.net/mediawiki/images/pgpool-II-4.1.2.tar.gz
+tar xvfz pgpool-II-4.1.2.tar.gz
+cd pgpool-II-4.1.2
+mkdir -p /usr/local/pgpool-4.1.2
+
+
+
+
+
+
+
+
+
