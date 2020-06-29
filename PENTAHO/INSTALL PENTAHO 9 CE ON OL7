@@ -28,6 +28,8 @@ yum repolist
 
 yum install webkitgtk.x86_64
 yum install java-1.8.0-openjdk-devel
+yum install openssl-devel libtermcap-devel readline-devel gcc bison flex perl libconfig-devel kernel-devel rsync -y
+yum install zlib jzlib zlib-devel -y
 
 java -version
 openjdk version "1.8.0_222-ea"
@@ -37,7 +39,7 @@ OpenJDK 64-Bit Server VM (build 25.222-b03, mixed mode)
 adduser pentaho
 su - pentaho
 vi .bash_profile
-export PENTAHO_JAVA_HOME=/usr/lib/jvm/java-1.8.0-openjdk-1.8.0.222.b03-1.el7.x86_64
+export PENTAHO_JAVA_HOME=/usr/lib/jvm/java-1.8.0-openjdk-1.8.0.222.b03-1.el7.x86_64/jre
 export PENTAHO_INSTALLED_LICENSE_PATH=/home/pentaho/.pentaho/.installedLicenses.xml
 source .bash_profile
 env | grep PENTAHO_JAVA_HOME
@@ -97,8 +99,6 @@ systemctl daemon-reload
 systemctl enable tomcat
 systemctl start tomcat
 
-yum install openssl-devel libtermcap-devel readline-devel gcc bison flex perl libconfig-devel kernel-devel rsync -y
-yum install zlib jzlib zlib-devel -y
 wget https://ftp.postgresql.org/pub/source/v11.4/postgresql-11.4.tar.gz
 tar xvfz postgresql-11.4.tar.gz
 cd postgresql-11.4
