@@ -115,16 +115,37 @@ chown postgres:postgres -R /dados
 adduser postgres
 su - postgres
 /usr/local/pgsql-11.4/bin/initdb --locale=pt_BR.UTF-8 -D /dados/data/
-vi 
-/usr/local/pgsql-11.4/bin/pg_ctl -D /dados/data -l logfile start_pentaho_pg
 exit
 
+vi /usr/lib/systemd/system/postgresql.service
+[Unit]
+Description=PostgreSQL database server
+Documentation=man:postgres(1)
+
+[Service]
+Type=notify
+User=postgres
+ExecStart=/usr/local/pgsql-11.4/bin/postgres -D /dados/data
+ExecReload=/bin/kill -HUP $MAINPID
+KillMode=mixed
+KillSignal=SIGINT
+TimeoutSec=0
+
+[Install]
+WantedBy=multi-user.target
+
+systemctl daemon-reload
+systemctl enable postgresql.service
+systemctl status postgresql.service
+systemctl start postgresql.service
+
 su - pentaho
-cd pentaho/server/pentaho-server/data/postgresql 
-/usr/local/pgsql-11.4/bin/ -U postgres -p 5432 -f create_jcr_postgresql.sql
-/usr/local/pgsql-11.4/bin/ -U postgres -p 5432 -f create_quartz_postgresql.sql
-/usr/local/pgsql-11.4/bin/ -U postgres -p 5432 -f create_repository_postgresql.sql
-/usr/local/pgsql-11.4/bin/ -U postgres -p 5432 -f pentaho_mart_postgresql.sql
+cd /usr/local/pentaho/server/pentaho-server/data/postgresql 
+/usr/local/pgsql-11.4/bin/psql -U postgres -p 5432 -f create_jcr_postgresql.sql
+/usr/local/pgsql-11.4/bin/psql -U postgres -p 5432 -f create_quartz_postgresql.sql
+/usr/local/pgsql-11.4/bin/psql -U postgres -p 5432 -f create_repository_postgresql.sql
+
+
 
 
 
