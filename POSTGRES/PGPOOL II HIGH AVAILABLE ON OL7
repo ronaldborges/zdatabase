@@ -102,11 +102,44 @@ make
 make install
 ls -l /usr/local/pgsql/
 
+#CREATE USER AND DIRECTORY
+adduser postgres
+mkdir -p /dados/data
+chown postgres:postgres -R /dados
+su - postgres
+/usr/local/pgsql-11.4/bin/initdb --locale=pt_BR.UTF-8 -D /dados/data/
+
+#CREATE SERVICE POSTGRESQL
+vi /usr/lib/systemd/system/postgresql.service
+[Unit]
+Description=PostgreSQL database server
+Documentation=man:postgres(1)
+
+[Service]
+Type=notify
+User=postgres
+ExecStart=/usr/local/pgsql-11.4/bin/postgres -D /dados/data
+ExecReload=/bin/kill -HUP $MAINPID
+KillMode=mixed
+KillSignal=SIGINT
+TimeoutSec=0
+
+[Install]
+WantedBy=multi-user.target
+
+systemctl daemon-reload
+systemctl enable postgresql.service
+systemctl status postgresql.service
+systemctl start postgresql.service
+
 #INSTALL SFW DATABASE PGPOOL
-wget https://www.pgpool.net/mediawiki/images/pgpool-II-4.1.2.tar.gz
-tar xvfz pgpool-II-4.1.2.tar.gz
-cd pgpool-II-4.1.2
-mkdir -p /usr/local/pgpool-4.1.2
+yum install -y https://www.pgpool.net/yum/rpms/4.1/redhat/rhel-7-x86_64/pgpool-II-release-4.1-2.noarch.rpm
+yum install -y pgpool-II-pg11*
+
+
+
+
+
 
 
 
