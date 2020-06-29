@@ -102,7 +102,7 @@ yum install zlib jzlib zlib-devel -y
 wget https://ftp.postgresql.org/pub/source/v11.4/postgresql-11.4.tar.gz
 tar xvfz postgresql-11.4.tar.gz
 cd postgresql-11.4
-mkdir -p /usr/local/
+mkdir -p /usr/local/pgsql-11.4
 ./configure --prefix=/usr/local/pgsql-11.4 --with-openssl
 make
 make install
