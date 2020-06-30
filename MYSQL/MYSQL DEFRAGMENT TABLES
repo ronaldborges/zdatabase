@@ -58,7 +58,25 @@ mysqlcheck -o --all-databases -u root -p<password>
 mysql> use test;
 mysql> analyze table test_logs;
 
+#RUN OPTIMYZE FOR MULTIPLE TABLES FOR SPECIFIC DATABASE
+vi <$path>/scripts/desfrag.sh
+export ISREADY=`systemctl status mariadb | grep "Active: active (running)" | wc -l`
+if [ $ISREADY -eq 1 ]; then
+for tbname in $(mysql -u root -p<password> <database> -sN -e "select table_name from information_schema.tables where round(data_free/1024/1024) > 50 order by 1 desc"); do
+echo ${tbname}
+ mysql -u root -p<password> <database> -e "optimize table ${tablename};"
+done
+export RESVACUUM=`echo -e "OK"`
+export SAIDABOT=`echo -e "Desfrag DB :" $RESVACUUM`
+curl -s -X POST https://api.telegram.org/bot$:$/sendMessage -d chat_id=$chatid -d text="$SAIDABOT"
+else
+export RESVACUUM=`echo -e "FALHA"`
+export SAIDABOT=`echo -e "Desfrag DB :" $RESVACUUM`
+curl -s -X POST https://api.telegram.org/bot$:$/sendMessage -d chat_id=$chatid -d text="$SAIDABOT"
+fi
 
-
+chmod +x <$path>/scripts/desfrag.sh
+crontab -e
+50 23 2 * * nohup <$path>/scripts/desfrag.sh > $path/desfrag.log 2>&1 &
 
  
