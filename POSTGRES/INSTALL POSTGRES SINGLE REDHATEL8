@@ -1,6 +1,6 @@
-+++++++++++++++++++++++++++++++++++++
-+     POSTGRES SINGLE REDHATEL8     +
-+++++++++++++++++++++++++++++++++++++
+++++++++++++++++++++++++++++++++++++++++++++
++    INSTALL POSTGRES SINGLE REDHATEL8     +
+++++++++++++++++++++++++++++++++++++++++++++
 
 #DISABLE INITIAL SCREEM REDHAT 8
 touch ~/.config/gnome-initial-setup-done
