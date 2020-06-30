@@ -1,0 +1,74 @@
+++++++++++++++++++++++++++++++++++++++++++
++     INSTALL BARMAN POSTGRES ON OL7     +
+++++++++++++++++++++++++++++++++++++++++++
+
+#INSTALLATION
+#AS ROOT
+wget https://download.postgresql.org/pub/repos/yum/reporpms/EL-7-x86_64/pgdg-redhat-repo-latest.noarch.rpm
+vi /etc/yum.repos.d/pgdg-redhat-all.repo
+#######################################################
+# PGDG Red Hat Enterprise Linux / CentOS repositories #
+#######################################################
+
+# PGDG Red Hat Enterprise Linux / CentOS stable common repository for all PostgreSQL versions
+
+[pgdg-common]
+name=PostgreSQL common RPMs for RHEL/CentOS $releasever - $basearch
+baseurl=https://download.postgresql.org/pub/repos/yum/common/redhat/rhel-$releasever-$basearch
+enabled=1
+gpgcheck=1
+gpgkey=file:///etc/pki/rpm-gpg/RPM-GPG-KEY-PGDG
+
+# PGDG Red Hat Enterprise Linux / CentOS stable repositories:
+
+[pgdg11]
+name=PostgreSQL 11 for RHEL/CentOS $releasever - $basearch
+baseurl=https://download.postgresql.org/pub/repos/yum/11/redhat/rhel-$releasever-$basearch
+enabled=1
+gpgcheck=1
+gpgkey=file:///etc/pki/rpm-gpg/RPM-GPG-KEY-PGDG
+exclude=barman*
+
+yum install barman.noarch
+
+#CREATE USER FOR BARMAN RUN ALL BACKUPS (THE DATABASE CAN BE LOCAL OR REMOTE)
+su - postgres
+/usr/local/pgsql-11.4/bin/psql -U postgres
+SET password_encryption = 'scram-sha-256';
+CREATE ROLE barman WITH SUPERUSER;
+\password barman
+\q
+
+vi /dados/data/postgresql.conf
+listen_addresses = '*'
+port = 5432
+wal_level = replica
+archive_mode = on
+archive_command = 'gzip -c %p > /postgres/wals/%f.gz'
+archive_timeout = 600
+max_wal_senders = 10
+wal_keep_segments = 32
+exit
+
+mkdir -p /postgres/wals/
+chown postgres:postgres -R /postgres
+systemctl stop postgresql.service
+systemctl start postgresql.service
+
+adduser barman
+passwd barman
+su - barman
+ssh-keygen -t rsa
+exit
+vi /dados/.pgpass
+localhost:5432:*:barman:<your password>
+chown barman:barman /dados/.pgpass
+
+su - postgres
+ssh-keygen -t rsa
+cd .ssh/
+ssh-copy-id -i id_rsa.pub barman@localhost
+exit
+
+#RUN BACKUPS IN LOCAL SERVER
+vi /etc/barman.conf
