@@ -1,6 +1,6 @@
-+++++++++++++++++++++++++++++++++++++++++
-+    PGPOOL II HIGH AVAILABLE ON OL7    +
-+++++++++++++++++++++++++++++++++++++++++
++++++++++++++++++++++++++++++++++++++++++++++++++
++    INSTALL PGPOOL II HIGH AVAILABLE ON OL7    +
++++++++++++++++++++++++++++++++++++++++++++++++++
 
 #CLUSTER SYSTEM CONFIGURATION
 MACHINE             HOSTNAME            IP               
