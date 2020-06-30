@@ -82,9 +82,10 @@ yum install openssl-devel libtermcap-devel readline-devel gcc bison flex perl li
 yum install zlib jzlib zlib-devel -y
 yum install wget -y
 yum install libmemcached libmemcached-devel memcached.x86_64 memcached-devel libpqxx -y 
-
 systemctl enable memcached
 systemctl start memcached
+
+#REPEAT CONFIGURATION FOR OTHER MACHINES
 
 #GET SFW DATABASE POSTGRES
 wget https://ftp.postgresql.org/pub/source/$VERSION/postgresql-$VERSION.tar.gz
@@ -102,12 +103,22 @@ make
 make install
 ls -l /usr/local/pgsql/
 
+#REPEAT CONFIGURATION FOR OTHER MACHINES
+
 #CREATE USER AND DIRECTORY
 adduser postgres
+passwd postgres
 mkdir -p /dados/data
+mkdir -p /postgres/wals
 chown postgres:postgres -R /dados
+chown postgres:postgres -R /postgres
+
+#REPEAT CONFIGURATION FOR OTHER MACHINES
+
 su - postgres
 /usr/local/pgsql-11.4/bin/initdb --locale=pt_BR.UTF-8 -D /dados/data/
+
+#CONFIGURE ONLY ON PRIMARY
 
 #CREATE SERVICE POSTGRESQL
 vi /usr/lib/systemd/system/postgresql.service
@@ -132,9 +143,84 @@ systemctl enable postgresql.service
 systemctl status postgresql.service
 systemctl start postgresql.service
 
+#REPEAT CONFIGURATION FOR OTHER MACHINES
+
 #INSTALL SFW DATABASE PGPOOL
 yum install -y https://www.pgpool.net/yum/rpms/4.1/redhat/rhel-7-x86_64/pgpool-II-release-4.1-2.noarch.rpm
 yum install -y pgpool-II-pg11*
+
+#REPEAT CONFIGURATION FOR OTHER MACHINES
+
+#CONFIGURE POSTGRES PRIMARY
+vi /dados/data/postgresql.conf
+listen_addresses = '*'
+port = 5432
+wal_level = replica
+archive_mode = on
+archive_command = 'gzip -c %p > /postgres/wals/%f.gz'
+archive_timeout = 600
+max_wal_senders = 10
+wal_keep_segments = 32
+hot_standby = on
+wal_log_hints = on 
+
+systemctl stop postgresql.service
+systemctl start postgresql.service
+
+#CREATE USER FOR REPLICATION PRIMARY
+su - postgtres
+/usr/local/pgsql-11.4/bin/psql -U postgres -p 5432
+SET password_encryption = 'scram-sha-256';
+CREATE ROLE pgpool WITH LOGIN;
+CREATE ROLE repl WITH REPLICATION LOGIN;
+\password pgpool
+\password repl
+\password postgres
+GRANT pg_monitor TO pgpool;
+\q
+exit
+
+#CONFIGURE PG_HBA PRIMARY
+
+vi /dados/data/pg_hba.conf
+host    all             all             192.168.1.0/24          scram-sha-256
+host    replication     all             192.168.1.0/24          scram-sha-256
+su - postgres -c "/usr/local/pgsql-11.4/bin/pg_ctl reload -D /dados/data"
+
+#TO PERFORM THE AUTOMATIVE FAILOVER IT IS NECESSARY TO EXCHANGE SSH KEYS USER ROOT AND POSTGRES USER
+ssh-keygen -t rsa
+cd .ssh/
+ssh-copy-id -i id_rsa.pub root@192.168.1.126
+ssh-copy-id -i id_rsa.pub root@192.168.1.127
+ssh-copy-id -i id_rsa.pub root@192.168.1.128
+ssh-copy-id -i id_rsa.pub postgres@192.168.1.126
+ssh-copy-id -i id_rsa.pub postgres@192.168.1.127
+ssh-copy-id -i id_rsa.pub postgres@192.168.1.128
+su - postgres
+ssh-keygen -t rsa
+.ssh/
+ssh-copy-id -i id_rsa.pub postgres@192.168.1.126
+ssh-copy-id -i id_rsa.pub postgres@192.168.1.127
+ssh-copy-id -i id_rsa.pub postgres@192.168.1.128
+
+#CONFIGURE .PGPASS FILE
+vi /dados/.pgpass
+pgpool2_prim:5432:replication:repl:<repl user password>
+pgpool2_stdb1:5432:replication:repl:<repl user passowrd>
+pgpool2_stdb2:5432:replication:repl:<repl user passowrd>
+pgpool2_prim:5432:postgres:postgres:<postgres user passowrd>
+pgpool2_stdb1:5432:postgres:postgres:<postgres user passowrd>
+pgpool2_stdb2:5432:postgres:postgres:<postgres user passowrd>
+chmod 600 /dados/.pgpass
+
+#REPEAT CONFIGURATION FOR OTHER MACHINES
+
+
+
+
+
+
+
 
 
 
