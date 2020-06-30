@@ -4,6 +4,7 @@
 
 #INSTALLATION
 #AS ROOT
+yum install python-{argcomplete,argh,argparse,dateutil,psycopg2}
 wget https://download.postgresql.org/pub/repos/yum/reporpms/EL-7-x86_64/pgdg-redhat-repo-latest.noarch.rpm
 vi /etc/yum.repos.d/pgdg-redhat-all.repo
 #######################################################
@@ -35,7 +36,7 @@ yum install barman.noarch
 su - postgres
 /usr/local/pgsql-11.4/bin/psql -U postgres
 SET password_encryption = 'scram-sha-256';
-CREATE ROLE barman WITH SUPERUSER;
+CREATE ROLE barman WITH LOGIN SUPERUSER;
 \password barman
 \q
 
@@ -59,10 +60,12 @@ adduser barman
 passwd barman
 su - barman
 ssh-keygen -t rsa
+touch authorized_keys
+chmod 600 authorized_keys
 exit
 vi /dados/.pgpass
 localhost:5432:*:barman:<your password>
-chown barman:barman /dados/.pgpass
+chmod 666 /dados/.pgpass
 
 su - postgres
 ssh-keygen -t rsa
@@ -72,3 +75,169 @@ exit
 
 #RUN BACKUPS IN LOCAL SERVER
 vi /etc/barman.conf
+[barman]
+; Main directory
+barman_home = /var/lib/barman
+
+; System user
+barman_user = barman
+
+; Log location
+log_file = /var/log/barman/barman.log
+
+; Default compression level
+;compression = gzip
+
+; Incremental backup
+reuse_backup = link
+
+; 'main' PostgreSQL Server configuration
+[main]
+; Human readable description
+description =  "Main PostgreSQL Database"
+
+; SSH options
+ssh_command = ssh postgres@pg
+
+; PostgreSQL connection string
+conninfo = host=pg user=postgres
+CREATE ROLE barman WITH LOGIN SUPERUSER;
+\password barman
+\q
+
+vi /dados/data/postgresql.conf
+listen_addresses = '*'
+port = 5432
+wal_level = replica
+archive_mode = on
+archive_command = 'gzip -c %p > /postgres/wals/%f.gz'
+archive_timeout = 600
+max_wal_senders = 10
+wal_keep_segments = 32
+exit
+
+mkdir -p /postgres/wals/
+chown postgres:postgres -R /postgres
+systemctl stop postgresql.service
+systemctl start postgresql.service
+
+adduser barman
+passwd barman
+su - barman
+ssh-keygen -t rsa
+touch authorized_keys
+chmod 600 authorized_keys
+exit
+vi /dados/.pgpass
+localhost:5432:*:barman:<your password>
+chmod 666 /dados/.pgpass
+
+su - postgres
+ssh-keygen -t rsa
+cd .ssh/
+ssh-copy-id -i id_rsa.pub barman@localhost
+exit
+
+#RUN BACKUPS IN LOCAL SERVER
+vi /etc/barman.conf
+; Barman, Backup and Recovery Manager for PostgreSQL
+; http://www.pgbarman.org/ - http://www.2ndQuadrant.com/
+;
+; Main configuration file
+
+[barman]
+; System user
+barman_user = barman
+
+; Directory of configuration files. Place your sections in separate files with .conf extension
+; For example place the 'main' server section in /etc/barman.d/main.conf
+configuration_files_directory = /etc/barman.d
+
+; Main directory
+barman_home = /var/lib/barman
+
+; Locks directory - default: %(barman_home)s
+;barman_lock_directory = /var/run/barman
+
+; Log location
+log_file = /var/log/barman/barman.log
+
+; Log level (see https://docs.python.org/3/library/logging.html#levels)
+log_level = INFO
+
+; Default compression level: possible values are None (default), bzip2, gzip, pigz, pygzip or pybzip2
+compression = gzip
+
+; Pre/post backup hook scripts
+;pre_backup_script = env | grep ^BARMAN
+;pre_backup_retry_script = env | grep ^BARMAN
+;post_backup_retry_script = env | grep ^BARMAN
+;post_backup_script = env | grep ^BARMAN
+
+; Pre/post archive hook scripts
+;pre_archive_script = env | grep ^BARMAN
+;pre_archive_retry_script = env | grep ^BARMAN
+;post_archive_retry_script = env | grep ^BARMAN
+;post_archive_script = env | grep ^BARMAN
+
+; Pre/post delete scripts
+;pre_delete_script = env | grep ^BARMAN
+;pre_delete_retry_script = env | grep ^BARMAN
+;post_delete_retry_script = env | grep ^BARMAN
+;post_delete_script = env | grep ^BARMAN
+
+; Pre/post wal delete scripts
+;pre_wal_delete_script = env | grep ^BARMAN
+;pre_wal_delete_retry_script = env | grep ^BARMAN
+;post_wal_delete_retry_script = env | grep ^BARMAN
+;post_wal_delete_script = env | grep ^BARMAN
+
+; Global bandwidth limit in KBPS - default 0 (meaning no limit)
+;bandwidth_limit = 4000
+
+; Number of parallel jobs for backup and recovery via rsync (default 1)
+;parallel_jobs = 1
+
+; Immediate checkpoint for backup command - default false
+;immediate_checkpoint = false
+
+; Enable network compression for data transfers - default false
+;network_compression = false
+
+; Number of retries of data copy during base backup after an error - default 0
+;basebackup_retry_times = 0
+
+; Number of seconds of wait after a failed copy, before retrying - default 30
+;basebackup_retry_sleep = 30
+
+; Maximum execution time, in seconds, per server
+; for a barman check command - default 30
+;check_timeout = 30
+
+; Time frame that must contain the latest backup date.
+; If the latest backup is older than the time frame, barman check
+; command will report an error to the user.
+; If empty, the latest backup is always considered valid.
+; Syntax for this option is: "i (DAYS | WEEKS | MONTHS)" where i is an
+; integer > 0 which identifies the number of days | weeks | months of
+; validity of the latest backup for this check. Also known as 'smelly backup'.
+;last_backup_maximum_age =
+
+; Minimum number of required backups (redundancy)
+minimum_redundancy = 1
+
+; Global retention policy (REDUNDANCY or RECOVERY WINDOW)
+; Examples of retention policies
+; Retention policy (disabled, default)
+;retention_policy =
+; Retention policy (based on redundancy)
+;retention_policy = REDUNDANCY 2
+; Retention policy (based on recovery window)
+;retention_policy = RECOVERY WINDOW OF 4 WEEKS
+
+[localhost]
+description =  "Localhost PostgreSQL server"
+conninfo = host=localhost user=barman dbname=postgres
+ssh_command = ssh postgres@localhost
+retention_policy = RECOVERY WINDOW OF 2 WEEKS
+
