@@ -1,6 +1,6 @@
-+++++++++++++++++++++++++++++++++++++
-+     POSTGRES-XL ON REDHATEL8      +
-+++++++++++++++++++++++++++++++++++++
++++++++++++++++++++++++++++++++++++++++++++++
++     INSTALL POSTGRES-XL ON REDHATEL8      +
++++++++++++++++++++++++++++++++++++++++++++++
 
 #CREATE AND INSTALL CLUSTER POSTGRES-XL ON VIRTUALBOX (REDHATEL8)
 
