@@ -1,0 +1,92 @@
+++++++++++++++++++++++++++++++++++++++++
++    INSTALL POSTGRES 11 + JIT OL7     +
+++++++++++++++++++++++++++++++++++++++++
+
+#NOTE
+One of the highlighted features in PostgreSQL 11. 
+There is great excitement in the community because of the many claims of up to a 30% jump in performance. 
+Not all queries and workloads get the benefit of JIT compilation. 
+So you may want to test your workload against this new feature.
+
+#DISABLE FIREWALL AND SELINUX
+sed -i 's/SELINUX=.*/SELINUX=disabled/' /etc/selinux/config && setenforce 0
+systemctl stop firewalld && systemctl disable firewalld
+
+#ADD REPOSITORIES TO YUM 
+vi /etc/yum.repos.d/oracle-linux-ol7.repo
+
+[ol7_optional_developer]
+name=Developer Preview of Oracle Linux $releasever Optional ($basearch)
+baseurl=https://yum.oracle.com/repo/OracleLinux/OL7/optional/developer/$basearch/
+gpgkey=file:///etc/pki/rpm-gpg/RPM-GPG-KEY-oracle
+gpgcheck=1
+enabled=1
+
+[ol7_developer_EPEL]
+name=Oracle Linux $releasever Development Packages ($basearch)
+baseurl=https://yum.oracle.com/repo/OracleLinux/OL7/developer_EPEL/$basearch/
+gpgkey=file:///etc/pki/rpm-gpg/RPM-GPG-KEY-oracle
+gpgcheck=1
+enabled=1
+
+[ol7_developer]
+name=Oracle Linux $releasever Latest Development Packages ($basearch)
+baseurl=http://yum.oracle.com/repo/OracleLinux/OL7/developer/$basearch/
+gpgkey=file:///etc/pki/rpm-gpg/RPM-GPG-KEY-oracle
+gpgcheck=1
+enabled=1
+
+[ol7_software_collection]
+name=Oracle Linux $releasever Latest Software Collection Library Packages ($basearch)
+baseurl=http://yum.oracle.com/repo/OracleLinux/OL7/SoftwareCollections/$basearch/
+gpgkey=file:///etc/pki/rpm-gpg/RPM-GPG-KEY-oracle
+gpgcheck=1
+enabled=1
+
+#LIST REPOSITORIES LIST
+yum repolist
+
+#INSTALL PACKAGES FOR LLVM
+yum install -y llvm-toolset-7 llvm-toolset-7-llvm-devel
+
+vi .bash_profile
+PATH=/opt/rh/devtoolset-7/root/bin/:/opt/rh/llvm-toolset-7/root/bin/:$PATH
+source .bash_profile
+
+#INSTALL PACKAGES FOR POSTGRES
+yum install openssl-devel libtermcap-devel readline-devel gcc bison flex perl libconfig-devel kernel-devel rsync -y
+yum install zlib jzlib zlib-devel -y
+yum install wget -y
+
+#NOTE 
+THIS FEATURE CAN BE USED FROM POSTGRES 11 OR ABOVE
+
+#DOWNLOAD POSTGRES 11
+wget https://ftp.postgresql.org/pub/source/v11.$/postgresql-11.$.tar.gz
+tar xvfz postgresql-11.$.tar.gz
+cd postgresql-11.$
+mkdir -p /usr/local/pgsql-11.$
+
+#INSTALL SFW DATABASE POSTGRES
+## install in default path /usr/local/pgsql using port 5432
+./configure --with-openssl
+example [./configure --prefix=$path/pgsql-11.$ --with-openssl --with-llvm']
+make
+make install
+cd contrib/
+make
+make install
+ls -l /usr/local/pgsql-11.$
+
+adduser postgres
+mkdir -p /dados/data
+chown postgres:postgres -R /dados
+su - postgres -c "/usr/local/pgsql-11.$/bin/initdb --locale=pt_BR.UTF-8 -D /dados/data/"
+
+
+
+
+
+
+
+
