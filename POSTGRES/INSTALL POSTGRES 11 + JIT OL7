@@ -70,7 +70,7 @@ mkdir -p /usr/local/pgsql-11.$
 #INSTALL SFW DATABASE POSTGRES
 ## install in default path /usr/local/pgsql using port 5432
 ./configure --with-openssl
-example [./configure --prefix=$path/pgsql-11.$ --with-openssl --with-llvm']
+example [./configure --prefix=$path/pgsql-11.$ --with-openssl --with-llvm]
 make
 make install
 cd contrib/
@@ -82,6 +82,56 @@ adduser postgres
 mkdir -p /dados/data
 chown postgres:postgres -R /dados
 su - postgres -c "/usr/local/pgsql-11.$/bin/initdb --locale=pt_BR.UTF-8 -D /dados/data/"
+
+#CREATE SERVICE POSTGRESQL
+vi /usr/lib/systemd/system/postgresql.service
+[Unit]
+Description=PostgreSQL database server
+Documentation=man:postgres(1)
+
+[Service]
+Type=notify
+User=postgres
+ExecStart=/usr/local/pgsql-11.$/bin/postgres -D /dados/data
+ExecReload=/bin/kill -HUP $MAINPID
+KillMode=mixed
+KillSignal=SIGINT
+TimeoutSec=0
+
+[Install]
+WantedBy=multi-user.target
+
+systemctl daemon-reload
+systemctl enable postgresql.service
+systemctl status postgresql.service
+systemctl start postgresql.service
+
+ps -ef | grep pgsql
+postgres 28053     1  0 16:52 ?        00:00:00 /usr/local/pgsql-11.$/bin/postgres -D /dados/data
+
+#ENABLE JIT
+sed -i 's/jit = off/jit = on/g' /dados/data/postgresql.conf
+#OR
+su - postgres
+/usr/local/pgsql-11.$/bin/psql -U postgres
+psql (11.$)
+Type "help" for help.
+postgres=# ALTER SYSTEM SET jit=on;
+ALTER SYSTEM
+postgres=# select pg_reload_conf();
+ pg_reload_conf 
+----------------
+ t
+(1 row)
+
+postgres=# show jit;
+ jit 
+-----
+ on
+(1 row)
+
+#TEST JIT 
+
 
 
 
