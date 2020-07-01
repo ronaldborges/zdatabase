@@ -18,6 +18,7 @@ systemctl disable firewalld
 
 #INSTALL PRE-REQUIRES
 yum groupinstall "Development tools" -y
+#OR
 yum install openssl-devel libtermcap-devel readline-devel gcc bison flex perl libconfig-devel kernel-devel rsync -y
 yum install zlib jzlib zlib-devel -y
 yum install wget -y
