@@ -81,6 +81,7 @@ ls -l /usr/local/pgsql-11.$
 adduser postgres
 mkdir -p /dados/data
 chown postgres:postgres -R /dados
+cp /opt/rh/llvm-toolset-7/root/usr/lib64/libLLVM-4.0.so /usr/local/pgsql-11.4/lib/
 su - postgres -c "/usr/local/pgsql-11.$/bin/initdb --locale=pt_BR.UTF-8 -D /dados/data/"
 
 #CREATE SERVICE POSTGRESQL
@@ -131,6 +132,23 @@ postgres=# show jit;
 (1 row)
 
 #TEST JIT 
+postgres=# SET jit_above_cost=5;
+postgres=# create table t1 (id int);
+postgres=# insert into t1 (SELECT (random()*100)::int FROM generate_series(1,800000) as g);
+postgres=# analyze t1;
+postgres=# explain select sum(id) from t1;
+                                     QUERY PLAN
+-------------------------------------------------------------------------------------
+ Finalize Aggregate  (cost=8706.88..8706.89 rows=1 width=8)
+   ->  Gather  (cost=8706.67..8706.88 rows=2 width=8)
+         Workers Planned: 2
+         ->  Partial Aggregate  (cost=7706.67..7706.68 rows=1 width=8)
+               ->  Parallel Seq Scan on t1  (cost=0.00..6873.33 rows=333333 width=4)
+ JIT:
+   Functions: 6
+   Options: Inlining false, Optimization false, Expressions true, Deforming true
+(8 rows)
+
 
 
 
