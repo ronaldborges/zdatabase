@@ -111,20 +111,25 @@ ps -ef | grep pgsql
 postgres 28053     1  0 16:52 ?        00:00:00 /usr/local/pgsql-11.$/bin/postgres -D /dados/data
 
 #ENABLE JIT
-sed -i 's/jit = off/jit = on/g' /dados/data/postgresql.conf
-#OR
+vi /dados/data/postgresql.conf
+shared_buffers = 2GB
+temp_buffers = 64MB
+work_mem = 32MB
+maintenance_work_mem = 1GB
+wal_level = minimal
+max_wal_senders = 0
+max_wal_size = 1GB
+random_page_cost = 1.1
+jit = on
+
+systemctl stop postgresql.service
+systemctl start postgresql.service
+
+#VALIDATE
 su - postgres
 /usr/local/pgsql-11.$/bin/psql -U postgres
 psql (11.$)
 Type "help" for help.
-postgres=# ALTER SYSTEM SET jit=on;
-ALTER SYSTEM
-postgres=# select pg_reload_conf();
- pg_reload_conf 
-----------------
- t
-(1 row)
-
 postgres=# show jit;
  jit 
 -----
@@ -132,7 +137,10 @@ postgres=# show jit;
 (1 row)
 
 #TEST JIT 
-postgres=# SET jit_above_cost=5;
+postgres=# set jit=on;
+postgres=# set jit_above_cost=0;
+postgres=# set jit_inline_above_cost=0;
+postgres=# set jit_optimize_above_cost=0;
 postgres=# create table t1 (id int);
 postgres=# insert into t1 (SELECT (random()*100)::int FROM generate_series(1,800000) as g);
 postgres=# analyze t1;
