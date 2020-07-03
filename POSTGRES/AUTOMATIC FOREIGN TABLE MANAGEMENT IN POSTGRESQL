@@ -1,0 +1,102 @@
+++++++++++++++++++++++++++++++++++++++++++++++++++++++++
++   AUTOMATIC FOREIGN TABLE MANAGEMENT IN POSTGRESQL   +
+++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+
+#NOTE
+Foreign tables are external tables that usually have orgies in other instances of databases, 
+that have a different maintenance team and that often do not establish direct communication. 
+When the original table is modified, the foreign table may become unusable. 
+Needing to be recreated or modified to correct its characteristics. 
+The idea of the solution is to automate the process of updating foreign tables in postgres.
+
+
+#CREATE TABLE REGISTER FOREING TABLES
+
+create table fdw_tables_list
+(schema_name character varying not NULL,
+table_name character varying not NULL,
+foreign_server_name character varying not null,
+usename character varying not null,
+CONSTRAINT fdw_tables_list_pku UNIQUE (schema_name, table_name, foreign_server_name));
+
+#INSERT EXISTENT FOREIGN TABLES
+
+INSERT INTO public.fdw_tables_list(schema_name, table_name, foreign_server_name, usename)
+SELECT foreign_table_schema, t.foreign_table_name, s.foreign_server_name, u.usename
+FROM information_schema.foreign_tables t join information_schema.foreign_servers s on t.foreign_server_catalog = s.foreign_server_catalog
+join pg_class c on t.foreign_table_name = c.relname
+join pg_user u on c.relowner = u.usesysid;
+
+#GENERATE FOREIGN TABLE METADATA POSTGRES
+
+SELECT                                          
+  'CREATE FOREIGN TABLE ' || table_schema || '.' || relname || E'\n(\n' ||
+  array_to_string(
+    array_agg(
+      '    ' || column_name || ' ' ||  type || ' '|| not_null
+    )
+    , E',\n'
+  ) || E'\n)\n SERVER ' || foreign_server_name  || E'\n OPTIONS (schema_name ''' || table_schema || ''', table_name ''' || relname || ''');' || E'\n ALTER TABLE ' || table_schema || '.' || relname || ' OWNER TO ' || usename || ';' || E'\n GRANT SELECT ON TABLE ' || table_schema || '.' || relname || ' TO ' || usename || ';'
+from
+(
+  SELECT 
+    c.relname, a.attname AS column_name,
+    pg_catalog.format_type(a.atttypid, a.atttypmod) as type,
+    case 
+      when a.attnotnull
+    then 'NOT NULL' 
+    else 'NULL' 
+    END as not_null, s.foreign_server_name, ts.table_schema, u.usename 
+  FROM pg_attribute a,
+   pg_type t,
+   information_schema.tables ts
+   join information_schema.foreign_servers s on ts.table_catalog = s.foreign_server_catalog
+   join pg_class c on ts.table_name = c.relname
+   join pg_user u on c.relowner = u.usesysid
+   where ts.table_schema not in ('information_schema', 'pg_catalog') and ts.table_type = 'FOREIGN'
+   AND a.attnum > 0
+   AND a.attrelid = c.oid
+   AND a.atttypid = t.oid
+ ORDER BY a.attnum
+) as tabledefinition
+group by relname, foreign_server_name, table_schema, usename;
+
+#CREATE FOREIGN TABLES FOR MANAGE METADATA
+
+pg_attribute
+pg_type
+information_schema.tables
+information_schema.foreign_servers
+pg_class
+pg_user
+
+CREATE FOREIGN TABLE  public.pg_attribute_f (
+ attrelid oid not null, 
+ attname name not null, 
+ atttypid oid not null,
+ attstattarget integer not null,
+ attlen smallint not null,
+ attnum smallint not null,
+ attndims integer not null,
+ attcacheoff integer not null,
+ atttypmod integer not null,
+ attbyval boolean not null,
+ attstorage char not null,
+ attalign char not null,
+ attnotnull boolean not null,
+ atthasdef boolean not null,
+ atthasmissing boolean not null,
+ attidentity char not null,
+ attisdropped boolean not null,
+ attislocal boolean not null,
+ attinhcount integer not null,
+ attcollation oid not null,
+ attacl aclitem[],
+ attoptions text[],
+ attfdwoptions text[],
+ attmissingval anyarray)
+SERVER fdw_pg11
+OPTIONS (schema_name 'pg_catalog', table_name 'pg_attribute');
+
+ALTER TABLE public.pg_attribute_f OWNER TO postgres;
+GRANT SELECT ON TABLE public.pg_attribute_f TO postgres;
