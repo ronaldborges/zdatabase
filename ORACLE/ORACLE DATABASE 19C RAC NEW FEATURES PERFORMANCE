@@ -1,0 +1,64 @@
+++++++++++++++++++++++++++++++++++++++++++++++++++++++
++  ORACLE DATABASE 19C RAC NEW FEATURES PERFORMANCE  +
+++++++++++++++++++++++++++++++++++++++++++++++++++++++
+
+#Sql Quarentine
+
+Sql statements that are terminated by Oracle Database Resource Manager due to their excessive consumption of CPU and I/O resources are automatically quarantined. The execution plans associated with the terminated SQL statements are quarantined to prevent them from being executed again.
+This feature protect an Oracle Database from performance degradation by preventing execution of SQL statements that excessively consome CPU and I/O resource.
+
+#Database In-Memory Wait on Populate
+
+The DBMS_INMEMORY_ADMIN.POPULATE_WAIT function waits until objects at the specified priority have been populated to the specified percentage.
+The new function ensures that the specified In-Memory objects have been populated before allowing application access. For example, a database might contain a number of In-Memory tables with a variety of priority setting.
+In a restricted session, you can use the POPULATED_WAIT function to ensure that every In-Memory tables is completely populated. Afterward, you can disable the restricted session so that the application is guaranteed to query only In-Memory representations of the tables.
+
+#Memoptimized Rowstore Fast Ingest
+The fast ingest functionality of memoptimized Rowstore enables fast data inserts into an Oracle Database from applications, such as Internet of Things(IoT) applications that ingest small, high volume transactions with a minimal amount of transactional overhead. The insert operations that use fast ingest temporarily buffer the data in the large pool before writing it to disk in bulk in a deferred, asynchonous manner.
+
+#Automatic Database Diagnostic Monitor (ADDM) Support for Pluggable Database (PDBs)
+You can now use Automatic Database Diagnostic Monitor (ADDM) analysis for pluggable databases(PDBs) in a multitenant environment.
+ADDM analysis at a PDB level enables you to tune a PDB effectively for better performance.
+
+#High-Frequency SQL Plan Management Evolve Advisor Task
+You can configure the Automatic SPM Evolve advisor task to run every hour, outside of the standard maintenance window.
+By evolving SQL plan baselines more frequently, the optimizer can correct performance regression more quickly and enforce more optimal SQL execution plans.
+
+#Workload Capture and Replay in a PDB
+Oracle Real Application Testing was designed to capture and replay multitenant database (CDB) level. Starting with Oracle Database Release 19c, you can capture and replay the workload from within an individual pluggable database (PDB)
+This enhamcement enables you to capture and replay workloads at the PDB level. This leads to better testing, less downtime, and more effective change control.
+
+#Automatic Indexing
+The automatic indexing feature automates index management tasks, such as creating, rebuilding, and dropping indexes in an Oracle Database based on changes in the application workload.
+This feature improves database performance by managing indexes automatically in an Oracle Database.
+
+#Configuring Automatic Indexing in an Oracle Database
+EXEC DBMS_AUTO_INDEX.CONFIGURE('AUTO_INDEX_MODE','IMPLEMENT');
+EXEC DBMS_AUTO_INDEX.CONFIGURE('AUTO_INDEX_MODE','REPORT ONLY');
+EXEC DBMS_AUTO_INDEX.CONFIGURE('AUTO_INDEX_MODE','OFF');
+EXEC DBMS_AUTO_INDEX.CONFIGURE('AUTO_INDEX_SCHEMA','SH','FALSE');
+EXEC DBMS_AUTO_INDEX.CONFIGURE('AUTO_INDEX_SCHEMA','HR','FALSE');
+EXEC DBMS_AUTO_INDEX.CONFIGURE('AUTO_INDEX_SCHEMA','HR','NULL');
+EXEC DBMS_AUTO_INDEX.CONFIGURE('AUTO_INDEX_SCHEMA','NULL','TRUE');
+EXEC DBMS_AUTO_INDEX.CONFIGURE('AUTO_INDEX_RETENTION_FOR_AUTO','90');
+EXEC DBMS_AUTO_INDEX.CONFIGURE('AUTO_INDEX_RETENTION_FOR_AUTO','NULL');
+
+#SQL Diagnostics and Repair Enhancements
+The SQL diagnostics and repair tools, such as SQL Test Case Builder and SQL Repair Advisor have been enhanced to provide better diagnosis and repair capabilities for managing problematic SQL statements.
+These enhancements enable more effective diagnosis and repair of problematic SQL statements.
+
+#Bitmap Based Count Distinct SQL Function
+Use new bit vector SQL operators to speed up COUNT DISTINCT operations within a SQL query. To compute COUNT(DISTINCT) for numeric expression, you can create a bit vector representation of the exepressions and aggregate them before the final bit count.
+The resulting bit vector can be materialized, such as in a materialized view.
+
+#Automatic SQL Plan Management
+Automatic SQL plan management resolves plan regressions without user intervention.
+For example, if high-load stetements are performing suboptimally, then SQL plan management evolve advisor can locate the statements automatically, and then test and accept the best plans.
+SQL plan management search for SQL statements in the Automatic Workload Repository(AWR). 
+Prioritizing by highest load, it looks for alternative plans in all available sources, adding better-performing plans to the SQL plan baseline.
+Oracle Database also provides a plan comparison facility and improved hint reporting.
+The impact of SQL statement performance regressions is significatly reduced using automation.
+
+#MORE DETAILS
+https://docs.oracle.com/en/database/oracle/oracle-database/19/newft/new-features.html#GUID-5490FE65-562B-49DC-9246-661592C630F9
+
