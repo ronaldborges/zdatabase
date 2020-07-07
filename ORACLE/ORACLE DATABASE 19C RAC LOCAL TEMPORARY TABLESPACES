@@ -1,0 +1,169 @@
++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
++     ORACLE DATABASE 19C RAC LOCAL TEMPORARY TABLESPACES     +
++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+
+#NOTE
+A shared temporary tablespace stores files on a shared disk in a clustered environment, 
+so the temporary space is accessible by all instances of the cluster in contrast to a separately stored tablespace, with unshared tempfiles.
+The concept of local temporary tablespace is new in Oracle database 12cR2 (12.2.0.1.0) and later. 
+In earlier versions, the term temporary tablespace was used to refer to shared temporary tablespaces. 
+Creating temporary tablespace location for both read-only and read-write database instances increases the performance of queries that involve sort, 
+hash aggregations and joins operations.
+
+#Advantages of using Local Temporary Tablespaces
+- Creating Local Temporary Tablespace avoids CF enqueue overhead in a clustered environment.
+- Improves I / O performance using local read and not a shared disk.
+- Avoiding the costly management of cross-instance temporary space in clustered instances.
+- Improves the performance of instance startup by eliminating metadata management on disk.
+
+#Using Local Temporary Tablespace Vs Temporary Tablespace
+Create a Local Temporary Tablespace, this will create BIGfile per tablespace.
+When the user is connected to the reader node, the Local Temporary Tablespace will be used.
+When the user is connected to a Read / Write Instance instance, a shared Temporary Tablespace will be used.
+
+#Local Temporary Tablespaces Properties
+SHARED: for a shared temporary tablespace
+LOCAL_ON_ALL: for local temporary tablespace in all instances
+LOCAL_ON_RIM: for local temporary tablespace in read-only instances
+
+#CHECK THE INSTANCES OF AN ORACLE RAC
+srvctl status database -d oradbc
+Instance oradbc1 is running on node oraclerac19cn1
+Instance oradbc2 is running on node oraclerac19cn2
+
+#LOGIN TO INSTANCE RAC oraclerac19cn1 AND CHECK THE PERMANENT AND TEMPORARY TABLESPACES
+ssh oracle@oraclerac19cn1.appsdba.info
+sqlplus / as sysdba
+SQL> SELECT PROPERTY_NAME, PROPERTY_VALUE FROM DATABASE_PROPERTIES WHERE PROPERTY_NAME like 'DEFAULT_%_TABLESPACE';
+PROPERTY_NAME                                       PROPERTY_VALUE
+--------------------------------------------------  -----------------------
+DEFAULT_PERMANENT_TABLESPACE                        USERS
+DEFAULT_TEMP_TABLESPACE                             TEMP
+
+#CHECK THE DEFAULT TEMPORARY TABLESPACE PROPERTY
+ssh oracle@oraclerac19cn1.appsdba.info
+sqlplus / as sysdba
+SQL> select file_name, tablespace_name,shared,inst_id from dba_temp_files;
+FILE_NAME                       TABLESPACE   SHARED        INST_ID
+------------------------------- ------------ ------------- ----------
++DATA/ORADBC/TEMPFILE/temp.234   TEMP         SHARED       .100075442
+
+SQL> select instance_name, instance_number from v$instance;
+INSTANCE_NAME           INSTANCE_NUMBER
+----------------------- ------------------
+oradbc1                 1
+
+SQL> select instance_name,instance_number from gv$instance;
+INSTANCE_NAME           INSTANCE_NUMBER
+----------------------- ------------------
+oradbc1                 1
+oradbc2                 2
+
+#LOGIN TO INSTANCE RAC oraclerac19cn2 AND CHECK THE PERMANENT AND TEMPORARY TABLESPACES
+ssh oracle@oraclerac19cn2appsdba.info
+sqlplus / as sysdba
+SQL> select file_name,tablespace_name,shared,inst_id from dba_temp_files;
+FILE_NAME                        TABLESPACE_NAME          SHARED         INST_ID
+-------------------------------- ------------------------ -------------- ---------------
++DATA/ORADBC/TEMPFILE/temp.234   TEMP                     SHARED         .100075442
+
+SQL> select instance_name, instance_number from v$instance;
+INSTANCE_NAME           INSTANCE_NUMBER
+----------------------- ------------------
+oradbc2                 2
+
+SQL> select instance_name,instance_number from gv$instance;
+INSTANCE_NAME           INSTANCE_NUMBER
+----------------------- ------------------
+oradbc2                 2
+oradbc1                 1
+
+#HOW TO DELETE THE LOCAL TEMPORARY TABLESPACE
+ssh oracle@oraclerac19cn1.appsdba.info
+sqlplus / as sysdba
+SQL> drop tablespace LOCAL_ALL_TEMP including contents and datafiles;
+
+#CREATE AN INSTANCE oradbc1 LOCAL TEMPORARY TABLESPACE
+ssh oracle@oraclerac19cn1.appsdba.info
+sqlplus / as sysdba
+SQL> create local temporary tablespace for all local_all_temp tempfile '/u01/app/oracle/local_all_temp01.dbf' size 5G extent management local uniform size 50M;
+Tablespace created.
+
+SQL> select file_name,tablespace_name,shared,inst_id from dba_temp_files;
+FILE_NAME                                   NAME              SHARED           INST_ID
+------------------------------------------- ----------------- ---------------- ----------
++DATA/ORADBC/TEMPFILE/temp.234              TEMP              SHARED           .100075442
+/u01/app/oracle/local_all_temp01.dbf        LOCAL_ALL_TEMP    LOCAL_ON_ALL      1
+/u01/app/oracle/local_all_temp02.dbf        LOCAL_ALL_TEMP    LOCAL_ON_ALL      2
+
+#CHECK THE LOCAL TEMPORARY TABLESPACE PROPERTY
+SQL> select inst_id,name,bigfile from gv$tablespace where name like '%LOCAL%';
+INST_ID     NAME                           BIGFILE
+----------- ------------------------------ ----------
+2           LOCAL_ALL_TEMP                 YES
+1           LOCAL_ALL_TEMP                 YES
+
+#CONFIGURE THE DEFAULT TEMPORARY TABLESPACE FOR THE DATABASE
+ssh oracle@oraclerac19cn1.appsdba.info
+sqlplus / as sysdba
+SQL> alter database default temporary tablespace temp;
+
+#SET THE LOCAL TEMPORARY TABLESPACE FOR THE DATABASE AS THE DEFAULT
+ssh oracle@oraclerac19cn1.appsdba.info
+sqlplus / as sysdba
+SQL> alter database default local temporary tablespace LOCAL_ALL_TEMP;
+Database altered.
+
+#LIST TEMPORARY TABLESPACES
+ssh oracle@oraclerac19cn1.appsdba.info
+sqlplus / as sysdba
+SQL> select file_name,tablespace_name,shared,inst_id from dba_temp_files;
+FILE_NAME                                   NAME              SHARED           INST_ID
+------------------------------------------- ----------------- ---------------- -------------
++DATA/ORADBC/TEMPFILE/temp.234              TEMP              SHARED           .100075442
+/u01/app/oracle/local_all_temp02.dbf        LOCAL_ALL_TEMP    LOCAL_ON_ALL     1
+/u01/app/oracle/local_all_temp02.dbf        LOCAL_ALL_TEMP    LOCAL_ON_ALL     2
+
+#CHECK THE DEFAULT TEMPORARY TABLESPACES FOR THE DATABASE
+SELECT PROPERTY_NAME, PROPERTY_VALUE FROM DATABASE_PROPERTIES WHERE PROPERTY_NAME like 'DEFAULT_%_TABLESPACE';
+PROPERTY_NAME                       PROPERTY_VALUE
+----------------------------------- -----------------------------------
+DEFAULT_LOCAL_TEMP_TABLESPACE       LOCAL_ALL_TEMP
+DEFAULT_PERMANENT_TABLESPACE        USERS
+DEFAULT_TEMP_TABLESPACE             TEMP
+
+#CREATE A USER AND SET THE LOCAL TEMPORARY TABLESPACE AS DEFAULT
+ssh oracle@oraclerac19cn1.appsdba.info
+sqlplus / as sysdba
+SQL> alter session set "_ORACLE_SCRIPT"=true;
+SQL> create user TESTTBSTEMP identified by "TESTTBSTEMP" default tablespace users default temporary tablespace temp;
+SQL> grant connect,resource to TESTTBSTEMP;
+SQL> alter user TESTTBSTEMP local temporary tablespace LOCAL_ALL_TEMP;
+SQL> select DEFAULT_TABLESPACE,TEMPORARY_TABLESPACE,LOCAL_TEMP_TABLESPACE from dba_users where username='TESTTBSTEMP';
+DEFAULT_TABLESPACE    TEMPORARY_TABLESPACE      LOCAL_TEMP_TABLESPACE
+--------------------- ------------------------- ---------------------
+USERS                 TEMP                      LOCAL_ALL_TEMP
+
+#NOTE
+When you are upgrading the version from Oracle 11gR2 and/or Oracle 12cR1 to Oracle 12cR2 (12.2.0.1.0) Local_temp_tablespace some database users change to "SYSTEM" tablespace and some users to NULL. 
+This problem was corrected in the Oracle 18c (18.1) release.
+
+#CHECK FIX
+ssh oracle@oraclerac19cn1.appsdba.info
+sqlplus / as sysdba
+SQL> select username from dba_users where local_temp_tablespace='SYSTEM';
+DBSNMP
+SYSTEM
+SYS
+
+#MANUALLY CHANGE THE USERS' LOCAL TEMPORARY TABLESPACE TO THE DEFAULT TEMPORARY TABLESPACE OF THE DATABASE.
+ssh oracle@oraclerac19cn1.appsdba.info
+sqlplus / as sysdba
+SQL> select 'alter user '||username||' LOCAL TEMPORARY TABLESPACE '||TEMPORARY_TABLESPACE||';' from dba_users where username not in ('XS$NULL') and local_temp_tablespace = 'SYSTEM';
+
+
+
+
+
+
+
