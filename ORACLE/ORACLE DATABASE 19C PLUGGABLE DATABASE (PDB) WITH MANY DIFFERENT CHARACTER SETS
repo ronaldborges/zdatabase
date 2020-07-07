@@ -1,0 +1,59 @@
++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
++   	ORACLE DATABASE 19C PLUGGABLE DATABASE (PDB) WITH MANY DIFFERENT CHARACTER SETS   	+
++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+
+#NOTE
+Now, as of Oracle 12c R2, CDBs can contain PDBS with different character sets
+As long as your CBD uses AL32UTF16 (the new standard character set in the DBCA),
+you will be able to plug/clone/relocate PDBs from another (non-standard) character set in this CDB.
+You will not be able to create a PDB from another (non-standard) character set on a CDB directly. 
+This is because all PDBs created take the PDB $ SEED PDB character set, which inherits the CDB charset.
+You must have two CBDs with different character sets. The creation of the PDB will occur using the clone feature
+
+#ENVIRONMENT SETTING
+Host        IP            Container DB       Pluggable DB      Character Set         
+ol7db1      192.168.1.61  APPSCDB            PDB1              AL32UTF8
+ol7db1      192.168.1.61  APPSCDB            PDB2              WE8ISO8859P1        --NEW PDB CREATED BASED ON DOCUMENTATION
+ol7db2      192.168.1.62  APPSCDB            PDB2              WE8ISO8859P1
+
+#CHECK CHARACTERSET IN HOSTS
+ssh oracle@192.168.1.62
+sqlplus / as sysdba
+SQL> col parameter format a20
+SQL> col value format a20
+SQL> select con_id,  parameter,value from containers(nls_database_parameters) where parameter = 'NLS_CHARACTERSET';
+CON_ID      PARAMETER               VALUE
+----------  --------------------    ---------------
+1           NLS_CHARACTERSET        WE8ISO8859P1
+3           NLS_CHARACTERSET        WE8ISO8859P1
+
+ssh oracle@192.168.1.61
+sqlplus / as sysdba
+SQL> col parameter format a20
+SQL> col value format a20
+SQL> select con_id,  parameter,value from containers(nls_database_parameters) where parameter = 'NLS_CHARACTERSET';
+CON_ID      PARAMETER               VALUE
+----------  --------------------    ---------------
+1           NLS_CHARACTERSET        AL32UTF8
+3           NLS_CHARACTERSET        AL32UTF8
+
+#CREATE CLONING USER ON ORIGIN DATABASE
+ssh oracle@192.168.1.62
+sqlplus / as sysdba
+SQL> create user c##clonining_user identified by "********" container =all;
+User created.
+
+SQL> grant connect to c##clonining_user container =all;
+Grant succeeded.
+
+SQL> grant sysoper to c##clonining_user container =all;
+Grant succeeded.
+
+
+
+
+
+
+
+
+
