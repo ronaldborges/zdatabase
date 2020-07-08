@@ -62,15 +62,7 @@ from
 group by relname, foreign_server_name, table_schema, usename;
 
 #CREATE FOREIGN TABLES FOR MANAGE METADATA
-
-pg_attribute
-pg_type
-information_schema.tables
-information_schema.foreign_servers
-pg_class
-pg_user
-
-CREATE FOREIGN TABLE  public.pg_attribute_f (
+CREATE FOREIGN TABLE public.pg_attribute_f (
  attrelid oid not null, 
  attname name not null, 
  atttypid oid not null,
@@ -100,3 +92,135 @@ OPTIONS (schema_name 'pg_catalog', table_name 'pg_attribute');
 
 ALTER TABLE public.pg_attribute_f OWNER TO postgres;
 GRANT SELECT ON TABLE public.pg_attribute_f TO postgres;
+
+CREATE FOREIGN TABLE public.pg_type_f (
+ typname name not null,
+ typnamespace oid not null,
+ typowner oid not null,
+ typlen smallint not null,
+ typbyval boolean not null,
+ typtype "char" not null,
+ typcategory "char" not null, 
+ typispreferred boolean not null,
+ typisdefined boolean not null,
+ typdelim "char" not null,
+ typrelid oid not null,
+ typelem oid not null,
+ typarray oid not null,
+ typinput regproc not null,
+ typoutput regproc not null,
+ typreceive regproc not null,
+ typsend regproc not null,
+ typmodin regproc not null,
+ typmodout regproc not null,
+ typanalyze regproc not null,
+ typalign "char" not null,
+ typstorage "char" not null,
+ typnotnull boolean not null,
+ typbasetype oid not null,
+ typtypmod integer not null,
+ typndims integer not null,
+ typcollation oid not null,
+ typdefaultbin pg_node_tree,
+ typdefault text, 
+ typacl aclitem[])
+SERVER fdw_pg11
+OPTIONS (schema_name 'pg_catalog', table_name 'pg_type');
+
+ALTER TABLE public.pg_type_f OWNER TO postgres;
+GRANT ALL ON TABLE public.pg_type_f TO postgres;
+
+CREATE FOREIGN TABLE public.information_schema_tables_f (
+ table_catalog information_schema.sql_identifier,
+ table_schema information_schema.sql_identifier,
+ table_name information_schema.sql_identifier,
+ table_type information_schema.character_data,
+ self_referencing_column_name information_schema.sql_identifier,
+ reference_generation information_schema.character_data,
+ user_defined_type_catalog information_schema.sql_identifier,
+ user_defined_type_schema information_schema.sql_identifier,
+ user_defined_type_name information_schema.sql_identifier,
+ is_insertable_into information_schema.yes_or_no,
+ is_typed information_schema.yes_or_no,
+ commit_action information_schema.character_data)
+SERVER fdw_pg11
+OPTIONS (schema_name 'information_schema', table_name 'tables');
+
+ALTER TABLE public.information_schema_tables_f OWNER TO postgres;
+GRANT ALL ON TABLE public.information_schema_tables_f TO postgres;
+
+CREATE FOREIGN TABLE public.information_schema_foreign_servers_f (
+ foreign_server_catalog information_schema.sql_identifier, 
+ foreign_server_name information_schema.sql_identifier, 
+ foreign_data_wrapper_catalog information_schema.sql_identifier, 
+ foreign_data_wrapper_name information_schema.sql_identifier, 
+ foreign_server_type information_schema.character_data, 
+ foreign_server_version information_schema.character_data, 
+ authorization_identifier information_schema.sql_identifier)
+SERVER fdw_pg11
+OPTIONS (schema_name 'information_schema', table_name 'tables');
+
+ALTER TABLE public.information_schema_foreign_servers_f OWNER TO postgres;
+GRANT ALL ON TABLE public.information_schema_foreign_servers_f TO postgres;
+
+CREATE FOREIGN TABLE public.pg_class_f (
+	oid oid not null,
+	relname char[] NOT NULL,
+	relnamespace oid NOT NULL,
+	reltype oid NOT NULL,
+	reloftype oid NOT NULL,
+	relowner oid NOT NULL,
+	relam oid NOT NULL,
+	relfilenode oid NOT NULL,
+	reltablespace oid NOT NULL,
+	relpages int4 NOT NULL,
+	reltuples float4 NOT NULL,
+	relallvisible int4 NOT NULL,
+	reltoastrelid oid NOT NULL,
+	relhasindex bool NOT NULL,
+	relisshared bool NOT NULL,
+	relpersistence char(1) NOT NULL,
+	relkind char(1) NOT NULL,
+	relnatts int2 NOT NULL,
+	relchecks int2 NOT NULL,
+	relhasoids bool NOT NULL,
+	relhasrules bool NOT NULL,
+	relhastriggers bool NOT NULL,
+	relhassubclass bool NOT NULL,
+	relrowsecurity bool NOT NULL,
+	relforcerowsecurity bool NOT NULL,
+	relispopulated bool NOT NULL,
+	relreplident char(1) NOT NULL,
+	relispartition bool NOT NULL,
+	relrewrite oid NOT NULL,
+	relfrozenxid xid NOT NULL,
+	relminmxid xid NOT NULL,
+	relacl aclitem[] NULL,
+	reloptions text[] NULL,
+	relpartbound pg_node_tree NULL
+)
+SERVER fdw_pg11
+OPTIONS (schema_name 'pg_catalog', table_name 'pg_class');
+
+ALTER TABLE public.pg_class_f OWNER TO postgres;
+GRANT ALL ON TABLE public.pg_class_f TO postgres;
+
+CREATE FOREIGN TABLE public.pg_user_f (
+usename name, 
+usesysid oid,  
+usecreatedb boolean, 
+usesuper boolean, 
+userepl boolean, 
+usebypassrls boolean, 
+passwd text, 
+valuntil abstime, 
+useconfig text[]) 
+SERVER fdw_pg11
+OPTIONS (schema_name 'pg_catalog', table_name 'pg_user');
+
+ALTER TABLE public.pg_user_f OWNER TO postgres;
+GRANT ALL ON TABLE public.pg_user_f TO postgres;
+
+
+
+
