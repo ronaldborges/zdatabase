@@ -150,15 +150,16 @@ ALTER TABLE public.information_schema_tables_f OWNER TO postgres;
 GRANT ALL ON TABLE public.information_schema_tables_f TO postgres;
 
 CREATE FOREIGN TABLE public.information_schema_foreign_servers_f (
- foreign_server_catalog varchar(100), 
- foreign_server_name varchar(100), 
- foreign_data_wrapper_catalog varchar(100), 
- foreign_data_wrapper_name varchar(100), 
- foreign_server_type varchar(100), 
- foreign_server_version varchar(100), 
- authorization_identifier varchar(100))
+	foreign_server_catalog varchar(100) NULL,
+	foreign_server_name varchar(100) NULL,
+	foreign_data_wrapper_catalog varchar(100) NULL,
+	foreign_data_wrapper_name varchar(100) NULL,
+	foreign_server_type varchar(100) NULL,
+	foreign_server_version varchar(100) NULL,
+	authorization_identifier varchar(100) NULL
+)
 SERVER fdw_pg11
-OPTIONS (schema_name 'information_schema', table_name 'tables');
+OPTIONS (schema_name 'information_schema', table_name 'foreign_servers');
 
 ALTER TABLE public.information_schema_foreign_servers_f OWNER TO postgres;
 GRANT ALL ON TABLE public.information_schema_foreign_servers_f TO postgres;
