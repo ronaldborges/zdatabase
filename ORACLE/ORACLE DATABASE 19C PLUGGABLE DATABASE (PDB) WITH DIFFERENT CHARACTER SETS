@@ -135,6 +135,7 @@ SQL> select con_id,name from v$containers;
          3 PDB1
          5 PDB2        
 SQL> alter pluggable database all open;  
+SQL> select con_id,  parameter,value from containers(nls_database_parameters) where parameter = 'NLS_CHARACTERSET';
     CON_ID PARAMETER             VALUE
 ---------- --------------------- ------------------------
          1 NLS_CHARACTERSET      AL32UTF8
