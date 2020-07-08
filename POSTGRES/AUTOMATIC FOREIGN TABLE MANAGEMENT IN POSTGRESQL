@@ -9,22 +9,21 @@ When the original table is modified, the foreign table may become unusable.
 Needing to be recreated or modified to correct its characteristics. 
 The idea of the solution is to automate the process of updating foreign tables in postgres.
 
-
 #CREATE TABLE REGISTER FOREING TABLES
 
 DROP TABLE public.fdw_tables_list;
 CREATE TABLE public.fdw_tables_list (
-	schema_name varchar NOT NULL,
+	table_schema varchar NOT NULL,
 	table_name varchar NOT NULL,
 	table_type varchar NULL DEFAULT 'BASE TABLE'::character varying,
 	table_catalog varchar NOT NULL,
 	foreign_server_name varchar NOT NULL,
 	usename varchar NOT NULL,
-	CONSTRAINT fdw_tables_list_pku UNIQUE (schema_name, table_name, table_type, table_catalog, foreign_server_name));
+	CONSTRAINT fdw_tables_list_pku UNIQUE (table_schema, table_name, table_type, table_catalog, foreign_server_name));
 
 #INSERT EXISTENT FOREIGN TABLES
 
-INSERT INTO public.fdw_tables_list(schema_name, table_name, table_catalog, foreign_server_name, usename)
+INSERT INTO public.fdw_tables_list(table_schema, table_name, table_catalog, foreign_server_name, usename)
 select t.foreign_table_schema, t.foreign_table_name, t.foreign_table_catalog, s.foreign_server_name, u.usename
 FROM information_schema.foreign_tables t join information_schema.foreign_servers s on t.foreign_server_catalog = s.foreign_server_catalog
 join pg_class c on t.foreign_table_name = c.relname
