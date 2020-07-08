@@ -83,7 +83,7 @@ cdb_remote =
     (ADDRESS = (PROTOCOL = TCP)(HOST = 192.168.1.62)(PORT = 1521))
     (CONNECT_DATA =
       (SERVER = DEDICATED)
-      (SERVICE_NAME = PDB2)
+      (SERVICE_NAME = APPSCDB)
     )
   )
   
@@ -94,7 +94,7 @@ Copyright (c) 1997, 2019, Oracle.  All rights reserved.
 Used parameter files:
 /u01/app/oracle/product/19.3.0/dbhome_1/network/admin/sqlnet.ora
 Used TNSNAMES adapter to resolve the alias
-Attempting to contact (DESCRIPTION = (ADDRESS = (PROTOCOL = TCP)(HOST = 192.168.1.62)(PORT = 1521)) (CONNECT_DATA = (SERVER = DEDICATED) (SERVICE_NAME = PDB2)))
+Attempting to contact (DESCRIPTION = (ADDRESS = (PROTOCOL = TCP)(HOST = 192.168.1.62)(PORT = 1521)) (CONNECT_DATA = (SERVER = DEDICATED) (SERVICE_NAME = APPSCDB)))
 OK (0 msec)
 
 #CREATE DATABASE CLONE
