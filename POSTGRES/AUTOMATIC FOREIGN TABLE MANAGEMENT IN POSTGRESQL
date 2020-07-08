@@ -64,6 +64,19 @@ from
 ) as tabledefinition
 group by relname, foreign_server_name, table_schema, usename;
 
+select c.relname, a.attname, a.atttypid, a.atttypmod, a.attnotnull, s.foreign_server_name, ts.table_schema, u.usename, ts.table_catalog
+from pg_attribute a,
+   pg_type t,
+   --information_schema.tables ts
+   fdw_tables_list ts
+   join information_schema.foreign_servers s on ts.table_catalog = s.foreign_server_catalog
+   join pg_class c on ts.table_name = c.relname
+   join pg_user u on c.relowner = u.usesysid
+   where ts.table_schema not in ('information_schema', 'pg_catalog')
+   AND a.attnum > 0
+   AND a.attrelid = c.oid
+   AND a.atttypid = t.oid;
+
 #CREATE FOREIGN TABLES FOR MANAGE METADATA
 CREATE FOREIGN TABLE public.pg_attribute_f (
  attrelid oid not null, 
