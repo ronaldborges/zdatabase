@@ -49,11 +49,96 @@ Grant succeeded.
 SQL> grant sysoper to c##clonining_user container =all;
 Grant succeeded.
 
+#CHECK IF CONTAINER DATABASE USE LOCAL UNDO TABLESPACE
+#FOR THIS PROCEDURE ONLY THE REMOTE SERVER NEEDS TO HAVE THE PARAMETERS BELOW ENABLED, BUT IT IS RECOMMENDED TO USE THE SAME AS GOOD PRACTICES IN DATABASE ADMINISTRATION
+ssh oracle@192.168.1.62
+sqlplus / as sysdba
+SQL> SELECT property_name, property_value FROM database_properties WHERE  property_name = 'LOCAL_UNDO_ENABLED';
+PROPERTY_NAME                                          PROPERTY_VALUE
+------------------------------------------------------ ------------------------------------------
+LOCAL_UNDO_ENABLED                                     TRUE
 
+SQL> SELECT log_mode FROM v$database;
+LOG_MODE
+------------
+ARCHIVELOG
 
+ssh oracle@192.168.1.61
+sqlplus / as sysdba
+SQL> SELECT property_name, property_value FROM database_properties WHERE  property_name = 'LOCAL_UNDO_ENABLED';
+PROPERTY_NAME                                          PROPERTY_VALUE
+------------------------------------------------------ ------------------------------------------
+LOCAL_UNDO_ENABLED                                     TRUE
 
+SQL> SELECT log_mode FROM v$database;
+LOG_MODE
+------------
+ARCHIVELOG
 
+#CONFIGURE TNSNAMES STRING
+ssh oracle@192.168.1.61
+vi /u01/app/oracle/product/19.3.0/dbhome_1/network/admin/tnsnames.ora
+cdb_remote =
+  (DESCRIPTION =
+    (ADDRESS = (PROTOCOL = TCP)(HOST = 192.168.1.62)(PORT = 1521))
+    (CONNECT_DATA =
+      (SERVER = DEDICATED)
+      (SERVICE_NAME = PDB2)
+    )
+  )
+  
+#TEST STRING CONNECTION
+tnsping cdb_remote
+TNS Ping Utility for Linux: Version 19.0.0.0.0 - Production on 07-JUL-2020 22:48:39
+Copyright (c) 1997, 2019, Oracle.  All rights reserved.
+Used parameter files:
+/u01/app/oracle/product/19.3.0/dbhome_1/network/admin/sqlnet.ora
+Used TNSNAMES adapter to resolve the alias
+Attempting to contact (DESCRIPTION = (ADDRESS = (PROTOCOL = TCP)(HOST = 192.168.1.62)(PORT = 1521)) (CONNECT_DATA = (SERVER = DEDICATED) (SERVICE_NAME = PDB2)))
+OK (0 msec)
 
+#CREATE DATABASE CLONE
+ssh oracle@192.168.1.61
+sqlplus / as sysdba
+SQL> DROP DATABASE LINK clone_link;
+SQL> CREATE DATABASE LINK clone_link CONNECT TO c##clonining_user IDENTIFIED BY "********" USING 'cdb_remote';
+SQL> DESC user_tables@clone_link;
+ Name                                      Null?    Type
+ ----------------------------------------- -------- ----------------------------
+ TABLE_NAME                                NOT NULL VARCHAR2(128)
+ TABLESPACE_NAME                                    VARCHAR2(30)
+ CLUSTER_NAME                                       VARCHAR2(128)
+ ...                                       ...      ...
 
+#IDENTIFY DATAFILES DEST IN REMOTE PLUGGABLE DATABASE
+ssh oracle@192.168.1.62
+sqlplus / as sysdba
+alter session set container=PDB2;
+SQL> select file_name from dba_data_files;
+FILE_NAME
+--------------------------------------------------------------------------------
+/u01/app/oracle/oradata/APPSCDB/pdb2/system01.dbf
+/u01/app/oracle/oradata/APPSCDB/pdb2/sysaux01.dbf
+/u01/app/oracle/oradata/APPSCDB/pdb2/undotbs01.dbf
+/u01/app/oracle/oradata/APPSCDB/pdb2/users01.dbf
 
+#CLONE PLUGGABLE DATABASE
+ssh oracle@192.168.1.61
+sqlplus / as sysdba
+SQL> ALTER SESSION SET PDB_FILE_NAME_CONVERT='/u01/app/oracle/oradata/APPSCDB/pdb2','/u01/app/oracle/oradata/APPSCDB/pdb2';
+SQL> CREATE PLUGGABLE DATABASE PDB2 FROM PDB2@clone_link;
+SQL> select con_id,name from v$containers;
+    CON_ID NAME
+---------- ------------
+         1 CDB$ROOT
+         2 PDB$SEED
+         3 SESA1PDB
+         5 SESA2PDB        
+SQL> alter pluggable database all open;  
+    CON_ID PARAMETER             VALUE
+---------- --------------------- ------------------------
+         1 NLS_CHARACTERSET      AL32UTF8
+         3 NLS_CHARACTERSET      AL32UTF8
+         5 NLS_CHARACTERSET      WE8ISO8859P1
 
+#END
