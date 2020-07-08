@@ -164,8 +164,8 @@ ALTER TABLE public.information_schema_foreign_servers_f OWNER TO postgres;
 GRANT ALL ON TABLE public.information_schema_foreign_servers_f TO postgres;
 
 CREATE FOREIGN TABLE public.pg_class_f (
-	oid oid not null,
-	relname char[] NOT NULL,
+	"oid" oid NOT NULL,
+	relname varchar(100) NOT NULL,
 	relnamespace oid NOT NULL,
 	reltype oid NOT NULL,
 	reloftype oid NOT NULL,
@@ -179,8 +179,8 @@ CREATE FOREIGN TABLE public.pg_class_f (
 	reltoastrelid oid NOT NULL,
 	relhasindex bool NOT NULL,
 	relisshared bool NOT NULL,
-	relpersistence char(1) NOT NULL,
-	relkind char(1) NOT NULL,
+	relpersistence bpchar(1) NOT NULL,
+	relkind bpchar(1) NOT NULL,
 	relnatts int2 NOT NULL,
 	relchecks int2 NOT NULL,
 	relhasoids bool NOT NULL,
@@ -190,14 +190,15 @@ CREATE FOREIGN TABLE public.pg_class_f (
 	relrowsecurity bool NOT NULL,
 	relforcerowsecurity bool NOT NULL,
 	relispopulated bool NOT NULL,
-	relreplident char(1) NOT NULL,
+	relreplident bpchar(1) NOT NULL,
 	relispartition bool NOT NULL,
 	relrewrite oid NOT NULL,
 	relfrozenxid xid NOT NULL,
 	relminmxid xid NOT NULL,
-	relacl aclitem[] NULL,
+	relacl varchar(100) NULL,
 	reloptions text[] NULL,
-	relpartbound pg_node_tree NULL)
+	relpartbound pg_node_tree NULL
+)
 SERVER fdw_pg11
 OPTIONS (schema_name 'pg_catalog', table_name 'pg_class');
 
