@@ -132,8 +132,8 @@ SQL> select con_id,name from v$containers;
 ---------- ------------
          1 CDB$ROOT
          2 PDB$SEED
-         3 SESA1PDB
-         5 SESA2PDB        
+         3 PDB1
+         5 PDB2        
 SQL> alter pluggable database all open;  
     CON_ID PARAMETER             VALUE
 ---------- --------------------- ------------------------
