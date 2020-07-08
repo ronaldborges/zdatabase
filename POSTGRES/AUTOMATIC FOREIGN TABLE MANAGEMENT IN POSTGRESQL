@@ -63,30 +63,30 @@ group by relname, foreign_server_name, table_schema, usename;
 
 #CREATE FOREIGN TABLES FOR MANAGE METADATA
 CREATE FOREIGN TABLE public.pg_attribute_f (
- attrelid oid not null, 
- attname name not null, 
- atttypid oid not null,
- attstattarget integer not null,
- attlen smallint not null,
- attnum smallint not null,
- attndims integer not null,
- attcacheoff integer not null,
- atttypmod integer not null,
- attbyval boolean not null,
- attstorage char not null,
- attalign char not null,
- attnotnull boolean not null,
- atthasdef boolean not null,
- atthasmissing boolean not null,
- attidentity char not null,
- attisdropped boolean not null,
- attislocal boolean not null,
- attinhcount integer not null,
- attcollation oid not null,
- attacl aclitem[],
- attoptions text[],
- attfdwoptions text[],
- attmissingval anyarray)
+	attrelid oid not null, 
+	attname name not null, 
+	atttypid oid not null,
+	attstattarget integer not null,
+	attlen smallint not null,
+	attnum smallint not null,
+	attndims integer not null,
+	attcacheoff integer not null,
+	atttypmod integer not null,
+	attbyval boolean not null,
+	attstorage char not null,
+	attalign char not null,
+	attnotnull boolean not null,
+	atthasdef boolean not null,
+	atthasmissing boolean not null,
+	attidentity char not null,
+	attisdropped boolean not null,
+	attislocal boolean not null,
+	attinhcount integer not null,
+	attcollation oid not null,
+	attacl aclitem[],
+	attoptions text[],
+	attfdwoptions text[],
+	attmissingval anyarray)
 SERVER fdw_pg11
 OPTIONS (schema_name 'pg_catalog', table_name 'pg_attribute');
 
@@ -94,36 +94,36 @@ ALTER TABLE public.pg_attribute_f OWNER TO postgres;
 GRANT SELECT ON TABLE public.pg_attribute_f TO postgres;
 
 CREATE FOREIGN TABLE public.pg_type_f (
- typname name not null,
- typnamespace oid not null,
- typowner oid not null,
- typlen smallint not null,
- typbyval boolean not null,
- typtype "char" not null,
- typcategory "char" not null, 
- typispreferred boolean not null,
- typisdefined boolean not null,
- typdelim "char" not null,
- typrelid oid not null,
- typelem oid not null,
- typarray oid not null,
- typinput regproc not null,
- typoutput regproc not null,
- typreceive regproc not null,
- typsend regproc not null,
- typmodin regproc not null,
- typmodout regproc not null,
- typanalyze regproc not null,
- typalign "char" not null,
- typstorage "char" not null,
- typnotnull boolean not null,
- typbasetype oid not null,
- typtypmod integer not null,
- typndims integer not null,
- typcollation oid not null,
- typdefaultbin pg_node_tree,
- typdefault text, 
- typacl aclitem[])
+	typname name not null,
+	typnamespace oid not null,
+	typowner oid not null,
+	typlen smallint not null,
+	typbyval boolean not null,
+	typtype "char" not null,
+	typcategory "char" not null, 
+	typispreferred boolean not null,
+	typisdefined boolean not null,
+	typdelim "char" not null,
+	typrelid oid not null,
+	typelem oid not null,
+	typarray oid not null,
+	typinput regproc not null,
+	typoutput regproc not null,
+	typreceive regproc not null,
+	typsend regproc not null,
+	typmodin regproc not null,
+	typmodout regproc not null,
+	typanalyze regproc not null,
+	typalign "char" not null,
+	typstorage "char" not null,
+	typnotnull boolean not null,
+	typbasetype oid not null,
+	typtypmod integer not null,
+	typndims integer not null,
+	typcollation oid not null,
+	typdefaultbin pg_node_tree,
+	typdefault text, 
+	typacl aclitem[])
 SERVER fdw_pg11
 OPTIONS (schema_name 'pg_catalog', table_name 'pg_type');
 
@@ -131,18 +131,18 @@ ALTER TABLE public.pg_type_f OWNER TO postgres;
 GRANT ALL ON TABLE public.pg_type_f TO postgres;
 
 CREATE FOREIGN TABLE public.information_schema_tables_f (
- table_catalog varchar(100),
- table_schema varchar(100),
- table_name varchar(100),
- table_type varchar(100),
- self_referencing_column_name varchar(100),
- reference_generation varchar(100),
- user_defined_type_catalog varchar(100),
- user_defined_type_schema varchar(100),
- user_defined_type_name varchar(100),
- is_insertable_into varchar(100),
- is_typed varchar(100),
- commit_action varchar(100))
+	table_catalog varchar(100),
+	table_schema varchar(100),
+	table_name varchar(100),
+	table_type varchar(100),
+	self_referencing_column_name varchar(100),
+	reference_generation varchar(100),
+	user_defined_type_catalog varchar(100),
+	user_defined_type_schema varchar(100),
+	user_defined_type_name varchar(100),
+	is_insertable_into varchar(100),
+	is_typed varchar(100),
+	commit_action varchar(100))
 SERVER fdw_pg11
 OPTIONS (schema_name 'information_schema', table_name 'tables');
 
@@ -156,8 +156,7 @@ CREATE FOREIGN TABLE public.information_schema_foreign_servers_f (
 	foreign_data_wrapper_name varchar(100) NULL,
 	foreign_server_type varchar(100) NULL,
 	foreign_server_version varchar(100) NULL,
-	authorization_identifier varchar(100) NULL
-)
+	authorization_identifier varchar(100) NULL)
 SERVER fdw_pg11
 OPTIONS (schema_name 'information_schema', table_name 'foreign_servers');
 
@@ -198,8 +197,7 @@ CREATE FOREIGN TABLE public.pg_class_f (
 	relminmxid xid NOT NULL,
 	relacl aclitem[] NULL,
 	reloptions text[] NULL,
-	relpartbound pg_node_tree NULL
-)
+	relpartbound pg_node_tree NULL)
 SERVER fdw_pg11
 OPTIONS (schema_name 'pg_catalog', table_name 'pg_class');
 
@@ -207,15 +205,15 @@ ALTER TABLE public.pg_class_f OWNER TO postgres;
 GRANT ALL ON TABLE public.pg_class_f TO postgres;
 
 CREATE FOREIGN TABLE public.pg_user_f (
-usename name, 
-usesysid oid,  
-usecreatedb boolean, 
-usesuper boolean, 
-userepl boolean, 
-usebypassrls boolean, 
-passwd text, 
-valuntil abstime, 
-useconfig text[]) 
+	usename name, 
+	usesysid oid,  
+	usecreatedb boolean, 
+	usesuper boolean, 
+	userepl boolean, 
+	usebypassrls boolean, 
+	passwd text, 
+	valuntil abstime, 
+	useconfig text[]) 
 SERVER fdw_pg11
 OPTIONS (schema_name 'pg_catalog', table_name 'pg_user');
 
