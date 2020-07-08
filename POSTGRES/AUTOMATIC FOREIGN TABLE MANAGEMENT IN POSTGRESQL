@@ -12,12 +12,14 @@ The idea of the solution is to automate the process of updating foreign tables i
 
 #CREATE TABLE REGISTER FOREING TABLES
 
-create table fdw_tables_list
-(schema_name character varying not NULL,
-table_name character varying not NULL,
-foreign_server_name character varying not null,
-usename character varying not null,
-CONSTRAINT fdw_tables_list_pku UNIQUE (schema_name, table_name, foreign_server_name));
+DROP TABLE public.fdw_tables_list;
+CREATE TABLE public.fdw_tables_list (
+	schema_name varchar NOT NULL,
+	table_name varchar NOT NULL,
+	table_type varchar DEFAULT 'BASE TABLE',
+	foreign_server_name varchar NOT NULL,
+	usename varchar NOT NULL,
+	CONSTRAINT fdw_tables_list_pku UNIQUE (schema_name, table_name, table_type, foreign_server_name));
 
 #INSERT EXISTENT FOREIGN TABLES
 
