@@ -198,8 +198,7 @@ CREATE FOREIGN TABLE public.pg_class_f (
 	relminmxid xid NOT NULL,
 	relacl varchar(100) NULL,
 	reloptions text[] NULL,
-	relpartbound pg_node_tree NULL
-)
+	relpartbound pg_node_tree NULL)
 SERVER fdw_pg11
 OPTIONS (schema_name 'pg_catalog', table_name 'pg_class');
 
