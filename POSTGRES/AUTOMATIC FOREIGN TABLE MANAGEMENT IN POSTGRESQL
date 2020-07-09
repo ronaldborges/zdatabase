@@ -18,8 +18,13 @@ CREATE TABLE public.fdw_tables_list (
 	table_type varchar NULL DEFAULT 'BASE TABLE'::character varying,
 	table_catalog varchar NOT NULL,
 	foreign_server_name varchar NOT NULL,
+	foreign_server_catalog varchar NOT NULL,
 	usename varchar NOT NULL,
-	CONSTRAINT fdw_tables_list_pku UNIQUE (table_schema, table_name, table_type, table_catalog, foreign_server_name));
+	CONSTRAINT fdw_tables_list_pku UNIQUE (table_schema, table_name, table_type, table_catalog, foreign_server_name, foreign_server_catalog)
+);
+
+ALTER TABLE public.fdw_tables_list OWNER TO postgres;
+GRANT ALL ON TABLE public.fdw_tables_list TO postgres;
 
 #INSERT EXISTENT FOREIGN TABLES
 
