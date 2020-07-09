@@ -26,40 +26,6 @@ CREATE TABLE public.fdw_tables_list (
 ALTER TABLE public.fdw_tables_list OWNER TO postgres;
 GRANT ALL ON TABLE public.fdw_tables_list TO postgres;
 
-#GENERATE FOREIGN TABLE METADATA POSTGRES
-
-SELECT                                          
-  'CREATE FOREIGN TABLE ' || table_schema || '.' || relname || E'\n(\n' ||
-  array_to_string(
-    array_agg(
-      '    ' || column_name || ' ' ||  type || ' '|| not_null
-    )
-    , E',\n'
-  ) || E'\n)\n SERVER ' || foreign_server_name  || E'\n OPTIONS (schema_name ''' || table_schema || ''', table_name ''' || relname || ''');' || E'\n ALTER TABLE ' || table_schema || '.' || relname || ' OWNER TO ' || usename || ';' || E'\n GRANT SELECT ON TABLE ' || table_schema || '.' || relname || ' TO ' || usename || ';'
-from
-(
-  SELECT 
-    c.relname, a.attname AS column_name,
-    pg_catalog.format_type(a.atttypid, a.atttypmod) as type,
-    case 
-      when a.attnotnull
-    then 'NOT NULL' 
-    else 'NULL' 
-    END as not_null, s.foreign_server_name, ts.table_schema, u.usename 
-  FROM pg_attribute a,
-   pg_type t,
-   information_schema.tables ts
-   join information_schema.foreign_servers s on ts.table_catalog = s.foreign_server_catalog
-   join pg_class c on ts.table_name = c.relname
-   join pg_user u on c.relowner = u.usesysid
-   where ts.table_schema not in ('information_schema', 'pg_catalog') and ts.table_type = 'FOREIGN'
-   AND a.attnum > 0
-   AND a.attrelid = c.oid
-   AND a.atttypid = t.oid
- ORDER BY a.attnum
-) as tabledefinition
-group by relname, foreign_server_name, table_schema, usename;
-
 #CREATE FOREIGN TABLES FOR MANAGE METADATA
 CREATE FOREIGN TABLE public.pg_attribute_f (
  attrelid oid not null, 
@@ -242,6 +208,40 @@ INSERT INTO public.fdw_tables_list(table_schema, table_name, foreign_server_cata
   WHERE w.oid = s.srvfdw AND u.oid = c.relowner AND c.relowner = us.usesysid AND (pg_has_role(c.relowner, 'USAGE'::text) OR has_table_privilege(c.oid, 'SELECT, INSERT, UPDATE, DELETE, TRUNCATE, REFERENCES, TRIGGER'::text) OR has_any_column_privilege(c.oid, 'SELECT, INSERT, UPDATE, REFERENCES'::text)) AND n.oid = c.relnamespace AND c.oid = t.ftrelid AND c.relkind = 'f'::"char" AND s.oid = t.ftserver
  and n.nspname not in ('information_schema', 'pg_catalog', 'public');
   
+#GENERATE FOREIGN TABLE METADATA POSTGRES ON REMOTE DATABASE
+SELECT                                          
+  'CREATE FOREIGN TABLE ' || table_schema || '.' || relname || E'\n(\n' ||
+  array_to_string(
+    array_agg(
+      '    ' || column_name || ' ' ||  type || ' '|| not_null
+    )
+    , E',\n'
+  ) || E'\n)\n SERVER ' || foreign_server_name  || E'\n OPTIONS (schema_name ''' || table_schema || ''', table_name ''' || relname || ''');' || E'\n ALTER TABLE ' || table_schema || '.' || relname || ' OWNER TO ' || usename || ';' || E'\n GRANT SELECT ON TABLE ' || table_schema || '.' || relname || ' TO ' || usename || ';'
+from
+(SELECT ftl.table_schema,
+    c.relname, 
+    a.attname AS column_name,
+    pg_catalog.format_type(a.atttypid, a.atttypmod) as type,
+    case 
+      when a.attnotnull
+    then 'NOT NULL' 
+    else 'NULL' 
+    END as not_null,
+    ftl.foreign_server_name,
+    ftl.usename
+FROM pg_attribute_f a,
+	 pg_type_f t,
+	 fdw_tables_list ftl,
+	 public.information_schema_tables_v ts
+	 join pg_class_f c on ts.table_name = c.relname
+	 where a.attnum > 0	  
+     AND a.attrelid = c.oid
+     AND a.atttypid = t.oid
+     AND ts.table_name = ftl.table_name
+ ORDER BY a.attnum
+) as tabledefinition
+group by table_schema, relname, foreign_server_name, usename;
+
 
 
 
