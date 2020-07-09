@@ -148,10 +148,11 @@ ALTER TABLE public.pg_type_f OWNER TO postgres;
 GRANT ALL ON TABLE public.pg_type_f TO postgres;
 
 CREATE FOREIGN TABLE public.pg_namespace_f (
+	oid oid NOT null,
 	nspname varchar(100) NOT NULL,
 	nspowner oid NOT NULL,
 	nspacl varchar(100) NULL)
-SERVER ml_fdw_integrasus
+SERVER fdw_pg11
 OPTIONS (schema_name 'pg_catalog', table_name 'pg_namespace');
 
 ALTER TABLE public.pg_namespace_f OWNER TO postgres;
