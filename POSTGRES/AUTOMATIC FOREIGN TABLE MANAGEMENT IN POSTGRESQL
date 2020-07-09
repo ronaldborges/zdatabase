@@ -26,24 +26,6 @@ CREATE TABLE public.fdw_tables_list (
 ALTER TABLE public.fdw_tables_list OWNER TO postgres;
 GRANT ALL ON TABLE public.fdw_tables_list TO postgres;
 
-#INSERT EXISTENT FOREIGN TABLES
-INSERT INTO public.fdw_tables_list(table_schema, table_name, foreign_server_catalog, foreign_server_name, dbname, usename)
- SELECT n.nspname::information_schema.sql_identifier AS foreign_table_schema,
-    c.relname::information_schema.sql_identifier AS foreign_table_name,
-    current_database()::information_schema.sql_identifier AS foreign_server_catalog,
-    s.srvname::information_schema.sql_identifier AS foreign_server_name,
-    trim(split_part(s.srvoptions::varchar, 'dbname=', 2), '}') as dbname,
-    us.usename
-   FROM pg_foreign_table t,
-    pg_foreign_server s,
-    pg_foreign_data_wrapper w,
-    pg_authid u,
-    pg_namespace n,
-    pg_class c,
-    pg_user us
-  WHERE w.oid = s.srvfdw AND u.oid = c.relowner AND c.relowner = us.usesysid AND (pg_has_role(c.relowner, 'USAGE'::text) OR has_table_privilege(c.oid, 'SELECT, INSERT, UPDATE, DELETE, TRUNCATE, REFERENCES, TRIGGER'::text) OR has_any_column_privilege(c.oid, 'SELECT, INSERT, UPDATE, REFERENCES'::text)) AND n.oid = c.relnamespace AND c.oid = t.ftrelid AND c.relkind = 'f'::"char" AND s.oid = t.ftserver
- and n.nspname not in ('information_schema', 'pg_catalog', 'public');
-
 #GENERATE FOREIGN TABLE METADATA POSTGRES
 
 SELECT                                          
@@ -240,6 +222,23 @@ create view public.information_schema_tables_v as
   OR has_table_privilege(c.oid, 'SELECT, INSERT, UPDATE, DELETE, TRUNCATE, REFERENCES, TRIGGER'::text) 
   OR has_any_column_privilege(c.oid, 'SELECT, INSERT, UPDATE, REFERENCES'::text));
   
+#INSERT EXISTENT FOREIGN TABLES
+INSERT INTO public.fdw_tables_list(table_schema, table_name, foreign_server_catalog, foreign_server_name, dbname, usename)
+ SELECT n.nspname::information_schema.sql_identifier AS foreign_table_schema,
+    c.relname::information_schema.sql_identifier AS foreign_table_name,
+    current_database()::information_schema.sql_identifier AS foreign_server_catalog,
+    s.srvname::information_schema.sql_identifier AS foreign_server_name,
+    trim(split_part(s.srvoptions::varchar, 'dbname=', 2), '}') as dbname,
+    us.usename
+   FROM pg_foreign_table t,
+    pg_foreign_server s,
+    pg_foreign_data_wrapper w,
+    pg_authid u,
+    pg_namespace n,
+    pg_class c,
+    pg_user us
+  WHERE w.oid = s.srvfdw AND u.oid = c.relowner AND c.relowner = us.usesysid AND (pg_has_role(c.relowner, 'USAGE'::text) OR has_table_privilege(c.oid, 'SELECT, INSERT, UPDATE, DELETE, TRUNCATE, REFERENCES, TRIGGER'::text) OR has_any_column_privilege(c.oid, 'SELECT, INSERT, UPDATE, REFERENCES'::text)) AND n.oid = c.relnamespace AND c.oid = t.ftrelid AND c.relkind = 'f'::"char" AND s.oid = t.ftserver
+ and n.nspname not in ('information_schema', 'pg_catalog', 'public');
   
 
 
