@@ -208,7 +208,10 @@ INSERT INTO public.fdw_tables_list(table_schema, table_name, foreign_server_cata
   WHERE w.oid = s.srvfdw AND u.oid = c.relowner AND c.relowner = us.usesysid AND (pg_has_role(c.relowner, 'USAGE'::text) OR has_table_privilege(c.oid, 'SELECT, INSERT, UPDATE, DELETE, TRUNCATE, REFERENCES, TRIGGER'::text) OR has_any_column_privilege(c.oid, 'SELECT, INSERT, UPDATE, REFERENCES'::text)) AND n.oid = c.relnamespace AND c.oid = t.ftrelid AND c.relkind = 'f'::"char" AND s.oid = t.ftserver
  and n.nspname not in ('information_schema', 'pg_catalog', 'public');
   
-#GENERATE FOREIGN TABLE METADATA POSTGRES ON REMOTE DATABASE
+#INSERT NEW FOREING TABLES
+INSERT INTO public.fdw_tables_list (table_schema, table_name, table_type, foreign_server_name, foreign_server_catalog, dbname, usename) VALUES('test', 'tb1', 'BASE TABLE'::character varying, 'fdw_pg11', 'pg11', 'test', 'postgres');
+  
+#GENERATE FOREIGN TABLE METADATA POSTGRES ON REMOTE DATABASE MANUAL
 SELECT                                          
   'CREATE FOREIGN TABLE ' || table_schema || '.' || relname || E'\n(\n' ||
   array_to_string(
