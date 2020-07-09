@@ -147,38 +147,12 @@ OPTIONS (schema_name 'pg_catalog', table_name 'pg_type');
 ALTER TABLE public.pg_type_f OWNER TO postgres;
 GRANT ALL ON TABLE public.pg_type_f TO postgres;
 
-CREATE FOREIGN TABLE public.information_schema_tables_f (
-	table_catalog varchar(100),
-	table_schema varchar(100),
-	table_name varchar(100),
-	table_type varchar(100),
-	self_referencing_column_name varchar(100),
-	reference_generation varchar(100),
-	user_defined_type_catalog varchar(100),
-	user_defined_type_schema varchar(100),
-	user_defined_type_name varchar(100),
-	is_insertable_into varchar(100),
-	is_typed varchar(100),
-	commit_action varchar(100))
-SERVER fdw_pg11
-OPTIONS (schema_name 'information_schema', table_name 'tables');
 
-ALTER TABLE public.information_schema_tables_f OWNER TO postgres;
-GRANT ALL ON TABLE public.information_schema_tables_f TO postgres;
 
-CREATE FOREIGN TABLE public.information_schema_foreign_servers_f (
-	foreign_server_catalog varchar(100) NULL,
-	foreign_server_name varchar(100) NULL,
-	foreign_data_wrapper_catalog varchar(100) NULL,
-	foreign_data_wrapper_name varchar(100) NULL,
-	foreign_server_type varchar(100) NULL,
-	foreign_server_version varchar(100) NULL,
-	authorization_identifier varchar(100) NULL)
-SERVER fdw_pg11
-OPTIONS (schema_name 'information_schema', table_name 'foreign_servers');
 
-ALTER TABLE public.information_schema_foreign_servers_f OWNER TO postgres;
-GRANT ALL ON TABLE public.information_schema_foreign_servers_f TO postgres;
+
+
+
 
 CREATE FOREIGN TABLE public.pg_class_f (
 	"oid" oid NOT NULL,
