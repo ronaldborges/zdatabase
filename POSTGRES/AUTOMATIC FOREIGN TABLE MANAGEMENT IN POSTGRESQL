@@ -64,19 +64,6 @@ from
 ) as tabledefinition
 group by relname, foreign_server_name, table_schema, usename;
 
-select c.relname, a.attname, a.atttypid, a.atttypmod, a.attnotnull, s.foreign_server_name, ts.table_schema, u.usename, ts.table_catalog
-from pg_attribute a,
-   pg_type t,
-   --information_schema.tables ts
-   fdw_tables_list ts
-   join information_schema.foreign_servers s on ts.table_catalog = s.foreign_server_catalog
-   join pg_class c on ts.table_name = c.relname
-   join pg_user u on c.relowner = u.usesysid
-   where ts.table_schema not in ('information_schema', 'pg_catalog')
-   AND a.attnum > 0
-   AND a.attrelid = c.oid
-   AND a.atttypid = t.oid;
-
 #CREATE FOREIGN TABLES FOR MANAGE METADATA
 CREATE FOREIGN TABLE public.pg_attribute_f (
  attrelid oid not null, 
@@ -214,6 +201,16 @@ OPTIONS (schema_name 'pg_catalog', table_name 'pg_user');
 
 ALTER TABLE public.pg_user_f OWNER TO postgres;
 GRANT ALL ON TABLE public.pg_user_f TO postgres;
+
+#CREATE VIEW FOR LIST REMOTE SCHEMAS AND TABLES
+create view public.information_schema_tables_v as 
+ SELECT nc.nspname::information_schema.sql_identifier AS table_schema,
+    c.relname::information_schema.sql_identifier AS table_name
+   FROM pg_namespace_f nc
+     JOIN pg_class_f c ON nc.oid = c.relnamespace
+     LEFT JOIN (pg_type_f t
+     JOIN pg_namespace_f nt ON t.typnamespace = nt.oid) ON c.reloftype = t.oid
+  WHERE (c.relkind = ANY (ARRAY['r'::"char", 'v'::"char", 'f'::"char", 'p'::"char"])) AND NOT pg_is_other_temp_schema(nc.oid) AND (pg_has_role(c.relowner, 'USAGE'::text) OR has_table_privilege(c.oid, 'SELECT, INSERT, UPDATE, DELETE, TRUNCATE, REFERENCES, TRIGGER'::text) OR has_any_column_privilege(c.oid, 'SELECT, INSERT, UPDATE, REFERENCES'::text));
 
 
 
