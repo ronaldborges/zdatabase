@@ -218,8 +218,11 @@ GRANT ALL ON TABLE public.pg_user_f TO postgres;
 
 #CREATE VIEW FOR LIST REMOTE SCHEMAS AND TABLES
 create view public.information_schema_tables_v as 
- SELECT nc.nspname::information_schema.sql_identifier AS table_schema,
-    c.relname::information_schema.sql_identifier AS table_name,
+ SELECT (select s.foreign_server_catalog 
+ 			from information_schema.foreign_servers s 
+ 			join fdw_tables_list ftl on ftl.foreign_server_catalog = s.foreign_server_catalog) as table_catalog,
+ nc.nspname::information_schema.sql_identifier AS table_schema,
+ c.relname::information_schema.sql_identifier AS table_name,
             CASE
             WHEN nc.oid = pg_my_temp_schema() THEN 'LOCAL TEMPORARY'::text
             WHEN c.relkind = ANY (ARRAY['r'::"char", 'p'::"char"]) THEN 'BASE TABLE'::text
