@@ -200,26 +200,25 @@ GRANT ALL ON TABLE public.pg_user_f TO postgres;
 
 #CREATE VIEW FOR LIST REMOTE SCHEMAS AND TABLES
 drop view public.information_schema_tables_v;
-create view public.information_schema_tables_v as 
- SELECT (select distinct dbname from information_schema.foreign_servers s join fdw_tables_list ftl on ftl.foreign_server_catalog = s.foreign_server_catalog) as table_catalog,
- nc.nspname::information_schema.sql_identifier AS table_schema,
- c.relname::information_schema.sql_identifier AS table_name,
-            CASE
+CREATE OR REPLACE VIEW public.information_schema_tables_v
+AS SELECT nc.oid as oid, 
+( SELECT DISTINCT ftl.dbname
+           FROM information_schema.foreign_servers s
+             JOIN fdw_tables_list ftl ON ftl.foreign_server_catalog::text = s.foreign_server_catalog::text) AS table_catalog,
+    nc.nspname::information_schema.sql_identifier AS table_schema,
+    c.relname::information_schema.sql_identifier AS table_name,
+        CASE
             WHEN nc.oid = pg_my_temp_schema() THEN 'LOCAL TEMPORARY'::text
-            WHEN c.relkind = ANY (ARRAY['r'::"char", 'p'::"char"]) THEN 'BASE TABLE'::text
-            WHEN c.relkind = 'v'::"char" THEN 'VIEW'::text
-            WHEN c.relkind = 'f'::"char" THEN 'FOREIGN'::text
+            WHEN c.relkind::text = ANY (ARRAY['r'::"char", 'p'::"char"]::text[]) THEN 'BASE TABLE'::text
+            WHEN c.relkind::text = 'v'::"char"::text THEN 'VIEW'::text
+            WHEN c.relkind::text = 'f'::"char"::text THEN 'FOREIGN'::text
             ELSE NULL::text
         END::information_schema.character_data AS table_type
    FROM pg_namespace_f nc
      JOIN pg_class_f c ON nc.oid = c.relnamespace
      LEFT JOIN (pg_type_f t
      JOIN pg_namespace_f nt ON t.typnamespace = nt.oid) ON c.reloftype = t.oid
-  WHERE (c.relkind = ANY (ARRAY['r'::"char", 'v'::"char", 'f'::"char", 'p'::"char"])) 
-  AND NOT pg_is_other_temp_schema(nc.oid) 
-  AND (pg_has_role(c.relowner, 'USAGE'::text) 
-  OR has_table_privilege(c.oid, 'SELECT, INSERT, UPDATE, DELETE, TRUNCATE, REFERENCES, TRIGGER'::text) 
-  OR has_any_column_privilege(c.oid, 'SELECT, INSERT, UPDATE, REFERENCES'::text));
+  WHERE (c.relkind::text = ANY (ARRAY['r'::"char", 'v'::"char", 'f'::"char", 'p'::"char"]::text[])) AND NOT pg_is_other_temp_schema(nc.oid) AND (pg_has_role(c.relowner, 'USAGE'::text) OR has_table_privilege(c.oid, 'SELECT, INSERT, UPDATE, DELETE, TRUNCATE, REFERENCES, TRIGGER'::text) OR has_any_column_privilege(c.oid, 'SELECT, INSERT, UPDATE, REFERENCES'::text));
  
 #VALIDATE VIEW ACCESS 
 select * from public.information_schema_tables_v;
