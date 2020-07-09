@@ -245,6 +245,8 @@ FROM pg_attribute_f a,
 ) as tabledefinition
 group by table_schema, relname, foreign_server_name, usename;
 
+#END
+
 
 
 
