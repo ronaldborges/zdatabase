@@ -199,10 +199,9 @@ ALTER TABLE public.pg_user_f OWNER TO postgres;
 GRANT ALL ON TABLE public.pg_user_f TO postgres;
 
 #CREATE VIEW FOR LIST REMOTE SCHEMAS AND TABLES
+drop view public.information_schema_tables_v;
 create view public.information_schema_tables_v as 
- SELECT (select s.foreign_server_catalog 
- 			from information_schema.foreign_servers s 
- 			join fdw_tables_list ftl on ftl.foreign_server_catalog = s.foreign_server_catalog) as table_catalog,
+ SELECT (select distinct dbname from information_schema.foreign_servers s join fdw_tables_list ftl on ftl.foreign_server_catalog = s.foreign_server_catalog) as table_catalog,
  nc.nspname::information_schema.sql_identifier AS table_schema,
  c.relname::information_schema.sql_identifier AS table_name,
             CASE
@@ -221,6 +220,9 @@ create view public.information_schema_tables_v as
   AND (pg_has_role(c.relowner, 'USAGE'::text) 
   OR has_table_privilege(c.oid, 'SELECT, INSERT, UPDATE, DELETE, TRUNCATE, REFERENCES, TRIGGER'::text) 
   OR has_any_column_privilege(c.oid, 'SELECT, INSERT, UPDATE, REFERENCES'::text));
+ 
+#VALIDATE VIEW ACCESS 
+select * from public.information_schema_tables_v;
   
 #INSERT EXISTENT FOREIGN TABLES
 INSERT INTO public.fdw_tables_list(table_schema, table_name, foreign_server_catalog, foreign_server_name, dbname, usename)
