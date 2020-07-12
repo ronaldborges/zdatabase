@@ -214,6 +214,7 @@ INSERT INTO public.fdw_tables_list (table_schema, table_name, table_type, foreig
 #GENERATE FOREIGN TABLE METADATA POSTGRES ON REMOTE DATABASE MANUAL
 SELECT                                          
 	'CREATE SCHEMA IF NOT EXISTS ' || table_schema || ' AUTHORIZATION ' || usename || ';' || E'\n' ||
+	'DROP FOREIGN TABLE ' || table_schema || '.' || relname || ';' || E'\n' ||
 	'CREATE FOREIGN TABLE ' || table_schema || '.' || relname || E'\n(\n' ||
   array_to_string(
     array_agg(
