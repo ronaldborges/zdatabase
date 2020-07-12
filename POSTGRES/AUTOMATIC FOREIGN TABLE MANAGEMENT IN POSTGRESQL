@@ -234,15 +234,19 @@ from
     END as not_null,
     ftl.foreign_server_name,
     ftl.usename
-FROM pg_attribute_f a,
-	 pg_type_f t,
-	 fdw_tables_list ftl,
-	 public.information_schema_tables_v ts
-	 join pg_class_f c on ts.table_name = c.relname
-	 where a.attnum > 0	  
-     AND a.attrelid = c.oid
-     AND a.atttypid = t.oid
-     AND ts.table_name = ftl.table_name
+  FROM pg_class_f c,
+   pg_attribute_f a,
+   pg_type_f t,
+   pg_namespace_f pn,
+   fdw_tables_list ftl
+   where c.relnamespace = pn.oid
+   AND pn.nspname = ftl.table_schema
+   AND c.relname = ftl.table_name
+   AND ftl.table_schema='almox'
+   AND ftl.table_name='entrada'
+   AND a.attnum > 0
+   AND a.attrelid = c.oid
+   AND a.atttypid = t.oid
  ORDER BY a.attnum
 ) as tabledefinition
 group by table_schema, relname, foreign_server_name, usename;
