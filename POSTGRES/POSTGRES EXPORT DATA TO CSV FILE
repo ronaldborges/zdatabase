@@ -1,0 +1,25 @@
++++++++++++++++++++++++++++++++++++++++++
++   POSTGRES EXPORT DATA TO CSV FILE    +
++++++++++++++++++++++++++++++++++++++++++
+
+#NOTE
+Export table or query to csv
+
+#CONNECT WITH PSQL
+/usr/local/pgql-<$version>/bin/psql -U <$username> -d <$database> -h <$host> -p <$port>
+
+#COUNT ROWS IN TABLE OR QUERY (IT IS IMPORTANT TO RUN A COUNT BEFORE GUARANTEEING ACCESS TO THE OBJECT OR THE GOOD PERFORMANCE OF THE QUERY!!)
+select count(1) as cnt from public.fdw_tables_list
+select count(1) from (select * from public.fdw_tables_list) as cnt;
+
+#EXPORT DATA TO CSV FILE WITH HEADER
+\COPY public.fdw_tables_list TO <$PATH/FILE.CSV> CSV HEADER 
+\COPY (select * from public.fdw_tables_list) TO <$PATH/FILE.CSV> CSV HEADER 
+
+#EXPORT DATA TO CSV FILE WITHOUT HEADER
+\COPY public.fdw_tables_list TO <$PATH/FILE.CSV> CSV
+\COPY (select * from public.fdw_tables_list) TO <$PATH/FILE.CSV> CSV
+
+
+
+
