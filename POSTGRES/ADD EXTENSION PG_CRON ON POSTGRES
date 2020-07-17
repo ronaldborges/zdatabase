@@ -1,0 +1,73 @@
++++++++++++++++++++++++++++++++++++++++
++  ADD EXTENSION PG_CRON ON POSTGRES  +
++++++++++++++++++++++++++++++++++++++++
+
+#NOTE
+pg_cron is a simple cron-based job scheduler for PostgreSQL (9.5 or higher) that runs inside the database as an extension. 
+
+The schedule uses the standard cron syntax, in which * means "run every time period", and a specific number means "but only at this time":
+
+ ┌───────────── min (0 - 59)
+ │ ┌────────────── hour (0 - 23)
+ │ │ ┌─────────────── day of month (1 - 31)
+ │ │ │ ┌──────────────── month (1 - 12)
+ │ │ │ │ ┌───────────────── day of week (0 - 6) (0 to 6 are Sunday to
+ │ │ │ │ │                  Saturday, or use names; 7 is also Sunday)
+ │ │ │ │ │
+ │ │ │ │ │
+ * * * * *
+
+#DOWNLOAD EXTENSION
+wget https://github.com/citusdata/pg_cron/archive/master.zip
+mv master.zip pg_cron.zip
+unzip pg_cron.zip
+cd pg_cron-master
+
+#COMPILE EXTENSION
+vi Makefile
+PG_CONFIG = /usr/local/pgsql-9.6.14/bin/pg_config
+make
+make install
+ls -ltr /usr/local/pgsql-9.6.14/lib/pg_cron.so
+ls -ltr /usr/local/pgsql-9.6.14/share/extension/pg_cron*
+
+#CREATE EXTENSION FOR DATABASE 9.*
+su - postgres
+vi /dados/data/postgres.conf
+shared_preload_libraries = 'pg_cron'
+cron.database_name = '<YOUR DATABASE>'
+vi /dados/data/pg_hba.conf
+host    <YOUR DATABASE>    postgres        127.0.0.1/32            trust
+/usr/local/pgsql-9.6.14/bin/pg_ctl -D /dados/data stop -m fast
+/usr/local/pgsql-9.6.14/bin/pg_ctl -D /dados/data start -l logstart
+/usr/local/pgsql-9.6.14/bin/psql -U postgres -p 5432 -d <YOUR DATABASE>
+CREATE EXTENSION pg_cron VERSION '1.0';
+ALTER EXTENSION pg_cron UPDATE;
+GRANT USAGE ON SCHEMA cron TO postgres;
+
+SELECT cron.schedule('5 * * * *', $CRON$ SELECT * FROM PG_STAT_ACTIVITY; $CRON$);
+SELECT * FROM cron.job;
+ jobid |  schedule   |                 command                 | nodename  | nodeport |   database      | username 
+-------+-------------+-----------------------------------------+-----------+----------+-----------------+----------
+     1 | *5 * * * *  |  SELECT * FROM PG_STAT_ACTIVITY;        | localhost |     5432 | <YOUR DATABASE> | postgres
+(1 row)
+
+#CREATE EXTENSION FOR DATABASE 10.* OR ABOVE 
+su - postgres
+vi /dados/data/postgres.conf
+shared_preload_libraries = 'pg_cron'
+cron.database_name = '<YOUR DATABASE>'
+vi /dados/data/pg_hba.conf
+host    <YOUR DATABASE>    postgres        127.0.0.1/32            trust
+/usr/local/pgsql-9.6.14/bin/pg_ctl -D /dados/data stop -m fast
+/usr/local/pgsql-9.6.14/bin/pg_ctl -D /dados/data start -l logstart
+/usr/local/pgsql-9.6.14/bin/psql -U postgres -p 5432 -d <YOUR DATABASE>
+CREATE EXTENSION pg_cron;
+GRANT USAGE ON SCHEMA cron TO postgres;
+
+SELECT cron.schedule('5 * * * *', $CRON$ SELECT * FROM PG_STAT_ACTIVITY; $CRON$);
+SELECT * FROM cron.job;
+ jobid |  schedule   |                 command                 | nodename  | nodeport |   database      | username 
+-------+-------------+-----------------------------------------+-----------+----------+-----------------+----------
+     1 | *5 * * * *  |  SELECT * FROM PG_STAT_ACTIVITY;        | localhost |     5432 | <YOUR DATABASE> | postgres
+(1 row)
