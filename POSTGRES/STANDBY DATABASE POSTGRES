@@ -135,5 +135,25 @@ elif [ $DELAY -gt 7200 ];then
         export HBASETIMEC=`echo "STDB HBASE Outdated CRITICAL :" $DELAY " seg"`
         curl -s -X POST https://api.telegram.org/<$id>/sendMessage -d chat_id=<$chat_id> -d text="$HBASETIMEC"
 fi
- 
+
+#MONITORING STANDBY IS UP
+*/30 * * * * $path/check_isready_HBASE.sh >  $path/check_isready_HBASE.log 2>&1
+
+cat $path/check_isready_HBASE.sh
+export ISREADY=`/usr/local/pgsql-$version/bin/pg_isready -h 127.0.0.1 -p $port`
+echo $ISREADY
+if [ "$ISREADY" = "127.0.0.1:$port - accepting connections" ] ;then
+        echo "Database Accepting connections OK!!"
+        export HBASETIMEOK0=`echo "STDB HBASE $port ACCEPTING CONNECTIONS OK"`
+#        curl -s -X POST https://api.telegram.org/<$id>/sendMessage -d chat_id=<$chat_id> -d text="$HBASETIMEOK0"
+elif [ "$ISREADY" = "127.0.0.1:$port - rejecting connections" ] ;then
+        echo "Database Not Accepting connections WARNING!!"
+        export HBASETIMEW=`echo "STDB HBASE $port NOT ACCEPTING CONNECTIONS WARNING"`
+        curl -s -X POST https://api.telegram.org/<$id>/sendMessage -d chat_id=<$chat_id> -d text="$HBASETIMEW"
+elif [ "$ISREADY" = "127.0.0.1:$port - no response" ] ;then
+        echo "Database off-line CRITICAL!!"
+        export HBASETIMEC=`echo "STDB HBASE $port OFF-LINE CRITICAL"`
+        curl -s -X POST https://api.telegram.org/<$id>/sendMessage -d chat_id=<$chat_id> -d text="$HBASETIMEC"
+fi
+
 #END    
