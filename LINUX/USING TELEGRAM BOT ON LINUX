@@ -4,7 +4,9 @@
 
 #ON LINUX
 
-yum install python-pip
+python --version
+curl https://bootstrap.pypa.io/get-pip.py -o get-pip.py
+python get-pip.py
 pip install pyTelegramBotAPI
 pip install --upgrade pip
 
