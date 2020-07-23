@@ -145,6 +145,8 @@ cd /usr/local/pentaho/server/pentaho-server/data/postgresql
 /usr/local/pgsql-11.4/bin/psql -U postgres -p 5432 -f create_quartz_postgresql.sql
 /usr/local/pgsql-11.4/bin/psql -U postgres -p 5432 -f create_repository_postgresql.sql
 
+https://help.pentaho.com/Documentation/9.0/Setup/Use_PostgreSQL_as_your_repository_database_(Manual_installation)
+https://help.pentaho.com/Documentation/9.0/Setup/Start_and_stop_the_Pentaho_Server_for_configuration
 
 
 
