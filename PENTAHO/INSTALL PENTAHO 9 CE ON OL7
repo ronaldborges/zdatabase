@@ -57,6 +57,9 @@ mkdir -p /usr/local/pentaho/.pentaho
 mv pentaho-server-ce-9.0.0.0-423.zip /usr/local/pentaho/server/
 cd /usr/local/pentaho/server/
 unzip pentaho-server-ce-9.0.0.0-423.zip
+vi /usr/local/pentaho/server/pentaho-server/pentaho-solutions/system/quartz/quartz.properties
+org.quartz.jobStore.driverDelegateClass = org.quartz.impl.jdbcjobstore.PostgreSQLDelegate
+org.quartz.dataSource.myDS.jndiURL = Quartz
 
 mv pdi-ce-9.0.0.0-423.zip /usr/local/pentaho/server/
 cd /usr/local/pentaho/server/
