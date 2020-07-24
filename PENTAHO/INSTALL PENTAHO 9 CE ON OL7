@@ -27,16 +27,13 @@ gpgkey=file:///etc/pki/rpm-gpg/RPM-GPG-KEY-oracle
 gpgcheck=1
 enabled=1
 
-yum repolist
-
 #INSTALL PACKAGES
-yum install webkitgtk.x86_64 -y 
+yum repolist
+yum install webkitgtk.x86_64 webkitgtk4-devel.x86_64 -y 
 yum install java-1.8.0-openjdk-devel -y 
 yum install openssl-devel libtermcap-devel readline-devel gcc bison flex perl libconfig-devel kernel-devel rsync -y
 yum install zlib jzlib zlib-devel -y
 yum install tigervnc-server xterm -y
-yum install https://dl.fedoraproject.org/pub/epel/epel-release-latest-7.noarch.rpm -y
-yum install http://li.nux.ro/download/nux/dextop/el7/x86_64/nux-dextop-release-0-5.el7.nux.noarch.rpm -y
 
 java -version
 openjdk version "1.8.0_222-ea"
@@ -225,6 +222,10 @@ systemctl enable vncserver@:3.service
 systemctl start vncserver@:3.service
 
 #RUN SPOON
+vi /usr/local/pentaho/server/data-integration/spoon.sh
+#    PENTAHO_DI_JAVA_OPTIONS="-Xms1024m -Xmx2048m -XX:MaxPermSize=256m"
+     PENTAHO_DI_JAVA_OPTIONS="-Xms1024m -Xmx2048m"
+
 nohup /usr/local/pentaho/server/data-integration/spoon.sh & 
 
 
