@@ -54,14 +54,30 @@ wget https://ufpr.dl.sourceforge.net/project/pentaho/Pentaho%209.0/client-tools/
 mkdir -p /usr/local/pentaho/server/
 mkdir -p /usr/local/pentaho/.pentaho
 
-mv pentaho-server-ce-9.0.0.0-423.zip /usr/local/pentaho/server/
+mv /home/pentaho/pentaho-server-ce-9.0.0.0-423.zip /usr/local/pentaho/server/
 cd /usr/local/pentaho/server/
 unzip pentaho-server-ce-9.0.0.0-423.zip
 vi /usr/local/pentaho/server/pentaho-server/pentaho-solutions/system/quartz/quartz.properties
 org.quartz.jobStore.driverDelegateClass = org.quartz.impl.jdbcjobstore.PostgreSQLDelegate
 org.quartz.dataSource.myDS.jndiURL = Quartz
+vi /usr/local/pentaho/server/pentaho-server/pentaho-solutions/system/hibernate/postgresql.hibernate.cfg.xml
+    <property name="connection.url">jdbc:postgresql://localhost:5432/hibernate</property>
+    <property name="dialect">org.hibernate.dialect.PostgreSQLDialect</property>
+    <property name="connection.username">hibuser</property>
+    <property name="connection.password">password</property>
+    <property name="connection.pool_size">10</property>
+vi /usr/local/pentaho/server/pentaho-server/tomcat/webapps/pentaho/META-INF/context.xml
+<?xml version="1.0" encoding="UTF-8"?>
+<Context path="/pentaho" docbase="webapps/pentaho/">
+        <Resource name="jdbc/Hibernate" auth="Container" type="javax.sql.DataSource" factory="org.apache.tomcat.jdbc.pool.DataSourceFactory" initialSize="0" maxActive="20" maxIdle="10" maxWait="10000" username="hibuser" password="password" driverClassName="org.postgresql.Driver" url="jdbc:postgresql://localhost:5432/hibernate" validationQuery="select 1"/>
+        <Resource name="jdbc/Audit" auth="Container" type="javax.sql.DataSource" factory="org.apache.tomcat.jdbc.pool.DataSourceFactory" initialSize="0" maxActive="20" maxIdle="10" maxWait="10000" username="hibuser" password="password" driverClassName="org.postgresql.Driver" url="jdbc:postgresql://localhost:5432/hibernate" validationQuery="select 1"/>
+        <Resource name="jdbc/Quartz" auth="Container" type="javax.sql.DataSource" factory="org.apache.tomcat.jdbc.pool.DataSourceFactory" initialSize="0" maxActive="20" maxIdle="10" maxWait="10000" username="pentaho_user" password="password" testOnBorrow="true" driverClassName="org.postgresql.Driver" url="jdbc:postgresql://localhost:5432/quartz" validationQuery="select 1"/>
+        <Resource name="jdbc/pentaho_operations_mart" auth="Container" type="javax.sql.DataSource" factory="org.apache.tomcat.jdbc.pool.DataSourceFactory" initialSize="0" maxActive="20" maxIdle="10" maxWait="10000" username="hibuser" password="password" driverClassName="org.postgresql.Driver" url="jdbc:postgresql://localhost:5432/pentaho_operations_mart" validationQuery="select 1"/>
+        <Resource name="jdbc/PDI_Operations_Mart" auth="Container" type="javax.sql.DataSource" factory="org.apache.tomcat.jdbc.pool.DataSourceFactory" initialSize="0" maxActive="20" maxIdle="10" maxWait="10000" username="hibuser" password="password" driverClassName="org.postgresql.Driver" url="jdbc:postgresql://localhost:5432/hibernate" validationQuery="select 1"/>
+        <Resource name="jdbc/live_logging_info" auth="Container" type="javax.sql.DataSource" factory="org.apache.tomcat.jdbc.pool.DataSourceFactory" initialSize="0" maxActive="20" maxIdle="10" maxWait="10000" username="hibuser" password="password" driverClassName="org.postgresql.Driver" url="jdbc:postgresql://localhost:5432/hibernate?searchpath=pentaho_dilogs" validationQuery="select 1"/>
+</Context>
 
-mv pdi-ce-9.0.0.0-423.zip /usr/local/pentaho/server/
+mv /home/pentaho/pdi-ce-9.0.0.0-423.zip /usr/local/pentaho/server/
 cd /usr/local/pentaho/server/
 unzip pdi-ce-9.0.0.0-423.zip
 
@@ -114,8 +130,8 @@ make
 make install
 cd ~
 mkdir -p /dados/data
-chown postgres:postgres -R /dados
 adduser postgres
+chown postgres:postgres -R /dados
 su - postgres
 /usr/local/pgsql-11.4/bin/initdb --locale=pt_BR.UTF-8 -D /dados/data/
 exit
@@ -139,7 +155,6 @@ WantedBy=multi-user.target
 
 systemctl daemon-reload
 systemctl enable postgresql.service
-systemctl status postgresql.service
 systemctl start postgresql.service
 
 su - pentaho
@@ -147,6 +162,49 @@ cd /usr/local/pentaho/server/pentaho-server/data/postgresql
 /usr/local/pgsql-11.4/bin/psql -U postgres -p 5432 -f create_jcr_postgresql.sql
 /usr/local/pgsql-11.4/bin/psql -U postgres -p 5432 -f create_quartz_postgresql.sql
 /usr/local/pgsql-11.4/bin/psql -U postgres -p 5432 -f create_repository_postgresql.sql
+
+vi /etc/systemd/system/pentaho.service
+[Unit]
+Description=Pentho Bi-server
+After=syslog.target
+After=network.target
+[Service]
+Type=forking
+User=pentaho
+Group=pentaho
+Environment=JAVA_HOME=$_PENTAHO_JAVA_HOME
+ExecStart=/usr/local/pentaho/server/pentaho-server/start-pentaho.sh
+ExecStartPost=/bin/echo pentaho...end of unitfile
+ExecStop=/usr/local/pentaho/server/pentaho-server/stop-pentaho.sh
+TimeoutSec=300
+
+[Install]
+WantedBy=graphical.target
+
+systemctl daemon-reload
+systemctl enable pentaho.service
+systemctl status pentaho.service
+● pentaho.service - Pentho Bi-server
+   Loaded: loaded (/etc/systemd/system/pentaho.service; enabled; vendor preset: disabled)
+   Active: active (running) since Thu 2020-07-23 22:38:47 -03; 6s ago
+  Process: 3160 ExecStartPost=/bin/echo pentaho...end of unitfile (code=exited, status=0/SUCCESS)
+  Process: 3138 ExecStart=/usr/local/pentaho/server/pentaho-server/start-pentaho.sh (code=exited, status=0/SUCCESS)
+ Main PID: 3159 (java)
+    Tasks: 18
+   CGroup: /system.slice/pentaho.service
+           └─3159 /bin/java -Djava.util.logging.config.file=/usr/local/pentaho/server/pentaho-server/tomcat/conf/logging.properties -Djava.util.logging.manager=org.apache.juli.ClassLoaderLogManager -Djdk.tls.ephemeralDHKeySize=2048 -D...
+
+Jul 23 22:38:47 ol7pentaho start-pentaho.sh[3138]: --------------------------------------------------------------------------------------------
+Jul 23 22:38:47 ol7pentaho start-pentaho.sh[3138]: The Pentaho BI Platform now contains a version checker that will notify you
+Jul 23 22:38:47 ol7pentaho start-pentaho.sh[3138]: when newer versions of the software are available. The version checker is enabled by default.
+Jul 23 22:38:47 ol7pentaho start-pentaho.sh[3138]: For information on what the version checker does, why it is beneficial, and how it works see:
+Jul 23 22:38:47 ol7pentaho start-pentaho.sh[3138]: http://wiki.pentaho.com/display/ServerDoc2x/Version+Checker
+Jul 23 22:38:47 ol7pentaho start-pentaho.sh[3138]: Press Enter to continue, or type cancel or Ctrl-C to prevent the server from starting.
+Jul 23 22:38:47 ol7pentaho start-pentaho.sh[3138]: You will only be prompted once with this question.
+Jul 23 22:38:47 ol7pentaho start-pentaho.sh[3138]: --------------------------------------------------------------------------------------------
+Jul 23 22:38:47 ol7pentaho start-pentaho.sh[3138]: [OK]:
+Jul 23 22:38:47 ol7pentaho systemd[1]: Started Pentho Bi-server.
+
 
 https://help.pentaho.com/Documentation/9.0/Setup/Use_PostgreSQL_as_your_repository_database_(Manual_installation)
 https://help.pentaho.com/Documentation/9.0/Setup/Start_and_stop_the_Pentaho_Server_for_configuration
