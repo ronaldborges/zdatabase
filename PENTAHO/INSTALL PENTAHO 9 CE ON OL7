@@ -229,7 +229,7 @@ systemctl enable vncserver@:3.service
 systemctl start vncserver@:3.service
 
 #RUN SPOON
-nohup /usr/local/pentaho/server/data-integration/spoon.sh & 
+/usr/local/pentaho/server/data-integration/spoon.sh
 
 #END
 
