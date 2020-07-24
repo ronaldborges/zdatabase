@@ -186,5 +186,6 @@ You must shut down all Application tier services before performing the tasks in 
 	cd $ADMIN_SCRIPTS_HOME
 	sh adstrtal.sh apps/apps
 
+
 	
 	
