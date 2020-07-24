@@ -30,7 +30,6 @@ enabled=1
 #INSTALL PACKAGES
 yum repolist
 yum install java-1.8.0-openjdk-devel -y 
-yum install java-1.7.0-openjdk-devel -y 
 yum install geoclue -y
 yum install redhat-lsb-core -y 
 yum install openssl-devel libtermcap-devel readline-devel gcc bison flex perl libconfig-devel kernel-devel rsync -y
@@ -62,7 +61,6 @@ PENTAHO_INSTALLED_LICENSE_PATH=/home/pentaho/.pentaho/.installedLicenses.xml
 #DOWNLOAD PENTAHO SERVER DIRECTORY AND PENTAHO DATA INTEGRATION
 wget https://ufpr.dl.sourceforge.net/project/pentaho/Pentaho%209.0/server/pentaho-server-ce-9.0.0.0-423.zip
 wget https://ufpr.dl.sourceforge.net/project/pentaho/Pentaho%209.0/client-tools/pdi-ce-9.0.0.0-423.zip
-##### wget https://downloads.apache.org/tomcat/tomcat-9/v9.0.36/bin/apache-tomcat-9.0.36.tar.gz
 
 #CREATE DIRECTORY AND MOVE TO FINAL DIRECTORY
 mkdir -p /usr/local/pentaho/server/
