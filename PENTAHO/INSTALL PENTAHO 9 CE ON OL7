@@ -2,12 +2,15 @@
 +   INSTALL PENTAHO 9 CE ON OL7    +
 ++++++++++++++++++++++++++++++++++++
 
+#DISABLE FIREWALL AND SELINUX
 sed -i 's/SELINUX=.*/SELINUX=disabled/' /etc/selinux/config && setenforce 0
 systemctl stop firewalld && systemctl disable firewalld
 
+#SET HOSTNAME
 hostnamectl set-hostname ol7pentaho
 hostnamectl --static 
 
+#ADD REPOSITORIES
 vi /etc/yum.repos.d/oracle-linux-ol7.repo
 
 [ol7_optional_developer]
@@ -26,16 +29,19 @@ enabled=1
 
 yum repolist
 
+#INSTALL PACKAGES
 yum install webkitgtk.x86_64 -y 
 yum install java-1.8.0-openjdk-devel -y 
 yum install openssl-devel libtermcap-devel readline-devel gcc bison flex perl libconfig-devel kernel-devel rsync -y
 yum install zlib jzlib zlib-devel -y
+yum install tigervnc-server xterm -y
 
 java -version
 openjdk version "1.8.0_222-ea"
 OpenJDK Runtime Environment (build 1.8.0_222-ea-b03)
 OpenJDK 64-Bit Server VM (build 25.222-b03, mixed mode)
 
+#CREATE USER PENTAHO AND CONFIGURE
 adduser pentaho
 su - pentaho
 vi .bash_profile
@@ -47,16 +53,20 @@ PENTAHO_JAVA_HOME=/usr/lib/jvm/java-1.8.0-openjdk-1.8.0.222.b03-1.el7.x86_64
 env | grep PENTAHO_INSTALLED_LICENSE_PATH
 PENTAHO_INSTALLED_LICENSE_PATH=/home/pentaho/.pentaho/.installedLicenses.xml
 
+#DOWNLOAD PENTAHO SERVER DIRECTORY AND PENTAHO DATA INTEGRATION
 wget https://ufpr.dl.sourceforge.net/project/pentaho/Pentaho%209.0/server/pentaho-server-ce-9.0.0.0-423.zip
 wget https://ufpr.dl.sourceforge.net/project/pentaho/Pentaho%209.0/client-tools/pdi-ce-9.0.0.0-423.zip
 ##### wget https://downloads.apache.org/tomcat/tomcat-9/v9.0.36/bin/apache-tomcat-9.0.36.tar.gz
 
+#CREATE DIRECTORY AND MOVE TO FINAL DIRECTORY
 mkdir -p /usr/local/pentaho/server/
 mkdir -p /usr/local/pentaho/.pentaho
 
 mv /home/pentaho/pentaho-server-ce-9.0.0.0-423.zip /usr/local/pentaho/server/
 cd /usr/local/pentaho/server/
 unzip pentaho-server-ce-9.0.0.0-423.zip
+
+#CONFIGURE DATABASE SOURCE
 vi /usr/local/pentaho/server/pentaho-server/pentaho-solutions/system/quartz/quartz.properties
 org.quartz.jobStore.driverDelegateClass = org.quartz.impl.jdbcjobstore.PostgreSQLDelegate
 org.quartz.dataSource.myDS.jndiURL = Quartz
@@ -118,6 +128,7 @@ unzip pdi-ce-9.0.0.0-423.zip
 ##### systemctl enable tomcat
 ##### systemctl start tomcat
 
+#INSTALL POSTGRES DATABASE
 wget https://ftp.postgresql.org/pub/source/v11.4/postgresql-11.4.tar.gz
 tar xvfz postgresql-11.4.tar.gz
 cd postgresql-11.4
@@ -136,6 +147,7 @@ su - postgres
 /usr/local/pgsql-11.4/bin/initdb --locale=pt_BR.UTF-8 -D /dados/data/
 exit
 
+#CREATE SERVICE POSTGRES DATABASE
 vi /usr/lib/systemd/system/postgresql.service
 [Unit]
 Description=PostgreSQL database server
@@ -157,12 +169,14 @@ systemctl daemon-reload
 systemctl enable postgresql.service
 systemctl start postgresql.service
 
+#RUN SCRIPTS FROM PENTAHO SERVER DIRECTORY ON POSTGRES DATABASE
 su - pentaho
 cd /usr/local/pentaho/server/pentaho-server/data/postgresql 
 /usr/local/pgsql-11.4/bin/psql -U postgres -p 5432 -f create_jcr_postgresql.sql
 /usr/local/pgsql-11.4/bin/psql -U postgres -p 5432 -f create_quartz_postgresql.sql
 /usr/local/pgsql-11.4/bin/psql -U postgres -p 5432 -f create_repository_postgresql.sql
 
+#CREATE SERVICE PENTAHO SERVER DIRECTORY
 vi /etc/systemd/system/pentaho.service
 [Unit]
 Description=Pentho Bi-server
@@ -205,9 +219,47 @@ Jul 23 22:38:47 ol7pentaho start-pentaho.sh[3138]: -----------------------------
 Jul 23 22:38:47 ol7pentaho start-pentaho.sh[3138]: [OK]:
 Jul 23 22:38:47 ol7pentaho systemd[1]: Started Pentho Bi-server.
 
+#ACCESS PENTAHO SERVER DIRECTORY
+http://$<IP>:8080/pentaho/Home
+user = admin
+password (default) = password
 
-https://help.pentaho.com/Documentation/9.0/Setup/Use_PostgreSQL_as_your_repository_database_(Manual_installation)
-https://help.pentaho.com/Documentation/9.0/Setup/Start_and_stop_the_Pentaho_Server_for_configuration
+#CONFIGURE VNC
+vi /etc/sysconfig/vncservers
+VNCSERVERS="2:root 3:pentaho"
+VNCSERVERARGS[2]="-geometry 1280x1024 -nolisten tcp -localhost"
+VNCSERVERARGS[3]="-geometry 1280x1024"
+cp /lib/systemd/system/vncserver@.service /lib/systemd/system/vncserver@:3.service
+vi /lib/systemd/system/vncserver@:3.service
+[Unit]
+Description=Remote desktop service (VNC)
+After=syslog.target network.target
+
+[Service]
+Type=simple
+
+# Clean any existing files in /tmp/.X11-unix environment
+ExecStartPre=/bin/sh -c '/usr/bin/vncserver -kill %i > /dev/null 2>&1 || :'
+User=pentaho
+ExecStart=/usr/bin/vncserver %i -geometry 1440x1080
+PIDFile=/home/pentaho/.vnc/%H%i.pid
+ExecStop=/bin/sh -c '/usr/bin/vncserver -kill %i > /dev/null 2>&1 || :'
+
+[Install]
+WantedBy=multi-user.target
+
+su - pentaho
+vncpasswd
+Password:
+Verify:
+Would you like to enter a view-only password (y/n)? n
+exit
+
+systemctl daemon-reload
+systemctl enable vncserver@:3.service
+systemctl start vncserver@:3.service
+
+
 
 
 
