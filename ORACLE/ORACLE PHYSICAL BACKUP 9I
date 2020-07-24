@@ -100,3 +100,4 @@ RMAN retention policy will be applied to the command
 RMAN retention policy is set to recovery window of 7 days
 no obsolete backups found
 
+
