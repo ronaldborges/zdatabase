@@ -91,43 +91,6 @@ mv /home/pentaho/pdi-ce-9.0.0.0-423.zip /usr/local/pentaho/server/
 cd /usr/local/pentaho/server/
 unzip pdi-ce-9.0.0.0-423.zip
 
-##### mv apache-tomcat-9.0.36-src.tar.gz /usr/local/
-##### tar -xvzf apache-tomcat-9.0.36-src.tar.gz 
-##### mv apache-tomcat-9.0.36-src apache-tomcat
-##### exit
-##### groupadd tomcat
-##### useradd -g tomcat -d /home/tomcat tomcat
-##### chown -R tomcat:tomcat /usr/local/apache-tomcat
-##### chmod +x /usr/local/apache-tomcat/bin/*.sh
-##### vi /etc/systemd/system/tomcat.service
-##### [Unit]
-##### Description=Tomcat 9 servlet container
-##### After=network.target
-##### 
-##### [Service]
-##### Type=forking
-##### 
-##### User=tomcat
-##### Group=tomcat
-
-##### Environment="JAVA_HOME=/usr/lib/jvm/java-1.8.0-openjdk-1.8.0.222.b03-1.el7.x86_64/jre"
-##### Environment="JAVA_OPTS=-Djava.security.egd=file:///dev/urandom"
-
-##### Environment="CATALINA_BASE=/usr/local/apache-tomcat"
-##### Environment="CATALINA_HOME=/usr/local/apache-tomcat"
-##### Environment="CATALINA_PID=/usr/local/apache-tomcat/temp/tomcat.pid"
-##### Environment="CATALINA_OPTS=-Xms512M -Xmx1024M -server -XX:+UseParallelGC"
-
-##### ExecStart=/usr/local/apache-tomcat/bin/startup.sh
-##### ExecStop=/usr/local/apache-tomcat/bin/shutdown.sh
-
-##### [Install]
-##### WantedBy=multi-user.target
-
-##### systemctl daemon-reload
-##### systemctl enable tomcat
-##### systemctl start tomcat
-
 #INSTALL POSTGRES DATABASE
 wget https://ftp.postgresql.org/pub/source/v11.4/postgresql-11.4.tar.gz
 tar xvfz postgresql-11.4.tar.gz
@@ -258,6 +221,9 @@ exit
 systemctl daemon-reload
 systemctl enable vncserver@:3.service
 systemctl start vncserver@:3.service
+
+#RUN SPOON
+nohup /usr/local/pentaho/server/data-integration/spoon.sh & 
 
 
 
