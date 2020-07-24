@@ -29,12 +29,18 @@ enabled=1
 
 #INSTALL PACKAGES
 yum repolist
-yum install webkitgtk.x86_64 webkitgtk4-devel.x86_64 -y 
 yum install java-1.8.0-openjdk-devel -y 
+yum install java-1.7.0-openjdk-devel -y 
+yum install geoclue -y
 yum install openssl-devel libtermcap-devel readline-devel gcc bison flex perl libconfig-devel kernel-devel rsync -y
 yum install zlib jzlib zlib-devel -y
 yum install tigervnc-server xterm -y
+wget ftp://ftp.pbone.net/mirror/archive.fedoraproject.org/fedora/linux/releases/18/Everything/x86_64/os/Packages/w/webkitgtk-1.10.1-1.fc18.x86_64.rpm
+wget ftp://ftp.pbone.net/mirror/archive.fedoraproject.org/fedora/linux/releases/18/Fedora/x86_64/os/Packages/l/libicu-49.1.1-5.fc18.x86_64.rpm
+rpm -ivh libicu-49.1.1-5.fc18.x86_64.rpm
+rpm -ivh webkitgtk-1.10.1-1.fc18.x86_64.rpm
 
+#CHECK JAVA VERSION
 java -version
 openjdk version "1.8.0_222-ea"
 OpenJDK Runtime Environment (build 1.8.0_222-ea-b03)
@@ -222,10 +228,6 @@ systemctl enable vncserver@:3.service
 systemctl start vncserver@:3.service
 
 #RUN SPOON
-vi /usr/local/pentaho/server/data-integration/spoon.sh
-#    PENTAHO_DI_JAVA_OPTIONS="-Xms1024m -Xmx2048m -XX:MaxPermSize=256m"
-     PENTAHO_DI_JAVA_OPTIONS="-Xms1024m -Xmx2048m"
-
 nohup /usr/local/pentaho/server/data-integration/spoon.sh & 
 
 
