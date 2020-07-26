@@ -1,0 +1,169 @@
+++++++++++++++++++++++++++++++++++++++++++++
++  ORACLE DATABASE 19C AUTOMATIC INDEXING  +
+++++++++++++++++++++++++++++++++++++++++++++
+
+#
+The automatic indexing feature automates index management tasks, such as creating, rebuilding, and dropping indexes in an Oracle Database based on changes in the application workload.
+This feature improves database performance by managing indexes automatically in an Oracle Database.
+
+§ Functionality
+- Runs the automatic indexing process in the background periodically at a predefined time interval.
+- Analyzes application workload, and accordingly creates new indexes and drops the existing under performing indexes to improve database performance.
+- Rebuilds the indexes that are marked unusable due to table partitioning maintenance operations, such as ALTER TABLE MOVE.
+- Provides PL/SQL APIs for configuring automatic indexing in a database and generating reports related to automatic indexing operations.
+
+#Configuring Automatic Indexing in an Oracle Database
+- Enable automatic indexing in a database and creates any new auto indexes as visible indexes
+EXEC DBMS_AUTO_INDEX.CONFIGURE('AUTO_INDEX_MODE','IMPLEMENT');
+- Enable automatic indexing in a database, but creates any new auto indexes as invisible indexes
+EXEC DBMS_AUTO_INDEX.CONFIGURE('AUTO_INDEX_MODE','REPORT ONLY');
+- Disable automatic indexing in a database
+EXEC DBMS_AUTO_INDEX.CONFIGURE('AUTO_INDEX_MODE','OFF');
+- Set retention period for unused auto indexes to 90 days
+EXEC DBMS_AUTO_INDEX.CONFIGURE('AUTO_INDEX_RETENTION_FOR_AUTO', '90');
+- Set retention period for unused non-auto indexes to 60 days:
+EXEC DBMS_AUTO_INDEX.CONFIGURE('AUTO_INDEX_RETENTION_FOR_MANUAL', '60');
+- Define tablespace of TBSAUTO to store auto indexes
+EXEC DBMS_AUTO_INDEX.CONFIGURE('AUTO_INDEX_DEFAULT_TABLESPACE', 'TBSAUTO');
+- Allocates 5% of the tablespace for auto indexes
+EXEC DBMS_AUTO_INDEX.CONFIGURE('AUTO_INDEX_SPACE_BUDGET', '5');
+- Generating Reports about the automatic indexing operations for last 24 hours in plain txt(default) format
+set long 9999999 pages 50000 lines 500
+col xxxx for a300
+SELECT dbms_auto_index.Report_activity() as xxxx 
+FROM dual;
+- Make a report about the automatic indexing operations for specific timestamp in HTML format
+set long 9999999 pages 50000 lines 500
+col xxxx for a300
+SELECT dbms_auto_index.Report_activity(activity_start => systimestamp-1, 
+				activity_end => systimestamp, 
+				type => 'HTML',
+				section => 'ALL') as xxxx
+FROM dual;
+- Create a report about the last automatic indexing operation:
+set long 9999999 pages 50000 lines 500
+col xxxx for a300
+SELECT dbms_auto_index.Report_last_activity() as xxxx 
+FROM dual;
+
+§ BACKGROUND AUTOMATIC INDEX OPERATION
+#################################################################################################################################################################
+# col DESCRIPTION for a30
+# col ADVISOR_NAME for a25
+# col task_name for a30
+# select TASK_NAME,DESCRIPTION,ADVISOR_NAME,CREATED,LAST_MODIFIED,LAST_EXECUTION,EXECUTION_START,EXECUTION_END,STATUS,PROGRESS_METRIC
+# from dba_advisor_tasks;
+#
+# TASK_NAME                      DESCRIPTION                    ADVISOR_NAME              CREATED              LAST_MODIFIED
+# ------------------------------ ------------------------------ ------------------------- -------------------- ---------------------  
+# SYS_AUTO_SPM_EVOLVE_TASK       Automatic SPM Evolve Task      SPM Evolve Advisor        17-apr-2019 01:32:48 17-apr-2019 01:32:48
+# SYS_AI_SPM_EVOLVE_TASK         Automatic SPM Evolve Task      SPM Evolve Advisor        17-apr-2019 01:32:48 17-apr-2019 01:32:48
+# SYS_AI_VERIFY_TASK                                            SQL Performance Analyzer  17-apr-2019 01:32:48 05-aug-2019 19:41:36
+# SYS_AUTO_INDEX_TASK                                           SQL Access Advisor        17-apr-2019 01:32:48 05-aug-2019 19:41:37
+# AUTO_STATS_ADVISOR_TASK                                       Statistics Advisor        17-apr-2019 01:32:53 17-apr-2019 01:56:11
+# INDIVIDUAL_STATS_ADVISOR_TASK                                 Statistics Advisor        17-apr-2019 01:32:53 17-apr-2019 01:32:53
+#
+# Task Run for Every 15 minutes
+#
+# col TASK_NAME for a30
+# col EXECUTION_NAME for a30
+# set lines 200 pages 5000
+# select TASK_NAME,EXECUTION_NAME,EXECUTION_START,EXECUTION_END,STATUS,REQUESTED_DOP,ACTUAL_DOP
+# from dba_advisor_executions 
+# where TASK_NAME in ('SYS_AUTO_INDEX_TASK','SYS_AI_SPM_EVOLVE_TASK','SYS_AI_VERIFY_TASK')
+# order by EXECUTION_START;
+#
+# TASK_NAME                      EXECUTION_NAME                 EXECUTION EXECUTION STATUS      REQUESTED_DOP ACTUAL_DOP
+# ------------------------------ ------------------------------ --------- --------- ----------- ------------- ----------
+# SYS_AUTO_INDEX_TASK            SYS_AI_2019-08-05/19:26:07     05-AUG-19 05-AUG-19 COMPLETED               0          1
+# SYS_AUTO_INDEX_TASK            SYS_AI_2019-08-05/19:41:17     05-AUG-19 05-AUG-19 COMPLETED               0          1
+# SYS_AI_VERIFY_TASK             SYS_AI_2019-08-05/19:41:17_C   05-AUG-19 05-AUG-19 COMPLETED               0          1
+# SYS_AI_VERIFY_TASK             SYS_AI_2019-08-05/19:41:17_E1  05-AUG-19 05-AUG-19 COMPLETED               0          1
+# SYS_AUTO_INDEX_TASK            SYS_AI_2019-08-05/19:56:27     05-AUG-19 05-AUG-19 COMPLETED               0          1
+# SYS_AUTO_INDEX_TASK            SYS_AI_2019-08-05/20:11:36     05-AUG-19 05-AUG-19 COMPLETED               0          1
+#
+# Internal Parameters
+# 
+# select * 
+# From SMB$CONFIG 
+# where PARAMETER_NAME like '%INDEX%';
+#
+# PARAMETER_NAME                           PARAMETER_VALUE LAST_UPDATED                   UPDATED_BY   PARAMETER_DATA
+# ---------------------------------------- --------------- ------------------------------ ------------ --------------------
+# AUTO_INDEX_SCHEMA                                      0                                             
+# AUTO_INDEX_DEFAULT_TABLESPACE                          0
+# AUTO_INDEX_SPACE_BUDGET                               50
+# AUTO_INDEX_REPORT_RETENTION                           31
+# AUTO_INDEX_RETENTION_FOR_AUTO                          0                                             373
+# AUTO_INDEX_RETENTION_FOR_MANUAL                        0
+# AUTO_INDEX_MODE                                        0 05-AUG-19 07.10.13.000000 PM   SYS          IMPLEMENT
+# _AUTO_INDEX_TRACE                                      0
+# _AUTO_INDEX_TASK_INTERVAL                            900
+# _AUTO_INDEX_TASK_MAX_RUNTIME                        3600
+# _AUTO_INDEX_IMPROVEMENT_THRESHOLD                     20
+# _AUTO_INDEX_REGRESSION_THRESHOLD                      10
+# _AUTO_INDEX_ABSDIFF_THRESHOLD                        100
+# _AUTO_INDEX_STS_CAPTURE_TASK                           0 05-AUG-19 07.10.13.000000 PM   SYS          ON
+# _AUTO_INDEX_CONTROL                                    0
+# _AUTO_INDEX_DERIVE_STATISTICS                          0                                             ON
+# _AUTO_INDEX_CONCURRENCY                                1
+# _AUTO_INDEX_SPA_CONCURRENCY                            1
+# _AUTO_INDEX_REBUILD_TIME_LIMIT                        30
+# _AUTO_INDEX_REBUILD_COUNT_LIMIT                        5
+# _AUTO_INDEX_REVERIFY_TIME                             30
+# AUTO_INDEX_COMPRESSION                                 0                                             OFF
+#
+# Change Task Interval from 15 minutes to 30 minutes
+#
+# exec dbms_auto_index_internal.configure('_AUTO_INDEX_TASK_INTERVAL', '1800', allow_internal => true);
+#
+# PARAMETER_NAME             PARAMETER_VALUE LAST_UPDATED                   UPDATED_BY PARAMETER_DATA
+# -------------------------- --------------- ------------------------------ ---------- --------------------
+# _AUTO_INDEX_TASK_INTERVAL             1800 06-AUG-19 07.02.01.000000 PM   SYS
+#
+#################################################################################################################################################################
+
+§ EXAMPLE
+#################################################################################################################################################################
+# EXEC DBMS_AUTO_INDEX.CONFIGURE('AUTO_INDEX_MODE','IMPLEMENT');
+#
+# col PARAMETER_NAME for a40
+# col PARAMETER_VALUE for a15
+# col LAST_MODIFIED for a20
+# col MODIFIED_BY for a15
+# select * From DBA_AUTO_INDEX_CONFIG;
+#
+# PARAMETER_NAME                           PARAMETER_VALUE LAST_MODIFIED                  MODIFIED_BY
+# ---------------------------------------- --------------- ------------------------------ ------------ 
+# AUTO_INDEX_COMPRESSION                   OFF
+# AUTO_INDEX_DEFAULT_TABLESPACE
+# AUTO_INDEX_MODE                          IMPLEMENT       05-AUG-19 07.10.13.000000 PM   SYS
+# AUTO_INDEX_REPORT_RETENTION              31
+# AUTO_INDEX_RETENTION_FOR_AUTO            373
+# AUTO_INDEX_RETENTION_FOR_MANUAL
+# AUTO_INDEX_SCHEMA
+# AUTO_INDEX_SPACE_BUDGET                  50
+#
+# CREATE TABLE TEST(id NUMBER, name VARCHAR2(20));
+#
+# begin
+# for a in 1..500000 loop
+# insert into TEST values (a,'test'||to_char(a));
+# end loop;
+# commit;
+# end;
+# /
+# 
+# set serveroutput on
+# declare
+# vid number;
+# vname varchar2(20);
+# begin
+# for a in 1..500 loop
+# execute immediate 'select /*+ DINESH_005 */ id,name from test where id=:a' into vid,vname using a;
+# dbms_output.put_line('Data : '||vid||','||vname);
+# end loop;
+# end;
+# /
+# 
+################################################################################################################################################################# 
