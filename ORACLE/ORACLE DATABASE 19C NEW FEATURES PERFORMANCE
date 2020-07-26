@@ -32,17 +32,6 @@ This enhamcement enables you to capture and replay workloads at the PDB level. T
 The automatic indexing feature automates index management tasks, such as creating, rebuilding, and dropping indexes in an Oracle Database based on changes in the application workload.
 This feature improves database performance by managing indexes automatically in an Oracle Database.
 
-#Configuring Automatic Indexing in an Oracle Database
-EXEC DBMS_AUTO_INDEX.CONFIGURE('AUTO_INDEX_MODE','IMPLEMENT');
-EXEC DBMS_AUTO_INDEX.CONFIGURE('AUTO_INDEX_MODE','REPORT ONLY');
-EXEC DBMS_AUTO_INDEX.CONFIGURE('AUTO_INDEX_MODE','OFF');
-EXEC DBMS_AUTO_INDEX.CONFIGURE('AUTO_INDEX_SCHEMA','SH','FALSE');
-EXEC DBMS_AUTO_INDEX.CONFIGURE('AUTO_INDEX_SCHEMA','HR','FALSE');
-EXEC DBMS_AUTO_INDEX.CONFIGURE('AUTO_INDEX_SCHEMA','HR','NULL');
-EXEC DBMS_AUTO_INDEX.CONFIGURE('AUTO_INDEX_SCHEMA','NULL','TRUE');
-EXEC DBMS_AUTO_INDEX.CONFIGURE('AUTO_INDEX_RETENTION_FOR_AUTO','90');
-EXEC DBMS_AUTO_INDEX.CONFIGURE('AUTO_INDEX_RETENTION_FOR_AUTO','NULL');
-
 #SQL Diagnostics and Repair Enhancements
 The SQL diagnostics and repair tools, such as SQL Test Case Builder and SQL Repair Advisor have been enhanced to provide better diagnosis and repair capabilities for managing problematic SQL statements.
 These enhancements enable more effective diagnosis and repair of problematic SQL statements.
