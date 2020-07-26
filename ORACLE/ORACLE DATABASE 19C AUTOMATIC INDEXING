@@ -2,7 +2,7 @@
 +  ORACLE DATABASE 19C AUTOMATIC INDEXING  +
 ++++++++++++++++++++++++++++++++++++++++++++
 
-#
+#NOTE
 The automatic indexing feature automates index management tasks, such as creating, rebuilding, and dropping indexes in an Oracle Database based on changes in the application workload.
 This feature improves database performance by managing indexes automatically in an Oracle Database.
 
