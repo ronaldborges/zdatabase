@@ -1,0 +1,94 @@
+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
++  ORACLE DATABASE 19C AUTOMATIC RESOLUTION OF SQL PLAN REGRESSIONS  +
+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+
+#NOTE
+SPM Evolve Advisor is a SQL advisor that evolves plans that have recently been added to the SQL plan baseline.
+The advisor simplifies plan evolution by eliminating the requirement to do it manually.
+Managing the SPM Evolve Advisor Task
+By default, SYS_AUTO_SPM_EVOLVE_TASK runs daily in the scheduled maintenance window. Optionally, you can configure it to run hourly.
+A SQL plan baseline prevents performance regressions caused by suboptimal plans. 
+If a SQL statement does not have a SQL plan baseline, and if the alternate_plan_baseline parameter is set to AUTO, 
+then SQM Evolve Advisor can sometimes resolve such performance regressions automatically. 
+The advisor compares all available plans and chooses the best-performing plan as the baseline.
+SQL plan management searches for SQL statements in the Automatic Workload Repository (AWR). 
+Prioritizing by highest load, it looks for alternative plans in all available sources, adding better-performing plans to the SQL plan baseline. 
+Oracle Database also provides a plan comparison facility and improved hint reporting.
+Automatic SQL plan management resolves plan regressions without user intervention. 
+For example, if high-load statements are performing sub optimally, then SQL plan management evolve advisor can locate the statements automatically, 
+and then test and accept the best plans.
+
+§ Automatic SPM Evolve Advisor
+https://docs.oracle.com/en/database/oracle/oracle-database/19/tgsql/img/auto_spm.png
+
+#STEPS
+Whenever it runs in the maintenance window, SPM Evolve Advisor performs the following tasks:
+
+1- Checks AWR for top SQL
+AWR stores the most resource-intensive SQL statements. SPM Evolve Advisor searches AWR for statements that are most likely to benefit from SQL plan baselines, 
+and then adds plans for these statements to the baselines.
+
+2 - Looks for alternative plans in all available sources
+By default (alternate_plan_source=AUTO), the automatic task searches all available repositories for plans that are not yet in the SMB plan history. 
+The setting for alternate_plan_source is shown in the DBA_ADVISORS_PARAMETERS view.
+
+3 - Adds unaccepted plans to the plan history
+These plans are not yet in the SQL plan baseline for any SQL statement.
+
+4 - Tests the execution of as many plans as possible during the maintenance window
+For every alternative plan, the database test executes the statement and records the performance statistics. 
+The goal is to use a cost-based algorithm to compare the performance of every alternative plan with the plan that the optimizer would otherwise choose.
+
+5 - Performs either of the following actions, depending on whether the alternative plan performs better than the current plan:
+If performance is better, then SPM Evolve Advisor accepts the plan. The alternative plan is now in the baseline.
+If performance is worse, then the plan remains in the statement history, but not the baseline.
+
+#EXAMPLE
+#################################################################################################################################################################
+# Out-of-Range Query
+#
+# Assume that an application issues a new, long-running query of sh.products. The query references the prod_list_price column using a bind variable. 
+# The database performs the following steps:
+#
+# 1 - The optimizer chooses an optimal plan for this query based on fresh statistics, which show prod_list_price with a maximum list price of $1299.99. 
+# The optimal plan resides in AWR.
+# 2 - An application adds more products to the sh.products table, and changes the list prices of many products.
+# 3 - The application issues the original query, which the optimizer reparses. 
+# In this execution of the query, the bind variable sets the list price to $1500, which is higher than the $1299.99 maximum value recorded in the table statistics. 
+# This is known as an out-of-range query.
+# 4 - The optimizer chooses a suboptimal plan for the out-of-range query, causing a performance regression.
+# The optimizer attempts to avoid performance regressions by allowing for out-of-range conditions, but is sometimes unsuccessful, as in this example. 
+# The result is a suboptimal plan.
+# 5 - The database resolves the performance regression as follows:
+# SPM Evolve Advisor identifies the long-running query as a candidate for a SQL plan baseline.
+# SPM Evolve Advisor finds both plans, the original plan in AWR and the suboptimal plan for the out-of-range query, and determines that the original plan performs better.
+# SQL plan management adds the original plan for the query to the SQL plan baseline. Consequently, the optimizer will not use the regressed plan.
+#
+#################################################################################################################################################################
+
+§ Enabling and Disabling the Automatic SPM Evolve Advisor Task
+No separate scheduler client exists for the Automatic SPM Evolve Advisor task.
+One client controls both Automatic SQL Tuning Advisor and Automatic SPM Evolve Advisor.
+Thus, the same task enables or disables both. You can also disable it using DBMS_SPM.SET_EVOLVE_TASK_PARAMETER.
+To disable the Automatic SPM Evolve Advisor task:
+1 - Log in to the database with the appropriate privileges.
+2 - Set the ALTERNATE_PLAN_BASELINE parameter to null:
+
+BEGIN
+   DBMS_SPM.SET_EVOLVE_TASK_PARAMETER(
+      task_name => 'SYS_AUTO_SPM_EVOLVE_TASK',
+      parameter => 'ALTERNATE_PLAN_BASELINE',
+      value => '');
+END;
+/
+
+
+3 - Set the ALTERNATE_PLAN_SOURCE parameter to an empty string:
+
+BEGIN
+   DBMS_SPM.SET_EVOLVE_TASK_PARAMETER(
+      task_name => 'SYS_AUTO_SPM_EVOLVE_TASK',
+      parameter => 'ALTERNATE_PLAN_SOURCE',
+      value => '');
+END;
+/
