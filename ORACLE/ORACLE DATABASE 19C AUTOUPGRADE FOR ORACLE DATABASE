@@ -1,0 +1,16 @@
++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
++  ORACLE DATABASE 19C AUTOUPGRADE FOR ORACLE DATABASE  +
++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+
+#NOTE
+AutoUpgrade enables to upgrade one or many Oracle databases at the command-line with a single command and a single configuration file.
+AutoUpgrade will run the preupgrade tasks, perform automated fixups where needed, execute the database upgrade, 
+and finish by taking care of post-upgrade tasks. It includes automatic retry and fallback, the possibility to schedule upgrades for future points in time, 
+and the ability to set, change or remove initialization parameters as desired.
+It saves time and money by upgrading hundreds of databases with one command and replacing bespoke high maintenance upgrade solutions.
+Reference Doc ID: AutoUpgrade Tool (Doc ID 2485457.1)
+
+§ Workflow and Stages
+https://docs.oracle.com/en/database/oracle/oracle-database/19/upgrd/img/autoupgrade-workflow.png
+https://docs.oracle.com/en/database/oracle/oracle-database/19/upgrd/img/autoupgrade-options.png
+
