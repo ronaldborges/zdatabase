@@ -1,0 +1,156 @@
++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
++  ORACLE DATABASE 19C ACTIVE DATA GUARD DML REDIRECTION  +
++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+
+#NOTE
+You can run DML operations on Active Data Guard standby databases. 
+This enables you to run read-mostly applications, which occasionally execute DML’s, on the standby database.
+DML operations on a standby can be transparently redirected to and run on the primary database. 
+This includes DML statements that are part of PL/SQL blocks. 
+The Active Data Guard session waits until the corresponding changes are shipped to and applied to the Active Data Guard standby. 
+Read consistency is maintained during the DML operation and the standby database on which the DML is run can view its uncommitted changes. 
+However, all the other standby database instances can view these changes only after the transaction is committed.
+
+§ CONFIGURE
+- To configure automatic redirection of DML operations for all standby sessions in an Active Data Guard environment
+ ADG_REDIRECT_DML=TRUE 
+- To configure automatic redirection of DML operations for the current session, use the following command:
+ ALTER SESSION ENABLE ADG_REDIRECT_DML; 
+ 
+#EXAMPLE
+#################################################################################################################################################################
+# Primary
+#
+# select name, open_mode, controlfile_type from v$database;
+#
+# NAME      OPEN_MODE            CONTROL
+# --------- -------------------- -------
+# DBADB     READ WRITE           CURRENT
+#
+# begin
+# for a in 1..500 loop
+# insert into TEST values (a,'test'||to_char(a));
+# end loop;
+# commit;
+# end;
+# /
+#
+# PL/SQL procedure successfully completed.
+# Elapsed: 00:00:00.05
+#
+# select count(*) from test;
+#
+#   COUNT(*)
+# ----------
+#     601000
+# 
+# Here as highlighted above, inserting 500 records completes within 0.05 seconds.
+#
+# 
+# Standby
+# 
+# select name, open_mode, controlfile_type from v$database;
+#
+# NAME      OPEN_MODE            CONTROL
+# --------- -------------------- -------
+# DBADB     READ ONLY WITH APPLY STANDBY
+#
+# show parameter redirect
+#
+# NAME                                 TYPE        VALUE
+# ------------------------------------ ----------- -------  
+# adg_redirect_dml                     boolean     TRUE
+#
+# select count(*) from test;
+#
+#   COUNT(*)
+# ----------
+#     601000
+#
+# begin
+# for a in 1..500 loop
+# insert into TEST values (a,'test'||to_char(a));
+# end loop;
+# commit;
+# end;
+# /
+#
+# PL/SQL procedure successfully completed.
+# Elapsed: 00:08:18.72
+#
+# select count(*) from test;
+#
+#   COUNT(*)
+# ----------
+#     601500
+# 
+# On Standby when same DML block is executed, it took around 8 minutes 18 seconds.  
+# This is the impact of running DML over the network. 
+#
+#################################################################################################################################################################
+
+§ BACKGROUND
+- While performing DML’s on Standby database, session tracing has been enabled. Following are details from trace file.
+#################################################################################################################################################################
+# begin
+# for a in 1..500 loop
+# insert into TEST values (a,'test'||to_char(a));
+# end loop;
+# commit;
+# end;
+# 
+# call     count       cpu    elapsed       disk      query    current        rows
+# ------- ------  -------- ---------- ---------- ---------- ----------  ----------
+# Parse        1      0.00       0.00          0          0          0           0
+# Execute      1      0.16     464.14          0          0          0           1
+# Fetch        0      0.00       0.00          0          0          0           0
+# ------- ------  -------- ---------- ---------- ---------- ----------  ----------  
+# total        2      0.16     464.15          0          0          0           1
+# 
+# Misses in library cache during parse: 1
+# Optimizer mode: ALL_ROWS
+# Parsing user id: 107
+# 
+# Elapsed times include waiting on following events:
+#   Event waited on                             Times   Max. Wait  Total Waited
+#   ----------------------------------------   Waited  ----------  ------------
+#   SQL*Net message to client                       1        0.00          0.00
+#   SQL*Net message from client                     1       12.57         12.57
+# ********************************************************************************
+# 
+# 
+# SQL ID: cz467hg4s37vr Plan Hash: 0
+# 
+# INSERT INTO TEST
+# VALUES
+#  (:B1 ,'test'||TO_CHAR(:B1 ))
+# 
+# 
+# call     count       cpu    elapsed       disk      query    current        rows
+# ------- ------  -------- ---------- ---------- ---------- ----------  ----------
+# Parse        1      0.01       5.97          0          0          3           0
+# Execute    500      0.28       0.41          0          0          0         500
+# Fetch        0      0.00       0.00          0          0          0           0
+# ------- ------  -------- ---------- ---------- ---------- ----------  ----------
+# total      501      0.29       6.39          0          0          3         500
+# 
+# Misses in library cache during parse: 0
+# Optimizer mode: ALL_ROWS
+# Parsing user id: 107     (recursive depth: 1)
+# 
+# Elapsed times include waiting on following events:
+#   Event waited on                             Times   Max. Wait  Total Waited
+#   ----------------------------------------   Waited  ----------  ------------
+#   single-task message                             1        0.11          0.11
+#   SQL*Net message from dblink                  1010        0.07          0.66
+#   SQL*Net message to dblink                    1008        0.00          0.00
+#   Disk file operations I/O                        1        0.00          0.00
+#   SQL*Net vector data to dblink                 501        0.01          0.03
+#   standby query scn advance                     500        1.49        463.66
+# ********************************************************************************
+#
+#################################################################################################################################################################
+
+#NOTE
+As tinted in above section, total wait time has been consumed across “standby query scn advance“.
+For event details refer below Doc ID Wait event ‘standby query scn advance’ (Doc ID 2533359.1)
