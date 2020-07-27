@@ -1,0 +1,175 @@
+++++++++++++++++++++++++++++++++++++++++++++++
++  ORACLE DATABASE 19C REAL TIME STATISTICS  +
+++++++++++++++++++++++++++++++++++++++++++++++
+
+#NOTE
+Oracle Database automatically gathers online statistics during conventional DML operations.
+Statistics can go stale between execution of DBMS_STATS statistics gathering jobs. 
+By gathering some statistics automatically during DML operations, the database augments the statistics gathered by DBMS_STATS. 
+Fresh statistics enable the optimizer to produce more optimal plans.
+
+§ Parameters to control this feature
+ 
+ NAME                                               VALUE           DESCRIPTION
+ -------------------------------------------------- --------------- -----------------------------------------------------------------
+ _optimizer_gather_stats_on_conventional_config     0               settings for optimizer online stats gathering on conventional DML 
+ _optimizer_gather_stats_on_conventional_dml        TRUE            optimizer online stats gathering for conventional DML
+ _optimizer_stats_on_conventional_dml_sample_rate   100             sampling rate for online stats gathering on conventional DML
+ _optimizer_use_stats_on_conventional_config        0               settings for optimizer usage of online stats on conventional DML
+ _optimizer_use_stats_on_conventional_dml           TRUE            use optimizer statistics gathered for conventional DML
+ 
+#EXAMPLE
+#################################################################################################################################################################
+# CREATE TABLE TEST(id NUMBER, name VARCHAR2(20));
+#
+# begin
+# for a in 1..500000 loop
+# insert into TEST values (a,'test'||to_char(a));
+# end loop;
+# commit;
+# end;
+# /
+#
+# begin
+#  DBMS_STATS.GATHER_TABLE_STATS('DINESH', 'TEST', METHOD_OPT=>'FOR ALL COLUMNS SIZE 1');
+# end;
+# /
+#
+# SET PAGES 5000 LINES 200
+# COL TABLE_NAME for a15
+# COL COLUMN_NAME FORMAT a13 
+# COL NOTES FORMAT a35
+# select TABLE_NAME,COLUMN_NAME,NUM_DISTINCT,SAMPLE_SIZE,LAST_ANALYZED,NOTES 
+# from USER_TAB_COL_STATISTICS 
+# where table_name='TEST';
+#
+# TABLE_NAME      COLUMN_NAME   NUM_DISTINCT SAMPLE_SIZE LAST_ANALYZED        NOTES
+# --------------- ------------- ------------ ----------- -------------------- -------------------
+# TEST            ID                  500000      500000 05-aug-2019 17:19:49
+# TEST            NAME                500000      500000 05-aug-2019 17:19:49
+#
+# select TABLE_NAME,NUM_ROWS,BLOCKS,AVG_ROW_LEN,LAST_ANALYZED,NOTES 
+# from USER_TAB_STATISTICS 
+# where table_name='TEST';
+#
+# TABLE_NAME        NUM_ROWS     BLOCKS AVG_ROW_LEN LAST_ANALYZED        NOTES
+# --------------- ---------- ---------- ----------- -------------------- -------------------------
+# TEST                500000       1504          16 05-aug-2019 17:19:49
+#
+# begin
+# for a in 500001..600000 loop
+# insert into TEST values (a,'test'||to_char(a));
+# end loop;
+# commit;
+# end;
+# /
+#
+# SET PAGES 5000 LINES 200
+# COL TABLE_NAME for a25
+# COL COLUMN_NAME FORMAT a13 
+# COL NOTES FORMAT a35
+# select TABLE_NAME,COLUMN_NAME,NUM_DISTINCT,SAMPLE_SIZE,LAST_ANALYZED,NOTES 
+# from USER_TAB_COL_STATISTICS 
+# where table_name='TEST';
+#
+# TABLE_NAME      COLUMN_NAME   NUM_DISTINCT SAMPLE_SIZE LAST_ANALYZED        NOTES
+# --------------- ------------- ------------ ----------- -------------------- ------------------------------ 
+# TEST            ID                  500000      500000 05-aug-2019 17:19:49
+# TEST            NAME                500000      500000 05-aug-2019 17:19:49
+# TEST            ID                                 957 05-aug-2019 17:21:23 STATS_ON_CONVENTIONAL_DML
+# TEST            NAME                               935 05-aug-2019 17:21:23 STATS_ON_CONVENTIONAL_DML
+#
+# EXEC DBMS_STATS.FLUSH_DATABASE_MONITORING_INFO;
+#
+# select TABLE_NAME,NUM_ROWS,BLOCKS,AVG_ROW_LEN,LAST_ANALYZED,NOTES,SCOPE 
+# from USER_TAB_STATISTICS 
+# where table_name='TEST';
+#
+# TABLE_NAME        NUM_ROWS     BLOCKS AVG_ROW_LEN LAST_ANALYZED        NOTES
+# --------------- ---------- ---------- ----------- -------------------- -----------------------------------
+# TEST                500000       1504          16 05-aug-2019 17:19:49
+# TEST                600000       1756             05-aug-2019 17:21:23 STATS_ON_CONVENTIONAL_DML
+#
+# Insert Single Row - Plan
+#
+# explain plan for insert into test values(1000001,'test1000001');
+# Explained.
+#
+# SQL> select * From table(dbms_xplan.display);
+# 
+# PLAN_TABLE_OUTPUT
+# ------------------------------------------------------------------------------------------------
+# ---------------------------------------------------------------------------------
+# | Id  | Operation                | Name | Rows  | Bytes | Cost (%CPU)| Time     |
+# ---------------------------------------------------------------------------------
+# |   0 | INSERT STATEMENT         |      |     1 |    16 |     1   (0)| 00:00:01 |
+# |   1 |  LOAD TABLE CONVENTIONAL | TEST |       |       |            |          |
+# ---------------------------------------------------------------------------------
+#
+# Note
+# -----
+#   - dynamic statistics used: statistics for conventional DML enabled
+#
+# 11 rows selected.
+#
+# Insert Multiple Rows - Plan
+#
+# SQL> explain plan for insert into test select * From test where rownum <100000;
+# Explained.
+#
+# SQL> select * From table(dbms_xplan.display);
+# 
+# PLAN_TABLE_OUTPUT
+# -------------------------------------------------------------------------------------------------
+# Plan hash value: 3931117773
+# -----------------------------------------------------------------------------------------
+# | Id  | Operation                        | Name | Rows  | Bytes | Cost (%CPU)| Time     |
+# -----------------------------------------------------------------------------------------
+# |   0 | INSERT STATEMENT                 |      | 99999 |  1562K|   412   (1)| 00:00:01 |
+# |   1 |  LOAD TABLE CONVENTIONAL         | TEST |       |       |            |          |
+# |   2 |   OPTIMIZER STATISTICS GATHERING |      |   500K|  7812K|   412   (1)| 00:00:01 |
+# |*  3 |    COUNT STOPKEY                 |      |       |       |            |          |
+# |   4 |     TABLE ACCESS FULL            | TEST |   500K|  7812K|   412   (1)| 00:00:01 |
+# -----------------------------------------------------------------------------------------
+#
+# Predicate Information (identified by operation id):
+# ---------------------------------------------------
+#
+#   3 - filter(ROWNUM<100000)
+#
+# 16 rows selected.
+#
+# Query Plan
+#
+# SELECT /*+ DINESH_001 */ COUNT(*) 
+# FROM TEST WHERE ID > 590000;
+#
+# SQL_ID  7nn4gu7s0p5yu, child number 0
+# -------------------------------------
+# SELECT /*+ DINESH_001 */ COUNT(*) FROM TEST WHERE ID > 590000
+#
+# Plan hash value: 1950795681
+# ---------------------------------------------------------------------------
+# | Id  | Operation          | Name | Rows  | Bytes | Cost (%CPU)| Time     |
+# ---------------------------------------------------------------------------
+# |   0 | SELECT STATEMENT   |      |       |       |   481 (100)|          |
+# |   1 |  SORT AGGREGATE    |      |     1 |    13 |            |          |
+# |*  2 |   TABLE ACCESS FULL| TEST |  9897 |   125K|   481   (1)| 00:00:01 |
+# ---------------------------------------------------------------------------
+#
+# Predicate Information (identified by operation id):
+# ---------------------------------------------------
+#   2 - filter("ID">590000)
+#
+# Hint Report (identified by operation id / Query Block Name / Object Alias):
+# Total hints for statement: 1 (E - Syntax error (1))
+# ---------------------------------------------------------------------------
+#   1 -  SEL$1
+#         E -  DINESH_001
+# Note
+# -----
+#   - dynamic statistics used: statistics for conventional DML
+#
+#################################################################################################################################################################
+
+
