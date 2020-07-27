@@ -1,0 +1,67 @@
+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
++  ORACLE DATABASE 19C FINER GRANULARITY SUPPLEMENTAL LOGGING  +
+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+
+#NOTE
+Supplemental logging was designed and implemented for Logical Standby or full database replication requirements. 
+This adds unnecessary overhead in environments where only a subset of tables is being replicated. 
+Fine-grained supplemental logging provides a way for partial database replication users to disable supplemental 
+logging for uninteresting tables so that even when supplemental logging is enabled in database or schema level, 
+there is no supplemental logging overhead for uninteresting tables.
+Use of this feature can significantly reduce the overhead in terms of resource usage and redo generation in case when only some of the tables 
+in the database require supplemental logging, such as in a Golden Gate partial replication configuration.
+If both source and mining database are at redo compatibility 19 or higher and the value of enable_goldengate_replication is TRUE, 
+then Oracle Database 19c and higher provides an advantage of reduced supplemental logging overhead for Oracle GoldenGate.
+
+§ HOW TO ENABLE
+ 
+ SQL> ALTER DATABASE ADD SUPPLEMENTAL LOG DATA SUBSET DATABASE REPLICATION;
+ ALTER DATABASE ADD SUPPLEMENTAL LOG DATA SUBSET DATABASE REPLICATION
+ *
+ ERROR at line 1:
+ ORA-26947: Oracle GoldenGate replication is not enabled.
+
+ SQL> alter system set enable_goldengate_replication=true;
+ System altered.
+
+ SQL> ALTER DATABASE ADD SUPPLEMENTAL LOG DATA SUBSET DATABASE REPLICATION;
+ Database altered.
+
+ SQL> SELECT supplemental_log_data_min, supplemental_log_data_sr from v$database; 
+
+ SUPPLEMENTAL_LOG_DATA_MIN      SUPPLEMENTAL_LOG_DATA_SR
+ ------------------------------ ------------------------------
+ IMPLICIT                       YES
+
+§ HOW TO DISABLE
+ 
+ SQL> ALTER DATABASE DROP SUPPLEMENTAL LOG DATA SUBSET DATABASE REPLICATION;
+ ALTER DATABASE DROP SUPPLEMENTAL LOG DATA SUBSET DATABASE REPLICATION
+ *
+ ERROR at line 1:
+ ORA-31545: cannot drop subset database replication when there is no other
+ database (container) level supplemental log setting
+
+
+ Note:
+ If no other database-level supplemental log is explicitly enabled, this DDL would fail.  
+ This is to prevent the loss of supplemental log data during replication. 
+ In this case, you need to add minimal supplemental logging explicitly using the command 
+ ALTER DATABASE ADD SUPPLEMENTAL LOG DATA; 
+ and then execute 
+ ALTER DATABASE DROP SUPPLEMENTAL LOG DATA SUBSET DATABASE REPLICATION;
+
+
+ SQL> ALTER DATABASE ADD SUPPLEMENTAL LOG DATA; 
+ Database altered. 
+
+ SQL> ALTER DATABASE DROP SUPPLEMENTAL LOG DATA SUBSET DATABASE REPLICATION; 
+ Database altered. 
+
+ SQL> SELECT supplemental_log_data_min, supplemental_log_data_sr from v$database;
+
+ SUPPLEMENTAL_LOG_DATA_MIN      SUPPLEMENTAL_LOG_DATA_SR
+ ------------------------------ ------------------------------
+ YES                            NO
+ 
+ 
