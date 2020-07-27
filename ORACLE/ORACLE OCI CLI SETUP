@@ -240,8 +240,8 @@ oci os bucket list -c ocid1.tenancy.oc1..$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
       "defined-tags": null, 
       "etag": "$$$$$$$$-$$$$-$$$$-$$$$-$$$$$$$$$$$$", 
       "freeform-tags": null, 
-      "name": "bucket-20200727-0928", 
-      "namespace": "grvcd2hcla1n", 
+      "name": "$$$$$$$$$$$$$$$$$$$$", 
+      "namespace": "$$$$$$$$$$$$", 
       "time-created": "2020-07-27T12:31:30.544000+00:00"
     }
   ]
@@ -262,11 +262,27 @@ vi .oci/oci_cli_rc
 [DEFAULT]
 compartment-id = ocid1.tenancy.oc1..$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
 
+#NOTE
+- GetNamespace returns the name of the Object Storage namespace for the user making the request. 
+If an optional compartmentId query parameter is provided, GetNamespace returns the namespace name of the corresponding tenancy, 
+provided the user has access to it.
+
 #GET NAMESPACE OF OCI
 oci os ns get
 {
   "data": "grvcd2hcla1n"
 }
+
+#UPLOAD FILE TO BUCKET ON OCI
+oci os object put -ns $$$$$$$$$$$$ -bn $$$$$$$$$$$$$$$$$$$$ --file teste_file.txt 
+Uploading object  [####################################]  100%
+{
+  "etag": "1f59d924-5226-44e0-b397-9fb404410ddf", 
+  "last-modified": "Mon, 27 Jul 2020 13:30:35 GMT", 
+  "opc-content-md5": "5cgPMKqyOPgkO+mr34bN6Q=="
+}
+
+
 
 
 
