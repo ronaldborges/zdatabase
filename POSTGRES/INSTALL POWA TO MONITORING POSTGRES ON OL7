@@ -190,7 +190,7 @@ create extension pg_track_settings;
 create extension pg_wait_sampling; 
 create extension plpgsql;           
 
-\c <other databases>
+\c <other databases in same instance>
 create extension hypopg;            
 create extension pg_qualstats;      
 create extension pg_stat_statements;
