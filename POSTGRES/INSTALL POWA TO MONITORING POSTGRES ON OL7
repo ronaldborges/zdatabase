@@ -240,7 +240,7 @@ SELECT powa_delete_and_purge_server(<$ID>);
 select * from powa_servers;
 
 select public.powa_take_snapshot(<$ID>);
-
+#WAIT ONE MINUTE AND TRY AGAIN
 select public.powa_take_snapshot(<$ID>);
 
 
