@@ -47,7 +47,7 @@ cp usr/pgsql-<$version>/share/extension/pg_wait_sampling* /usr/local/pgsql-<$ver
 wget https://github.com/HypoPG/hypopg/archive/master.zip
 mv master.zip hypopg.zip
 unzip hypopg.zip
-cd hypopg
+cd hypopg-master
 vi Makefile
 PG_CONFIG ?= /usr/local/pgsql-<$version>/bin/pg_config
 make
