@@ -300,3 +300,10 @@ select * from powa_servers;
 SELECT powa_wait_sampling_register(<$ID>);
 
 select public.powa_activate_extension(<$ID>, 'pg_track_settings');
+
+#ON MASTER COLLECTOR
+ps -ef | grep powa-collector.py
+kill -9 $PID
+nohup /usr/bin/powa-collector.py > /var/log/powa-collector 2>&1 & 
+OR
+nohup /usr/local/bin/powa-collector.py > /var/log/powa-collector 2>&1 & 
