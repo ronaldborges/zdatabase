@@ -115,8 +115,8 @@ THE PG_STAT_STATEMENTS EXTENSION RECORDS STATITSTICS OF ALL SQL QUERIES (AKA "st
 vi /etc/powa-web.conf 
 servers={
   'main': {
-    'host': 'pg_primary',
-    'port': '5432',
+    'host': '$HOSTNAME',
+    'port': '$PORT',
     'database': 'powa'
   }
 }
@@ -125,14 +125,24 @@ cookie_secret="*********"
 vi /etc/powa-collector.conf
 {
     "repository": {
-        "dsn": "postgresql://postgres@pg_primary:5432/powa"
+        "dsn": "postgresql://postgres@$HOSTNAME:$PORT/powa"
     },
     "debug": false
 }
 
+vi /dados/$path/data/pg_hba.conf
+host    powa            postgres        172.30.0.17/32          trust
+
+su - postgres -c "/usr/local/pgsql-$version/bin/pg_ctl reload -D /dados/$path/data"
+
 #RUN POWA
 nohup /usr/bin/powa-web > /var/log/powa-web.log 2>&1 & 
+OR
+nohup /usr/local/bin/powa-web > /var/log/powa-web.log 2>&1 & 
+
 nohup /usr/bin/powa-collector.py > /var/log/powa-collector 2>&1 & 
+OR
+nohup /usr/local/bin/powa-collector.py > /var/log/powa-collector 2>&1 & 
 
 #ACCESS WEB
 http://ip:8888
