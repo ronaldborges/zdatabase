@@ -44,15 +44,10 @@ rpm2cpio pg_wait_sampling_<$version>.1.1-1.<$SO>.x86_64.rpm | cpio -idmv
 cp usr/pgsql-<$version>/lib/pg_wait_sampling.so /usr/local/pgsql-<$version>/lib/
 cp usr/pgsql-<$version>/share/extension/pg_wait_sampling* /usr/local/pgsql-<$version>/share/extension/
 
-wget https://github.com/HypoPG/hypopg/archive/master.zip
-mv master.zip hypopg.zip
-unzip hypopg.zip
-cd hypopg-master
-vi Makefile
-PG_CONFIG ?= /usr/local/pgsql-<$version>/bin/pg_config
-make
-cp hypopg.so /usr/local/pgsql-<$version>/lib/
-cp hypopg.control hypopg--2.0.0beta.sql hypopg--1.1.2.sql /usr/local/pgsql-<$version>/share/extension/
+wget https://download.postgresql.org/pub/repos/yum/<$version>/<$DISTRIBUITION>/<$SO>/hypopg_<$version>.1.1-1.<$SO>.x86_64.rpm
+rpm2cpio hypopg_<$version>.1.1-1.<$SO>.x86_64.rpm | cpio -idmv
+cp usr/pgsql-<$version>/lib/hypopg.so /usr/local/pgsql-<$version>/lib/
+cp usr/pgsql-<$version>/share/extension/hypopg* /usr/local/pgsql-<$version>/share/extension/
 
 wget https://github.com/rjuju/pg_track_settings/archive/2.0.0.tar.gz -O pg_track_settings-2.0.0.tar.gz
 tar xvfz pg_track_settings-2.0.0.tar.gz
