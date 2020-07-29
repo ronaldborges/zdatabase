@@ -255,4 +255,48 @@ select public.powa_take_snapshot(<$ID>);
 
 #HOW TO MONITORING ANOTHER STANDBY HOST DATABASE
 
+#DATABASE SETUP
+su - postgres 
+vi /dados/data/postgresql.conf
+listen_addresses = '*'
+port = 5432
+hot_standby = on
+shared_preload_libraries='pg_stat_statements,powa,pg_stat_kcache,pg_qualstats,pg_wait_sampling'
+track_io_timing = on
+pg_qualstats.sample_rate = 1
+#------------------------------------------------------------------------------
+# POWA MONITORING
+# -----------------------------------------------------------------------------
+powa.frequency = 2min
+powa.retention = 1d
+# -----------------------------------------------------------------------------
 
+#GRANT CONNECT NO SERVER COLLECTOR
+vi /dados/data/pg_hba.conf
+host    all      powa            <$remote_server>/32         md5
+
+/usr/local/<$version>/bin/pg_ctl reload -D /dados-prim/data/"
+
+#REGISTER DATABASE ON REMOTE SERVER COLLECTOR
+
+##PARAMETES##
+(hostname text, port integer DEFAULT 5432, alias text DEFAULT NULL::text, username text DEFAULT 'powa'::text, password text DEFAULT NULL::text, dbname text DEFAULT 'powa'::text, frequency integer DEFAULT 300, powa_coalesce integer DEFAULT 100, retention interval DEFAULT '1 day'::interval, allow_ui_connection boolean DEFAULT true, extensions text[] DEFAULT NULL::text[])
+
+/usr/local/<$version>/bin/psql -U postgres -d powa
+SELECT powa_register_server(hostname => '$hostaname', 
+port => $port, 
+alias => 'example-prim'::text, 
+username => 'powa'::text, 
+password => '************'::text, 
+dbname => 'powa'::text, 
+frequency => 120, 
+powa_coalesce => 100, 
+retention => '00:00:00'::interval, 
+allow_ui_connection => true, 
+extensions => '{pg_stat_kcache,pg_qualstats,pg_wait_sampling}');    
+
+select * from powa_servers;
+
+SELECT powa_wait_sampling_register(<$ID>);
+
+select public.powa_activate_extension(<$ID>, 'pg_track_settings');
