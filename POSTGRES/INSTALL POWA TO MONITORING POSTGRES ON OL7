@@ -72,7 +72,7 @@ powa.retention = 1d
 #CREATE DATABASE POWA
 /usr/local/pgsql-<$version>/bin/psql -U postgres
 CREATE ROLE powa SUPERUSER LOGIN PASSWORD '************';
-CREATE DATABASE IF NOT EXISTS powa;
+CREATE DATABASE powa;
 \c powa
 CREATE EXTENSION IF NOT EXISTS pg_stat_statements;
 CREATE EXTENSION IF NOT EXISTS btree_gist;
