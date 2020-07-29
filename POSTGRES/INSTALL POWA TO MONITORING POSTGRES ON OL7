@@ -80,7 +80,7 @@ CREATE EXTENSION IF NOT EXISTS powa;
 CREATE EXTENSION IF NOT EXISTS pg_qualstats;
 CREATE EXTENSION IF NOT EXISTS pg_stat_kcache;
 CREATE EXTENSION IF NOT EXISTS pg_wait_sampling;
-CREATE EXTENSION IF NOT EXISTS hypopg;
+CREATE EXTENSION IF NOT EXISTS hypopg WITH SCHEMA public;
 CREATE EXTENSION IF NOT EXISTS pg_track_settings;
 \q
 exit
@@ -180,23 +180,23 @@ powa.retention = 1d
 CREATE ROLE powa SUPERUSER LOGIN PASSWORD '************';
 CREATE DATABASE powa;	
 \c powa
-create extension btree_gist;
-create extension powa;
-create extension hypopg;            
-create extension pg_qualstats;      
-create extension pg_stat_statements;
-create extension pg_stat_kcache;   
-create extension pg_track_settings; 
-create extension pg_wait_sampling; 
-create extension plpgsql;           
+CREATE EXTENSION IF NOT EXISTS btree_gist;
+CREATE EXTENSION IF NOT EXISTS powa;
+CREATE EXTENSION IF NOT EXISTS hypopg WITH SCHEMA public;          
+CREATE EXTENSION IF NOT EXISTS pg_qualstats;      
+CREATE EXTENSION IF NOT EXISTS pg_stat_statements;
+CREATE EXTENSION IF NOT EXISTS pg_stat_kcache;   
+CREATE EXTENSION IF NOT EXISTS pg_track_settings; 
+CREATE EXTENSION IF NOT EXISTS pg_wait_sampling; 
+CREATE EXTENSION IF NOT EXISTS plpgsql;           
 
 \c <other databases in same instance>
-create extension hypopg;            
-create extension pg_qualstats;      
-create extension pg_stat_statements;
-create extension pg_stat_kcache;    
-create extension pg_track_settings; 
-create extension pg_wait_sampling; 
+CREATE EXTENSION IF NOT EXISTS hypopg WITH SCHEMA public;               
+CREATE EXTENSION IF NOT EXISTS pg_qualstats;      
+CREATE EXTENSION IF NOT EXISTS pg_stat_statements;
+CREATE EXTENSION IF NOT EXISTS pg_stat_kcache;    
+CREATE EXTENSION IF NOT EXISTS pg_track_settings; 
+CREATE EXTENSION IF NOT EXISTS pg_wait_sampling; 
 \q
 exit
 
