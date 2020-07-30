@@ -1,0 +1,47 @@
++++++++++++++++++++++++++++++++++++++++++++++
++   ORACLE SQLDEVELOPER 19.2 ON UBUNTU 20   +
++++++++++++++++++++++++++++++++++++++++++++++
+
+#INSTALL ALIEN, OPENJDK 11, AND OPENJFX
+
+sudo apt install alien openjdk-11-jdk openjfx
+
+#DOWNLOAD SQL DEVELOPER >= 19.2
+
+https://www.oracle.com/tools/downloads/sqldev-downloads.html
+
+Download the Linux RPM
+Install SQL Developer
+
+#CONVERT PACKAGE
+sudo alien -i sqldeveloper-*.rpm
+
+#CREATE A DESKTOP ENTRY
+vi /usr/share/applications/sqldeveloper.desktop
+
+[Desktop Entry]
+Name=SQL Developer
+Comment=Oracle SQL Developer
+GenericName=SQL Developer for Linux
+Exec=/opt/sqldeveloper/sqldeveloper.sh &
+Type=Application
+Categories=Developer;
+Icon=/opt/sqldeveloper/icon.png
+
+#SET JAVA
+
+sudo update-alternatives --config java
+[sudo] password for : 
+There are 2 choices for the alternative java (providing /usr/bin/java).
+
+  Selection    Path                                            Priority   Status
+------------------------------------------------------------
+* 0            /usr/lib/jvm/java-11-openjdk-amd64/bin/java      1111      auto mode
+  1            /usr/lib/jvm/java-11-openjdk-amd64/bin/java      1111      manual mode
+  2            /usr/lib/jvm/java-8-openjdk-amd64/jre/bin/java   1081      manual mode
+
+Press <enter> to keep the current choice[*], or type selection number: 0
+
+#CONFIGURE IGNORE ERRORS AFTER OPEN PROGRAM
+vi /home/danilo/.sqldeveloper/19.2.1/product.conf
+SetSkipJ2SDKCheck true
