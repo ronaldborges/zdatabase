@@ -26,6 +26,12 @@ mv spark-3.0.0-bin-hadoop3.2 /usr/local/spark-3.0.0-bin-hadoop3.2
 #ENTER ON DIRECTORY
 cd /usr/local/spark-3.0.0-bin-hadoop3.2/bin
 
+#CONFIGURE ENVIRONMENTS
+vi /etc/environment
+JAVA_HOME="/usr/lib/jvm/java-8-openjdk-amd64"
+PYSPARK_PYTHON=python3
+SPARK_LOCAL_IP="<$YOUR LOCAL IP>"
+
 #RUN PYSPARK
 ./pyspark
 
@@ -81,6 +87,9 @@ All commands can be abbreviated, e.g., :he instead of :help.
 :warnings                show the suppressed warnings from the most recent line which had any
 
 scala> :quit
+
+#SPARK WEB
+http://<$YOUR LOCAL IP>:4040
 
 #GOD RDD´s
 #FINISH
