@@ -1112,5 +1112,39 @@ Select the database creation options
 Following advanced configuration options can be used to configure initialization parameters and customize database storage locations.
 All initialization Parameters,,,                                                               Customize Storage Location...
 
+#ENABLE MONITORING ENTERPRISE MANAGER EXPRESS EDITION
+
+sqlplus / as sysdba
+SQL> EXEC DBMS_XDB_CONFIG.sethttpsport(5500);
+
+PL/SQL procedure successfully completed.
+
+SQL> SELECT DBMS_XDB_CONFIG.gethttpport FROM dual;
+
+GETHTTPSPORT
+------------
+        5500
+
+SQL> ALTER SESSION SET CONTAINER=<CONTAINER_NAME>;
+
+Session altered.
+
+SQL> EXEC DBMS_XDB_CONFIG.sethttpsport(5501);
+
+PL/SQL procedure successfully completed.
+
+SQL> SELECT DBMS_XDB_CONFIG.gethttpport FROM dual;
+
+GETHTTPSPORT
+------------
+        5501
+        
+ON BROWSER OPEN 
+https://<hostname>:5500/em/ 		FOR CDB$ROOT
+https://<hostname>:5501/em/		FOR <CONTAINER_NAME>
+user: sys
+password: <$password>
+container
+
 #FINISH
 
