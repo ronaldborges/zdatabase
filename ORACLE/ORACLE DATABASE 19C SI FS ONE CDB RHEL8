@@ -250,4 +250,30 @@ SQL> ALTER SESSION SET CONTAINER=teste;
 
 Session altered.
 
+#ENABLE MONITORING ENTERPRISE MANAGER EXPRESS EDITION
+
+SQL> ALTER SESSION SET CONTAINER=teste;
+
+Session altered.
+
+SQL> EXEC DBMS_XDB_CONFIG.sethttpsport(5501);
+
+PL/SQL procedure successfully completed.
+
+SQL> SELECT DBMS_XDB_CONFIG.gethttpport FROM dual;
+
+GETHTTPSPORT
+------------
+        5501
+        
+ON BROWSER OPEN 
+https://<hostname>:5501/em/
+user: sys
+password: <$password>
+container: 
+
+
+
+
+
 
