@@ -58,4 +58,123 @@ yum-config-manager --disable ol7_ociyum_config
 yum repolist
 
 #INSTALL PRE-REQUIRES PACKAGES
-yum install java-1.8.0-openjdk.x86_64 -y
+yum install java-1.8.0-openjdk.x86_64 java-1.8.0-openjdk-devel.x86_64 -y
+
+#CONFIGURE JAVA_HOME
+cat <<EOF | sudo tee /etc/profile.d/java8.sh
+> export JAVA_HOME=/usr/lib/jvm/jre-openjdk
+> export PATH=\$PATH:\$JAVA_HOME/bin
+> export CLASSPATH=.:\$JAVA_HOME/jre/lib:\$JAVA_HOME/lib:\$JAVA_HOME/lib/tools.jar
+> EOF
+
+source /etc/profile.d/java8.sh
+
+#CONFIGURE REPOSITORY ELK
+cat <<EOF | sudo tee /etc/yum.repos.d/elasticsearch.repo
+> [elasticsearch-7.x]
+> name=Elasticsearch repository for 7.x packages
+> baseurl=https://artifacts.elastic.co/packages/oss-7.x/yum
+> gpgcheck=1
+> gpgkey=https://artifacts.elastic.co/GPG-KEY-elasticsearch
+> enabled=1
+> autorefresh=1
+> type=rpm-md
+> EOF
+
+yum clean all
+yum makecache
+
+#INSTALL ELASTICSEARCH-OSS
+yum -y install elasticsearch-oss
+
+#ENABLE AND START ELK
+systemctl daemon-reload
+systemctl enable elasticsearch.service
+
+#CONFIGURE JVM
+vi /etc/elasticsearch/jvm.options
+-Xms256m
+-Xmx512m
+
+#START ELASTICSEARCH
+systemctl start elasticsearch.service
+systemctl status elasticsearch.service
+● elasticsearch.service - Elasticsearch
+   Loaded: loaded (/usr/lib/systemd/system/elasticsearch.service; enabled; vendor preset: disabled)
+   Active: active (running) since Seg 2020-08-10 15:41:40 -03; 3s ago
+     Docs: https://www.elastic.co
+ Main PID: 2830 (java)
+    Tasks: 54
+   CGroup: /system.slice/elasticsearch.service
+           └─2830 /usr/share/elasticsearch/jdk/bin/java -Xshare:auto -Des.networkaddress.cache.ttl=60 -Des.networkaddress.cache.negative.ttl=10 -XX:+AlwaysPreTouch -Xss1m -Djava.awt.headless=true -Dfile.encoding=UTF-8 -Djna.nosys=true -XX:-OmitStackTraceInFastTh...
+
+Ago 10 15:41:29 ol7-elk systemd[1]: Starting Elasticsearch...
+Ago 10 15:41:40 ol7-elk systemd[1]: Started Elasticsearch.
+
+#CHECK YOUR ELASTICSEARCH SERVICE
+curl http://127.0.0.1:9200 
+{
+  "name" : "ol7-elk",
+  "cluster_name" : "elasticsearch",
+  "cluster_uuid" : "eT9o9ikxSXK6e5rGNRCqFA",
+  "version" : {
+    "number" : "7.8.1",
+    "build_flavor" : "oss",
+    "build_type" : "rpm",
+    "build_hash" : "b5ca9c58fb664ca8bf9e4057fc229b3396bf3a89",
+    "build_date" : "2020-07-21T16:40:44.668009Z",
+    "build_snapshot" : false,
+    "lucene_version" : "8.5.1",
+    "minimum_wire_compatibility_version" : "6.8.0",
+    "minimum_index_compatibility_version" : "6.0.0-beta1"
+  },
+  "tagline" : "You Know, for Search"
+}
+
+curl -X PUT "http://127.0.0.1:9200/test_index"
+{"acknowledged":true,"shards_acknowledged":true,"index":"test_index"}
+
+#INSTALL KIBANA AND LOGSTASH
+yum install kibana-oss logstash -Y
+
+#CONFIGURE KIBANA
+vi /etc/kibana/kibana.yml
+server.host: "0.0.0.0."
+server.name: "ol7-elk"
+elasticsearch.hosts: ["http://localhost:9200"]
+
+#START KIBANA SERVICE
+systemctl enable kibana
+systemctl start kibana
+systemctl status kibana
+● kibana.service - Kibana
+   Loaded: loaded (/etc/systemd/system/kibana.service; enabled; vendor preset: disabled)
+   Active: active (running) since Seg 2020-08-10 15:44:27 -03; 15s ago
+ Main PID: 3085 (node)
+    Tasks: 11
+   CGroup: /system.slice/kibana.service
+           └─3085 /usr/share/kibana/bin/../node/bin/node /usr/share/kibana/bin/../src/cli
+
+Ago 10 15:44:30 ol7-elk kibana[3085]: {"type":"log","@timestamp":"2020-08-10T18:44:30Z","tags":["info","plugins-system"],"pid":3085,"message":"Starting [27] plugins: [usageCollection,telemetryCollectionManager,telemetry,kibanaLegacy,share,discover,bfetch,express...
+Ago 10 15:44:32 ol7-elk kibana[3085]: {"type":"log","@timestamp":"2020-08-10T18:44:32Z","tags":["status","plugin:apm_oss@7.8.1","info"],"pid":3085,"state":"green","message":"Status changed from uninitialized to green - Ready","prevState":"uni...sg":"uninitialized"}
+Ago 10 15:44:32 ol7-elk kibana[3085]: {"type":"log","@timestamp":"2020-08-10T18:44:32Z","tags":["status","plugin:console_legacy@7.8.1","info"],"pid":3085,"state":"green","message":"Status changed from uninitialized to green - Ready","prevStat...sg":"uninitialized"}
+Ago 10 15:44:32 ol7-elk kibana[3085]: {"type":"log","@timestamp":"2020-08-10T18:44:32Z","tags":["status","plugin:kibana@7.8.1","info"],"pid":3085,"state":"green","message":"Status changed from uninitialized to green - Ready","prevState":"unin...sg":"uninitialized"}
+Ago 10 15:44:32 ol7-elk kibana[3085]: {"type":"log","@timestamp":"2020-08-10T18:44:32Z","tags":["status","plugin:elasticsearch@7.8.1","info"],"pid":3085,"state":"yellow","message":"Status changed from uninitialized to yellow - Waiting for Ela...sg":"uninitialized"}
+Ago 10 15:44:32 ol7-elk kibana[3085]: {"type":"log","@timestamp":"2020-08-10T18:44:32Z","tags":["status","plugin:elasticsearch@7.8.1","info"],"pid":3085,"state":"green","message":"Status changed from yellow to green - Ready","prevState":"yell... for Elasticsearch"}
+Ago 10 15:44:32 ol7-elk kibana[3085]: {"type":"log","@timestamp":"2020-08-10T18:44:32Z","tags":["status","plugin:region_map@7.8.1","info"],"pid":3085,"state":"green","message":"Status changed from uninitialized to green - Ready","prevState":"...sg":"uninitialized"}
+Ago 10 15:44:33 ol7-elk kibana[3085]: {"type":"log","@timestamp":"2020-08-10T18:44:32Z","tags":["status","plugin:ui_metric@7.8.1","info"],"pid":3085,"state":"green","message":"Status changed from uninitialized to green - Ready","prevState":"u...sg":"uninitialized"}
+Ago 10 15:44:33 ol7-elk kibana[3085]: {"type":"log","@timestamp":"2020-08-10T18:44:32Z","tags":["listening","info"],"pid":3085,"message":"Server running at http://0.0.0.0:5601"}
+Ago 10 15:44:33 ol7-elk kibana[3085]: {"type":"log","@timestamp":"2020-08-10T18:44:33Z","tags":["info","http","server","Kibana"],"pid":3085,"message":"http server running at http://0.0.0.0:5601"}
+Hint: Some lines were ellipsized, use -l to show in full.
+
+#ACCESS
+http://ol70-elk:5601
+
+
+
+
+
+
+
+
+
