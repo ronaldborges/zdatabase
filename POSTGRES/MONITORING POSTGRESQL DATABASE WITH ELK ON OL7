@@ -1,0 +1,61 @@
+#######################################################
+#   MONITORING POSTGRESQL DATABASE WITH ELK ON OL7    #
+#######################################################
+
+#INSTALL ELK ON OL7
+
+#DISABLE FIREWALL AND SELINUX
+sed -i 's/SELINUX=.*/SELINUX=disabled/' /etc/selinux/config && setenforce 0
+systemctl stop firewalld && systemctl disable firewalld
+
+#ADD REPOSITORIES TO YUM 
+vi /etc/yum.repos.d/oracle-linux-ol7.repo
+
+[ol7_optional_developer]
+name=Developer Preview of Oracle Linux $releasever Optional ($basearch)
+baseurl=https://yum.oracle.com/repo/OracleLinux/OL7/optional/developer/$basearch/
+gpgkey=file:///etc/pki/rpm-gpg/RPM-GPG-KEY-oracle
+gpgcheck=1
+enabled=1
+
+[ol7_developer_EPEL]
+name=Oracle Linux $releasever Development Packages ($basearch)
+baseurl=https://yum.oracle.com/repo/OracleLinux/OL7/developer_EPEL/$basearch/
+gpgkey=file:///etc/pki/rpm-gpg/RPM-GPG-KEY-oracle
+gpgcheck=1
+enabled=1
+
+[ol7_developer]
+name=Oracle Linux $releasever Latest Development Packages ($basearch)
+baseurl=http://yum.oracle.com/repo/OracleLinux/OL7/developer/$basearch/
+gpgkey=file:///etc/pki/rpm-gpg/RPM-GPG-KEY-oracle
+gpgcheck=1
+enabled=1
+
+[ol7_software_collection]
+name=Oracle Linux $releasever Latest Software Collection Library Packages ($basearch)
+baseurl=http://yum.oracle.com/repo/OracleLinux/OL7/SoftwareCollections/$basearch/
+gpgkey=file:///etc/pki/rpm-gpg/RPM-GPG-KEY-oracle
+gpgcheck=1
+enabled=1
+
+[ol7_optional_developer]
+name=Developer Preview of Oracle Linux $releasever Optional ($basearch)
+baseurl=https://yum.oracle.com/repo/OracleLinux/OL7/optional/developer/$basearch/
+gpgkey=file:///etc/pki/rpm-gpg/RPM-GPG-KEY-oracle
+gpgcheck=1
+enabled=1
+
+[ol7_developer_EPEL]
+name=Oracle Linux $releasever Development Packages ($basearch)
+baseurl=https://yum.oracle.com/repo/OracleLinux/OL7/developer_EPEL/$basearch/
+gpgkey=file:///etc/pki/rpm-gpg/RPM-GPG-KEY-oracle
+gpgcheck=1
+enabled=1
+
+#LIST REPOSITORIES LIST
+yum-config-manager --disable ol7_ociyum_config
+yum repolist
+
+#INSTALL PRE-REQUIRES PACKAGES
+yum install java-1.8.0-openjdk.x86_64 -y
