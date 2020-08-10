@@ -170,21 +170,6 @@ Hint: Some lines were ellipsized, use -l to show in full.
 #ACCESS
 http://ol70-elk:5601
 
-#START AND ENABLE LOGSTASH
-systemctl enable logstash
-systemctl start logstash
-systemctl status logstash
-● logstash.service - logstash
-   Loaded: loaded (/etc/systemd/system/logstash.service; enabled; vendor preset: disabled)
-   Active: active (running) since Seg 2020-08-10 15:53:13 -03; 5s ago
- Main PID: 3971 (java)
-    Tasks: 13
-   CGroup: /system.slice/logstash.service
-           └─3971 /bin/java -Xms1g -Xmx1g -XX:+UseConcMarkSweepGC -XX:CMSInitiatingOccupancyFraction=75 -XX:+UseCMSInitiatingOccupancyOnly -Djava.awt.headless=true -Dfile.encoding=UTF-8 -Djruby.compile.invokedynamic=true -Djruby.jit.threshold=0 -XX:+HeapDumpOnOu...
-
-Ago 10 15:53:13 ol7-elk systemd[1]: Started logstash.
-Ago 10 15:53:13 ol7-elk logstash[3971]: OpenJDK 64-Bit Server VM warning: If the number of processors is expected to increase from one, then you should configure the number of parallel GC threads appropriately using -XX:ParallelGCThreads=N
-
 #CONFIGURING LOGSTASH AND THE JDBC DRIVER FOR POSTGRESQL
 #DOWNLOAD JDBC POSTGRESQL
 curl https://jdbc.postgresql.org/download/postgresql-42.2.14.jar -o /usr/share/logstash/logstash-core/lib/jars/postgresql-jdbc.jar
@@ -195,6 +180,121 @@ OpenJDK 64-Bit Server VM warning: If the number of processors is expected to inc
 Validating logstash-input-jdbc
 Installing logstash-input-jdbc
 Installation successful
+
+#CONFIGURE KIBANA STRING CONNECTION TO POSTGRES INSTANCE
+vi /etc/logstash/conf.d/postgresql.conf
+input {
+        # pg_stat_database
+        jdbc {
+                jdbc_driver_library => ""
+                jdbc_driver_class => "org.postgresql.Driver"
+                jdbc_connection_string => "jdbc:postgresql://host:port/defaultdb"
+                jdbc_user => "username"
+                jdbc_password => "password"
+                statement => "SELECT * FROM pg_stat_database"
+                schedule => "* * * * *"
+                type => "pg_stat_database"
+        }
+
+        # pg_stat_user_tables
+        jdbc {
+                jdbc_driver_library => ""
+                jdbc_driver_class => "org.postgresql.Driver"
+                jdbc_connection_string => "jdbc:postgresql://host:port/defaultdb"
+                jdbc_user => "username"
+                jdbc_password => "password"
+                statement => "SELECT * FROM pg_stat_user_tables"
+                schedule => "* * * * *"
+                type => "pg_stat_user_tables"
+        }
+
+        # pg_stat_user_indexes
+        jdbc {
+                jdbc_driver_library => ""
+                jdbc_driver_class => "org.postgresql.Driver"
+                jdbc_connection_string => "jdbc:postgresql://host:port/defaultdb"
+                jdbc_user => "username"
+                jdbc_password => "password"
+                statement => "SELECT * FROM pg_stat_user_indexes"
+                schedule => "* * * * *"
+                type => "pg_stat_user_indexes"
+        }
+}
+
+output {
+        elasticsearch {
+                hosts => "http://localhost:9200"
+                index => "%{type}"
+        }
+}
+
+#NOTE: Remember to replace host with your host address, port with the port to which you can connect to your database, 
+username for the database username and password for your password. All of these values can be found in the Control Panel of your managed database.
+
+#RELEASE CONNECTION ON PG_HBA ON POSTGRESQL INSTANCE
+host    all             postgres        <$IP>/32         md5
+#RELOAD CONFIGURATION
+/usr/local/pgsql-12.3/bin/pg_ctl reload -D /dados/data
+
+#TESTING THE LOGSTASH CONFIGURATION
+/usr/share/logstash/bin/logstash -f /etc/logstash/conf.d/postgresql.conf
+OpenJDK 64-Bit Server VM warning: If the number of processors is expected to increase from one, then you should configure the number of parallel GC threads appropriately using -XX:ParallelGCThreads=N
+WARNING: Could not find logstash.yml which is typically located in $LS_HOME/config or /etc/logstash. You can specify the path using --path.settings. Continuing using the defaults
+Could not find log4j2 configuration at path /usr/share/logstash/config/log4j2.properties. Using default config which logs errors to the console
+[WARN ] 2020-08-10 16:23:19.107 [LogStash::Runner] multilocal - Ignoring the 'pipelines.yml' file because modules or command line options are specified
+[INFO ] 2020-08-10 16:23:19.118 [LogStash::Runner] runner - Starting Logstash {"logstash.version"=>"7.1.1"}
+[INFO ] 2020-08-10 16:23:27.398 [[main]-pipeline-manager] elasticsearch - Elasticsearch pool URLs updated {:changes=>{:removed=>[], :added=>[http://localhost:9200/]}}
+[WARN ] 2020-08-10 16:23:27.708 [[main]-pipeline-manager] elasticsearch - Restored connection to ES instance {:url=>"http://localhost:9200/"}
+[INFO ] 2020-08-10 16:23:27.933 [[main]-pipeline-manager] elasticsearch - ES Output version determined {:es_version=>7}
+[WARN ] 2020-08-10 16:23:27.934 [[main]-pipeline-manager] elasticsearch - Detected a 6.x and above cluster: the `type` event field won't be used to determine the document _type {:es_version=>7}
+[INFO ] 2020-08-10 16:23:28.013 [Ruby-0-Thread-5: :1] elasticsearch - Using default mapping template
+[INFO ] 2020-08-10 16:23:28.019 [[main]-pipeline-manager] elasticsearch - New Elasticsearch output {:class=>"LogStash::Outputs::ElasticSearch", :hosts=>["http://localhost:9200"]}
+[INFO ] 2020-08-10 16:23:28.030 [[main]-pipeline-manager] javapipeline - Starting pipeline {:pipeline_id=>"main", "pipeline.workers"=>1, "pipeline.batch.size"=>125, "pipeline.batch.delay"=>50, "pipeline.max_inflight"=>125, :thread=>"#<Thread:0x5bc7161a run>"}
+[INFO ] 2020-08-10 16:23:28.205 [Ruby-0-Thread-5: :1] elasticsearch - Index Lifecycle Management is set to 'auto', but will be disabled - Index Lifecycle management is not installed on your Elasticsearch cluster
+[INFO ] 2020-08-10 16:23:28.206 [Ruby-0-Thread-5: :1] elasticsearch - Attempting to install template {:manage_template=>{"index_patterns"=>"logstash-*", "version"=>60001, "settings"=>{"index.refresh_interval"=>"5s", "number_of_shards"=>1}, "mappings"=>{"dynamic_templates"=>[{"message_field"=>{"path_match"=>"message", "match_mapping_type"=>"string", "mapping"=>{"type"=>"text", "norms"=>false}}}, {"string_fields"=>{"match"=>"*", "match_mapping_type"=>"string", "mapping"=>{"type"=>"text", "norms"=>false, "fields"=>{"keyword"=>{"type"=>"keyword", "ignore_above"=>256}}}}}], "properties"=>{"@timestamp"=>{"type"=>"date"}, "@version"=>{"type"=>"keyword"}, "geoip"=>{"dynamic"=>true, "properties"=>{"ip"=>{"type"=>"ip"}, "location"=>{"type"=>"geo_point"}, "latitude"=>{"type"=>"half_float"}, "longitude"=>{"type"=>"half_float"}}}}}}}
+[INFO ] 2020-08-10 16:23:28.299 [[main]-pipeline-manager] javapipeline - Pipeline started {"pipeline.id"=>"main"}
+[INFO ] 2020-08-10 16:23:28.483 [Ruby-0-Thread-1: /usr/share/logstash/lib/bootstrap/environment.rb:6] agent - Pipelines running {:count=>1, :running_pipelines=>[:main], :non_running_pipelines=>[]}
+[INFO ] 2020-08-10 16:23:29.491 [Api Webserver] agent - Successfully started Logstash API endpoint {:port=>9601}
+/usr/share/logstash/vendor/bundle/jruby/2.5.0/gems/rufus-scheduler-3.0.9/lib/rufus/scheduler/cronline.rb:77: warning: constant ::Fixnum is deprecated
+/usr/share/logstash/vendor/bundle/jruby/2.5.0/gems/rufus-scheduler-3.0.9/lib/rufus/scheduler/cronline.rb:77: warning: constant ::Fixnum is deprecated
+[INFO ] 2020-08-10 16:24:01.982 [Ruby-0-Thread-18: :1] jdbc - (0.104162s) SELECT * FROM pg_stat_user_tables
+[INFO ] 2020-08-10 16:24:01.990 [Ruby-0-Thread-19: :1] jdbc - (0.088428s) SELECT * FROM pg_stat_user_indexes
+[INFO ] 2020-08-10 16:24:01.993 [Ruby-0-Thread-20: :1] jdbc - (0.093831s) SELECT * FROM pg_stat_database
+
+#START AND ENABLE LOGSTASH
+systemctl enable logstash
+systemctl start logstash
+systemctl status logstash
+● logstash.service - logstash
+   Loaded: loaded (/etc/systemd/system/logstash.service; enabled; vendor preset: disabled)
+   Active: active (running) since Seg 2020-08-10 16:27:49 -03; 30s ago
+ Main PID: 5905 (java)
+    Tasks: 31
+   CGroup: /system.slice/logstash.service
+           └─5905 /bin/java -Xms1g -Xmx1g -XX:+UseConcMarkSweepGC -XX:CMSInitiatingOccupancyFraction=75 -XX:+UseCMSInitiatingOccupancyOnly -Djava.awt.headless=true -Dfile.encoding=UTF-8 -Djruby.compile.invokedynamic=true -Djruby.jit.threshold=0 -XX:+HeapDumpOnOu...
+
+Ago 10 16:28:18 ol7-elk logstash[5905]: [2020-08-10T16:28:18,012][WARN ][logstash.outputs.elasticsearch] Restored connection to ES instance {:url=>"http://localhost:9200/"}
+Ago 10 16:28:18 ol7-elk logstash[5905]: [2020-08-10T16:28:18,085][INFO ][logstash.outputs.elasticsearch] ES Output version determined {:es_version=>7}
+Ago 10 16:28:18 ol7-elk logstash[5905]: [2020-08-10T16:28:18,089][WARN ][logstash.outputs.elasticsearch] Detected a 6.x and above cluster: the `type` event field won't be used to determine the document _type {:es_version=>7}
+Ago 10 16:28:18 ol7-elk logstash[5905]: [2020-08-10T16:28:18,144][INFO ][logstash.outputs.elasticsearch] Using default mapping template
+Ago 10 16:28:18 ol7-elk logstash[5905]: [2020-08-10T16:28:18,151][INFO ][logstash.outputs.elasticsearch] New Elasticsearch output {:class=>"LogStash::Outputs::ElasticSearch", :hosts=>["http://localhost:9200"]}
+Ago 10 16:28:18 ol7-elk logstash[5905]: [2020-08-10T16:28:18,178][INFO ][logstash.javapipeline    ] Starting pipeline {:pipeline_id=>"main", "pipeline.workers"=>1, "pipeline.batch.size"=>125, "pipeline.batch.delay"=>50, "pipeline.max_inflight...ad:0x1bb58cc3 run>"}
+Ago 10 16:28:18 ol7-elk logstash[5905]: [2020-08-10T16:28:18,328][INFO ][logstash.outputs.elasticsearch] Index Lifecycle Management is set to 'auto', but will be disabled - Index Lifecycle management is not installed on your Elasticsearch cluster
+Ago 10 16:28:18 ol7-elk logstash[5905]: [2020-08-10T16:28:18,329][INFO ][logstash.outputs.elasticsearch] Attempting to install template {:manage_template=>{"index_patterns"=>"logstash-*", "version"=>60001, "settings"=>{"index.refresh_interval...essage_field"=>{"pat
+Ago 10 16:28:18 ol7-elk logstash[5905]: [2020-08-10T16:28:18,442][INFO ][logstash.javapipeline    ] Pipeline started {"pipeline.id"=>"main"}
+Ago 10 16:28:18 ol7-elk logstash[5905]: [2020-08-10T16:28:18,526][INFO ][logstash.agent           ] Pipelines running {:count=>1, :running_pipelines=>[:main], :non_running_pipelines=>[]}
+Hint: Some lines were ellipsized, use -l to show in full.
+
+#CREATE NEW INDEX 
+OPEN http://ol7-elk:5601/
+Create index pattern >  
+  Select pg_stat_database >
+   Time Filter fild nama @timestamp > 
+               Create new visualization >  
+               
+               
+      
+
 
 
 
