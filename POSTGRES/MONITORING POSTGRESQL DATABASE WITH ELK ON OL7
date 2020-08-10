@@ -170,6 +170,33 @@ Hint: Some lines were ellipsized, use -l to show in full.
 #ACCESS
 http://ol70-elk:5601
 
+#START AND ENABLE LOGSTASH
+systemctl enable logstash
+systemctl start logstash
+systemctl status logstash
+● logstash.service - logstash
+   Loaded: loaded (/etc/systemd/system/logstash.service; enabled; vendor preset: disabled)
+   Active: active (running) since Seg 2020-08-10 15:53:13 -03; 5s ago
+ Main PID: 3971 (java)
+    Tasks: 13
+   CGroup: /system.slice/logstash.service
+           └─3971 /bin/java -Xms1g -Xmx1g -XX:+UseConcMarkSweepGC -XX:CMSInitiatingOccupancyFraction=75 -XX:+UseCMSInitiatingOccupancyOnly -Djava.awt.headless=true -Dfile.encoding=UTF-8 -Djruby.compile.invokedynamic=true -Djruby.jit.threshold=0 -XX:+HeapDumpOnOu...
+
+Ago 10 15:53:13 ol7-elk systemd[1]: Started logstash.
+Ago 10 15:53:13 ol7-elk logstash[3971]: OpenJDK 64-Bit Server VM warning: If the number of processors is expected to increase from one, then you should configure the number of parallel GC threads appropriately using -XX:ParallelGCThreads=N
+
+#CONFIGURING LOGSTASH AND THE JDBC DRIVER FOR POSTGRESQL
+#DOWNLOAD JDBC POSTGRESQL
+curl https://jdbc.postgresql.org/download/postgresql-42.2.14.jar -o /usr/share/logstash/logstash-core/lib/jars/postgresql-jdbc.jar
+
+#ACTIVATE THE JDBC PLUG-IN IN LOGSTASH
+usr/share/logstash/bin/logstash-plugin install logstash-input-jdbc
+OpenJDK 64-Bit Server VM warning: If the number of processors is expected to increase from one, then you should configure the number of parallel GC threads appropriately using -XX:ParallelGCThreads=N
+Validating logstash-input-jdbc
+Installing logstash-input-jdbc
+Installation successful
+
+
 
 
 
