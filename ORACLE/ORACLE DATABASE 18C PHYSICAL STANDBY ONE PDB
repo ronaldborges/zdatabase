@@ -244,7 +244,7 @@ totalMemory=0
 #CREATE netca.rsp response file BOTH MACHINES
 vi netca18.rsp
 [GENERAL]
-RESPONSEFILE_VERSION="19.0"
+RESPONSEFILE_VERSION="18.0"
 CREATE_TYPE="CUSTOM"
 INSTALLED_COMPONENTS={"server","net8","javavm"}
 INSTALL_TYPE=""typical""
@@ -263,6 +263,8 @@ dbca -silent -createDatabase -responseFile /home/oracle/dbca.rsp
 
 #CREATE LISTENER BOTH MACHINES
 netca -silent -responsefile /home/oracle/netca.rsp
+
+
 
 
 
