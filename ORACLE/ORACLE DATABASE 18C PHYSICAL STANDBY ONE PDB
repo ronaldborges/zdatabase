@@ -203,7 +203,7 @@ nodelist=
 templateName=/u01/app/oracle/product/18.3.0/dbhome_1/assistants/dbca/templates/General_Purpose.dbc
 sysPassword=
 systemPassword= 
-serviceUserPassword=
+oracleHomeUserPassword=
 emConfiguration=
 emExpressPort=5500
 runCVUChecks=FALSE
@@ -234,7 +234,7 @@ walletPassword=
 listeners=
 variablesFile=
 variables=ORACLE_BASE_HOME=/u01/app/oracle/product/18.3.0/dbhome_1,DB_UNIQUE_NAME=appscdb,ORACLE_BASE=/u01/app/oracle,PDB_NAME=,DB_NAME=appscdb,ORACLE_HOME=/u01/app/oracle/product/18.3.0/dbhome_1,SID=appscdb1
-initParams=undo_tablespace=UNDOTBS1,sga_target=2047MB,db_block_size=8192BYTES,log_archive_dest_1='LOCATION={ORACLE_BASE}/oradata/archivelog/',nls_language=AMERICAN,dispatchers=(PROTOCOL=TCP) (SERVICE=appscdb1XDB),diagnostic_dest={ORACLE_BASE},control_files=("{ORACLE_BASE}/oradata/{DB_UNIQUE_NAME}/control01.ctl", "{ORACLE_BASE}/fast_recovery_area/{DB_UNIQUE_NAME}/control02.ctl"),remote_login_passwordfile=EXCLUSIVE,audit_file_dest={ORACLE_BASE}/admin/{DB_UNIQUE_NAME}/adump,processes=600,pga_aggregate_target=683MB,nls_territory=AMERICA,db_recovery_file_dest_size=12732MB,open_cursors=300,log_archive_format=%t_%s_%r.dbf,compatible=19.0.0,db_name=appscdb,db_recovery_file_dest={ORACLE_BASE}/fast_recovery_area/{DB_UNIQUE_NAME},audit_trail=db
+initParams=undo_tablespace=UNDOTBS1,sga_target=2047MB,db_block_size=8192BYTES,log_archive_dest_1='LOCATION={ORACLE_BASE}/oradata/archivelog/',nls_language=AMERICAN,dispatchers=(PROTOCOL=TCP) (SERVICE=appscdb1XDB),diagnostic_dest={ORACLE_BASE},control_files=("{ORACLE_BASE}/oradata/{DB_UNIQUE_NAME}/control01.ctl", "{ORACLE_BASE}/fast_recovery_area/{DB_UNIQUE_NAME}/control02.ctl"),remote_login_passwordfile=EXCLUSIVE,audit_file_dest={ORACLE_BASE}/admin/{DB_UNIQUE_NAME}/adump,processes=600,pga_aggregate_target=683MB,nls_territory=AMERICA,db_recovery_file_dest_size=12732MB,open_cursors=300,log_archive_format=%t_%s_%r.dbf,compatible=18.0.0,db_name=appscdb,db_recovery_file_dest={ORACLE_BASE}/fast_recovery_area/{DB_UNIQUE_NAME},audit_trail=db
 sampleSchema=false
 memoryPercentage=40
 databaseType=MULTIPURPOSE
@@ -259,10 +259,58 @@ NSN_SERVICE={"PLSExtProc"}
 NSN_PROTOCOLS={"TCP;HOSTNAME;1521"}
 
 #CREATE DATABASE BOTH MACHINES
-dbca -silent -createDatabase -responseFile /home/oracle/dbca.rsp
+dbca -silent -createDatabase -responseFile /home/oracle/dbca18.rsp
+Enter SYS user password: 
+
+Enter SYSTEM user password: 
+
+Enter PDBADMIN User Password: 
+
+[WARNING] [DBT-06208] The 'SYS' password entered does not conform to the Oracle recommended standards.
+   CAUSE: 
+a. Oracle recommends that the password entered should be at least 8 characters in length, contain at least 1 uppercase character, 1 lower case character and 1 digit [0-9].
+b.The password entered is a keyword that Oracle does not recommend to be used as password
+   ACTION: Specify a strong password. If required refer Oracle documentation for guidelines.
+[WARNING] [DBT-06208] The 'SYSTEM' password entered does not conform to the Oracle recommended standards.
+   CAUSE: 
+a. Oracle recommends that the password entered should be at least 8 characters in length, contain at least 1 uppercase character, 1 lower case character and 1 digit [0-9].
+b.The password entered is a keyword that Oracle does not recommend to be used as password
+   ACTION: Specify a strong password. If required refer Oracle documentation for guidelines.
+[WARNING] [DBT-06208] The 'PDBADMIN' password entered does not conform to the Oracle recommended standards.
+   CAUSE: 
+a. Oracle recommends that the password entered should be at least 8 characters in length, contain at least 1 uppercase character, 1 lower case character and 1 digit [0-9].
+b.The password entered is a keyword that Oracle does not recommend to be used as password
+   ACTION: Specify a strong password. If required refer Oracle documentation for guidelines.
+Prepare for db operation
+8% complete
+Copying database files
+
+
+#IF YOU NEED TO DELETE THE DATABASE EXECUTE
+dbca -silent -deleteDatabase -sourceDB appscdb1
+Enter SYS user password: 
+
+[WARNING] [DBT-11503] The instance (appscdb1) is not running on the local node. This may result in partial delete of Oracle database.
+   CAUSE: A locally running instance is required for complete deletion of Oracle database instance and database files.
+   ACTION: Specify a locally running database, or execute DBCA on a node where the database instance is running.
+[WARNING] [DBT-19202] The Database Configuration Assistant will delete the Oracle instances and datafiles for your database. All information in the database will be destroyed.
+Prepare for db operation
+32% complete
+Connecting to database
+35% complete
+39% complete
+42% complete
+[WARNING] The data files for database with SID "appscdb1" could not be determined because the database could not be started. Do you want to delete the service anyway?
+65% complete
+Updating network configuration files
+68% complete
+Deleting instance and datafiles
+84% complete
+100% complete
+Database deletion completed.
 
 #CREATE LISTENER BOTH MACHINES
-netca -silent -responsefile /home/oracle/netca.rsp
+netca -silent -responsefile /home/oracle/netca18.rsp
 
 
 
