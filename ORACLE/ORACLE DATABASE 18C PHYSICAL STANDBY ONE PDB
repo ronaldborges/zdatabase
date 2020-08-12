@@ -131,7 +131,116 @@ mv LINUX.X64_183000_db_home.zip?AuthParam=1577574051_dcd3a71670cb8ddcb11b27e39a4
 cd $ORACLE_HOME
 unzip -oq LINUX.X64_180000_db_home.zip
 
- 
+#CREATE db_install.rsp INSTALL RESPONSE FILE BOTH MACHINES
+vi /home/oracle/db_install18.rsp
+oracle.install.responseFileVersion=/oracle/install/rspfmt_dbinstall_response_schema_v18.0.0
+oracle.install.option=INSTALL_DB_SWONLY
+UNIX_GROUP_NAME=oinstall
+INVENTORY_LOCATION=/u01/app/oraInventory
+ORACLE_HOME=/u01/app/oracle/product/18.3.0/dbhome_1
+ORACLE_BASE=/u01/app/oracle
+oracle.install.db.InstallEdition=SE2
+oracle.install.db.OSDBA_GROUP=dba
+oracle.install.db.OSOPER_GROUP=oinstall
+oracle.install.db.OSBACKUPDBA_GROUP=backupdba
+oracle.install.db.OSDGDBA_GROUP=dgdba
+oracle.install.db.OSKMDBA_GROUP=kmdba
+oracle.install.db.OSRACDBA_GROUP=racdba
+oracle.install.db.CLUSTER_NODES=
+oracle.install.db.config.starterdb.type=GENERAL_PURPOSE
+oracle.install.db.config.starterdb.globalDBName=
+oracle.install.db.config.starterdb.SID=
+oracle.install.db.ConfigureAsContainerDB=false
+oracle.install.db.config.PDBName=
+oracle.install.db.config.starterdb.characterSet=
+oracle.install.db.config.starterdb.memoryOption=false
+oracle.install.db.config.starterdb.memoryLimit=
+oracle.install.db.config.starterdb.installExampleSchemas=false
+oracle.install.db.config.starterdb.password.ALL=
+oracle.install.db.config.starterdb.password.SYS=
+oracle.install.db.config.starterdb.password.SYSTEM=
+oracle.install.db.config.starterdb.password.DBSNMP=
+oracle.install.db.config.starterdb.password.PDBADMIN=
+oracle.install.db.config.starterdb.managementOption=DEFAULT
+oracle.install.db.config.starterdb.omsHost=
+oracle.install.db.config.starterdb.omsPort=0
+oracle.install.db.config.starterdb.emAdminUser=
+oracle.install.db.config.starterdb.emAdminPassword=
+oracle.install.db.config.starterdb.enableRecovery=false
+oracle.install.db.config.starterdb.storageType=
+oracle.install.db.config.starterdb.fileSystemStorage.dataLocation=
+oracle.install.db.config.starterdb.fileSystemStorage.recoveryLocation=
+oracle.install.db.config.asm.diskGroup=
+oracle.install.db.config.asm.ASMSNMPPassword=
+
+cd $ORACLE_HOME
+./runInstaller -silent -responseFile /home/oracle/db_install18.rsp
+
+#RUN COMMAND AS ROOT
+	1. /u01/app/oraInventory/orainstRoot.sh
+	2. /u01/app/oracle/product/18.3.0/dbhome_1/root.sh
+
+#CREATE dbca.rsp response file
+vi /home/oracle/dbca18.rsp
+responseFileVersion=/oracle/assistants/rspfmt_dbca_response_schema_v12.2.0
+gdbName=appscdb
+sid=appscdb1
+databaseConfigType=SI
+RACOneNodeServiceName=
+policyManaged=false
+createServerPool=false
+serverPoolName=
+cardinality=
+force=false
+pqPoolName=
+pqCardinality=
+createAsContainerDatabase=true
+numberOfPDBs=1
+pdbName=appspdb
+useLocalUndoForPDBs=true
+pdbAdminPassword=
+nodelist=
+templateName=/u01/app/oracle/product/18.3.0/dbhome_1/assistants/dbca/templates/General_Purpose.dbc
+sysPassword=
+systemPassword= 
+serviceUserPassword=
+emConfiguration=
+emExpressPort=5500
+runCVUChecks=FALSE
+dbsnmpPassword=
+omsHost=
+omsPort=0
+emUser=
+emPassword=
+dvConfiguration=false
+dvUserName=
+dvUserPassword=
+dvAccountManagerName=
+dvAccountManagerPassword=
+olsConfiguration=false
+datafileJarLocation={ORACLE_HOME}/assistants/dbca/templates/
+datafileDestination={ORACLE_BASE}/oradata/{DB_UNIQUE_NAME}/
+recoveryAreaDestination={ORACLE_BASE}/fast_recovery_area/{DB_UNIQUE_NAME}
+storageType=FS
+diskGroupName=
+asmsnmpPassword=
+recoveryGroupName=
+characterSet=WE8MSWIN1252
+nationalCharacterSet=AL16UTF16
+registerWithDirService=false
+dirServiceUserName=
+dirServicePassword=
+walletPassword=
+listeners=
+variablesFile=
+variables=ORACLE_BASE_HOME=/u01/app/oracle/product/18.3.0/dbhome_1,DB_UNIQUE_NAME=appscdb,ORACLE_BASE=/u01/app/oracle,PDB_NAME=,DB_NAME=appscdb,ORACLE_HOME=/u01/app/oracle/product/18.3.0/dbhome_1,SID=appscdb1
+initParams=undo_tablespace=UNDOTBS1,sga_target=2047MB,db_block_size=8192BYTES,log_archive_dest_1='LOCATION={ORACLE_BASE}/oradata/archivelog/',nls_language=AMERICAN,dispatchers=(PROTOCOL=TCP) (SERVICE=appscdb1XDB),diagnostic_dest={ORACLE_BASE},control_files=("{ORACLE_BASE}/oradata/{DB_UNIQUE_NAME}/control01.ctl", "{ORACLE_BASE}/fast_recovery_area/{DB_UNIQUE_NAME}/control02.ctl"),remote_login_passwordfile=EXCLUSIVE,audit_file_dest={ORACLE_BASE}/admin/{DB_UNIQUE_NAME}/adump,processes=600,pga_aggregate_target=683MB,nls_territory=AMERICA,db_recovery_file_dest_size=12732MB,open_cursors=300,log_archive_format=%t_%s_%r.dbf,compatible=19.0.0,db_name=appscdb,db_recovery_file_dest={ORACLE_BASE}/fast_recovery_area/{DB_UNIQUE_NAME},audit_trail=db
+sampleSchema=false
+memoryPercentage=40
+databaseType=MULTIPURPOSE
+automaticMemoryManagement=false
+totalMemory=0
+
 
 
 
