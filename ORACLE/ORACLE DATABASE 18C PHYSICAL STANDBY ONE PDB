@@ -1,0 +1,139 @@
++++++++++++++++++++++++++++++++++++++++++++++++++++++++
++   	ORACLE DATABASE 18C PHYSICAL STANDBY ONE PDB    +
++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+
+#NEED TWO MACHINES OL7 
++-------------------+------------+
+|192.168.1.130 PROD | ORACLE SE2 |
+|192.168.1.131 STDB | ORACLE SE2 |
++-------------------+------------+
+
+#INSTALL PRE-INSTALL PACKAGES BOTH MACHINES
+yum install http://yum.oracle.com/repo/OracleLinux/OL7/latest/x86_64/getPackage/oracle-database-preinstall-18c-1.0-1.el7.x86_64.rpm
+
+#DISABLE SELINUX AND FIREWALLD BOTH MACHINES
+sed -i 's/SELINUX=.*/SELINUX=disabled/' /etc/selinux/config && setenforce 0
+systemctl stop firewalld && systemctl disable firewalld
+
+#CONFIGURE STATIC NETWORK MACHINE PROD
+TYPE=Ethernet
+PROXY_METHOD=none
+BROWSER_ONLY=no
+BOOTPROTO=none
+DEFROUTE=yes
+IPV4_FAILURE_FATAL=no
+IPV6INIT=no
+IPV6_AUTOCONF=yes
+IPV6_DEFROUTE=yes
+IPV6_FAILURE_FATAL=no
+IPV6_ADDR_GEN_MODE=stable-privacy
+NAME=enp0s3
+UUID=49c279da-7065-40f5-b914-176973db2a0a
+DEVICE=enp0s3
+ONBOOT=yes
+IPADDR=192.168.1.130
+PREFIX=24
+GATEWAY=192.168.1.1
+DNS1=8.8.8.8
+
+#CONFIGURE HOSTNAME MACHINE PROD
+hostnamectl 
+hostnamectl set-hostname ol718cprod
+hostnamectl --static 
+
+#CONFIGURE STATIC NETWORK MACHINE STDB
+TYPE=Ethernet
+PROXY_METHOD=none
+BROWSER_ONLY=no
+BOOTPROTO=none
+DEFROUTE=yes
+IPV4_FAILURE_FATAL=no
+IPV6INIT=no
+IPV6_AUTOCONF=yes
+IPV6_DEFROUTE=yes
+IPV6_FAILURE_FATAL=no
+IPV6_ADDR_GEN_MODE=stable-privacy
+NAME=enp0s3
+UUID=49c279da-7065-40f5-b914-176973db2a0a
+DEVICE=enp0s3
+ONBOOT=yes
+IPADDR=192.168.1.131
+PREFIX=24
+GATEWAY=192.168.1.1
+DNS1=8.8.8.8
+
+#CONFIGURE HOSTNAME MACHINE STDB
+hostnamectl 
+hostnamectl set-hostname ol718cstdb
+hostnamectl --static 
+
+#CREATE ORACLE_BASE AND ORACLE_HOME DIRECTORIES BOTH MACHINES
+mkdir -p /u01/app/oracle/product/18.3.0/dbhome_1
+mkdir -p /u01/oradata
+chown -R oracle:oinstall /u01
+chmod -R 775 /u01
+
+#CONFIGURE VARIABLES BOTH MACHINES
+su - oracle
+mkdir /home/oracle/scripts
+
+cat > /home/oracle/scripts/setEnv.sh <<EOF
+# Oracle Settings
+export TMP=/tmp
+export TMPDIR=\$TMP
+
+export ORACLE_HOSTNAME=ora18cprod
+export ORACLE_UNQNAME=appscdb
+export ORACLE_BASE=/u01/app/oracle
+export ORACLE_HOME=\$ORACLE_BASE/product/18.3.0/dbhome_1
+export ORA_INVENTORY=/u01/app/oraInventory
+export ORACLE_SID=appscdb1
+
+export PATH=/usr/sbin:/usr/local/bin:\$PATH
+export PATH=\$ORACLE_HOME/bin:\$PATH
+
+export LD_LIBRARY_PATH=\$ORACLE_HOME/lib:/lib:/usr/lib
+export CLASSPATH=\$ORACLE_HOME/jlib:\$ORACLE_HOME/rdbms/jlib
+EOF
+
+echo ". /home/oracle/scripts/setEnv.sh" >> /home/oracle/.bash_profile
+
+cat > /home/oracle/scripts/start_all.sh <<EOF
+#!/bin/bash
+. /home/oracle/scripts/setEnv.sh
+
+export ORAENV_ASK=NO
+. oraenv
+export ORAENV_ASK=YES
+
+dbstart \$ORACLE_HOME
+EOF
+
+cat > /home/oracle/scripts/stop_all.sh <<EOF
+#!/bin/bash
+. /home/oracle/scripts/setEnv.sh
+
+export ORAENV_ASK=NO
+. oraenv
+export ORAENV_ASK=YES
+
+dbshut \$ORACLE_HOME
+EOF
+
+chown -R oracle:oinstall /home/oracle/scripts
+chmod u+x /home/oracle/scripts/*.sh
+
+#DOWNLOAD AND INSTALL ORACLE DATABASE 18.3C BOTH MACHINES
+wget https://download.oracle.com/otn/linux/oracle18c/180000/LINUX.X64_183000_db_home.zip?AuthParam=1577574051_dcd3a71670cb8ddcb11b27e39a41738e
+mv LINUX.X64_183000_db_home.zip?AuthParam=1577574051_dcd3a71670cb8ddcb11b27e39a41738e $ORACLE_HOME/LINUX.X64_180000_db_home.zip
+
+#UNZIP SFW DATABASE BOTH MACHINES
+cd $ORACLE_HOME
+unzip -oq LINUX.X64_180000_db_home.zip
+
+ 
+
+
+
+
+
