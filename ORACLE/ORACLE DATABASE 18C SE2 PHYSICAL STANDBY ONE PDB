@@ -987,28 +987,3 @@ Key     TY LV S Device Type Completion Time #Pieces #Copies Compressed Tag
 
 RMAN> exit
 
-#SET CDB AND PDB READ ONLY ON STANDBY
-sqlplus / as sysdba
-SQL> ALTER DATABASE OPEN READ ONLY;
-
-Database altered.
-
-SQL> alter pluggable database APPSPDB OPEN READ ONLY;
-
-Pluggable database altered.
-
-SQL> select name, open_mode from v$pdbs;
-
-NAME				OPEN_MODE
-------------------------------- ----------
-PDB$SEED			READ ONLY
-APPSPDB 			READ ONLY
-
-
-
-
-
-
-
-
-
