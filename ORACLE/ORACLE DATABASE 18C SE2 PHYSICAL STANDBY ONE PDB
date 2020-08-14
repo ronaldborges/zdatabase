@@ -825,7 +825,8 @@ crontab -l
 
 #CHECK GAP REPLICATION
 cat /home/oracle/scripts/recovery_standby.log
-Recovery Manager: Release 18.0.0.0.0 - Production on Fri Aug 14 11:18:17 2020
+
+Recovery Manager: Release 18.0.0.0.0 - Production on Fri Aug 14 11:24:59 2020
 Version 18.3.0.0.0
 
 Copyright (c) 1982, 2018, Oracle and/or its affiliates.  All rights reserved.
@@ -850,23 +851,17 @@ searching for all files that match the pattern /u02/app/oracle/oradata/APPSCDB/a
 
 List of Files Unknown to the Database
 =====================================
-File Name: /u02/app/oracle/oradata/APPSCDB/archivelog/1_40_1048345557.arc
-File Name: /u02/app/oracle/oradata/APPSCDB/archivelog/1_41_1048345557.arc
-File Name: /u02/app/oracle/oradata/APPSCDB/archivelog/1_42_1048345557.arc
-File Name: /u02/app/oracle/oradata/APPSCDB/archivelog/1_39_1048345557.arc
+File Name: /u02/app/oracle/oradata/APPSCDB/archivelog/1_45_1048345557.arc
 cataloging files...
 cataloging done
 
 List of Cataloged Files
 =======================
-File Name: /u02/app/oracle/oradata/APPSCDB/archivelog/1_40_1048345557.arc
-File Name: /u02/app/oracle/oradata/APPSCDB/archivelog/1_41_1048345557.arc
-File Name: /u02/app/oracle/oradata/APPSCDB/archivelog/1_42_1048345557.arc
-File Name: /u02/app/oracle/oradata/APPSCDB/archivelog/1_39_1048345557.arc
+File Name: /u02/app/oracle/oradata/APPSCDB/archivelog/1_45_1048345557.arc
 
 RMAN> 
 allocated channel: ORA_DISK_1
-channel ORA_DISK_1: SID=72 device type=DISK
+channel ORA_DISK_1: SID=71 device type=DISK
 validation succeeded for archived log
 archived log file name=/u02/app/oracle/oradata/APPSCDB/archivelog/1_4_1048345557.arc RECID=6 STAMP=1048411993
 validation succeeded for archived log
@@ -945,14 +940,20 @@ validation succeeded for archived log
 archived log file name=/u02/app/oracle/oradata/APPSCDB/archivelog/1_41_1048345557.arc RECID=39 STAMP=1048418328
 validation succeeded for archived log
 archived log file name=/u02/app/oracle/oradata/APPSCDB/archivelog/1_42_1048345557.arc RECID=40 STAMP=1048418328
-Crosschecked 39 objects
+validation succeeded for archived log
+archived log file name=/u02/app/oracle/oradata/APPSCDB/archivelog/1_43_1048345557.arc RECID=42 STAMP=1048418492
+validation succeeded for archived log
+archived log file name=/u02/app/oracle/oradata/APPSCDB/archivelog/1_44_1048345557.arc RECID=43 STAMP=1048418492
+validation succeeded for archived log
+archived log file name=/u02/app/oracle/oradata/APPSCDB/archivelog/1_45_1048345557.arc RECID=44 STAMP=1048418729
+Crosschecked 42 objects
 
 
 RMAN> 
 
 Recovery Manager complete.
 
-SQL*Plus: Release 18.0.0.0.0 - Production on Fri Aug 14 11:18:49 2020
+SQL*Plus: Release 18.0.0.0.0 - Production on Fri Aug 14 11:25:30 2020
 Version 18.3.0.0.0
 
 Copyright (c) 1982, 2018, Oracle.  All rights reserved.
@@ -971,7 +972,7 @@ Database altered.
 SQL> 
     Thread Last Sequence Received Last Sequence Applied Difference
 ---------- ---------------------- --------------------- ----------
-	 1		       42		     42 	 0
+	 1		       45		     45 	 0
 
 SQL> 
 Database altered.
@@ -981,5 +982,35 @@ Pluggable database altered.
 
 SQL> Disconnected from Oracle Database 18c Standard Edition 2 Release 18.0.0.0.0 - Production
 Version 18.3.0.0.0
+
+LSNRCTL for Linux: Version 18.0.0.0.0 - Production on 14-AUG-2020 11:25:54
+
+Copyright (c) 1991, 2018, Oracle.  All rights reserved.
+
+Starting /u01/app/oracle/product/18.3.0/dbhome_1/bin/tnslsnr: please wait...
+
+TNSLSNR for Linux: Version 18.0.0.0.0 - Production
+System parameter file is /u01/app/oracle/product/18.3.0/dbhome_1/network/admin/listener.ora
+Log messages written to /u01/app/oracle/diag/tnslsnr/ol718cstdb/listener/alert/log.xml
+Listening on: (DESCRIPTION=(ADDRESS=(PROTOCOL=tcp)(HOST=ol718cstdb)(PORT=1521)))
+
+Connecting to (ADDRESS=(PROTOCOL=TCP)(HOST=ol718cstdb)(PORT=1521))
+STATUS of the LISTENER
+------------------------
+Alias                     LISTENER
+Version                   TNSLSNR for Linux: Version 18.0.0.0.0 - Production
+Start Date                14-AUG-2020 11:26:06
+Uptime                    0 days 0 hr. 0 min. 24 sec
+Trace Level               off
+Security                  ON: Local OS Authentication
+SNMP                      OFF
+Listener Parameter File   /u01/app/oracle/product/18.3.0/dbhome_1/network/admin/listener.ora
+Listener Log File         /u01/app/oracle/diag/tnslsnr/ol718cstdb/listener/alert/log.xml
+Listening Endpoints Summary...
+  (DESCRIPTION=(ADDRESS=(PROTOCOL=tcp)(HOST=ol718cstdb)(PORT=1521)))
+Services Summary...
+Service "appscdb1" has 1 instance(s).
+  Instance "appscdb1", status UNKNOWN, has 1 handler(s) for this service...
+The command completed successfully
 
 #CONTROLING THE RETENTION OF ARCHIVES RECEIVED ON THE STANDBY MACHINE
