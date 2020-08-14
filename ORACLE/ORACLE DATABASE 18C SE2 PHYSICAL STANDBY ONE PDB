@@ -1014,3 +1014,104 @@ Service "appscdb1" has 1 instance(s).
 The command completed successfully
 
 #CONTROLING THE RETENTION OF ARCHIVES RECEIVED ON THE STANDBY MACHINE
+rman target /
+CONFIGURE ARCHIVELOG DELETION POLICY TO APPLIED ON ALL STANDBY;
+
+CONFIGURE ARCHIVELOG DELETION POLICY TO APPLIED ON ALL STANDBY;
+new RMAN configuration parameters are successfully stored
+
+RMAN configuration parameters for database with db_unique_name APPSCDBS are:
+CONFIGURE RETENTION POLICY TO REDUNDANCY 1; # default
+CONFIGURE BACKUP OPTIMIZATION OFF; # default
+CONFIGURE DEFAULT DEVICE TYPE TO DISK; # default
+CONFIGURE CONTROLFILE AUTOBACKUP ON; # default
+CONFIGURE CONTROLFILE AUTOBACKUP FORMAT FOR DEVICE TYPE DISK TO '%F'; # default
+CONFIGURE DEVICE TYPE DISK PARALLELISM 1 BACKUP TYPE TO BACKUPSET; # default
+CONFIGURE DATAFILE BACKUP COPIES FOR DEVICE TYPE DISK TO 1; # default
+CONFIGURE ARCHIVELOG BACKUP COPIES FOR DEVICE TYPE DISK TO 1; # default
+CONFIGURE MAXSETSIZE TO UNLIMITED; # default
+CONFIGURE ENCRYPTION FOR DATABASE OFF; # default
+CONFIGURE ENCRYPTION ALGORITHM 'AES128'; # default
+CONFIGURE COMPRESSION ALGORITHM 'BASIC' AS OF RELEASE 'DEFAULT' OPTIMIZE FOR LOAD TRUE ; # default
+CONFIGURE RMAN OUTPUT TO KEEP FOR 7 DAYS; # default
+CONFIGURE ARCHIVELOG DELETION POLICY TO APPLIED ON ALL STANDBY;
+CONFIGURE SNAPSHOT CONTROLFILE NAME TO '/u01/app/oracle/product/18.3.0/dbhome_1/dbs/snapcf_appscdb1.f'; # default
+
+#CREATE SCRIPT FOR DELETE APPLIED ARCHIVE LOGS
+vi /home/oracle/scripts/retention_archive.sh
+. /home/oracle/scripts/setEnv.sh
+tmpfile=/tmp/arch_id.tmp
+
+sqlplus -S /nolog <<EOF > $tmpfile
+connect / as sysdba
+set head off
+set pages 0
+select max(sequence#) from v\$archived_log where applied = 'YES' and FIRST_TIME < trunc(sysdate);
+exit
+EOF
+
+echo DELETE NOPROMPT ARCHIVELOG UNTIL SEQUENCE = `head -n 1  $tmpfile | awk '{print $1}'` ';' > $tmpfile
+
+rman target / <<EOF
+ @$tmpfile
+exit
+EOF
+
+cat 
+Recovery Manager: Release 18.0.0.0.0 - Production on Fri Aug 14 11:52:22 2020
+Version 18.3.0.0.0
+
+Copyright (c) 1982, 2018, Oracle and/or its affiliates.  All rights reserved.
+
+connected to target database: APPSCDB (DBID=3891823187)
+
+RMAN> 
+RMAN> DELETE NOPROMPT ARCHIVELOG UNTIL SEQUENCE = 10 ;
+allocated channel: ORA_DISK_1
+channel ORA_DISK_1: SID=87 device type=DISK
+List of Archived Log Copies for database with db_unique_name APPSCDBS
+=====================================================================
+
+Key     Thrd Seq     S Low Time 
+------- ---- ------- - ---------
+6       1    4       A 13-AUG-20
+        Name: /u02/app/oracle/oradata/APPSCDB/archivelog/1_4_1048345557.arc
+
+3       1    5       A 13-AUG-20
+        Name: /u02/app/oracle/oradata/APPSCDB/archivelog/1_5_1048345557.arc
+
+8       1    6       A 13-AUG-20
+        Name: /u02/app/oracle/oradata/APPSCDB/archivelog/1_6_1048345557.arc
+
+9       1    7       A 13-AUG-20
+        Name: /u02/app/oracle/oradata/APPSCDB/archivelog/1_7_1048345557.arc
+
+7       1    8       A 13-AUG-20
+        Name: /u02/app/oracle/oradata/APPSCDB/archivelog/1_8_1048345557.arc
+
+4       1    9       A 13-AUG-20
+        Name: /u02/app/oracle/oradata/APPSCDB/archivelog/1_9_1048345557.arc
+
+12      1    10      A 13-AUG-20
+        Name: /u02/app/oracle/oradata/APPSCDB/archivelog/1_10_1048345557.arc
+
+deleted archived log
+archived log file name=/u02/app/oracle/oradata/APPSCDB/archivelog/1_4_1048345557.arc RECID=6 STAMP=1048411993
+deleted archived log
+archived log file name=/u02/app/oracle/oradata/APPSCDB/archivelog/1_5_1048345557.arc RECID=3 STAMP=1048411993
+deleted archived log
+archived log file name=/u02/app/oracle/oradata/APPSCDB/archivelog/1_6_1048345557.arc RECID=8 STAMP=1048411993
+deleted archived log
+archived log file name=/u02/app/oracle/oradata/APPSCDB/archivelog/1_7_1048345557.arc RECID=9 STAMP=1048411993
+deleted archived log
+archived log file name=/u02/app/oracle/oradata/APPSCDB/archivelog/1_8_1048345557.arc RECID=7 STAMP=1048411993
+deleted archived log
+archived log file name=/u02/app/oracle/oradata/APPSCDB/archivelog/1_9_1048345557.arc RECID=4 STAMP=1048411993
+deleted archived log
+archived log file name=/u02/app/oracle/oradata/APPSCDB/archivelog/1_10_1048345557.arc RECID=12 STAMP=1048411993
+Deleted 7 objects
+
+RMAN> **end-of-file**
+
+RMAN>
+
