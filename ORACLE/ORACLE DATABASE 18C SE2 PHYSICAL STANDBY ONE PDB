@@ -718,7 +718,7 @@ mkdir -p /u01/app/oracle/admin/appscdbs/adump/
 mkdir -p /u01/app/oracle/oradata/APPSCDB/appspdb/
 mkdir -p /u01/app/oracle/oradata/APPSCDB/pdbseed/
 
-dbca -silent -createDuplicateDB -gdbName appscdb -primaryDBConnectionString "192.168.1.130:1521/appscdb" -sid appscdb1 -createAsStandby -dbUniqueName appscdbs -sysPassword oracle
+dbca -silent -createDuplicateDB -gdbName appscdb -primaryDBConnectionString "192.168.1.130:1521/appscdb" -sid appscdb1 -createAsStandby -dbUniqueName appscdbs -sysPassword <$password>
 
 #CHECK STANDBY DATABASE
 
@@ -1115,3 +1115,4 @@ RMAN> **end-of-file**
 
 RMAN>
 
+#END OF DOCUMENT!
