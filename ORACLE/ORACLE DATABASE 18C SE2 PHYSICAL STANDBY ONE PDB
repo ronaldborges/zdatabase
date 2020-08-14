@@ -825,7 +825,7 @@ crontab -l
 
 #CHECK GAP REPLICATION
 cat /home/oracle/scripts/recovery_standby.log
-Recovery Manager: Release 18.0.0.0.0 - Production on Fri Aug 14 10:22:50 2020
+Recovery Manager: Release 18.0.0.0.0 - Production on Fri Aug 14 11:18:17 2020
 Version 18.3.0.0.0
 
 Copyright (c) 1982, 2018, Oracle and/or its affiliates.  All rights reserved.
@@ -850,19 +850,23 @@ searching for all files that match the pattern /u02/app/oracle/oradata/APPSCDB/a
 
 List of Files Unknown to the Database
 =====================================
-File Name: /u02/app/oracle/oradata/APPSCDB/archivelog/1_27_1048345557.arc
-File Name: /u02/app/oracle/oradata/APPSCDB/archivelog/1_26_1048345557.arc
+File Name: /u02/app/oracle/oradata/APPSCDB/archivelog/1_40_1048345557.arc
+File Name: /u02/app/oracle/oradata/APPSCDB/archivelog/1_41_1048345557.arc
+File Name: /u02/app/oracle/oradata/APPSCDB/archivelog/1_42_1048345557.arc
+File Name: /u02/app/oracle/oradata/APPSCDB/archivelog/1_39_1048345557.arc
 cataloging files...
 cataloging done
 
 List of Cataloged Files
 =======================
-File Name: /u02/app/oracle/oradata/APPSCDB/archivelog/1_27_1048345557.arc
-File Name: /u02/app/oracle/oradata/APPSCDB/archivelog/1_26_1048345557.arc
+File Name: /u02/app/oracle/oradata/APPSCDB/archivelog/1_40_1048345557.arc
+File Name: /u02/app/oracle/oradata/APPSCDB/archivelog/1_41_1048345557.arc
+File Name: /u02/app/oracle/oradata/APPSCDB/archivelog/1_42_1048345557.arc
+File Name: /u02/app/oracle/oradata/APPSCDB/archivelog/1_39_1048345557.arc
 
 RMAN> 
 allocated channel: ORA_DISK_1
-channel ORA_DISK_1: SID=71 device type=DISK
+channel ORA_DISK_1: SID=72 device type=DISK
 validation succeeded for archived log
 archived log file name=/u02/app/oracle/oradata/APPSCDB/archivelog/1_4_1048345557.arc RECID=6 STAMP=1048411993
 validation succeeded for archived log
@@ -911,13 +915,44 @@ validation succeeded for archived log
 archived log file name=/u02/app/oracle/oradata/APPSCDB/archivelog/1_26_1048345557.arc RECID=26 STAMP=1048415001
 validation succeeded for archived log
 archived log file name=/u02/app/oracle/oradata/APPSCDB/archivelog/1_27_1048345557.arc RECID=25 STAMP=1048415001
-Crosschecked 24 objects
+validation succeeded for archived log
+archived log file name=/u02/app/oracle/oradata/APPSCDB/archivelog/1_28_1048345557.arc RECID=28 STAMP=1048415925
+validation succeeded for archived log
+archived log file name=/u02/app/oracle/oradata/APPSCDB/archivelog/1_29_1048345557.arc RECID=27 STAMP=1048415925
+validation succeeded for archived log
+archived log file name=/u02/app/oracle/oradata/APPSCDB/archivelog/1_30_1048345557.arc RECID=29 STAMP=1048415925
+validation succeeded for archived log
+archived log file name=/u02/app/oracle/oradata/APPSCDB/archivelog/1_31_1048345557.arc RECID=30 STAMP=1048416442
+validation succeeded for archived log
+archived log file name=/u02/app/oracle/oradata/APPSCDB/archivelog/1_32_1048345557.arc RECID=31 STAMP=1048416650
+validation succeeded for archived log
+archived log file name=/u02/app/oracle/oradata/APPSCDB/archivelog/1_33_1048345557.arc RECID=33 STAMP=1048417060
+validation succeeded for archived log
+archived log file name=/u02/app/oracle/oradata/APPSCDB/archivelog/1_34_1048345557.arc RECID=32 STAMP=1048417060
+validation succeeded for archived log
+archived log file name=/u02/app/oracle/oradata/APPSCDB/archivelog/1_35_1048345557.arc RECID=35 STAMP=1048417863
+validation succeeded for archived log
+archived log file name=/u02/app/oracle/oradata/APPSCDB/archivelog/1_36_1048345557.arc RECID=36 STAMP=1048417863
+validation succeeded for archived log
+archived log file name=/u02/app/oracle/oradata/APPSCDB/archivelog/1_37_1048345557.arc RECID=34 STAMP=1048417863
+validation succeeded for archived log
+archived log file name=/u02/app/oracle/oradata/APPSCDB/archivelog/1_38_1048345557.arc RECID=37 STAMP=1048417863
+validation succeeded for archived log
+archived log file name=/u02/app/oracle/oradata/APPSCDB/archivelog/1_39_1048345557.arc RECID=41 STAMP=1048418328
+validation succeeded for archived log
+archived log file name=/u02/app/oracle/oradata/APPSCDB/archivelog/1_40_1048345557.arc RECID=38 STAMP=1048418328
+validation succeeded for archived log
+archived log file name=/u02/app/oracle/oradata/APPSCDB/archivelog/1_41_1048345557.arc RECID=39 STAMP=1048418328
+validation succeeded for archived log
+archived log file name=/u02/app/oracle/oradata/APPSCDB/archivelog/1_42_1048345557.arc RECID=40 STAMP=1048418328
+Crosschecked 39 objects
+
 
 RMAN> 
 
 Recovery Manager complete.
 
-SQL*Plus: Release 18.0.0.0.0 - Production on Fri Aug 14 10:23:22 2020
+SQL*Plus: Release 18.0.0.0.0 - Production on Fri Aug 14 11:18:49 2020
 Version 18.3.0.0.0
 
 Copyright (c) 1982, 2018, Oracle.  All rights reserved.
@@ -936,56 +971,15 @@ Database altered.
 SQL> 
     Thread Last Sequence Received Last Sequence Applied Difference
 ---------- ---------------------- --------------------- ----------
-	 1		       27		     27 	 0
+	 1		       42		     42 	 0
+
+SQL> 
+Database altered.
+
+SQL> 
+Pluggable database altered.
 
 SQL> Disconnected from Oracle Database 18c Standard Edition 2 Release 18.0.0.0.0 - Production
 Version 18.3.0.0.0
 
 #CONTROLING THE RETENTION OF ARCHIVES RECEIVED ON THE STANDBY MACHINE
-
-rman target /
-
-Recovery Manager: Release 18.0.0.0.0 - Production on Fri Aug 14 10:30:02 2020
-Version 18.3.0.0.0
-
-Copyright (c) 1982, 2018, Oracle and/or its affiliates.  All rights reserved.
-
-connected to target database: APPSCDB (DBID=3891823187, not open)
-
-RMAN> CONFIGURE ARCHIVELOG DELETION POLICY TO APPLIED ON ALL STANDBY BACKED UP 1 TIMES TO DISK;
-
-using target database control file instead of recovery catalog
-new RMAN configuration parameters:
-CONFIGURE ARCHIVELOG DELETION POLICY TO APPLIED ON ALL STANDBY BACKED UP 1 TIMES TO DISK;
-new RMAN configuration parameters are successfully stored
-
-RMAN> show all;
-
-RMAN configuration parameters for database with db_unique_name APPSCDBS are:
-CONFIGURE RETENTION POLICY TO REDUNDANCY 1; # default
-CONFIGURE BACKUP OPTIMIZATION OFF; # default
-CONFIGURE DEFAULT DEVICE TYPE TO DISK; # default
-CONFIGURE CONTROLFILE AUTOBACKUP ON; # default
-CONFIGURE CONTROLFILE AUTOBACKUP FORMAT FOR DEVICE TYPE DISK TO '%F'; # default
-CONFIGURE DEVICE TYPE DISK PARALLELISM 1 BACKUP TYPE TO BACKUPSET; # default
-CONFIGURE DATAFILE BACKUP COPIES FOR DEVICE TYPE DISK TO 1; # default
-CONFIGURE ARCHIVELOG BACKUP COPIES FOR DEVICE TYPE DISK TO 1; # default
-CONFIGURE MAXSETSIZE TO UNLIMITED; # default
-CONFIGURE ENCRYPTION FOR DATABASE OFF; # default
-CONFIGURE ENCRYPTION ALGORITHM 'AES128'; # default
-CONFIGURE COMPRESSION ALGORITHM 'BASIC' AS OF RELEASE 'DEFAULT' OPTIMIZE FOR LOAD TRUE ; # default
-CONFIGURE RMAN OUTPUT TO KEEP FOR 7 DAYS; # default
-CONFIGURE ARCHIVELOG DELETION POLICY TO APPLIED ON ALL STANDBY BACKED UP 1 TIMES TO DISK;
-CONFIGURE SNAPSHOT CONTROLFILE NAME TO '/u01/app/oracle/product/18.3.0/dbhome_1/dbs/snapcf_appscdb1.f'; # default
-
-RMAN> list backup summary;
-
-
-List of Backups
-===============
-Key     TY LV S Device Type Completion Time #Pieces #Copies Compressed Tag
-------- -- -- - ----------- --------------- ------- ------- ---------- ---
-1       B  F  A DISK        13-AUG-20       1       1       NO         TAG20200813T155406
-
-RMAN> exit
-
