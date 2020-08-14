@@ -1,0 +1,128 @@
++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
++   	ORACLE DATABASE 19C TABLE RECOVERY USING RMAN BACKUP		+
++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+
+#CREATE ENVIRONMENT TO RESTORE TABLE
+
+sqlplus / as sysdba
+
+SQL*Plus: Release 19.0.0.0.0 - Production on Fri Aug 14 16:33:42 2020
+Version 19.3.0.0.0
+
+Copyright (c) 1982, 2019, Oracle.  All rights reserved.
+
+
+Connected to:
+Oracle Database 19c Enterprise Edition Release 19.0.0.0.0 - Production
+Version 19.3.0.0.0
+
+SQL> alter session set container=APPSPDB;
+
+Session altered.
+
+SQL> create user danilo identified by "<$password>" default tablespace users temporary tablespace temp profile default account unlock;
+
+User created.
+
+SQL> grant create session, create table to danilo;
+
+Grant succeeded.
+
+SQL> alter user danilo quota 500M on users;  
+
+User altered.
+
+SQL> exit
+
+#CONFIGURE CONNECTION STRING ON TNSNAMES.ORA
+
+vi /u01/app/oracle/product/19.3.0/dbhome_1/network/admin/tnsnames.ora
+
+APPSPDB =
+  (DESCRIPTION =
+    (ADDRESS = (PROTOCOL = TCP)(HOST = 127.0.0.1)(PORT = 1521))
+    (CONNECT_DATA =
+      (SERVER = DEDICATED)
+      (SERVICE_NAME = appspdb)
+    )
+  )
+
+tnsping APPSPDB
+
+TNS Ping Utility for Linux: Version 19.0.0.0.0 - Production on 14-AUG-2020 16:39:33
+
+Copyright (c) 1997, 2019, Oracle.  All rights reserved.
+
+Used parameter files:
+/u01/app/oracle/product/19.3.0/dbhome_1/network/admin/sqlnet.ora
+
+
+Used TNSNAMES adapter to resolve the alias
+Attempting to contact (DESCRIPTION = (ADDRESS = (PROTOCOL = TCP)(HOST = 127.0.0.1)(PORT = 1521)) (CONNECT_DATA = (SERVER = DEDICATED) (SERVICE_NAME = appspdb)))
+OK (10 msec)
+
+#CONECT ON PDB AND CREATE NEW TABLE
+
+sqlplus danilo/<$password>@APPSPDB
+
+SQL*Plus: Release 19.0.0.0.0 - Production on Fri Aug 14 17:02:39 2020
+Version 19.3.0.0.0
+
+Copyright (c) 1982, 2019, Oracle.  All rights reserved.
+
+Last Successful login time: Fri Aug 14 2020 16:46:08 -03:00
+
+Connected to:
+Oracle Database 19c Enterprise Edition Release 19.0.0.0.0 - Production
+Version 19.3.0.0.0
+
+SQL> create table emp(id number);
+
+Table created.
+
+SQL> begin
+for i in 1 .. 100000 loop
+insert into emp values(i);
+end loop;
+end;
+/  2    3    4    5    6  
+
+PL/SQL procedure successfully completed.
+
+SQL> select count(*) from emp; 
+
+  COUNT(*)
+----------
+    100000
+
+SQL> SELECT TO_CHAR (SYSDATE, 'MM-DD-YYYY HH24:MI:SS') "NOW" FROM DUAL;
+
+NOW
+-------------------
+08-14-2020 17:04:13
+
+SQL> exit
+Disconnected from Oracle Database 19c Enterprise Edition Release 19.0.0.0.0 - Production
+Version 19.3.0.0.0
+
+sqlplus / as sysdba
+
+SQL*Plus: Release 19.0.0.0.0 - Production on Fri Aug 14 16:33:42 2020
+Version 19.3.0.0.0
+
+Copyright (c) 1982, 2019, Oracle.  All rights reserved.
+
+
+Connected to:
+Oracle Database 19c Enterprise Edition Release 19.0.0.0.0 - Production
+Version 19.3.0.0.0
+
+SQL> archive log list;
+Database log mode	       Archive Mode
+Automatic archival	       Enabled
+Archive destination	       /u01/app/oracle/oradata/ORA19/archivelog
+Oldest online log sequence     95
+Next log sequence to archive   97
+Current log sequence	       97
+
+
