@@ -1,0 +1,65 @@
+++++++++++++++++++++++++++++++++++++
++  ORACLE DATABASE 19C CANCEL SQL  +
+++++++++++++++++++++++++++++++++++++
+
+#NOTE
+
+Before 18c, If we want to terminate a SQL query for consuming excessive resources in a session or to cancel the blocking session or cancel incorrect SQL statement, 
+the only way is to find out the particular session’s SID, SERIAL id and the kill the session using following command ALTER SYSTEM KILL SESSION ‘sid,serial#’;.
+After 18c, instead of kill the originating session we can cancel the particular SQL of another session using “ALTER SYSTEM CANCEL SQL ‘SID, SERIAL'”.
+If we are cancel a DML statement, the statement has been rolled backed.
+
+SQL> select banner_full from v$version;
+
+BANNER_FULL
+———————————————————–
+Oracle Database 18c Enterprise Edition Release 18.0.0.0.0 – Production
+Version 18.2.0.0.0
+
+Step:1 To find the SID for current session.
+
+SQL> select distinct sid from v$mystat;
+
+SID
+———-
+280
+
+SQL> begin loop null; end loop; end;
+/
+
+#THIS COMMAND HELP US TO FIND OUT THE SQL_ID USING THE SQL_TEXT FROM PARTICULAR SQL STATEMENT
+
+SQL> select sql_text,sql_id from v$sql where sql_text like ‘%loop null; end loop%’;
+
+SQL_TEXT                                                                       SQL_ID
+------------------------------------------------------------------------------ -----------------------------
+select sql_text,sql_id from v$sql where sql_text like ‘%loop null; end loop%’  6vbb9d7zj9t5w 
+begin loop null; end loop; end;                                                3tfmdd4xagv3y
+
+#TO FIND THE SERIAL# USING THE SESSION ID.
+
+SQL> select serial# from v$session where sid=280;
+
+SERIAL#
+--------
+22827
+
+#HERE IS THE SYNTAX OF CANCELLING A SQL STATEMENT
+
+ALTER SYSTEM CANCEL SQL ‘SID, SERIAL’
+
+SQL> alter system cancel sql ‘280,22827,3tfmdd4xagv3y’;
+
+System altered.
+
+SQL> begin
+loop null;
+end loop;
+end;
+/
+begin
+*
+ERROR at line 1:
+ORA-01013: user requested cancel of current operation
+
+
