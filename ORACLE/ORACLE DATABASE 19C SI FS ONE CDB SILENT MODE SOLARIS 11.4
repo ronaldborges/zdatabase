@@ -264,9 +264,35 @@ oracle.install.db.config.asm.ASMSNMPPassword=
 cd $ORACLE_HOME
 ./runInstaller -silent -responseFile /export/home/oracle/db_install.rsp
 
-#RUN COMMAND AS ROOT
+Launching Oracle Database Setup Wizard...
+
+[WARNING] [INS-13014] Target environment does not meet some optional requirements.
+   CAUSE: Some of the optional prerequisites are not met. See logs for details. installActions2020-08-17_11-38-46AM.log
+   ACTION: Identify the list of failed prerequisite checks from the log: installActions2020-08-17_11-38-46AM.log. Then either from the log file or from installation manual find the appropriate configuration to meet the prerequisites and fix it manually.
+The response file for this session can be found at:
+ /u01/app/oracle/product/19.5.0/dbhome_1/install/response/db_2020-08-17_11-38-46AM.rsp
+
+You can find the log of this install session at:
+ /tmp/InstallActions2020-08-17_11-38-46AM/installActions2020-08-17_11-38-46AM.log
+
+As a root user, execute the following script(s):
         1. /u01/app/oraInventory/orainstRoot.sh
-        2. /u01/app/oracle/product/19.3.0/dbhome_1/root.sh
+        2. /u01/app/oracle/product/19.5.0/dbhome_1/root.sh
+
+Successfully Setup Software with warning(s).
+Moved the install session logs to:
+/u01/app/oraInventory/logs/InstallActions2020-08-17_11-38-46AM
+
+exit
+/u01/app/oraInventory/orainstRoot.sh
+Changing permissions of /u01/app/oraInventory.
+Adding read,write permissions for group.
+Removing read,write,execute permissions for world.
+Changing groupname of /u01/app/oraInventory to oinstall.
+The execution of the script is complete.
+
+/u01/app/oracle/product/19.5.0/dbhome_1/root.sh
+Check /u01/app/oracle/product/19.5.0/dbhome_1/install/root_solaris_2020-08-17_11-43-55-523355459.log for the output of root script
 
 #CREATE dbca.rsp response file
 vi /export/home/oracle/dbca.rsp
