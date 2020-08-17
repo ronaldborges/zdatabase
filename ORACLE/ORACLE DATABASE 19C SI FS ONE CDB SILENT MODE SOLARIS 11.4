@@ -165,6 +165,9 @@ tm::sysinit:/usr/sbin/ndd -set /dev/udp udp_largest_anon_port 65500 > /dev/conso
 smf::sysinit:/lib/svc/bin/svc.startd >/dev/msglog 2<>/dev/msglog </dev/console
 p3:s1234:powerfail:/usr/sbin/shutdown -y -i5 -g0 >/dev/msglog 2<>/dev/msglog
 
+#REBOOT MACHINE
+reboot
+
 #CONFIGURE ORACLE_HOME ENVIRONMENTS
 su - oracle
 mkdir /export/home/oracle/scripts
