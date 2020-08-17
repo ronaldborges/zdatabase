@@ -95,14 +95,21 @@ Creating fast lookup database                   Done
 Updating package cache                           1/1
 
 #CONFIGURE USER ORACLE
-groupadd oinstall
-groupadd dba
-groupadd oper
-useradd -g dba -G oinstall -m oracle
-80 blocks
-usermod -g dba -G oinstall -d /export/home/oracle/ oracle
+groupadd -g 54321 oinstall
+groupadd -g 54322 dba
+groupadd -g 54323 oper
+groupadd -g 54324 backupdba
+groupadd -g 54325 dgdba
+groupadd -g 54326 kmdba
+groupadd -g 54327 asmdba
+groupadd -g 54328 asmoper
+groupadd -g 54329 asmadmin
+groupadd -g 54330 racdba
+userdel oracle
+useradd -m -u 54331 -g oinstall -G dba,oper,backupdba,dgdba,kmdba,asmdba,asmadmin,racdba -d /export/home/oracle -s /bin/bash  oracle
+useradd -m -u 54332 -g oinstall -G dba,asmadmin,asmdba,asmoper -d /export/home/grid -s /bin/bash  grid
 id oracle
-uid=100(oracle) gid=101(dba)
+id grid
 passwd oracle
 mkdir -p /u01/app/oracle/product/19.5.0/dbhome_1
 mkdir -p /u01/oradata
