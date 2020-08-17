@@ -1,0 +1,310 @@
+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
++   ORACLE DATABASE 19C SI FS ONE CDB SILENT MODE SOLARIS 11.4   +
+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+
+#DEFINE STATIC IP ORACLE SOLARIS 11.4
+ipadm create-addr -T static -a local=192.168.1.115/24 net0/v4
+
+#LIST IPS 
+ipadm show-addr
+ADDROBJ           TYPE     STATE        ADDR
+lo0/v4            static   ok           127.0.0.1/8
+net0/v4           static   ok           192.168.1.115/24
+lo0/v6            static   ok           ::1/128
+net0/v6           addrconf ok           fe80::a00:27ff:fedb:b01b/10
+
+ifconfig net0
+net0: flags=100001000843<UP,BROADCAST,RUNNING,MULTICAST,IPv4,PHYSRUNNING> mtu 1500 index 2
+        inet 192.168.1.115 netmask ffffff00 broadcast 192.168.1.255
+        ether 8:0:27:db:b0:1b
+
+#LOGIN AS ROOT IN SOLARIS WITH PUTTY
+#CHANGE SSHD_CONFIG FILE
+vim /etc/ssh/sshd_config
+PermitRoot yes
+
+#RESTART SERVICE SSHD
+svcadm restart svc:/network/ssh
+
+#CONFIGURE PUBLIC DNS GOOGLE
+svcs -a | grep dns/client
+disabled       22:11:44 svc:/network/dns/client:default
+
+svcadm enable dns/client
+
+svcs -a | grep dns/client
+online         23:14:48 svc:/network/dns/client:default
+
+vi /etc/resolv.conf
+nameserver 8.8.8.8
+nameserver 8.8.4.4
+cp /etc/nsswitch.dns /etc/nsswitch.conf
+
+svccfg -s name-service/switch
+svc:/system/name-service/switch> setprop config/host = "files dns"
+svc:/system/name-service/switch> listprop config
+config                     application
+config/default             astring     files
+config/host                astring     "files dns"
+config/value_authorization astring     solaris.smf.value.name-service.switch
+svc:/system/name-service/switch> exit
+svcadm refresh name-service/switch
+
+ nslookup
+> www.google.com
+Server:         8.8.8.8
+Address:        8.8.8.8#53
+
+Non-authoritative answer:
+Name:   www.google.com
+Address: 172.217.29.132
+> exit
+
+#SOLARIS PREPACKAGE INSTALLATION
+pkg install solaris-minimal-server
+           Packages to install:  1
+       Create boot environment: No
+Create backup boot environment: No
+
+DOWNLOAD                                PKGS         FILES    XFER (MB)   SPEED
+Completed                                1/1           2/2      0.0/0.0  3.3k/s
+
+PHASE                                          ITEMS
+Installing new actions                         25/25
+Updating package state database                 Done
+Updating package cache                           0/0
+Updating image state                            Done
+Creating fast lookup database                   Done
+Updating package cache                           1/1
+
+pkg install group/prerequisite/oracle/oracle-rdbms-server-18c-preinstall
+           Packages to install: 24
+            Services to change:  4
+       Create boot environment: No
+Create backup boot environment: No
+
+DOWNLOAD                                PKGS         FILES    XFER (MB)   SPEED
+Completed                              24/24       486/486  103.9/103.9  435k/s
+
+PHASE                                          ITEMS
+Installing new actions                     1211/1211
+Updating package state database                 Done
+Updating package cache                           0/0
+Updating image state                            Done
+Creating fast lookup database                   Done
+Updating package cache                           1/1
+
+#CONFIGURE USER ORACLE
+groupadd oinstall
+groupadd dba
+groupadd oper
+useradd -g dba -G oinstall -m oracle
+80 blocks
+usermod -g dba -G oinstall -d /export/home/oracle/ oracle
+id oracle
+uid=100(oracle) gid=101(dba)
+passwd oracle
+mkdir -p /u01/app/oracle/product/19.5.0/dbhome_1
+mkdir -p /u01/oradata
+chown -R oracle:oinstall /u01
+chmod -R 775 /u01
+
+#CONFIGURE ORACLE_HOME ENVIRONMENTS
+su - oracle
+mkdir scripts
+
+cat > scripts/setEnv.sh <<EOF
+# Oracle Settings
+export TMP=/tmp
+export TMPDIR=\$TMP
+
+export ORACLE_HOSTNAME=solaris
+export ORACLE_UNQNAME=appscdb
+export ORACLE_BASE=/u01/app/oracle
+export ORACLE_HOME=\$ORACLE_BASE/product/19.5.0/dbhome_1
+export ORA_INVENTORY=/u01/app/oraInventory
+export ORACLE_SID=appscdb1
+
+export PATH=/usr/sbin:/usr/local/bin:\$PATH
+export PATH=\$ORACLE_HOME/bin:\$PATH
+
+export LD_LIBRARY_PATH=\$ORACLE_HOME/lib:/lib:/usr/lib
+export CLASSPATH=\$ORACLE_HOME/jlib:\$ORACLE_HOME/rdbms/jlib
+EOF
+
+echo ". scripts/setEnv.sh" >> .profile
+
+cat > scripts/start_all.sh <<EOF
+#!/bin/bash
+. scripts/setEnv.sh
+
+export ORAENV_ASK=NO
+. oraenv
+export ORAENV_ASK=YES
+
+dbstart \$ORACLE_HOME
+EOF
+
+cat > scripts/stop_all.sh <<EOF
+#!/bin/bash
+. scripts/setEnv.sh
+
+export ORAENV_ASK=NO
+. oraenv
+export ORAENV_ASK=YES
+
+dbshut \$ORACLE_HOME
+EOF
+
+chown -R oracle:oinstall scripts
+chmod u+x scripts/*.sh
+
+#DOWNLOAD ORACLE DATABASE 19.5c FOR SOLARIS
+wget https://download.oracle.com/otn/solaris/oracle19c/195000/SOLARIS.X64_195000_db_home.zip?AuthParam=1597623719_1c94053516fa8179fde7fe1c8e4caada
+mv SOLARIS.X64_195000_db_home.zip $ORACLE_HOME/LINUX.X64_193000_db_home.zip
+cd $ORACLE_HOME
+unzip -oq SOLARIS.X64_195000_db_home.zip
+
+#CREATE db_install.rsp INSTALL RESPONSE FILE
+vi db_install.rsp
+oracle.install.responseFileVersion=/oracle/install/rspfmt_dbinstall_response_schema_v19.0.0
+oracle.install.option=INSTALL_DB_SWONLY
+UNIX_GROUP_NAME=oinstall
+INVENTORY_LOCATION=/u01/app/oraInventory
+ORACLE_BASE=/u01/app/oracle
+oracle.install.db.InstallEdition=EE
+oracle.install.db.OSDBA_GROUP=dba
+oracle.install.db.OSOPER_GROUP=oinstall
+oracle.install.db.OSBACKUPDBA_GROUP=backupdba
+oracle.install.db.OSDGDBA_GROUP=dgdba
+oracle.install.db.OSKMDBA_GROUP=kmdba
+oracle.install.db.OSRACDBA_GROUP=racdba
+oracle.install.db.rootconfig.executeRootScript=false
+oracle.install.db.rootconfig.configMethod=
+oracle.install.db.rootconfig.sudoPath=
+oracle.install.db.rootconfig.sudoUserName=
+oracle.install.db.CLUSTER_NODES=
+oracle.install.db.config.starterdb.type=GENERAL_PURPOSE
+oracle.install.db.config.starterdb.globalDBName=
+oracle.install.db.config.starterdb.SID=
+oracle.install.db.ConfigureAsContainerDB=false
+oracle.install.db.config.PDBName=
+oracle.install.db.config.starterdb.characterSet=
+oracle.install.db.config.starterdb.memoryOption=false
+oracle.install.db.config.starterdb.memoryLimit=
+oracle.install.db.config.starterdb.installExampleSchemas=false
+oracle.install.db.config.starterdb.password.ALL=
+oracle.install.db.config.starterdb.password.SYS=
+oracle.install.db.config.starterdb.password.SYSTEM=
+oracle.install.db.config.starterdb.password.DBSNMP=
+oracle.install.db.config.starterdb.password.PDBADMIN=
+oracle.install.db.config.starterdb.managementOption=DEFAULT
+oracle.install.db.config.starterdb.omsHost=
+oracle.install.db.config.starterdb.omsPort=0
+oracle.install.db.config.starterdb.emAdminUser=
+oracle.install.db.config.starterdb.emAdminPassword=
+oracle.install.db.config.starterdb.enableRecovery=false
+oracle.install.db.config.starterdb.storageType=
+oracle.install.db.config.starterdb.fileSystemStorage.dataLocation=
+oracle.install.db.config.starterdb.fileSystemStorage.recoveryLocation=
+oracle.install.db.config.asm.diskGroup=
+oracle.install.db.config.asm.ASMSNMPPassword=
+
+cd $ORACLE_HOME
+./runInstaller -silent -responseFile /export/home/oracle/db_install.rsp
+
+#RUN COMMAND AS ROOT
+        1. /u01/app/oraInventory/orainstRoot.sh
+        2. /u01/app/oracle/product/19.3.0/dbhome_1/root.sh
+
+#CREATE dbca.rsp response file
+vi dbca.rsp
+responseFileVersion=/oracle/assistants/rspfmt_dbca_response_schema_v12.2.0
+gdbName=appscdb
+sid=appscdb1
+databaseConfigType=SI
+RACOneNodeServiceName=
+policyManaged=false
+createServerPool=false
+serverPoolName=
+cardinality=
+force=false
+pqPoolName=
+pqCardinality=
+createAsContainerDatabase=true
+numberOfPDBs=1
+pdbName=appspdb
+useLocalUndoForPDBs=true
+pdbAdminPassword=
+nodelist=
+templateName=/u01/app/oracle/product/19.5.0/dbhome_1/assistants/dbca/templates/General_Purpose.dbc
+sysPassword=
+systemPassword= 
+serviceUserPassword=
+emConfiguration=
+emExpressPort=5500
+runCVUChecks=FALSE
+dbsnmpPassword=
+omsHost=
+omsPort=0
+emUser=
+emPassword=
+dvConfiguration=false
+dvUserName=
+dvUserPassword=
+dvAccountManagerName=
+dvAccountManagerPassword=
+olsConfiguration=false
+datafileJarLocation={ORACLE_HOME}/assistants/dbca/templates/
+datafileDestination={ORACLE_BASE}/oradata/{DB_UNIQUE_NAME}/
+recoveryAreaDestination={ORACLE_BASE}/fast_recovery_area/{DB_UNIQUE_NAME}
+storageType=FS
+diskGroupName=
+asmsnmpPassword=
+recoveryGroupName=
+characterSet=AL32UTF8
+nationalCharacterSet=AL16UTF16
+registerWithDirService=false
+dirServiceUserName=
+dirServicePassword=
+walletPassword=
+listeners=
+variablesFile=
+variables=ORACLE_BASE_HOME=/u01/app/oracle/product/19.5.0/dbhome_1,DB_UNIQUE_NAME=appscdb,ORACLE_BASE=/u01/app/oracle,PDB_NAME=,DB_NAME=appscdb,ORACLE_HOME=/u01/app/oracle/product/19.5.0/dbhome_1,SID=appscdb1
+initParams=undo_tablespace=UNDOTBS1,sga_target=2047MB,db_block_size=8192BYTES,log_archive_dest_1='LOCATION={ORACLE_BASE}/oradata/archivelog/',nls_language=AMERICAN,dispatchers=(PROTOCOL=TCP) (SERVICE=appscdb1XDB),diagnostic_dest={ORACLE_BASE},control_files=("{ORACLE_BASE}/oradata/{DB_UNIQUE_NAME}/control01.ctl", "{ORACLE_BASE}/fast_recovery_area/{DB_UNIQUE_NAME}/control02.ctl"),remote_login_passwordfile=EXCLUSIVE,audit_file_dest={ORACLE_BASE}/admin/{DB_UNIQUE_NAME}/adump,processes=600,pga_aggregate_target=683MB,nls_territory=AMERICA,db_recovery_file_dest_size=12732MB,open_cursors=300,log_archive_format=%t_%s_%r.dbf,compatible=19.0.0,db_name=appscdb,db_recovery_file_dest={ORACLE_BASE}/fast_recovery_area/{DB_UNIQUE_NAME},audit_trail=db
+sampleSchema=false
+memoryPercentage=40
+databaseType=MULTIPURPOSE
+automaticMemoryManagement=false
+totalMemory=0
+
+#CREATE netca.rsp response file
+vi netca.rsp
+[GENERAL]
+RESPONSEFILE_VERSION="19.0"
+CREATE_TYPE="CUSTOM"
+INSTALLED_COMPONENTS={"server","net8","javavm"}
+INSTALL_TYPE=""typical""
+LISTENER_NUMBER=1
+LISTENER_NAMES={"LISTENER"}
+LISTENER_START=""LISTENER""
+NAMING_METHODS={"TNSNAMES","ONAMES","HOSTNAME"}
+NSN_NUMBER=1
+NSN_NAMES={"EXTPROC_CONNECTION_DATA"}
+NSN_SERVICE={"PLSExtProc"}
+NSN_SERVICE={"PLSExtProc"}
+NSN_PROTOCOLS={"TCP;HOSTNAME;1521"}
+
+#CREATE DATABASE 
+dbca -silent -createDatabase -responseFile /home/oracle/dbca.rsp
+
+#CREATE LISTENER
+netca -silent -responsefile /home/oracle/netca.rsp
+
+
+
+
+
+
+
+
