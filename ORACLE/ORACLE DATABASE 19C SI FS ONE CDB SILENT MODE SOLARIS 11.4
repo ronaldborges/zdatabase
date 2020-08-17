@@ -115,6 +115,50 @@ mkdir -p /u01/app/oracle/product/19.5.0/dbhome_1
 chown -R oracle:oinstall /u01
 chmod -R 775 /u01
 
+#RECOMMENDED PARAMETER SETTING
+#REFERENCE 
+https://docs.oracle.com/en/database/oracle/oracle-database/12.2/ssdbi/configuring-kernel-parameters-on-oracle-solaris.html#GUID-93C859CD-DB53-4906-93AB-25E21E0E3E0D
+
+RAM_MB=`prtconf |grep Memory|awk '{print $3}'`
+SHMMAX=`expr $RAM_MB \* 1024 \* 1024 \* 70 / 100`
+echo $SHMMAX
+3006477107
+
+projadd -G oinstall group.oinstall
+projmod -s -K "project.max-sem-ids=(priv,256,deny)" group.oinstall
+projmod -s -K "project.max-shm-ids=(priv,256,deny)" group.oinstall
+projmod -s -K "project.max-sem-nsems=(priv,512,deny)" group.oinstall
+projmod -s -K "project.max-shm-memory=(priv,$SHMMAX,deny)" group.oinstall
+projmod -s -K "process.max-file-descriptor=(priv,655360,deny),(basic,655360,deny)" group.oinstall
+projmod -s -K "process.max-stack-size=(priv,32768KB,deny),(basic,10240KB,deny)" group.oinstall
+
+projects -l group.oinstall
+group.oinstall
+        projid : 100
+        comment: ""
+        users  : (none)
+        groups : oinstall
+        attribs: process.max-file-descriptor=(priv,655360,deny),(basic,655360,deny)
+                 process.max-stack-size=(priv,33554432,deny),(basic,10485760,deny)
+                 project.max-sem-ids=(priv,256,deny)
+                 project.max-sem-nsems=(priv,512,deny)
+                 project.max-shm-ids=(priv,256,deny)
+                 project.max-shm-memory=(priv,3006477107,deny)
+
+echo "set max_nprocs = 65536" >> /etc/system
+echo "user_reserve_hint_pct = 70" >> /etc/system
+echo "set maxusers=4096" >> /etc/system
+
+vim /etc/inittab
+dev::sysinit:/usr/sbin/devfsadm -P
+ap::sysinit:/usr/sbin/autopush -f /etc/iu.ap
+tm::sysinit:/usr/sbin/ndd -set /dev/tcp tcp_smallest_anon_port 9000 > /dev/console
+tm::sysinit:/usr/sbin/ndd -set /dev/tcp tcp_largest_anon_port 65500 > /dev/console
+tm::sysinit:/usr/sbin/ndd -set /dev/udp udp_smallest_anon_port 9000 > /dev/console
+tm::sysinit:/usr/sbin/ndd -set /dev/udp udp_largest_anon_port 65500 > /dev/console
+smf::sysinit:/lib/svc/bin/svc.startd >/dev/msglog 2<>/dev/msglog </dev/console
+p3:s1234:powerfail:/usr/sbin/shutdown -y -i5 -g0 >/dev/msglog 2<>/dev/msglog
+
 #CONFIGURE ORACLE_HOME ENVIRONMENTS
 su - oracle
 mkdir /export/home/oracle/scripts
@@ -172,11 +216,12 @@ cd $ORACLE_HOME
 unzip -oq SOLARIS.X64_195000_db_home.zip
 
 #CREATE db_install.rsp INSTALL RESPONSE FILE
-vi db_install.rsp
+vi /export/home/oracle/db_install.rsp
 oracle.install.responseFileVersion=/oracle/install/rspfmt_dbinstall_response_schema_v19.0.0
 oracle.install.option=INSTALL_DB_SWONLY
 UNIX_GROUP_NAME=oinstall
 INVENTORY_LOCATION=/u01/app/oraInventory
+ORACLE_HOME=/u01/app/oracle/product/19.5.0/dbhome_1
 ORACLE_BASE=/u01/app/oracle
 oracle.install.db.InstallEdition=EE
 oracle.install.db.OSDBA_GROUP=dba
@@ -224,7 +269,7 @@ cd $ORACLE_HOME
         2. /u01/app/oracle/product/19.3.0/dbhome_1/root.sh
 
 #CREATE dbca.rsp response file
-vi dbca.rsp
+vi /export/home/oracle/dbca.rsp
 responseFileVersion=/oracle/assistants/rspfmt_dbca_response_schema_v12.2.0
 gdbName=appscdb
 sid=appscdb1
@@ -285,7 +330,7 @@ automaticMemoryManagement=false
 totalMemory=0
 
 #CREATE netca.rsp response file
-vi netca.rsp
+vi /export/home/oracle/netca.rsp
 [GENERAL]
 RESPONSEFILE_VERSION="19.0"
 CREATE_TYPE="CUSTOM"
@@ -302,10 +347,12 @@ NSN_SERVICE={"PLSExtProc"}
 NSN_PROTOCOLS={"TCP;HOSTNAME;1521"}
 
 #CREATE DATABASE 
-dbca -silent -createDatabase -responseFile /home/oracle/dbca.rsp
+dbca -silent -createDatabase -responseFile /export/home/oracle/dbca.rsp
 
 #CREATE LISTENER
-netca -silent -responsefile /home/oracle/netca.rsp
+netca -silent -responsefile /export/home/oracle/netca.rsp
+
+
 
 
 
