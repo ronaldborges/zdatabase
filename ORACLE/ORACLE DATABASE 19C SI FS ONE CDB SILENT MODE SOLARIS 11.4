@@ -383,13 +383,87 @@ NSN_PROTOCOLS={"TCP;HOSTNAME;1521"}
 
 #CREATE DATABASE 
 dbca -silent -createDatabase -responseFile /export/home/oracle/dbca.rsp
+Enter SYS user password: 
+
+Enter SYSTEM user password: 
+
+Enter PDBADMIN User Password: 
+
+[WARNING] [DBT-06208] The 'SYS' password entered does not conform to the Oracle recommended standards.
+   CAUSE: 
+a. Oracle recommends that the password entered should be at least 8 characters in length, contain at least 1 uppercase character, 1 lower case character and 1 digit [0-9].
+b.The password entered is a keyword that Oracle does not recommend to be used as password
+   ACTION: Specify a strong password. If required refer Oracle documentation for guidelines.
+[WARNING] [DBT-06208] The 'SYSTEM' password entered does not conform to the Oracle recommended standards.
+   CAUSE: 
+a. Oracle recommends that the password entered should be at least 8 characters in length, contain at least 1 uppercase character, 1 lower case character and 1 digit [0-9].
+b.The password entered is a keyword that Oracle does not recommend to be used as password
+   ACTION: Specify a strong password. If required refer Oracle documentation for guidelines.
+[WARNING] [DBT-06208] The 'PDBADMIN' password entered does not conform to the Oracle recommended standards.
+   CAUSE: 
+a. Oracle recommends that the password entered should be at least 8 characters in length, contain at least 1 uppercase character, 1 lower case character and 1 digit [0-9].
+b.The password entered is a keyword that Oracle does not recommend to be used as password
+   ACTION: Specify a strong password. If required refer Oracle documentation for guidelines.
+Prepare for db operation
+8% complete
+Copying database files
+31% complete
+Creating and starting Oracle instance
+32% complete
+36% complete
+40% complete
+43% complete
+46% complete
+Completing Database Creation
+51% complete
+53% complete
+54% complete
+Creating Pluggable Databases
+58% complete
+77% complete
+Executing Post Configuration Actions
+100% complete
+Database creation complete. For details check the logfiles at:
+ /u01/app/oracle/cfgtoollogs/dbca/appscdb.
+Database Information:
+Global Database Name:appscdb
+System Identifier(SID):appscdb1
+Look at the log file "/u01/app/oracle/cfgtoollogs/dbca/appscdb/appscdb.log" for further details.
 
 #CREATE LISTENER
 netca -silent -responsefile /export/home/oracle/netca.rsp
 
+Parsing command line arguments:
+    Parameter "silent" = true
+    Parameter "responsefile" = /export/home/oracle/netca.rsp
+Done parsing command line arguments.
+Oracle Net Services Configuration:
+Profile configuration complete.
+Oracle Net Services configuration successful. The exit code is 0
+
+#START LISTENER
+lsnrctl start
+
+#CONNECT TO DATABASE
+sqlplus / as sysdba
+SQL*Plus: Release 19.0.0.0.0 - Production on Mon Aug 17 14:06:07 2020
+Version 19.5.0.0.0
+
+Copyright (c) 1982, 2019, Oracle.  All rights reserved.
 
 
+Connected to:
+Oracle Database 19c Enterprise Edition Release 19.0.0.0.0 - Production
+Version 19.5.0.0.0
 
+SQL> select name, open_mode from v$pdbs;
+
+NAME                                                                            OPEN_MODE
+------------------------------------------------------------------------------- ----------
+PDB$SEED                                                                        READ ONLY
+APPSPDB                                                                         READ WRITE
+
+SQL> exit
 
 
 
