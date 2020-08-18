@@ -1,0 +1,62 @@
+++++++++++++++++++++++++++++++++++++++++++++++++++++
++  ORACLE DATABASE 19C OPTIMIZE IMPDP PERFORMANCE  +
+++++++++++++++++++++++++++++++++++++++++++++++++++++
+
+#NOTE
+This document abodes the silver bullets used to optimize and speed up the process of importing a large volume of data into a 19c database.
+Regardless of which options were used when the data was exported, it has no influence on how the data is imported.
+
+#SILVER BULLETS
+- Analyze once after the load - Set analyze=n and analyze with dbms_stats after the load has completed.
+
+- Disable redo logs:  You can use the impdp nologging mode with transform=disable_archive_logging to disable all redo logging for Oracle 12c imports.  
+  Of course, this option should be used with care because the archived redo logs will not have this data.  
+  It is a best practice to take a complete backup prior to using the 
+  import transform=disable_archive_logging option because you will not be able to roll-forward through the time period that the import was running.  
+  See my notes on disable_archive_logging.
+
+- Use Solid-state disk - For a fully-tuned import job, only faster devices can speed-up import rates.  
+  Many large companies used partitioned tables, and keep the current partition on SSD for fast imports.
+
+- Increase recordlength - Many set recordlength to 64k, but it needs to be a multiple of your I/O chunk size and db_block_size 
+  (or your multiple block size, e.g. db_32k_block_size).
+
+- Dedicate a single, large rollback segment - Many professionals create a single large rollback segment and take all others offline during the import.
+
+- Set Sort parms - To speed-up index creation (as a separate import job), set sort_write_buffers=6, sort_write_buffer_size=64000, sort_direct_write=true, 
+  and sort_area_size large enough prevent disk sorts.
+
+- Defer CBO stats - Using impdp with the parameter exclude=statistics will greatly improve the import speed, 
+  but statistics will need to be re-analyzed or imported later.
+
+- Use the buffer parameter - By using a larger buffer setting, import can do more work before disk access is performed. 
+
+- Disable logging - You can also use the hidden parameter _disable_logging = true to reduce redo, but beware that the resulting import will be unrecoverable.
+
+- Parallel - is designed for simultaneously loading multiple dump files. Use the parameter parallel=<number of parallel process> , this feature is only available to Enterprise Edition (EE)
+
+- Redo log groups and files - increase the size of redo log files from 1G or greater and increase the number of groups.
+
+- Temporary tablespace - increase the size so that you do not need to allocate the resource at run time of the import, classification operations will occur in it, for example during the creation of indexes.
+
+Import Option       Elapsed Time (Seconds)        Time Reduction
+commit=y            120                           -
+commit=y            100                           17%	
+buffer=64000
+commit=n            72                            40%
+buffer=30720
+commit=N            67                            44%
+buffer = 64000
+
+#EXAMPLE:
+impdp userid=user/password@string directory=DATA_PUMP schemas=schema_name dumpfile=export_schama.dmp logfile=import_schama.log transform=disable_archive_logging:y analyze=n exclude=statistics parallel=4
+
+#AFTER IMPORT SCHEMA RUN:
+sqlplus / as sysdba
+EXECUTE DBMS_STATS.GATHER_SCHEMA_STATS(ownname => 'schema_name');
+ 
+
+
+
+
+
