@@ -49,7 +49,7 @@ commit=N            67                            44%
 buffer = 64000
 
 #EXAMPLE:
-impdp userid=user/password@string directory=DATA_PUMP schemas=schema_name dumpfile=export_schama.dmp logfile=import_schama.log transform=disable_archive_logging:y analyze=n exclude=statistics parallel=4
+impdp userid=user/password@string directory=DATA_PUMP schemas=schema_name dumpfile=export_schama.dmp logfile=import_schama.log transform=disable_archive_logging:y exclude=statistics parallel=4
 
 #AFTER IMPORT SCHEMA RUN:
 sqlplus / as sysdba
