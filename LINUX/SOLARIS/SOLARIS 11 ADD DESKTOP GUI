@@ -1,0 +1,57 @@
++++++++++++++++++++++++++++++++++++++
++     SOLARIS 11 ADD DESKTOP GUI	  +
++++++++++++++++++++++++++++++++++++++
+
+#NOTE
+This guide helps in installing the graphical interface of the solaris 11 environment.
+The Solaris 11 does not come bundled with the desktop GUI package by default, so you will have to install the desktop GUI package from the IPS repository.
+
+
+Last login: Mon Aug 17 13:49:12 2020 from 10.5.150.74
+NOTE: system has 1 active alert; run 'fmadm list' for details.
+Oracle Corporation      SunOS 5.11      11.4    Aug 2018
+
+pkg info -r solaris-desktop
+          Name: group/system/solaris-desktop
+       Summary: Oracle Solaris Desktop
+   Description: Provides an Oracle Solaris desktop environment
+      Category: Meta Packages/Group Packages
+         State: Not installed
+     Publisher: solaris
+       Version: 11.4
+        Branch: 11.4.0.0.1.15.0
+Packaging Date: 17 de agosto de 2018 00:35:39
+          Size: 2.52 kB
+          FMRI: pkg://solaris/group/system/solaris-desktop@11.4-11.4.0.0.1.15.0:20180817T003539Z
+
+pkg install solaris-desktop
+           Packages to install: 337
+           Mediators to change:   1
+            Services to change:  16
+       Create boot environment:  No
+Create backup boot environment:  No
+
+DOWNLOAD                                PKGS         FILES    XFER (MB)   SPEED
+Completed                            337/337   61470/61470  855.1/855.1  512k/s
+
+PHASE                                          ITEMS
+Installing new actions                   75161/75161
+Updating package state database                 Done 
+Updating package cache                           0/0 
+Updating image state                            Done 
+Creating fast lookup database                   Done 
+Updating package cache                           1/1 
+
+#NOTE
+The install by default creates a backup Boot environment, so that you can roll back any time to a state before installing the desktop package. 
+After the install, just reboot the system to login into the Desktop GUI.
+
+shutdown -i6 -g0 -y
+
+Shutdown started.    terça-feira, 18 de agosto de 2020 07:52:07 -03
+
+Changing to init state 6 - please wait
+Broadcast Message from root (pts/1) on solaris ter ago 18 07:52:07...
+THE SYSTEM solaris IS BEING SHUT DOWN NOW ! ! !
+Log off now or risk your files being damaged
+
