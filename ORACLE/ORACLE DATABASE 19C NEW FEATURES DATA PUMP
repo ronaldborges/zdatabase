@@ -1,0 +1,19 @@
+++++++++++++++++++++++++++++++++++++++++++++++++
++  ORACLE DATABASE 19C NEW FEATURES DATA PUMP  +
+++++++++++++++++++++++++++++++++++++++++++++++++
+
+#NOTE
+Oracle 19c New Database Parameter (MAX_DATAPUMP_PARALLEL_PER_JOB)
+Description:- It specifies the maximum number of parallel processes allowed per Oracle Data Pump job.
+
+PROPERTY              DESCRIPTION
+PARAMETER TYPE        MAX_DATAPUMP_PARALLEL_PER_JOB = { integer | AUTO }
+DEFAULT VALUE         50
+RANGE OF VALUES       1 TO 1024, OR AUTO
+MODIFIABLE            ALTER SYSTEM
+MODIFIABLE IN A PDB   YES
+BASIC                 NO
+ORACLE RAC            DIFFERENT INSTANCES CAN USE DIFFERENT VALUES
+
+
+
