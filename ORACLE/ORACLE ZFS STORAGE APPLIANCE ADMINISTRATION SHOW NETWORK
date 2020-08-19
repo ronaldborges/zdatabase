@@ -1,0 +1,40 @@
++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
++   ORACLE ZFS STORAGE APPLIANCE ADMINISTRATION SHOW NETWORK  +
++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+
+Last login: Wed Aug 19 16:37:50 2020 on console
+zfs-solaris:> configuration net
+zfs-solaris:configuration net> devices show
+aksh: warning: terminal type "xterm-256color" unknown; using "vt100"
+Devices:
+
+DEVICE      UP     SPEED         MAC                                           
+e1000g0     true   1000 Mbit/s   8:0:27:4f:de:c8                               
+
+zfs-solaris:configuration net> datalinks show
+Datalinks:
+
+DATALINK       CLASS       LINKS       STATE   ID      LABEL
+e1000g0        device      e1000g0     up      -       Untitled Datalink
+
+zfs-solaris:configuration net> interfaces show
+Interfaces:
+
+INTERFACE   STATE    CLASS LINKS       ADDRS                  LABEL
+e1000g0     up       ip    e1000g0     10.5.150.198/24        Untitled Interface
+
+zfs-solaris:configuration net> routing show
+aksh: warning: terminal type "xterm-256color" unknown; using "vt100"
+Properties:
+                   multihoming = loose
+
+Routes:
+
+ROUTE      DESTINATION              GATEWAY         INTERFACE TYPE    STATUS
+route-000  0.0.0.0/0                10.5.150.1      e1000g0   dhcp    active
+route-001  10.5.150.0/24            10.5.150.198    e1000g0   system  active
+
+zfs-solaris:configuration net> exit
+Connection to 10.5.150.193 closed.
+
+
