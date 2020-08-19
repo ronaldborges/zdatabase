@@ -1,3 +1,16 @@
 ++++++++++++++++++++++++++++++
 +   BLOCKCHAIN_INTRODUTION   +
 ++++++++++++++++++++++++++++++
+
+#NOTE
+What is blockchain?
+A blockchain is a tamper-evident, shared digital ledger that records transactions in a public or private peer-to-peer network. 
+The blockchain acts as a single source of truth, and members in a blockchain network can view only those transactions that are relevant to them.
+
+What a distributed ledger is A distributed ledger is a type of database that is shared, replicated, and synchronized among the members of a decentralized network. 
+The distributed ledger records the transactions, such as the exchange of assets or data, among the participants in the network.
+Participants in the network govern and agree by consensus on the updates to the records in the ledger. 
+No central authority or third-party mediator, such as a financial institution or clearinghouse, is involved. 
+Every record in the distributed ledger has a timestamp and unique cryptographic signature, thus making the ledger an auditable, 
+immutable history of all transactions in the network.
+
