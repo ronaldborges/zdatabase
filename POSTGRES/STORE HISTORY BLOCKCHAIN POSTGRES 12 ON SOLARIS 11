@@ -1,0 +1,52 @@
+++++++++++++++++++++++++++++++++++++++++++++++++++++++++
++  STORE HISTORY BLOCKCHAIN POSTGRES 12 ON SOLARIS 11  +
+++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+
+#CREATE DATABASE
+postgres=# create database fabric;
+CREATE DATABASE
+
+#CONNECT DATABASE FABRIC
+postgres=# \c fabric
+You are now connected to database "fabric" as user "postgres".
+fabric=# \dx
+                 List of installed extensions
+  Name   | Version |   Schema   |         Description          
+---------+---------+------------+------------------------------
+ plpgsql | 1.0     | pg_catalog | PL/pgSQL procedural language
+(1 row)
+
+#GENERATE BLOCKCHAIN TEST DATA
+create table blockchain(  
+  block_hash text primary key, -- block hash value
+  prev_block text, -- The hash value of the previous block
+  height int  -- The height of the current block, indicating how many blocks are in front, and the height of the starting block is 0
+);  
+
+#INSERT 100 MILLION TEST DATA, 100 MILLION BLOCKS.
+\timing
+do language plpgsql $$  
+declare  
+  v_id1 text;  
+  v_id2 text;  
+begin  
+  v_id1 := ( md5(random()::text||clock_timestamp()::text) || md5(random()::text||clock_timestamp()::text) );  
+  v_id2 := ( md5(random()::text||clock_timestamp()::text) || md5(random()::text||clock_timestamp()::text) );  
+  for i in 1..100000000 loop  
+      if i <> 1 then  
+        insert into blockchain(block_hash, prev_block, height) values (v_id2, v_id1, i-1);  
+      else  
+        insert into blockchain(block_hash, prev_block, height) values (v_id2, '0', 0);  
+      end if;  
+      v_id1 := v_id2;   
+      v_id2 := ( md5(random()::text||clock_timestamp()::text) || md5(random()::text||clock_timestamp()::text) );  
+  end loop;  
+end;  
+$$;  
+
+#CREATE INDEX TO SPEED UP SELECT
+create index idx_blockchain_1 on blockchain(prev_block);  
+
+
+
+
