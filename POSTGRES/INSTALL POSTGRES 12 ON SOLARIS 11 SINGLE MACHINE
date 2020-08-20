@@ -1,0 +1,153 @@
++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
++    INSTALL POSTGRES 12 ON SOLARIS 11 SINGLE MACHINE   +
++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+
+#CHECK PRE-REQUIRES PACKAGES 
+pfexec pkg list -a | grep post
+SUNWpostgr                                        8.1.11-0.130               --o
+SUNWpostgr-82-client                              8.2.15-0.146               --o
+SUNWpostgr-82-contrib                             8.2.15-0.146               --o
+SUNWpostgr-82-devel                               8.2.15-0.146               --o
+SUNWpostgr-82-docs                                8.2.15-0.146               --o
+SUNWpostgr-82-jdbc                                8.2.504-0.146              --o
+SUNWpostgr-82-l10n-ja                             8.2.15-0.146               --o
+SUNWpostgr-82-libs                                8.2.15-0.146               --o
+SUNWpostgr-82-pl                                  8.2.15-0.146               --o
+SUNWpostgr-82-server                              8.2.15-0.146               --o
+SUNWpostgr-82-server-data-root                    8.2.6-0.150                --o
+SUNWpostgr-82-tcl                                 1.5-0.146                  --o
+SUNWpostgr-83-client                              8.3.9-0.146                --o
+SUNWpostgr-83-contrib                             8.3.9-0.146                --o
+SUNWpostgr-83-devel                               8.3.9-0.146                --o
+SUNWpostgr-83-docs                                8.3.9-0.146                --o
+SUNWpostgr-83-l10n-ja                             8.3.9-0.146                --o
+SUNWpostgr-83-libs                                8.3.9-0.146                --o
+SUNWpostgr-83-pl                                  8.3.9-0.146                --o
+SUNWpostgr-83-server                              8.3.9-0.146                --o
+SUNWpostgr-83-tcl                                 1.5-0.146                  --o
+SUNWpostgr-84-client                              8.4.2-0.146                --o
+SUNWpostgr-84-contrib                             8.4.2-0.146                --o
+SUNWpostgr-84-devel                               8.4.2-0.146                --o
+SUNWpostgr-84-docs                                8.4.2-0.146                --o
+SUNWpostgr-84-libs                                8.4.2-0.146                --o
+SUNWpostgr-84-pl                                  8.4.2-0.146                --o
+SUNWpostgr-84-server                              8.4.2-0.146                --o
+SUNWpostgr-84-tests                               8.4.2-0.146                --o
+SUNWpostgr-common                                 8.4.2-0.146                --o
+SUNWpostgr-contrib                                8.1.11-0.130               --o
+SUNWpostgr-docs                                   8.1.11-0.130               --o
+SUNWpostgr-jdbc                                   8.3.603-0.146              --o
+SUNWpostgr-l10n-ja                                0.5.11-0.130               --o
+SUNWpostgr-libpqxx                                3.0.2-0.146                --o
+SUNWpostgr-libs                                   8.1.11-0.130               --o
+SUNWpostgr-pl                                     8.1.11-0.130               --o
+SUNWpostgr-server                                 8.1.11-0.130               --o
+SUNWpostgr-server-data                            8.1.11-0.130               --o
+SUNWpostgr-tcl                                    1.7-0.146                  --o
+SUNWpostgr-upgrade                                0.5.11-0.146               --o
+SUNWpostrun                                       0.5.11-11.4.0.0.1.9.0      --o
+database/postgres-82                              8.2.17-0.146               --o
+database/postgres-82/connector/jdbc               8.2.504-0.146              --o
+database/postgres-82/contrib                      8.2.17-0.146               --o
+database/postgres-82/developer                    8.2.17-0.146               --o
+database/postgres-82/documentation                8.2.17-0.146               --o
+database/postgres-82/language-bindings            8.2.17-0.146               --o
+database/postgres-82/library                      8.2.17-0.146               --o
+database/postgres-82/locale/ja                    8.2.17-0.146               --o
+database/postgres-82/pgtcl                        1.5-0.146                  --o
+database/postgres-83                              8.3.11-0.146               --o
+database/postgres-83/connector/jdbc               8.3.603-0.146              --o
+database/postgres-83/contrib                      8.3.11-0.146               --o
+database/postgres-83/developer                    8.3.11-0.146               --o
+database/postgres-83/documentation                8.3.11-0.146               --o
+database/postgres-83/language-bindings            8.3.11-0.146               --o
+database/postgres-83/library                      8.3.11-0.146               --o
+database/postgres-83/locale/ja                    8.3.11-0.146               --o
+database/postgres-83/pgbouncer                    1.1.2-0.146                --o
+database/postgres-83/pgtcl                        1.5-0.146                  --o
+database/postgres-84                              8.4.4-0.146                --o
+database/postgres-84/contrib                      8.4.4-0.146                --o
+database/postgres-84/developer                    8.4.4-0.146                --o
+database/postgres-84/documentation                8.4.4-0.146                --o
+database/postgres-84/language-bindings            8.4.4-0.146                --o
+database/postgres-84/library                      8.4.4-0.146                --o
+database/postgres-84/tests                        8.4.4-0.146                --o
+database/postgres-common                          8.4.4-0.146                --o
+database/postgres/library/c++/libpqxx             3.0.2-0.146                --o
+database/postgres/pg_upgrade                      0.5.11-0.146               --o
+database/postgres/pgadmin                         1.10.0-0.146               --o
+database/postgres/pgtcl                           1.7-0.146                  --o
+library/perl-5/postgres-dbi                       1.49-0.146                 --o
+print/lp/filter/postscript-lp-filter              0.5.11-0.173.0.0.0.1.0     --o
+service/database/postgres-82                      8.2.17-0.146               --o
+service/database/postgres-83                      8.3.11-0.146               --o
+service/database/postgres-84                      8.4.4-0.146                --o
+service/network/smtp/postfix                      3.2.2-11.4.0.0.1.14.0      ---
+service/postrun                                   1.0-11.4.0.0.1.9.0         --o
+
+#NOTE THREE PACKAGES ARE NEEDED FOR COMPILE AND INSTALL POSTGRES ON SOLARIS 11
+#RUN INSTALLATION OF PACKAGES 
+pkg install SUNWpostgr
+pkg install SUNWpostgr-libs
+pkg install SUNWpostgr-server-data
+
+#CREATE GROUP AND 
+groupadd -g 1000 postgres
+useradd -m -u 1000 -g postgres -G postgres -d /export/home/postgres -s /bin/bash postgres
+grep postgres /etc/passwd  /etc/group
+/etc/passwd:postgres:x:1000:1000::/export/home/postgres:/bin/bash
+/etc/group:postgres::1000:
+
+#CREATE DIRETORY FOR BIN AND LIB POSTGRES
+mkdir -p /usr/local/pgsql-12.3/
+mkdir -p /dados/data
+chown postgres:postgres -R /usr/local/pgsql-12.3/
+chown postgres:postgres -R /dados/data
+
+#CREATE DIRECTORY FOR INSTALATION
+mkdir -p /tmp/postgres/v12.3
+chown postgres:postgres -R /tmp/postgres
+
+#CONFIGURE ENVIRONMENT VARIABLES
+su - postgres
+mkdir -p scripts
+cat > /export/home/postgres/scripts/setEnv.sh <<EOF
+# Postgres Settings
+EOF
+
+#DOWNLOAD POSTGRESQL SFW
+cd /tmp/postgres/v12.3/
+wget https://ftp.postgresql.org/pub/binary/v12.3/solaris/solaris11/i386/postgresql-12.3-S11.i386-64.tar.bz2
+
+#UNPACK 
+bunzip2 < postgresql-12.3-S11.i386-64.tar.bz2 | tar xpf -
+
+#NOTE
+#ON SOLARIS IT IS NOT NECESSARY TO COMPILE THE POSTGRESQL SOFTWARE
+
+#MOVE /LIB/SHARE/INCLUDE/DOC/BIN DIRECTORIES TO DESTINY
+mv /tmp/postgres/v12.3/postgres/12-pgdg/* /usr/local/pgsql-12.3/
+
+#CREATE NEW INSTANCE
+/usr/local/pgsql-12.3/bin/64/initdb --locale=pt_BR.UTF-8 -D /dados/data/
+
+#START DATABASE INSTANCE
+/usr/local/pgsql-12.3/bin/64/pg_ctl -D /dados/data/ -l logfile start
+
+#STOP DATABASE INSTANCE
+/usr/local/pgsql-12.3/bin/64/pg_ctl -D /dados/data/ -l logfile stop -m fast
+
+#RELOAD CONFIGURATION FILES
+/usr/local/pgsql-12.3/bin/64/pg_ctl reload -D /dados/data/
+
+#CONNECT ON INSTANCE
+/usr/local/pgsql-12.3/bin/64/psql -U postgres -p 5432
+
+
+
+
+
+
+
+
+
