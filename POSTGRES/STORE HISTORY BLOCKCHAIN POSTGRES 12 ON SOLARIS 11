@@ -2,6 +2,21 @@
 +  STORE HISTORY BLOCKCHAIN POSTGRES 12 ON SOLARIS 11  +
 ++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
+#SERVER ORACLE SOLARIS 11.4
+#DATABASE POSTGRES 12.3
+#FILE SYSTEM ZFS 
+#ZFS VERSION 44 Oracle Solaris 11.4 Device Removal
+
+#CHANGE POSTGRES PARAMETERS
+shared_buffer = 128 MB
+maintenance_work_mem = 2048MB
+synchronous_commit = off
+wall_buffer = 512MB
+wal_write_delay = 10000
+wal_write_flush_after = 10000
+commit_delay = 100000
+effective_cache_size = 2GB
+
 #CREATE DATABASE
 postgres=# create database fabric;
 CREATE DATABASE
