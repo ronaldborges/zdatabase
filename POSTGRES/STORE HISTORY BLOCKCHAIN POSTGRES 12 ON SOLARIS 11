@@ -23,7 +23,7 @@ create table blockchain(
   height int  -- The height of the current block, indicating how many blocks are in front, and the height of the starting block is 0
 );  
 
-#INSERT 100 MILLION TEST DATA, 100 MILLION BLOCKS.
+#INSERT 50 MILLION TEST DATA, 50 MILLION BLOCKS.
 \timing
 do language plpgsql $$  
 declare  
@@ -32,7 +32,7 @@ declare
 begin  
   v_id1 := ( md5(random()::text||clock_timestamp()::text) || md5(random()::text||clock_timestamp()::text) );  
   v_id2 := ( md5(random()::text||clock_timestamp()::text) || md5(random()::text||clock_timestamp()::text) );  
-  for i in 1..100000000 loop  
+  for i in 1..50000000 loop  
       if i <> 1 then  
         insert into blockchain(block_hash, prev_block, height) values (v_id2, v_id1, i-1);  
       else  
