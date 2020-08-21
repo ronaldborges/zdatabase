@@ -116,10 +116,25 @@ wordCounts.reduce(lambda a, b: a if (a[1] > b[1]) else b)
 
 #cache() SPARK ALSO SUPPORTS PULLING DATA SETS INTO A CLUSTER-WIDE IN-MEMORY CACHE. 
 THIS IS VERY USEFUL WHEN DATA IS ACCESSED REPEATEDLY, SUCH AS WHEN QUERYING A SMALL DATASET OR WHEN RUNNING AN ITERATIVE ALGORITHM LIKE RANDOM FORESTS. 
+it is useful for accessing repeated data much faster. Python and Scala use the same commands
+let's use our RDD linesWithSpark and cache it
+Now remember that a transformation action, like the cache is not processed
+until some action like the count is called
 
+>>> print(linesWithSpark.count())
+18
+>>> from timeit import Timer
+>>> def count():
+...       return linesWithSpark.count()
+...       t = Timer(lambda: count()) 
+... 
+>>> print(t.timeit(number=50))
+2.358324580000044
 
-
-
+>>> linesWithSpark.cache()
+PythonRDD[54] at RDD at PythonRDD.scala:53
+>>> print(t.timeit(number=50))
+3.0295938620001834
 
 
 
