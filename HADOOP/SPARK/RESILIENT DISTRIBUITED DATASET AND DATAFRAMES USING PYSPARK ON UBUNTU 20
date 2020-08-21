@@ -1,0 +1,78 @@
+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
++  RESILIENT DISTRIBUITED DATASET AND DATAFRAMES USING PYSPARK ON UBUNTU 20  +
+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+
+#INSTALL PIP2
+
+apt install python-pip
+
+#INSTALL WGET
+
+pip2 install wget
+
+#INSTALL FINDSPARK
+
+pip2 install findspark
+
+#ENTER ON DIRECTORY
+
+cd /usr/local/spark-3.0.0-bin-hadoop3.2/bin
+
+#RUN SPARK SHELL
+
+Welcome to
+      ____              __
+     / __/__  ___ _____/ /__
+    _\ \/ _ \/ _ `/ __/  '_/
+   /___/ .__/\_,_/_/ /_/\_\   version 3.0.0
+      /_/
+         
+Using Scala version 2.12.10 (OpenJDK 64-Bit Server VM, Java 1.8.0_265)
+Type in expressions to have them evaluated.
+Type :help for more information.
+
+scala> val lines = sc.textFile("LabData/README.md")
+lines: org.apache.spark.rdd.RDD[String] = LabData/README.md MapPartitionsRDD[1] at textFile at <console>:24
+
+scala> val lineLengths = lines.map(s => s.lo)
+   formatLocal   lastIndexOf   lastIndexOfSlice   lastOption   reduceLeftOption   toLong   toLowerCase
+
+scala> val lineLengths = lines.map(s => s.length)
+length   lengthCompare
+
+scala> val lineLengths = lines.map(s => s.length)
+lineLengths: org.apache.spark.rdd.RDD[Int] = MapPartitionsRDD[2] at map at <console>:25
+
+scala> val totalLengths = lineLengths.reduce((a,b) => a + b)
+totalLengths: Int = 3470
+
+scala> val wordCounts = lines.flatMap(line => line.split (" "))
+wordCounts: org.apache.spark.rdd.RDD[String] = MapPartitionsRDD[3] at flatMap at <console>:25
+
+scala> .map(word => (word, 1))
+res0: org.apache.spark.rdd.RDD[(String, Int)] = MapPartitionsRDD[4] at map at <console>:26
+
+scala> .reduceByKey((a,b) => a + b)
+res1: org.apache.spark.rdd.RDD[(String, Int)] = ShuffledRDD[5] at reduceByKey at <console>:26
+
+scala> wordCounts.collect()
+res2: Array[String] = Array(#, Apache, Spark, "", Spark, is, a, fast, and, general, cluster, computing, system, for, Big, Data., It, provides, 
+high-level, APIs, in, Scala,, Java,, Python,, and, R,, and, an, optimized, engine, that, supports, general, computation, graphs, for, data, 
+analysis., It, also, supports, a, rich, set, of, higher-level, tools, including, Spark, SQL, for, SQL, and, DataFrames,, MLlib, for, 
+machine, learning,, GraphX, for, graph, processing,, and, Spark, Streaming, for, stream, processing., "", 
+<http://spark.apache.org/>, "", "", ##, Online, Documentation, "", You, can, find, the, latest, Spark, documentation,, including, a, 
+programming, guide,, on, the, [project, web, page](http://spark.apache.org/documentation.html), and, [project, wiki]...
+
+scala> :quit
+
+##################################################################################################################################################################
+#LAB Scala - Working with RDD operations
+
+
+
+
+
+
+
+
+
