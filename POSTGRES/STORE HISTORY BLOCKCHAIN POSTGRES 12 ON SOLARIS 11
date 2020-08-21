@@ -39,7 +39,6 @@ create table blockchain(
 );  
 
 #INSERT 50 MILLION TEST DATA, 50 MILLION BLOCKS.
-\timing
 do language plpgsql $$  
 declare  
   v_id1 text;  
@@ -62,6 +61,109 @@ $$;
 #CREATE INDEX TO SPEED UP SELECT
 create index idx_blockchain_1 on blockchain(prev_block);  
 
+#GET ROWS
+postgres=# select * from blockchain limit 10;  
+                            block_hash                            |                            prev_block                            | height   
+------------------------------------------------------------------+------------------------------------------------------------------+--------  
+ 487eb30b363cedb9abd171d17ac4b1bacea760824080a09beaed48e63f8f3bfe | 0                                                                |      0  
+ ad1585e0b348f6dcd630801b815a8ff541a2a57183408e4a7b85ba8dcc19768b | 487eb30b363cedb9abd171d17ac4b1bacea760824080a09beaed48e63f8f3bfe |      1  
+ 1868e5a410091d003ca3313f4e5cfda2a4941ff747cf77e26b2c6e94e3f04fde | ad1585e0b348f6dcd630801b815a8ff541a2a57183408e4a7b85ba8dcc19768b |      2  
+ ad6e8994d1b54ce3a7ebf4d25c306ea587c0a7145237bd1e4d064da85581a371 | 1868e5a410091d003ca3313f4e5cfda2a4941ff747cf77e26b2c6e94e3f04fde |      3  
+ f8257ed95ec8c42c3377e362ef34a02b0051b7ac92067ab51852bb86de88eff2 | ad6e8994d1b54ce3a7ebf4d25c306ea587c0a7145237bd1e4d064da85581a371 |      4  
+ bcb5c2e001fff982b78e9f413a076359ab546a146bc2bbab585ab3c69e47d43c | f8257ed95ec8c42c3377e362ef34a02b0051b7ac92067ab51852bb86de88eff2 |      5  
+ ecfd744a073aa655faa5c8bee32d2686fc63dbf334b34a2caf2c04b5c360fc24 | bcb5c2e001fff982b78e9f413a076359ab546a146bc2bbab585ab3c69e47d43c |      6  
+ 317e0727c91758af37f0d21d1adda8d80f3f0f86b914aac4275b4c7e358fbe89 | ecfd744a073aa655faa5c8bee32d2686fc63dbf334b34a2caf2c04b5c360fc24 |      7  
+ a1896dffd46a9c5695c2340a42ac8957d3141e67d047765c4cf3ac270e8dd6e9 | 317e0727c91758af37f0d21d1adda8d80f3f0f86b914aac4275b4c7e358fbe89 |      8  
+ 14967b84c7297e68611b4e294eed993f7c8e19894375e2fa55307b71cd7d3e80 | a1896dffd46a9c5695c2340a42ac8957d3141e67d047765c4cf3ac270e8dd6e9 |      9  
+(10 rows)  
 
+#FIND ALL THE BLOCKS BEFORE IT ACCORDING TO A CERTAIN BLOCK
+#NOTE
+Since the blockchain is a linked list structure, finding all the previous blocks from one block is similar to following the vine. 
+In PostgreSQL, the use of recursive query can achieve this goal.
 
+WITH RECURSIVE tmp(block_hash, prev_block, height) as (  
+      select * from blockchain where block_hash='a1896dffd46a9c5695c2340a42ac8957d3141e67d047765c4cf3ac270e8dd6e9'  
+  UNION ALL  
+      SELECT t1.block_hash, t1.prev_block, t1.height FROM tmp JOIN blockchain t1 ON (t1.block_hash = tmp.prev_block)  
+)  
+select * from tmp;  
+
+                            block_hash                            |                            prev_block                            | height   
+------------------------------------------------------------------+------------------------------------------------------------------+--------  
+ a1896dffd46a9c5695c2340a42ac8957d3141e67d047765c4cf3ac270e8dd6e9 | 317e0727c91758af37f0d21d1adda8d80f3f0f86b914aac4275b4c7e358fbe89 |      8  
+ 317e0727c91758af37f0d21d1adda8d80f3f0f86b914aac4275b4c7e358fbe89 | ecfd744a073aa655faa5c8bee32d2686fc63dbf334b34a2caf2c04b5c360fc24 |      7  
+ ecfd744a073aa655faa5c8bee32d2686fc63dbf334b34a2caf2c04b5c360fc24 | bcb5c2e001fff982b78e9f413a076359ab546a146bc2bbab585ab3c69e47d43c |      6  
+ bcb5c2e001fff982b78e9f413a076359ab546a146bc2bbab585ab3c69e47d43c | f8257ed95ec8c42c3377e362ef34a02b0051b7ac92067ab51852bb86de88eff2 |      5  
+ f8257ed95ec8c42c3377e362ef34a02b0051b7ac92067ab51852bb86de88eff2 | ad6e8994d1b54ce3a7ebf4d25c306ea587c0a7145237bd1e4d064da85581a371 |      4  
+ ad6e8994d1b54ce3a7ebf4d25c306ea587c0a7145237bd1e4d064da85581a371 | 1868e5a410091d003ca3313f4e5cfda2a4941ff747cf77e26b2c6e94e3f04fde |      3  
+ 1868e5a410091d003ca3313f4e5cfda2a4941ff747cf77e26b2c6e94e3f04fde | ad1585e0b348f6dcd630801b815a8ff541a2a57183408e4a7b85ba8dcc19768b |      2  
+ ad1585e0b348f6dcd630801b815a8ff541a2a57183408e4a7b85ba8dcc19768b | 487eb30b363cedb9abd171d17ac4b1bacea760824080a09beaed48e63f8f3bfe |      1  
+ 487eb30b363cedb9abd171d17ac4b1bacea760824080a09beaed48e63f8f3bfe | 0                                                                |      0  
+(9 rows) 
+
+#FIND ALL SUBSEQUENT BLOCKS BASED ON A CERTAIN BLOCK
+
+WITH RECURSIVE tmp(block_hash, prev_block, height) as (  
+      select * from blockchain where block_hash='a1896dffd46a9c5695c2340a42ac8957d3141e67d047765c4cf3ac270e8dd6e9'  
+  UNION ALL  
+      SELECT t1.block_hash, t1.prev_block, t1.height FROM tmp JOIN blockchain t1 ON (t1.prev_block = tmp.block_hash)  
+)  
+select * from tmp limit 10;  
+
+                            block_hash                            |                            prev_block                            | height   
+------------------------------------------------------------------+------------------------------------------------------------------+--------  
+ a1896dffd46a9c5695c2340a42ac8957d3141e67d047765c4cf3ac270e8dd6e9 | 317e0727c91758af37f0d21d1adda8d80f3f0f86b914aac4275b4c7e358fbe89 |      8  
+ 14967b84c7297e68611b4e294eed993f7c8e19894375e2fa55307b71cd7d3e80 | a1896dffd46a9c5695c2340a42ac8957d3141e67d047765c4cf3ac270e8dd6e9 |      9  
+ efd41c98ea6e6ba557b35ce982b87b3c62245534f625c508608d9c58db3555ee | 14967b84c7297e68611b4e294eed993f7c8e19894375e2fa55307b71cd7d3e80 |     10  
+ 96c3d5160ee43783bebf70a86361dd6cfb61245d4f3acb177aed14b74c1b177a | efd41c98ea6e6ba557b35ce982b87b3c62245534f625c508608d9c58db3555ee |     11  
+ 2dd3ac50b6ef67dcbca5e54bd8aca7bc5327e71a9f29773e27264a0aa0507a20 | 96c3d5160ee43783bebf70a86361dd6cfb61245d4f3acb177aed14b74c1b177a |     12  
+ 57ffc9ae3d87c3ec22080e0aed0722605d6eb640bff51c38620196d253c73017 | 2dd3ac50b6ef67dcbca5e54bd8aca7bc5327e71a9f29773e27264a0aa0507a20 |     13  
+ 0ae675c06aa5d04a6f8e625babdafce75a97bb7e0ba0d8aa639e4a3c3dfc50cc | 57ffc9ae3d87c3ec22080e0aed0722605d6eb640bff51c38620196d253c73017 |     14  
+ 027de6b68ef168d34384ea8f9bb8fc9abdf9baa80616cf7d1f784737c6b0f964 | 0ae675c06aa5d04a6f8e625babdafce75a97bb7e0ba0d8aa639e4a3c3dfc50cc |     15  
+ 0c8d6fc0d1c09578f0b95ae7cfbcb0ab8553ee108983f194048a886915dbe4d5 | 027de6b68ef168d34384ea8f9bb8fc9abdf9baa80616cf7d1f784737c6b0f964 |     16  
+ f5c61da7c03769372d0ea404de6e7a4cc19707c43c3818df6176d30c01ddd68b | 0c8d6fc0d1c09578f0b95ae7cfbcb0ab8553ee108983f194048a886915dbe4d5 |     17  
+(10 rows)  
+
+#NOTE
+In addition to SELECT, the start clause of recursive query also supports the VALUES clause.
+
+WITH RECURSIVE tmp(block_hash, prev_block, height) as (  
+      select * from (values ('a1896dffd46a9c5695c2340a42ac8957d3141e67d047765c4cf3ac270e8dd6e9', '317e0727c91758af37f0d21d1adda8d80f3f0f86b914aac4275b4c7e358fbe89', 8)) as t(block_hash,prev_block,height)
+  UNION ALL  
+      SELECT t1.block_hash, t1.prev_block, t1.height FROM tmp JOIN blockchain t1 ON (t1.prev_block = tmp.block_hash)  
+)  
+select * from tmp limit 10;  
+
+#NOTE
+The efficiency is the same.
+
+################################################################################################################################################################################
+explain (analyze,verbose,timing,costs,buffers) WITH RECURSIVE tmp(block_hash, prev_block, height) as (  
+      select * from blockchain where block_hash='a1896dffd46a9c5695c2340a42ac8957d3141e67d047765c4cf3ac270e8dd6e9'  
+  UNION ALL  
+      SELECT t1.block_hash, t1.prev_block, t1.height FROM tmp JOIN blockchain t1 ON (t1.prev_block = tmp.block_hash)  
+)  
+select * from tmp ; 
+
+################################################################################################################################################################################
+explain (analyze,verbose,timing,costs,buffers) WITH RECURSIVE tmp(block_hash, prev_block, height) as (  
+      select * from (values ('a1896dffd46a9c5695c2340a42ac8957d3141e67d047765c4cf3ac270e8dd6e9', '317e0727c91758af37f0d21d1adda8d80f3f0f86b914aac4275b4c7e358fbe89', 8)) as t(block_hash,prev_block,height)
+  UNION ALL  
+      SELECT t1.block_hash, t1.prev_block, t1.height FROM tmp JOIN blockchain t1 ON (t1.prev_block = tmp.block_hash)  
+)  
+select * from tmp ;  
+
+################################################################################################################################################################################
+
+#UPDATE BLOCK HEIGHT
+
+#NOTE
+DML statements can also be used in recursive calls, such as
+
+delete from ... returning *;  
+update xxx set xxx from xxx where xxx returning *;  
+
+#REFERENCE
+https://github.com/yeasy/blockchain_guide
 
