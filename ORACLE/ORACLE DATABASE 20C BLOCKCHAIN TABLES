@@ -1,0 +1,66 @@
++++++++++++++++++++++++++++++++++++++++++++
++  ORACLE DATABASE 20C BLOCKCHAIN TABLES  +
++++++++++++++++++++++++++++++++++++++++++++
+
+#NOTE
+Blockchain tables are insert-only tables that organize rows into a number of chains and is a new concept starting with Oracle 20c. 
+Each row in a chain, except the first row, is chained to the previous row in the chain by using a cryptographic hash. 
+For each Oracle RAC instance a blockchain table contains thirty two chains, ranging from 0 through 31.
+
+#CREATING A SIMPLE BLOCKCHAIN TABLE
+
+CREATE BLOCKCHAIN TABLE bank_ledger (bank VARCHAR2(128), deposit_date DATE, deposit_amount NUMBER)
+         NO DROP UNTIL 31 DAYS IDLE
+         NO DELETE LOCKED
+         HASHING USING "SHA2_512" VERSION "v1";
+         
+#CREATING A PARTITIONED BLOCKCHAIN TABLE
+
+CREATE BLOCKCHAIN TABLE bctab_part (trans_id number primary key, sender varchar2(50), recipient varchar2(50), trans_date DATE, amount number) 
+     NO DROP UNTIL 16 DAYS IDLE
+     NO DELETE UNTIL 25 DAYS AFTER INSERT
+     HASHING USING "SHA2_512" VERSION "v1"
+     PARTITION BY RANGE(trans_date)
+      (PARTITION p1 VALUES LESS THAN (TO_DATE('30-09-2019','dd-mm-yyyy')),
+       PARTITION p2 VALUES LESS THAN (TO_DATE('31-12-2019','dd-mm-yyyy')),
+       PARTITION p3 VALUES LESS THAN (TO_DATE('31-03-2020','dd-mm-yyyy')),
+       PARTITION p4 VALUES LESS THAN (TO_DATE('30-06-2020','dd-mm-yyyy'))
+      );
+
+#ALTERING BLOCKCHAIN TABLES
+
+#NOTE
+The retention period cannot be reduced while altering a blockchain table definition. 
+For example, assume you create a blockchain table and set the retention period to 30 days. 
+You cannot subsequently alter it and set the retention period to 20 days.
+Use the ALTER TABLE statement with the NO DROP or NO DELETE clauses. 
+Using the NO DELETE LOCKED clause specifies that rows can never be deleted from the blockchain table.
+The following statement modifies the definition of the blockchain table bank_ledger and specifies that it cannot be dropped if the newest row is less than 16 days old.
+
+ALTER TABLE bank_ledger NO DROP UNTIL 16 DAYS IDLE;
+
+ALTER TABLE bctab NO DELETE UNTIL 20 DAYS AFTER INSERT LOCKED;
+
+#DROPPING BLOCKCHAIN TABLES
+
+DROP TABLE bank_ledger
+
+#BLOCKCHAIN TABLE INFORMATION
+
+SELECT row_retention "Row Retention Period", row_retention_locked "Row Retention Lock", table_inactivity_retention "Table Retention Period", hash_algorithm "Hash Algorithm"
+FROM dba_blockchain_tables WHERE table_name='BANK_LEDGER';
+
+#NOTE
+Blockchain tables cannot be created in the root container and in an application root container: ORA-05729: blockchain table cannot be created in root container
+You cannot update the rows: ORA-05715: operation not allowed on the blockchain table
+In general, you cannot delete rows, truncate the table or drop the blockchain table: ORA-05723: drop blockchain table NDA_RECORDS not allowed
+Don’t even try to drop the tablespace containing blockchain tables, here is what happens
+
+#EXAMPLE 
+
+CREATE TABLE BLOCKCHAIN TABLE BLOCKCHAIN (log_id number, block_file JSON, created by varchar2(128))
+NO DROP UNTIL 30 DAYS IDLE
+NO DELETE UNTIL 28 DAYS AFTER INSERT LOCKED
+HASHING USING "SHA2_512" VERSION "V1"
+TABLESPACE BC_DATA;
+
