@@ -68,6 +68,1241 @@ scala> :quit
 ##################################################################################################################################################################
 #LAB Scala - Working with RDD operations
 
+#DOWNLOAD LAB DATA
+wget https://cocl.us/BD0211EN_Data
+
+#UNZIP LAB DATA
+unzip -oq
+BD0211EN_Data
+
+./spark-shell
+Welcome to
+      ____              __
+     / __/__  ___ _____/ /__
+    _\ \/ _ \/ _ `/ __/  '_/
+   /___/ .__/\_,_/_/ /_/\_\   version 3.0.0
+      /_/
+
+scala> import sys.process._
+import sys.process._
+
+val readme = sc.textFile("LabData/README.md")
+readme: org.apache.spark.rdd.RDD[String] = LabData/README.md MapPartitionsRDD[1] at textFile at <console>:27
+
+scala> readme.count()
+res1: Long = 98
+
+scala> readme.first()
+res2: String = # Apache Spark
+
+scala> val linesWithSpark = readme.filter(line => line.contains("Spark"))
+linesWithSpark: org.apache.spark.rdd.RDD[String] = MapPartitionsRDD[2] at filter at <console>:28
+
+scala> linesWithSpark.count()
+res3: Long = 18
+
+scala> readme.filter(line => line.contains("Spark")).count()
+res4: Long = 18
+
+scala> readme.map(line => line.split(" ").size).reduce((a, b) => if (a > b) a else b)
+res5: Int = 14
+
+scala> import java.lang.Math
+import java.lang.Math
+
+scala> readme.map(line => line.split(" ").size).reduce((a, b) => Math.max(a, b))
+res6: Int = 14
+
+scala> val wordCounts = readme.flatMap(line => line.split(" ")).map(word => (word, 1)).reduceByKey((a,b) => a + b)
+wordCounts: org.apache.spark.rdd.RDD[(String, Int)] = ShuffledRDD[8] at reduceByKey at <console>:29
+
+scala> wordCounts.collect().foreach(println)
+(package,1)
+(this,1)
+(Version"](http://spark.apache.org/docs/latest/building-spark.html#specifying-the-hadoop-version),1)
+(Because,1)
+(Python,2)
+(cluster.,1)
+(its,1)
+([run,1)
+(general,2)
+(have,1)
+(pre-built,1)
+(locally.,1)
+(locally,2)
+(changed,1)
+(sc.parallelize(1,1)
+(only,1)
+(several,1)
+(This,2)
+(basic,1)
+(Configuration,1)
+(learning,,1)
+(documentation,3)
+(YARN,,1)
+(graph,1)
+(Hive,2)
+(first,1)
+(["Specifying,1)
+("yarn",1)
+(page](http://spark.apache.org/documentation.html),1)
+([params]`.,1)
+(application,1)
+([project,2)
+(prefer,1)
+(SparkPi,2)
+(<http://spark.apache.org/>,1)
+(engine,1)
+(version,1)
+(file,1)
+(documentation,,1)
+(MASTER,1)
+(example,3)
+(distribution.,1)
+(are,1)
+(params,1)
+(scala>,1)
+(DataFrames,,1)
+(provides,1)
+(refer,2)
+(configure,1)
+(Interactive,2)
+(R,,1)
+(can,6)
+(build,3)
+(when,1)
+(easiest,1)
+(Apache,1)
+(systems.,1)
+(Distributions"](http://spark.apache.org/docs/latest/hadoop-third-party-distributions.html),1)
+(works,1)
+(how,2)
+(package.,1)
+(1000).count(),1)
+(Note,1)
+(Data.,1)
+(>>>,1)
+(Scala,2)
+(Alternatively,,1)
+(variable,1)
+(submit,1)
+(Testing,1)
+(Streaming,1)
+(module,,1)
+(thread,,1)
+(rich,1)
+(them,,1)
+(detailed,2)
+(stream,1)
+(GraphX,1)
+(distribution,1)
+(["Third,1)
+(Please,3)
+(return,2)
+(is,6)
+(Thriftserver,1)
+(same,1)
+(start,1)
+(built,1)
+(one,2)
+(with,4)
+(Party,1)
+(Spark](#building-spark).,1)
+(Spark"](http://spark.apache.org/docs/latest/building-spark.html).,1)
+(data,1)
+(wiki](https://cwiki.apache.org/confluence/display/SPARK).,1)
+(using,2)
+(talk,1)
+(Shell,2)
+(class,2)
+(README,1)
+(computing,1)
+(Python,,2)
+(example:,1)
+(##,8)
+(from,1)
+(set,2)
+(building,3)
+(N,1)
+(Hadoop-supported,1)
+(other,1)
+(Example,1)
+(analysis.,1)
+(runs.,1)
+(Building,1)
+(higher-level,1)
+(need,1)
+(Big,1)
+(fast,1)
+(guide,,1)
+(Java,,1)
+(<class>,1)
+(uses,1)
+(SQL,2)
+(will,1)
+(guidance,3)
+(requires,1)
+(,67)
+(Documentation,1)
+(web,1)
+(cluster,2)
+(using:,1)
+(MLlib,1)
+(shell:,2)
+(Scala,,1)
+(supports,2)
+(built,,1)
+(./dev/run-tests,1)
+(build/mvn,1)
+(sample,1)
+(For,2)
+(Programs,1)
+(Spark,14)
+(particular,3)
+(The,1)
+(processing.,1)
+(APIs,1)
+(computation,1)
+(Try,1)
+([Configuration,1)
+(./bin/pyspark,1)
+(A,1)
+(through,1)
+(#,1)
+(library,1)
+(following,2)
+(More,1)
+(which,2)
+(See,1)
+(also,5)
+(storage,1)
+(should,2)
+(To,2)
+(for,12)
+(Once,1)
+(setup,1)
+(mesos://,1)
+(Maven](http://maven.apache.org/).,1)
+(latest,1)
+(processing,,1)
+(the,21)
+(your,1)
+(not,1)
+(different,1)
+(distributions.,1)
+(given.,1)
+(About,1)
+(if,4)
+(instructions.,1)
+(be,2)
+(do,2)
+(Tests,1)
+(no,1)
+(./bin/run-example,2)
+(programs,,1)
+(including,3)
+(`./bin/run-example,1)
+(Spark.,1)
+(Versions,1)
+(HDFS,1)
+(individual,1)
+(spark://,1)
+(It,2)
+(an,3)
+(programming,1)
+(machine,1)
+(run:,1)
+(environment,1)
+(clean,1)
+(1000:,2)
+(And,1)
+(run,7)
+(./bin/spark-shell,1)
+(URL,,1)
+("local",1)
+(MASTER=spark://host:7077,1)
+(on,6)
+(You,3)
+(threads.,1)
+(against,1)
+([Apache,1)
+(help,1)
+(print,1)
+(tests,2)
+(examples,2)
+(at,2)
+(in,5)
+(-DskipTests,1)
+(optimized,1)
+(downloaded,1)
+(versions,1)
+(graphs,1)
+(Guide](http://spark.apache.org/docs/latest/configuration.html),1)
+(online,1)
+(usage,1)
+(abbreviated,1)
+(comes,1)
+(directory.,1)
+(overview,1)
+([building,1)
+(`examples`,2)
+(Many,1)
+(Running,1)
+(way,1)
+(use,3)
+(Online,1)
+(site,,1)
+(tests](https://cwiki.apache.org/confluence/display/SPARK/Useful+Developer+Tools).,1)
+(running,1)
+(find,1)
+(sc.parallelize(range(1000)).count(),1)
+(contains,1)
+(project,1)
+(you,4)
+(Pi,1)
+(that,3)
+(protocols,1)
+(a,10)
+(or,3)
+(high-level,1)
+(name,1)
+(Hadoop,,2)
+(to,14)
+(available,1)
+((You,1)
+(core,1)
+(instance:,1)
+(see,1)
+(of,5)
+(tools,1)
+("local[N]",1)
+(programs,2)
+(package.),1)
+(["Building,1)
+(must,1)
+(and,10)
+(command,,2)
+(system,1)
+(Hadoop,4)
+
+println(wordCounts.collect().deep)
+Array((package,1), (this,1), (Version"](http://spark.apache.org/docs/latest/building-spark.html#specifying-the-hadoop-version),1), (Because,1), (Python,2), 
+(cluster.,1), (its,1), ([run,1), (general,2), (have,1), (pre-built,1), (locally.,1), (locally,2), (changed,1), (sc.parallelize(1,1), (only,1), (several,1), 
+(This,2), (basic,1), (Configuration,1), (learning,,1), (documentation,3), (YARN,,1), (graph,1), (Hive,2), (first,1), (["Specifying,1), ("yarn",1), 
+(page](http://spark.apache.org/documentation.html),1), ([params]`.,1), (application,1), ([project,2), (prefer,1), (SparkPi,2), (<http://spark.apache.org/>,1), 
+(engine,1), (version,1), (file,1), (documentation,,1), (MASTER,1), (example,3), (distribution.,1), (are,1), (params,1), (scala>,1), (DataFrames,,1), 
+(provides,1), (refer,2), (configure,1), (Interactive,2), (R,,1), (can,6), (build,3), (when,1), (easiest,1), (Apache,1), (systems.,1), 
+(Distributions"](http://spark.apache.org/docs/latest/hadoop-third-party-distributions.html),1), (works,1), (how,2), (package.,1), (1000).count(),1), (Note,1), 
+(Data.,1), (>>>,1), (Scala,2), (Alternatively,,1), (variable,1), (submit,1), (Testing,1), (Streaming,1), (module,,1), (thread,,1), (rich,1), (them,,1), 
+(detailed,2), (stream,1), (GraphX,1), (distribution,1), (["Third,1), (Please,3), (return,2), (is,6), (Thriftserver,1), (same,1), (start,1), (built,1), 
+(one,2), (with,4), (Party,1), (Spark](#building-spark).,1), (Spark"](http://spark.apache.org/docs/latest/building-spark.html).,1), (data,1), 
+(wiki](https://cwiki.apache.org/confluence/display/SPARK).,1), (using,2), (talk,1), (Shell,2), (class,2), (README,1), (computing,1), (Python,,2), (example:,1), 
+(##,8), (from,1), (set,2), (building,3), (N,1), (Hadoop-supported,1), (other,1), (Example,1), (analysis.,1), (runs.,1), (Building,1), (higher-level,1), 
+(need,1), (Big,1), (fast,1), (guide,,1), (Java,,1), (<class>,1), (uses,1), (SQL,2), (will,1), (guidance,3), (requires,1), (,67), (Documentation,1), (web,1), 
+(cluster,2), (using:,1), (MLlib,1), (shell:,2), (Scala,,1), (supports,2), (built,,1), (./dev/run-tests,1), (build/mvn,1), (sample,1), (For,2), (Programs,1), 
+(Spark,14), (particular,3), (The,1), (processing.,1), (APIs,1), (computation,1), (Try,1), ([Configuration,1), (./bin/pyspark,1), (A,1), (through,1), (#,1), 
+(library,1), (following,2), (More,1), (which,2), (See,1), (also,5), (storage,1), (should,2), (To,2), (for,12), (Once,1), (setup,1), (mesos://,1), 
+(Maven](http://maven.apache.org/).,1), (latest,1), (processing,,1), (the,21), (your,1), (not,1), (different,1), (distributions.,1), (given.,1), (About,1), 
+(if,4), (instructions.,1), (be,2), (do,2), (Tests,1), (no,1), (./bin/run-example,2), (programs,,1), (including,3), (`./bin/run-example,1), (Spark.,1), 
+(Versions,1), (HDFS,1), (individual,1), (spark://,1), (It,2), (an,3), (programming,1), (machine,1), (run:,1), (environment,1), (clean,1), (1000:,2), (And,1), 
+(run,7), (./bin/spark-shell,1), (URL,,1), ("local",1), (MASTER=spark://host:7077,1), (on,6), (You,3), (threads.,1), (against,1), ([Apache,1), (help,1), 
+(print,1), (tests,2), (examples,2), (at,2), (in,5), (-DskipTests,1), (optimized,1), (downloaded,1), (versions,1), (graphs,1), 
+(Guide](http://spark.apache.org/docs/latest/configuration.html),1), (online,1), (usage,1), (abbreviated,1), (comes,1), (directory.,1), (overview,1), 
+([building,1), (`examples`,2), (Many,1), (Running,1), (way,1), (use,3), (Online,1), (site,,1), 
+(tests](https://cwiki.apache.org/confluence/display/SPARK/Useful+Developer+Tools).,1), (running,1), (find,1), (sc.parallelize(range(1000)).count(),1), 
+(contains,1), (project,1), (you,4), (Pi,1), (that,3), (protocols,1), (a,10), (or,3), (high-level,1), (name,1), (Hadoop,,2), (to,14), (available,1), ((You,1), 
+(core,1), (instance:,1), (see,1), (of,5), (tools,1), ("local[N]",1), (programs,2), (package.),1), (["Building,1), (must,1), (and,10), (command,,2), (system,1), 
+(Hadoop,4))
+
+scala> val wordCounts = readme.flatMap(line => line.split(" ")).map(word => (word, 1)).reduceByKey((a,b) => a + b).reduce((a, b) => if (a._2 > b._2) a else b)
+wordCounts: (String, Int) = ("",67)
+
+scala> println(wordCounts)
+(,67)
+
+
+#ANALYSING A LOG FILE
+
+scala> val logFile = sc.textFile("LabData/notebook.log")
+logFile: org.apache.spark.rdd.RDD[String] = LabData/notebook.log MapPartitionsRDD[13] at textFile at <console>:28
+
+scala> val info = logFile.filter(line => line.contains("INFO"))
+info: org.apache.spark.rdd.RDD[String] = MapPartitionsRDD[14] at filter at <console>:29
+
+scala> info.count()
+res11: Long = 13438
+
+scala> info.filter(line => line.contains("spark")).count()
+res12: Long = 156
+
+scala> info.filter(line => line.contains("spark")).collect() foreach println
+15/10/14 14:29:23 INFO Remoting: Remoting started; listening on addresses :[akka.tcp://sparkDriver@172.17.0.22:53333]
+15/10/14 14:29:23 INFO Utils: Successfully started service 'sparkDriver' on port 53333.
+15/10/14 14:29:23 INFO DiskBlockManager: Created local directory at /tmp/spark-fe150378-7bad-42b6-876b-d14e2c193eb6/blockmgr-c142f2f1-ebb6-4612-945b-0a67d156230a
+15/10/14 14:29:23 INFO HttpFileServer: HTTP File server directory is /tmp/spark-fe150378-7bad-42b6-876b-d14e2c193eb6/httpd-ed3f4ab0-7218-48bc-9d8a-3981b1cfe574
+15/10/14 14:29:24 INFO Utils: Successfully started service 'org.apache.spark.network.netty.NettyBlockTransferService' on port 35726.
+15/10/15 15:33:42 INFO Remoting: Remoting started; listening on addresses :[akka.tcp://sparkDriver@172.17.0.22:47412]
+15/10/15 15:33:42 INFO Utils: Successfully started service 'sparkDriver' on port 47412.
+15/10/15 15:33:42 INFO DiskBlockManager: Created local directory at /tmp/spark-fc035223-3b43-43d1-8d7d-a22dda6b0d46/blockmgr-aad4e583-6a6c-479a-b021-a7e0390ea261
+15/10/15 15:33:42 INFO HttpFileServer: HTTP File server directory is /tmp/spark-fc035223-3b43-43d1-8d7d-a22dda6b0d46/httpd-80730048-1dcb-4da2-8458-8bf3eba96046
+15/10/15 15:33:43 INFO Utils: Successfully started service 'org.apache.spark.network.netty.NettyBlockTransferService' on port 47915.
+15/10/16 13:08:23 INFO Remoting: Remoting started; listening on addresses :[akka.tcp://sparkDriver@172.17.0.22:58378]
+15/10/16 13:08:23 INFO Utils: Successfully started service 'sparkDriver' on port 58378.
+15/10/16 13:08:23 INFO DiskBlockManager: Created local directory at /tmp/spark-ca471293-a9b6-4761-b0c9-00799500af70/blockmgr-24ee1e5a-9311-4665-8ce7-56fc1f0601a0
+15/10/16 13:08:23 INFO HttpFileServer: HTTP File server directory is /tmp/spark-ca471293-a9b6-4761-b0c9-00799500af70/httpd-98632027-ee06-401b-a027-b7973b158023
+15/10/16 13:08:23 INFO Utils: Successfully started service 'org.apache.spark.network.netty.NettyBlockTransferService' on port 34420.
+15/10/16 13:13:22 INFO Utils: path = /tmp/spark-ca471293-a9b6-4761-b0c9-00799500af70/blockmgr-24ee1e5a-9311-4665-8ce7-56fc1f0601a0, already present as root for deletion.
+15/10/16 13:13:22 INFO Utils: Deleting directory /tmp/spark-ca471293-a9b6-4761-b0c9-00799500af70/pyspark-2107622a-f8ad-4b5a-b456-f0e414fbed40
+15/10/16 13:13:22 INFO Utils: Deleting directory /tmp/spark-ca471293-a9b6-4761-b0c9-00799500af70
+15/10/16 13:13:27 INFO Remoting: Remoting started; listening on addresses :[akka.tcp://sparkDriver@172.17.0.22:38668]
+15/10/16 13:13:27 INFO Utils: Successfully started service 'sparkDriver' on port 38668.
+15/10/16 13:13:27 INFO DiskBlockManager: Created local directory at /tmp/spark-52bdb6b1-7781-4abd-9758-bfc0d2a578ec/blockmgr-e0992345-e860-44ea-aaca-50e75bd99684
+15/10/16 13:13:27 INFO HttpFileServer: HTTP File server directory is /tmp/spark-52bdb6b1-7781-4abd-9758-bfc0d2a578ec/httpd-fe5e1d28-9663-460b-97fd-e2374b912583
+15/10/16 13:13:28 INFO Utils: Successfully started service 'org.apache.spark.network.netty.NettyBlockTransferService' on port 44407.
+15/10/16 14:52:20 INFO Remoting: Remoting started; listening on addresses :[akka.tcp://sparkDriver@172.17.0.22:43750]
+15/10/16 14:52:20 INFO Utils: Successfully started service 'sparkDriver' on port 43750.
+15/10/16 14:52:20 INFO DiskBlockManager: Created local directory at /tmp/spark-682ea8cc-d28a-4715-be6e-9c2bdc684ba4/blockmgr-73dbe021-6e2b-43f9-9547-72004cf3a221
+15/10/16 14:52:20 INFO HttpFileServer: HTTP File server directory is /tmp/spark-682ea8cc-d28a-4715-be6e-9c2bdc684ba4/httpd-a9ac31c5-fdd1-4437-a29f-771847924c71
+15/10/16 14:52:21 INFO Utils: Successfully started service 'org.apache.spark.network.netty.NettyBlockTransferService' on port 54796.
+15/10/21 06:09:21 INFO Remoting: Remoting started; listening on addresses :[akka.tcp://sparkDriver@172.17.0.22:43928]
+15/10/21 06:09:21 INFO Utils: Successfully started service 'sparkDriver' on port 43928.
+15/10/21 06:09:21 INFO DiskBlockManager: Created local directory at /tmp/spark-228429ff-23c9-4471-88ae-9c5c26535d7a/blockmgr-ed90f7d7-7049-471a-8560-950825742016
+15/10/21 06:09:21 INFO HttpFileServer: HTTP File server directory is /tmp/spark-228429ff-23c9-4471-88ae-9c5c26535d7a/httpd-3f3cd3ee-81f2-4ba5-be62-ccdb6d62cf52
+15/10/21 06:09:22 INFO Utils: Successfully started service 'org.apache.spark.network.netty.NettyBlockTransferService' on port 34705.
+15/10/21 06:18:20 INFO Remoting: Remoting started; listening on addresses :[akka.tcp://sparkDriver@172.17.0.22:34767]
+15/10/21 06:18:20 INFO Utils: Successfully started service 'sparkDriver' on port 34767.
+15/10/21 06:18:20 INFO DiskBlockManager: Created local directory at /tmp/spark-2673eda4-a8e0-485b-a32e-b50c3f74e350/blockmgr-5abb109b-5c36-4d13-ac93-7ad13e807555
+15/10/21 06:18:20 INFO HttpFileServer: HTTP File server directory is /tmp/spark-2673eda4-a8e0-485b-a32e-b50c3f74e350/httpd-81687cf4-f5a6-4a97-8e52-a6096ad60235
+15/10/21 06:18:21 INFO Utils: Successfully started service 'org.apache.spark.network.netty.NettyBlockTransferService' on port 58989.
+15/10/21 06:44:27 INFO Utils: path = /tmp/spark-fc035223-3b43-43d1-8d7d-a22dda6b0d46/blockmgr-aad4e583-6a6c-479a-b021-a7e0390ea261, already present as root for deletion.
+15/10/21 06:44:27 INFO Utils: Deleting directory /tmp/spark-fc035223-3b43-43d1-8d7d-a22dda6b0d46
+15/10/21 06:44:41 INFO Utils: path = /tmp/spark-228429ff-23c9-4471-88ae-9c5c26535d7a/blockmgr-ed90f7d7-7049-471a-8560-950825742016, already present as root for deletion.
+15/10/21 06:44:42 INFO Utils: Deleting directory /tmp/spark-228429ff-23c9-4471-88ae-9c5c26535d7a
+15/10/21 06:46:03 INFO Remoting: Remoting started; listening on addresses :[akka.tcp://sparkDriver@172.17.0.22:44681]
+15/10/21 06:46:03 INFO Utils: Successfully started service 'sparkDriver' on port 44681.
+15/10/21 06:46:03 INFO DiskBlockManager: Created local directory at /tmp/spark-03b183d8-7092-4253-9183-5738cd14ccf5/blockmgr-719b62d4-5020-486a-bf06-ff030c696f62
+15/10/21 06:46:04 INFO HttpFileServer: HTTP File server directory is /tmp/spark-03b183d8-7092-4253-9183-5738cd14ccf5/httpd-ca2b9527-9689-44df-90b9-94eb76bf22c8
+15/10/21 06:46:04 INFO Utils: Successfully started service 'org.apache.spark.network.netty.NettyBlockTransferService' on port 33807.
+15/10/21 06:46:06 INFO Utils: path = /tmp/spark-03b183d8-7092-4253-9183-5738cd14ccf5/blockmgr-719b62d4-5020-486a-bf06-ff030c696f62, already present as root for deletion.
+15/10/21 06:46:06 INFO Utils: Deleting directory /tmp/spark-03b183d8-7092-4253-9183-5738cd14ccf5
+15/10/21 06:46:18 INFO Utils: path = /tmp/spark-2673eda4-a8e0-485b-a32e-b50c3f74e350/blockmgr-5abb109b-5c36-4d13-ac93-7ad13e807555, already present as root for deletion.
+15/10/21 06:46:19 INFO Utils: Deleting directory /tmp/spark-2673eda4-a8e0-485b-a32e-b50c3f74e350
+15/10/21 06:46:20 INFO Remoting: Remoting started; listening on addresses :[akka.tcp://sparkDriver@172.17.0.22:34749]
+15/10/21 06:46:20 INFO Utils: Successfully started service 'sparkDriver' on port 34749.
+15/10/21 06:46:20 INFO DiskBlockManager: Created local directory at /tmp/spark-0f142b40-8af5-41a7-b3fc-b03c2392bf8f/blockmgr-fb8c79d9-cb49-4e14-9eae-02211819594f
+15/10/21 06:46:20 INFO HttpFileServer: HTTP File server directory is /tmp/spark-0f142b40-8af5-41a7-b3fc-b03c2392bf8f/httpd-72d3e35d-a6b4-427b-b7cd-7f40b45041ae
+15/10/21 06:46:21 INFO Utils: Successfully started service 'org.apache.spark.network.netty.NettyBlockTransferService' on port 43363.
+15/10/21 06:51:44 INFO Remoting: Remoting started; listening on addresses :[akka.tcp://sparkDriver@172.17.0.22:58291]
+15/10/21 06:51:44 INFO Utils: Successfully started service 'sparkDriver' on port 58291.
+15/10/21 06:51:44 INFO DiskBlockManager: Created local directory at /tmp/spark-087dfd65-e3af-498d-9d22-e35dd3d35ef5/blockmgr-22d08b29-3ede-43e5-b659-7938c320c115
+15/10/21 06:51:44 INFO HttpFileServer: HTTP File server directory is /tmp/spark-087dfd65-e3af-498d-9d22-e35dd3d35ef5/httpd-c3af5d8f-93b1-4ea1-b4cd-d939821a87ee
+15/10/21 06:51:45 INFO Utils: Successfully started service 'org.apache.spark.network.netty.NettyBlockTransferService' on port 60134.
+15/10/21 06:53:15 INFO Remoting: Remoting started; listening on addresses :[akka.tcp://sparkDriver@172.17.0.22:52949]
+15/10/21 06:53:15 INFO Utils: Successfully started service 'sparkDriver' on port 52949.
+15/10/21 06:53:15 INFO DiskBlockManager: Created local directory at /tmp/spark-a0d30f27-58f2-4803-b7ce-2f437dce18c1/blockmgr-33399bc4-6281-42c6-b023-b7bcd4a56bc2
+15/10/21 06:53:15 INFO HttpFileServer: HTTP File server directory is /tmp/spark-a0d30f27-58f2-4803-b7ce-2f437dce18c1/httpd-0637bf42-85e3-45a9-a395-9fadcb6744a4
+15/10/21 06:53:16 INFO Utils: Successfully started service 'org.apache.spark.network.netty.NettyBlockTransferService' on port 42148.
+15/10/21 06:53:37 INFO Remoting: Remoting started; listening on addresses :[akka.tcp://sparkDriver@172.17.0.22:48625]
+15/10/21 06:53:37 INFO Utils: Successfully started service 'sparkDriver' on port 48625.
+15/10/21 06:53:37 INFO DiskBlockManager: Created local directory at /tmp/spark-b42d68f2-0d81-418e-bccc-425aa078bfd3/blockmgr-822dc396-71cd-4fe2-893d-9f536687422a
+15/10/21 06:53:37 INFO HttpFileServer: HTTP File server directory is /tmp/spark-b42d68f2-0d81-418e-bccc-425aa078bfd3/httpd-034f2b34-e002-40b1-9500-9409076170ec
+15/10/21 06:53:38 INFO Utils: Successfully started service 'org.apache.spark.network.netty.NettyBlockTransferService' on port 53086.
+15/10/21 06:54:55 INFO Remoting: Remoting started; listening on addresses :[akka.tcp://sparkDriver@172.17.0.22:34793]
+15/10/21 06:54:55 INFO Utils: Successfully started service 'sparkDriver' on port 34793.
+15/10/21 06:54:55 INFO DiskBlockManager: Created local directory at /tmp/spark-3bf9d32b-7ee3-487a-b956-ad88489183bb/blockmgr-c7cde9d3-876b-4def-8d6b-103aab7c5654
+15/10/21 06:54:56 INFO HttpFileServer: HTTP File server directory is /tmp/spark-3bf9d32b-7ee3-487a-b956-ad88489183bb/httpd-7dd197ab-d78a-45df-a99f-0cdd16edd456
+15/10/21 06:54:57 INFO Utils: Successfully started service 'org.apache.spark.network.netty.NettyBlockTransferService' on port 50977.
+15/10/21 06:54:59 INFO Utils: path = /tmp/spark-3bf9d32b-7ee3-487a-b956-ad88489183bb/blockmgr-c7cde9d3-876b-4def-8d6b-103aab7c5654, already present as root for deletion.
+15/10/21 06:55:00 INFO Utils: Deleting directory /tmp/spark-3bf9d32b-7ee3-487a-b956-ad88489183bb
+15/10/21 06:55:20 INFO Remoting: Remoting started; listening on addresses :[akka.tcp://sparkDriver@172.17.0.22:53265]
+15/10/21 06:55:20 INFO Utils: Successfully started service 'sparkDriver' on port 53265.
+15/10/21 06:55:20 INFO DiskBlockManager: Created local directory at /tmp/spark-a5859c75-a576-49b2-a2a0-a673e1a2738a/blockmgr-80f6b3de-e725-45a4-8df9-34bf5a8b291e
+15/10/21 06:55:20 INFO HttpFileServer: HTTP File server directory is /tmp/spark-a5859c75-a576-49b2-a2a0-a673e1a2738a/httpd-a749eee4-3bc1-429a-94d0-d221f2f3738a
+15/10/21 06:55:21 INFO Utils: Successfully started service 'org.apache.spark.network.netty.NettyBlockTransferService' on port 45478.
+15/10/21 06:55:22 INFO Utils: path = /tmp/spark-a5859c75-a576-49b2-a2a0-a673e1a2738a/blockmgr-80f6b3de-e725-45a4-8df9-34bf5a8b291e, already present as root for deletion.
+15/10/21 06:55:23 INFO Utils: Deleting directory /tmp/spark-a5859c75-a576-49b2-a2a0-a673e1a2738a/pyspark-6db0c8fd-094a-4f08-bd68-dff219e65350
+15/10/21 06:55:23 INFO Utils: Deleting directory /tmp/spark-a5859c75-a576-49b2-a2a0-a673e1a2738a
+15/10/21 07:14:56 INFO Remoting: Remoting started; listening on addresses :[akka.tcp://sparkDriver@172.17.0.22:45827]
+15/10/21 07:14:56 INFO Utils: Successfully started service 'sparkDriver' on port 45827.
+15/10/21 07:14:56 INFO DiskBlockManager: Created local directory at /tmp/spark-0f1efbbf-1336-4e53-b9e1-c3a0b791b808/blockmgr-573c0859-eb51-466c-99b6-84c3311f512c
+15/10/21 07:14:56 INFO HttpFileServer: HTTP File server directory is /tmp/spark-0f1efbbf-1336-4e53-b9e1-c3a0b791b808/httpd-4a3e389d-7784-4587-95d4-46cd1d001fca
+15/10/21 07:14:57 INFO Utils: Successfully started service 'org.apache.spark.network.netty.NettyBlockTransferService' on port 53959.
+15/10/21 07:56:30 [INFO] Remoting - Remoting started; listening on addresses :[akka.tcp://sparkDriver@172.17.0.22:39281]
+15/10/21 15:43:57 INFO Remoting: Remoting started; listening on addresses :[akka.tcp://sparkDriver@172.17.0.22:39173]
+15/10/21 15:43:57 INFO Utils: Successfully started service 'sparkDriver' on port 39173.
+15/10/21 15:43:57 INFO DiskBlockManager: Created local directory at /tmp/spark-6e54b9ef-eeee-4cb9-bdd3-c91f0bfba6e8/blockmgr-586c41e5-996a-4a68-87a5-5b736a9618b6
+15/10/21 15:43:57 INFO HttpFileServer: HTTP File server directory is /tmp/spark-6e54b9ef-eeee-4cb9-bdd3-c91f0bfba6e8/httpd-4b254c9b-ffb8-4603-bf57-49661e22248d
+15/10/21 15:43:58 INFO Utils: Successfully started service 'org.apache.spark.network.netty.NettyBlockTransferService' on port 54908.
+15/10/21 17:02:06 INFO Utils: path = /tmp/spark-6e54b9ef-eeee-4cb9-bdd3-c91f0bfba6e8/blockmgr-586c41e5-996a-4a68-87a5-5b736a9618b6, already present as root for deletion.
+15/10/21 17:02:07 INFO Utils: Deleting directory /tmp/spark-6e54b9ef-eeee-4cb9-bdd3-c91f0bfba6e8
+15/10/21 17:02:12 INFO Remoting: Remoting started; listening on addresses :[akka.tcp://sparkDriver@172.17.0.22:42749]
+15/10/21 17:02:12 INFO Utils: Successfully started service 'sparkDriver' on port 42749.
+15/10/21 17:02:12 INFO DiskBlockManager: Created local directory at /tmp/spark-dc939ed3-9bec-4751-8e83-df927a97a500/blockmgr-264e8036-5ed0-4b03-b896-6ff04e27f572
+15/10/21 17:02:12 INFO HttpFileServer: HTTP File server directory is /tmp/spark-dc939ed3-9bec-4751-8e83-df927a97a500/httpd-fc7a9c70-76bc-4605-958f-e115bd3e8d47
+15/10/21 17:02:13 INFO Utils: Successfully started service 'org.apache.spark.network.netty.NettyBlockTransferService' on port 45162.
+15/10/22 02:32:26 INFO Remoting: Remoting started; listening on addresses :[akka.tcp://sparkDriver@172.17.0.22:44439]
+15/10/22 02:32:26 INFO Utils: Successfully started service 'sparkDriver' on port 44439.
+15/10/22 02:32:26 INFO DiskBlockManager: Created local directory at /tmp/spark-9b53112a-7587-40b2-875d-52372b9f0213/blockmgr-ff3b1fac-22e5-4969-8e3a-2aecbf2c0dcc
+15/10/22 02:32:26 INFO HttpFileServer: HTTP File server directory is /tmp/spark-9b53112a-7587-40b2-875d-52372b9f0213/httpd-af60c2aa-69b8-4878-86e3-43b8fccdb6ac
+15/10/22 02:32:27 INFO Utils: Successfully started service 'org.apache.spark.network.netty.NettyBlockTransferService' on port 59251.
+15/10/22 04:36:32 INFO Utils: path = /tmp/spark-dc939ed3-9bec-4751-8e83-df927a97a500/blockmgr-264e8036-5ed0-4b03-b896-6ff04e27f572, already present as root for deletion.
+15/10/22 04:36:32 INFO Utils: Deleting directory /tmp/spark-dc939ed3-9bec-4751-8e83-df927a97a500
+15/10/22 04:36:37 INFO Remoting: Remoting started; listening on addresses :[akka.tcp://sparkDriver@172.17.0.22:57259]
+15/10/22 04:36:37 INFO Utils: Successfully started service 'sparkDriver' on port 57259.
+15/10/22 04:36:37 INFO DiskBlockManager: Created local directory at /tmp/spark-6ffd920e-2dd5-43d4-a2b8-6b3c3a1ae0c7/blockmgr-f28c1757-42ed-4495-bca7-f4693f2f1846
+15/10/22 04:36:38 INFO HttpFileServer: HTTP File server directory is /tmp/spark-6ffd920e-2dd5-43d4-a2b8-6b3c3a1ae0c7/httpd-8bda8744-f6f5-481c-9dd9-065b7bf0f7b9
+15/10/22 04:36:39 INFO Utils: Successfully started service 'org.apache.spark.network.netty.NettyBlockTransferService' on port 34923.
+15/10/22 05:42:05 INFO Utils: path = /tmp/spark-682ea8cc-d28a-4715-be6e-9c2bdc684ba4/blockmgr-73dbe021-6e2b-43f9-9547-72004cf3a221, already present as root for deletion.
+15/10/22 05:42:06 INFO Utils: Deleting directory /tmp/spark-682ea8cc-d28a-4715-be6e-9c2bdc684ba4
+15/10/22 05:42:59 INFO Remoting: Remoting started; listening on addresses :[akka.tcp://sparkDriver@172.17.0.22:32997]
+15/10/22 05:42:59 INFO Utils: Successfully started service 'sparkDriver' on port 32997.
+15/10/22 05:42:59 INFO DiskBlockManager: Created local directory at /tmp/spark-cf71c18f-eb1b-4344-8525-a2574c650a59/blockmgr-6da140df-5530-460e-a154-b780fb3839ff
+15/10/22 05:43:00 INFO HttpFileServer: HTTP File server directory is /tmp/spark-cf71c18f-eb1b-4344-8525-a2574c650a59/httpd-5a4d1c53-dd5f-4d13-8f82-fb56ecc67896
+15/10/22 05:43:00 INFO Utils: Successfully started service 'org.apache.spark.network.netty.NettyBlockTransferService' on port 39140.
+15/10/22 05:44:02 INFO Utils: path = /tmp/spark-cf71c18f-eb1b-4344-8525-a2574c650a59/blockmgr-6da140df-5530-460e-a154-b780fb3839ff, already present as root for deletion.
+15/10/22 05:44:03 INFO Utils: Deleting directory /tmp/spark-cf71c18f-eb1b-4344-8525-a2574c650a59
+15/10/22 05:44:23 INFO Utils: path = /tmp/spark-b42d68f2-0d81-418e-bccc-425aa078bfd3/blockmgr-822dc396-71cd-4fe2-893d-9f536687422a, already present as root for deletion.
+15/10/22 05:44:24 INFO Utils: Deleting directory /tmp/spark-b42d68f2-0d81-418e-bccc-425aa078bfd3
+15/10/22 05:44:31 INFO Utils: path = /tmp/spark-0f142b40-8af5-41a7-b3fc-b03c2392bf8f/blockmgr-fb8c79d9-cb49-4e14-9eae-02211819594f, already present as root for deletion.
+15/10/22 05:44:32 INFO Utils: Deleting directory /tmp/spark-0f142b40-8af5-41a7-b3fc-b03c2392bf8f/pyspark-9e9ff3f6-2e32-4570-ae7a-22a651278319
+15/10/22 05:44:32 INFO Utils: Deleting directory /tmp/spark-0f142b40-8af5-41a7-b3fc-b03c2392bf8f
+15/10/22 05:44:42 INFO Utils: path = /tmp/spark-9b53112a-7587-40b2-875d-52372b9f0213/blockmgr-ff3b1fac-22e5-4969-8e3a-2aecbf2c0dcc, already present as root for deletion.
+15/10/22 05:44:43 INFO Utils: Deleting directory /tmp/spark-9b53112a-7587-40b2-875d-52372b9f0213/pyspark-00ef6c66-4db7-4741-b890-7647fc2d4f76
+15/10/22 05:44:43 INFO Utils: Deleting directory /tmp/spark-9b53112a-7587-40b2-875d-52372b9f0213
+15/10/22 05:44:57 INFO Remoting: Remoting started; listening on addresses :[akka.tcp://sparkDriver@172.17.0.22:46937]
+15/10/22 05:44:57 INFO Utils: Successfully started service 'sparkDriver' on port 46937.
+15/10/22 05:44:57 INFO DiskBlockManager: Created local directory at /tmp/spark-a1ac4ef9-edbb-4d59-84b1-fb6158dd824f/blockmgr-e7a8bf00-0701-4cb7-a835-b8448d9fe79c
+15/10/22 05:44:57 INFO HttpFileServer: HTTP File server directory is /tmp/spark-a1ac4ef9-edbb-4d59-84b1-fb6158dd824f/httpd-91230dd5-3f29-4655-906e-228bc7bde472
+15/10/22 05:44:57 INFO Utils: Successfully started service 'org.apache.spark.network.netty.NettyBlockTransferService' on port 37166.
+15/10/22 05:45:01 INFO Utils: path = /tmp/spark-a1ac4ef9-edbb-4d59-84b1-fb6158dd824f/blockmgr-e7a8bf00-0701-4cb7-a835-b8448d9fe79c, already present as root for deletion.
+15/10/22 05:45:02 INFO Utils: Deleting directory /tmp/spark-a1ac4ef9-edbb-4d59-84b1-fb6158dd824f/pyspark-c5a99eda-9137-401b-99a1-ffeae801f695
+15/10/22 05:45:02 INFO Utils: Deleting directory /tmp/spark-a1ac4ef9-edbb-4d59-84b1-fb6158dd824f
+15/10/22 05:48:07 INFO Utils: path = /tmp/spark-087dfd65-e3af-498d-9d22-e35dd3d35ef5/blockmgr-22d08b29-3ede-43e5-b659-7938c320c115, already present as root for deletion.
+15/10/22 05:48:08 INFO Utils: Deleting directory /tmp/spark-087dfd65-e3af-498d-9d22-e35dd3d35ef5
+15/10/22 06:12:32 INFO Remoting: Remoting started; listening on addresses :[akka.tcp://sparkDriver@172.17.0.22:56255]
+15/10/22 06:12:32 INFO Utils: Successfully started service 'sparkDriver' on port 56255.
+15/10/22 06:12:32 INFO DiskBlockManager: Created local directory at /tmp/spark-7ca4125c-fd13-4197-aa7f-9fe6163feca2/blockmgr-88b233e4-cd52-4810-b90f-fd20425e41c4
+15/10/22 06:12:32 INFO HttpFileServer: HTTP File server directory is /tmp/spark-7ca4125c-fd13-4197-aa7f-9fe6163feca2/httpd-0f8a2ab5-bb96-4597-98e9-db0d62952c1f
+15/10/22 06:12:33 INFO Utils: Successfully started service 'org.apache.spark.network.netty.NettyBlockTransferService' on port 34717.
+15/10/22 06:33:24 INFO Utils: path = /tmp/spark-7ca4125c-fd13-4197-aa7f-9fe6163feca2/blockmgr-88b233e4-cd52-4810-b90f-fd20425e41c4, already present as root for deletion.
+15/10/22 06:33:25 INFO Utils: Deleting directory /tmp/spark-7ca4125c-fd13-4197-aa7f-9fe6163feca2/pyspark-7fef74de-62da-4241-a21b-35d6b6075968
+15/10/22 06:33:25 INFO Utils: Deleting directory /tmp/spark-7ca4125c-fd13-4197-aa7f-9fe6163feca2
+15/10/22 06:33:30 INFO Utils: path = /tmp/spark-fe150378-7bad-42b6-876b-d14e2c193eb6/blockmgr-c142f2f1-ebb6-4612-945b-0a67d156230a, already present as root for deletion.
+15/10/22 06:33:30 INFO Utils: Deleting directory /tmp/spark-fe150378-7bad-42b6-876b-d14e2c193eb6
+15/10/22 06:33:35 INFO Utils: path = /tmp/spark-0f1efbbf-1336-4e53-b9e1-c3a0b791b808/blockmgr-573c0859-eb51-466c-99b6-84c3311f512c, already present as root for deletion.
+15/10/22 06:33:35 INFO Utils: Deleting directory /tmp/spark-0f1efbbf-1336-4e53-b9e1-c3a0b791b808/pyspark-56ef90f8-2b4f-43b5-a7e4-219c544e948e
+15/10/22 06:33:35 INFO Utils: Deleting directory /tmp/spark-0f1efbbf-1336-4e53-b9e1-c3a0b791b808
+
+scala> println(info.toDebugString)
+(2) MapPartitionsRDD[14] at filter at <console>:29 []
+ |  LabData/notebook.log MapPartitionsRDD[13] at textFile at <console>:28 []
+ |  LabData/notebook.log HadoopRDD[12] at textFile at <console>:28 []
+
+#JOINING RDDS
+
+scala> val readmeFile = sc.textFile("LabData/README.md")
+readmeFile: org.apache.spark.rdd.RDD[String] = LabData/README.md MapPartitionsRDD[18] at textFile at <console>:28
+
+scala> val pom = sc.textFile("LabData/pom.xml")
+pom: org.apache.spark.rdd.RDD[String] = LabData/pom.xml MapPartitionsRDD[20] at textFile at <console>:28
+
+scala> println(readmeFile.filter(line => line.contains("Spark")).count())
+18
+
+scala> println(pom.filter(line => line.contains("Spark")).count())
+2
+
+scala> val readmeCount = readmeFile.flatMap(line => line.split(" ")).map(word => (word, 1)).reduceByKey(_ + _)
+readmeCount: org.apache.spark.rdd.RDD[(String, Int)] = ShuffledRDD[25] at reduceByKey at <console>:29
+
+scala> val pomCount = pom.flatMap(line => line.split(" ")).map(word => (word, 1)).reduceByKey(_ + _)
+pomCount: org.apache.spark.rdd.RDD[(String, Int)] = ShuffledRDD[28] at reduceByKey at <console>:29
+
+scala> println("Readme Count\n")
+Readme Count
+
+
+scala> readmeCount.collect() foreach println
+(package,1)
+(this,1)
+(Version"](http://spark.apache.org/docs/latest/building-spark.html#specifying-the-hadoop-version),1)
+(Because,1)
+(Python,2)
+(cluster.,1)
+(its,1)
+([run,1)
+(general,2)
+(have,1)
+(pre-built,1)
+(locally.,1)
+(locally,2)
+(changed,1)
+(sc.parallelize(1,1)
+(only,1)
+(several,1)
+(This,2)
+(basic,1)
+(Configuration,1)
+(learning,,1)
+(documentation,3)
+(YARN,,1)
+(graph,1)
+(Hive,2)
+(first,1)
+(["Specifying,1)
+("yarn",1)
+(page](http://spark.apache.org/documentation.html),1)
+([params]`.,1)
+(application,1)
+([project,2)
+(prefer,1)
+(SparkPi,2)
+(<http://spark.apache.org/>,1)
+(engine,1)
+(version,1)
+(file,1)
+(documentation,,1)
+(MASTER,1)
+(example,3)
+(distribution.,1)
+(are,1)
+(params,1)
+(scala>,1)
+(DataFrames,,1)
+(provides,1)
+(refer,2)
+(configure,1)
+(Interactive,2)
+(R,,1)
+(can,6)
+(build,3)
+(when,1)
+(easiest,1)
+(Apache,1)
+(systems.,1)
+(Distributions"](http://spark.apache.org/docs/latest/hadoop-third-party-distributions.html),1)
+(works,1)
+(how,2)
+(package.,1)
+(1000).count(),1)
+(Note,1)
+(Data.,1)
+(>>>,1)
+(Scala,2)
+(Alternatively,,1)
+(variable,1)
+(submit,1)
+(Testing,1)
+(Streaming,1)
+(module,,1)
+(thread,,1)
+(rich,1)
+(them,,1)
+(detailed,2)
+(stream,1)
+(GraphX,1)
+(distribution,1)
+(["Third,1)
+(Please,3)
+(return,2)
+(is,6)
+(Thriftserver,1)
+(same,1)
+(start,1)
+(built,1)
+(one,2)
+(with,4)
+(Party,1)
+(Spark](#building-spark).,1)
+(Spark"](http://spark.apache.org/docs/latest/building-spark.html).,1)
+(data,1)
+(wiki](https://cwiki.apache.org/confluence/display/SPARK).,1)
+(using,2)
+(talk,1)
+(Shell,2)
+(class,2)
+(README,1)
+(computing,1)
+(Python,,2)
+(example:,1)
+(##,8)
+(from,1)
+(set,2)
+(building,3)
+(N,1)
+(Hadoop-supported,1)
+(other,1)
+(Example,1)
+(analysis.,1)
+(runs.,1)
+(Building,1)
+(higher-level,1)
+(need,1)
+(Big,1)
+(fast,1)
+(guide,,1)
+(Java,,1)
+(<class>,1)
+(uses,1)
+(SQL,2)
+(will,1)
+(guidance,3)
+(requires,1)
+(,67)
+(Documentation,1)
+(web,1)
+(cluster,2)
+(using:,1)
+(MLlib,1)
+(shell:,2)
+(Scala,,1)
+(supports,2)
+(built,,1)
+(./dev/run-tests,1)
+(build/mvn,1)
+(sample,1)
+(For,2)
+(Programs,1)
+(Spark,14)
+(particular,3)
+(The,1)
+(processing.,1)
+(APIs,1)
+(computation,1)
+(Try,1)
+([Configuration,1)
+(./bin/pyspark,1)
+(A,1)
+(through,1)
+(#,1)
+(library,1)
+(following,2)
+(More,1)
+(which,2)
+(See,1)
+(also,5)
+(storage,1)
+(should,2)
+(To,2)
+(for,12)
+(Once,1)
+(setup,1)
+(mesos://,1)
+(Maven](http://maven.apache.org/).,1)
+(latest,1)
+(processing,,1)
+(the,21)
+(your,1)
+(not,1)
+(different,1)
+(distributions.,1)
+(given.,1)
+(About,1)
+(if,4)
+(instructions.,1)
+(be,2)
+(do,2)
+(Tests,1)
+(no,1)
+(./bin/run-example,2)
+(programs,,1)
+(including,3)
+(`./bin/run-example,1)
+(Spark.,1)
+(Versions,1)
+(HDFS,1)
+(individual,1)
+(spark://,1)
+(It,2)
+(an,3)
+(programming,1)
+(machine,1)
+(run:,1)
+(environment,1)
+(clean,1)
+(1000:,2)
+(And,1)
+(run,7)
+(./bin/spark-shell,1)
+(URL,,1)
+("local",1)
+(MASTER=spark://host:7077,1)
+(on,6)
+(You,3)
+(threads.,1)
+(against,1)
+([Apache,1)
+(help,1)
+(print,1)
+(tests,2)
+(examples,2)
+(at,2)
+(in,5)
+(-DskipTests,1)
+(optimized,1)
+(downloaded,1)
+(versions,1)
+(graphs,1)
+(Guide](http://spark.apache.org/docs/latest/configuration.html),1)
+(online,1)
+(usage,1)
+(abbreviated,1)
+(comes,1)
+(directory.,1)
+(overview,1)
+([building,1)
+(`examples`,2)
+(Many,1)
+(Running,1)
+(way,1)
+(use,3)
+(Online,1)
+(site,,1)
+(tests](https://cwiki.apache.org/confluence/display/SPARK/Useful+Developer+Tools).,1)
+(running,1)
+(find,1)
+(sc.parallelize(range(1000)).count(),1)
+(contains,1)
+(project,1)
+(you,4)
+(Pi,1)
+(that,3)
+(protocols,1)
+(a,10)
+(or,3)
+(high-level,1)
+(name,1)
+(Hadoop,,2)
+(to,14)
+(available,1)
+((You,1)
+(core,1)
+(instance:,1)
+(see,1)
+(of,5)
+(tools,1)
+("local[N]",1)
+(programs,2)
+(package.),1)
+(["Building,1)
+(must,1)
+(and,10)
+(command,,2)
+(system,1)
+(Hadoop,4)
+
+scala> println("Pom Count\n")
+Pom Count
+
+
+scala> pomCount.collect() foreach println
+(<id>kinesis-asl</id>,1)
+(Unless,1)
+(this,3)
+(under,4)
+(implementation="org.apache.maven.plugins.shade.resource.ServicesResourceTransformer",1)
+(<scope>provided</scope>,8)
+(</properties>,6)
+(version="1.0",1)
+(<artifactId>maven-install-plugin</artifactId>,1)
+(<plugins>,1)
+(express,1)
+(</transformer>,2)
+(<version>3.2.0</version>,1)
+(we,1)
+(WITHOUT,1)
+(<groupId>commons-io</groupId>,1)
+(<artifactId>commons-math</artifactId>,1)
+("AS,1)
+(<artifactId>compress-lzf</artifactId>,1)
+(<scope>${hbase.deps.scope}</scope>,6)
+(<artifactId>jersey-json</artifactId>,1)
+(<id>flume-provided</id>,1)
+(IS",1)
+(already,1)
+(...-->,1)
+(ANY,1)
+(disable,1)
+(<configuration>,3)
+(<packaging>jar</packaging>,1)
+(2.0,1)
+(<groupId>org.scala-lang</groupId>,1)
+(file,3)
+(<shadedArtifactAttached>false</shadedArtifactAttached>,1)
+(<artifactSet>,1)
+(<version>${hbase.version}</version>,7)
+(<groupId>commons-codec</groupId>,1)
+(are,1)
+(<version>${project.version}</version>,12)
+(<artifactId>hadoop-client</artifactId>,1)
+(<groupId>org.apache.thrift</groupId>,1)
+(licenses,1)
+(<resource>log4j.properties</resource>,1)
+(<artifactId>hadoop-hdfs</artifactId>,1)
+(SPARK-4455,4)
+(better,,1)
+(<artifactId>maven-deploy-plugin</artifactId>,1)
+(<groupId>com.github.scopt</groupId>,1)
+(</profile>,6)
+(v2.4,,1)
+(<sbt.project.name>examples</sbt.project.name>,1)
+(Apache,2)
+(xmlns="http://maven.apache.org/POM/4.0.0",1)
+(<transformers>,1)
+(<groupId>com.ning</groupId>,1)
+(language,1)
+(Profiles,1)
+(inclusion,1)
+(<artifactId>hbase-common</artifactId>,1)
+(permissions,1)
+(WARRANTIES,1)
+(<groupId>commons-cli</groupId>,1)
+(<resource>reference.conf</resource>,1)
+(</exclusions>,6)
+(~,14)
+(<artifactId>hbase-hadoop1-compat</artifactId>,1)
+(<groupId>org.slf4j</groupId>,1)
+(<artifactId>hbase-client</artifactId>,1)
+(<version>0.9.0</version>,1)
+(<filter>,1)
+(them,1)
+(<id>hbase-provided</id>,1)
+(<hadoop.deps.scope>provided</hadoop.deps.scope>,1)
+(<outputDirectory>target/scala-${scala.binary.version}/classes</outputDirectory>,1)
+(<exclusion>,35)
+(want,1)
+(agreed,1)
+(Version,1)
+(<artifactId>hadoop-core</artifactId>,1)
+(implied.,1)
+(<build>,1)
+(<groupId>org.apache.hadoop</groupId>,7)
+(KIND,,1)
+(is,2)
+(<exclude>META-INF/*.SF</exclude>,1)
+(<groupId>com.googlecode.concurrentlinkedhashmap</groupId>,1)
+(one,1)
+(<artifactId>commons-codec</artifactId>,1)
+(with,2)
+(<artifactId>spark-streaming-kafka_${scala.binary.version}</artifactId>,1)
+(certain,1)
+(<artifactId>spark-streaming-mqtt_${scala.binary.version}</artifactId>,1)
+(<artifactId>spark-bagel_${scala.binary.version}</artifactId>,1)
+(</project>,1)
+(<parent>,1)
+(specific,1)
+(<artifactId>commons-io</artifactId>,1)
+(<artifactId>commons-lang</artifactId>,1)
+(<name>Spark,1)
+(<flume.deps.scope>provided</flume.deps.scope>,1)
+(<groupId>commons-lang</groupId>,1)
+(<artifactId>hbase-server</artifactId>,1)
+(ASF,1)
+(</plugin>,3)
+(<artifactId>hadoop-mapreduce-client-jobclient</artifactId>,1)
+(<hbase.deps.scope>provided</hbase.deps.scope>,1)
+(<groupId>com.sun.jersey</groupId>,4)
+(<id>hadoop-provided</id>,1)
+(BASIS,,1)
+(<artifactId>scopt_${scala.binary.version}</artifactId>,1)
+(<version>1.2.6</version>,1)
+(<parquet.deps.scope>provided</parquet.deps.scope>,1)
+(</excludes>,1)
+(<artifactId>spark-examples_2.10</artifactId>,1)
+(<artifactId>commons-cli</artifactId>,1)
+(<hive.deps.scope>provided</hive.deps.scope>,1)
+(<groupId>org.apache.hbase</groupId>,12)
+(-->,7)
+(</includes>,1)
+(CONDITIONS,1)
+(implementation="org.apache.maven.plugins.shade.resource.AppendingTransformer">,1)
+(<groupId>org.apache.spark</groupId>,14)
+(NOTICE,1)
+(<artifactId>maven-shade-plugin</artifactId>,1)
+(</dependency>,25)
+(uses,1)
+(writing,,1)
+(information,1)
+(assembly,,1)
+(,2931)
+(xsi:schemaLocation="http://maven.apache.org/POM/4.0.0,1)
+(law,1)
+(<artifactId>hbase-testing-util</artifactId>,1)
+(</dependencies>,2)
+(<?xml,1)
+(<artifactId>spark-core_${scala.binary.version}</artifactId>,1)
+(</filters>,1)
+(so,1)
+(<groupId>org.apache.maven.plugins</groupId>,3)
+(<outputFile>${project.build.directory}/scala-${scala.binary.version}/spark-examples-${project.version}-hadoop${hadoop.version}.jar</outputFile>,1)
+(<profiles>,1)
+(<artifactId>spark-streaming-zeromq_${scala.binary.version}</artifactId>,1)
+(<groupId>net.jpountz.lz4</groupId>,1)
+(<artifactId>jruby-complete</artifactId>,1)
+(Software,1)
+(Spark,1)
+(<groupId>org.jruby</groupId>,1)
+(The,2)
+(limitations,1)
+(<artifactId>protobuf-java</artifactId>,1)
+(<artifactId>hbase-protocol</artifactId>,1)
+(encoding="UTF-8"?>,1)
+(</plugins>,1)
+(<properties>,6)
+(provided.,1)
+(contributor,1)
+(<artifactId>netty</artifactId>,2)
+(following,1)
+(<artifactId>spark-streaming-flume_${scala.binary.version}</artifactId>,1)
+(<artifactId>lz4</artifactId>,1)
+(which,1)
+(See,2)
+(<artifactId>spark-hive_${scala.binary.version}</artifactId>,1)
+(<artifactId>guava</artifactId>,1)
+(Examples</name>,1)
+(License.,2)
+(for,2)
+(force,1)
+(<artifactId>hadoop-mapreduce-client-core</artifactId>,1)
+(<artifactId>hbase-hadoop-compat</artifactId>,2)
+(obtain,1)
+(<!--,8)
+(software,1)
+(required,1)
+(<url>http://spark.apache.org/</url>,1)
+(</profiles>,1)
+(present,1)
+(OR,1)
+(<artifactId>hadoop-annotations</artifactId>,1)
+(the,10)
+(hbase,1)
+(</parent>,1)
+(not,1)
+(either,1)
+(<artifactId>jersey-server</artifactId>,1)
+(<artifactId>cassandra-all</artifactId>,1)
+(implementation="org.apache.maven.plugins.shade.resource.DontIncludeResourceTransformer">,1)
+(<version>1.6.0-SNAPSHOT</version>,1)
+(</configuration>,3)
+(<exclude>META-INF/*.RSA</exclude>,1)
+(</transformers>,1)
+(be,1)
+(<include>*:*</include>,1)
+(<artifactId>spark-parent_2.10</artifactId>,1)
+("License");,1)
+(License,3)
+(<dependencies>,2)
+(license,1)
+(<project,1)
+(<id>parquet-provided</id>,1)
+(dependencies,1)
+(by,1)
+(<groupId>jline</groupId>,1)
+(<artifactId>hadoop-auth</artifactId>,1)
+(<scope>test</scope>,2)
+(<exclude>META-INF/*.DSA</exclude>,1)
+(<relativePath>../pom.xml</relativePath>,1)
+(an,1)
+(<artifactId>scalacheck_${scala.binary.version}</artifactId>,1)
+(but,1)
+(<skip>true</skip>,2)
+(<artifactId>spark-streaming-kinesis-asl_${scala.binary.version}</artifactId>,1)
+(<artifactId>hbase-annotations</artifactId>,4)
+(<groupId>org.apache.cassandra.deps</groupId>,1)
+(<groupId>org.scalacheck</groupId>,1)
+(xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance",1)
+(http://maven.apache.org/xsd/maven-4.0.0.xsd">,1)
+(<profile>,6)
+(<artifactId>commons-logging</artifactId>,1)
+(<groupId>com.twitter</groupId>,1)
+((the,1)
+(/>,1)
+(<filters>,1)
+(</artifactSet>,1)
+(<groupId>com.google.guava</groupId>,1)
+(<artifactId>spark-mllib_${scala.binary.version}</artifactId>,1)
+(<dependency>,25)
+(on,1)
+(You,2)
+(<groupId>org.spark-project.protobuf</groupId>,1)
+(agreements.,1)
+(<excludes>,1)
+(at,1)
+(in,3)
+(<groupId>commons-logging</groupId>,1)
+(<artifactId>spark-streaming-twitter_${scala.binary.version}</artifactId>,1)
+(<artifactId>spark-graphx_${scala.binary.version}</artifactId>,1)
+(<artifactId>slf4j-api</artifactId>,1)
+(copy,1)
+(dependencies.,1)
+(distributed,3)
+(<artifactId>scala-library</artifactId>,1)
+(Project,1)
+(</filter>,1)
+(<testOutputDirectory>target/scala-${scala.binary.version}/test-classes</testOutputDirectory>,1)
+(use,1)
+(except,1)
+(may,2)
+(OF,1)
+(<artifactId>spark-streaming_${scala.binary.version}</artifactId>,1)
+(<artifactId>libthrift</artifactId>,1)
+(<includes>,1)
+(<groupId>org.apache.commons</groupId>,3)
+(you,1)
+(<groupId>io.netty</groupId>,2)
+(<modelVersion>4.0.0</modelVersion>,1)
+(<artifact>*:*</artifact>,1)
+(that,1)
+(a,1)
+(or,3)
+(<plugin>,3)
+(work,1)
+(to,5)
+(http://www.apache.org/licenses/LICENSE-2.0,1)
+(<exclusions>,6)
+(applicable,1)
+(<type>test-jar</type>,1)
+(more,1)
+(<artifactId>avro</artifactId>,1)
+(<artifactId>jersey-core</artifactId>,2)
+(<artifactId>algebird-core_${scala.binary.version}</artifactId>,1)
+(of,2)
+(<artifactId>jline</artifactId>,1)
+(<id>hive-provided</id>,1)
+((ASF),1)
+(governing,1)
+(regarding,1)
+(<groupId>org.apache.cassandra</groupId>,1)
+(ownership.,1)
+(License,,1)
+(</exclusion>,35)
+(Foundation,1)
+(and,1)
+(copyright,1)
+(<artifactId>concurrentlinkedhashmap-lru</artifactId>,1)
+(compliance,1)
+(</build>,1)
+(Licensed,1)
+(<artifactId>commons-math3</artifactId>,2)
+(additional,1)
+(<transformer,3)
+
+scala> val joined = readmeCount.join(pomCount)
+joined: org.apache.spark.rdd.RDD[(String, (Int, Int))] = MapPartitionsRDD[31] at join at <console>:31
+
+scala> joined.cache()
+res21: joined.type = MapPartitionsRDD[31] at join at <console>:31
+
+scala> joined.collect.foreach(println)
+(file,(1,3))
+(are,(1,1))
+(Apache,(1,2))
+(is,(6,2))
+(uses,(1,1))
+(this,(1,3))
+(one,(2,1))
+(with,(4,2))
+(,(67,2931))
+(The,(1,2))
+(the,(21,10))
+(not,(1,1))
+(be,(2,1))
+(on,(6,1))
+(at,(2,1))
+(use,(3,1))
+(or,(3,3))
+(of,(5,2))
+(Spark,(14,1))
+(following,(2,1))
+(which,(2,1))
+(See,(1,2))
+(for,(12,2))
+(an,(3,1))
+(You,(3,2))
+(in,(5,3))
+(you,(4,1))
+(that,(3,1))
+(a,(10,1))
+(to,(14,5))
+(and,(10,1))
+
+scala> val joinedSum = joined.map(k => (k._1, (k._2)._1 + (k._2)._2))
+joinedSum: org.apache.spark.rdd.RDD[(String, Int)] = MapPartitionsRDD[32] at map at <console>:29
+
+scala> joinedSum.collect() foreach println
+(file,4)
+(are,2)
+(Apache,3)
+(is,8)
+(uses,2)
+(this,4)
+(one,3)
+(with,6)
+(,2998)
+(The,3)
+(the,31)
+(not,2)
+(be,3)
+(on,7)
+(at,3)
+(use,4)
+(or,6)
+(of,7)
+(Spark,15)
+(following,3)
+(which,3)
+(See,3)
+(for,14)
+(an,4)
+(You,5)
+(in,8)
+(you,5)
+(that,4)
+(a,11)
+(to,19)
+(and,11)
+
+scala> println("Joined Individial\n")
+Joined Individial
+
+scala> joined.take(5).foreach(println)
+(file,(1,3))
+(are,(1,1))
+(Apache,(1,2))
+(is,(6,2))
+(uses,(1,1))
+
+scala> println("\n\nJoined Sum\n")
+
+Joined Sum
+
+scala> joinedSum.take(5).foreach(println)
+(file,4)
+(are,2)
+(Apache,3)
+(is,8)
+(uses,2)
+
+#SHARED VARIABLES
+
+scala> val broadcastVar = sc.broadcast(Array(1,2,3))
+broadcastVar: org.apache.spark.broadcast.Broadcast[Array[Int]] = Broadcast(30)
+
+scala> broadcastVar.value
+res32: Array[Int] = Array(1, 2, 3)
+
+scala> val accum = sc.accumulator(0)
+
+accum = 0
+warning: there were two deprecation warnings; re-run with -deprecation for details
+0
+
+
+
+
+
+
+
 
 
 
