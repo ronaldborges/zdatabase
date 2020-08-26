@@ -29,6 +29,7 @@ INTERNAL NETWORK privnet2
 
 2 - MOUNT ISO ON NODE 1
 mount -F hsfs /root/osc-4_4-repo-full.iso /mnt
+pkg set-publisher -g file:///mnt/repo ha-cluster
 
 3 - CHECK MOUNT POINT
  df -h /mnt
@@ -144,8 +145,5 @@ ha-cluster/system/manual/data-services (ha-cluster) 4.4-0.21.0                 -
 ha-cluster/system/manual/locale (ha-cluster)      4.4-0.21.0                 ---
 ha-cluster/system/preinstall (ha-cluster)         4.4-0.21.0                 ---
 
-pkg install ha-cluster-incorporation
-ha-cluster/system/core
-ha-cluster/developer/api
-ha-cluster/ha-service/gds
-pkg install ha-cluster/data-service/ha-zones
+
+pkg install ha-cluster/ha-service/gds
