@@ -54,6 +54,11 @@ pkg publisher ha-cluster | grep Mirror
 #NOTE
 If the output is empty you are all set. If not remove unrelated mirrors by running:
 
+pkg publisher
+PUBLISHER                   TYPE     STATUS P LOCATION
+solaris                     origin   online F http://pkg.oracle.com/solaris/release/
+ha-cluster                  origin   online F https://pkg.oracle.com/ha-cluster/release/
+
 pkg list -a 'pkg://ha-cluster/*'
 NAME (PUBLISHER)                                  VERSION                    IFO
 ha-cluster/data-service/apache (ha-cluster)       4.4-0.21.0                 ---
