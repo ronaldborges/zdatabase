@@ -1,0 +1,121 @@
+
+
+1 - COPY osc-4_4-repo-full.iso TO NODE 1
+
+2 - MOUNT ISO ON NODE 1
+mount -F hsfs /root/osc-4_4-repo-full.iso /mnt
+
+3 - CHECK MOUNT POINT
+ df -h /mnt
+Filesystem             Size   Used  Available Capacity  Mounted on
+/root/osc-4_4-repo-full.iso
+                       1.6G   1.6G         0K   100%    /mnt
+					   
+4 - ENABLE REPOSITORY
+Go to https://pkg-register.oracle.com.
+	Choose Oracle Solaris Cluster software.
+		Accept the license.
+			Request a new certificate by choosing Oracle Solaris Cluster software and submitting a request.
+				The certification page is displayed with download buttons for the key and the certificate.
+					Download the key and certificate files and install them as described in the returned certification page.
+						Configure the ha-cluster publisher with the downloaded SSL keys and set the location of the Oracle Solaris Cluster 4.4 repository
+							Copy to /root on both nodes theses files pkg.oracle.com.key.pem, pkg.oracle.com.certificate.pem
+pkg set-publisher \
+       	    -k pkg.oracle.com.key.pem \
+       	    -c pkg.oracle.com.certificate.pem \
+       	    -G "*" -g https://pkg.oracle.com/ha-cluster/release ha-cluster
+			
+pkg publisher ha-cluster | grep Mirror			
+#NOTE
+If the output is empty you are all set. If not remove unrelated mirrors by running:
+
+pkg list -a 'pkg://ha-cluster/*'
+NAME (PUBLISHER)                                  VERSION                    IFO
+ha-cluster/data-service/apache (ha-cluster)       4.4-0.21.0                 ---
+ha-cluster/data-service/dhcp (ha-cluster)         4.4-0.1.0                  --o
+ha-cluster/data-service/dns (ha-cluster)          4.4-0.21.0                 ---
+ha-cluster/data-service/glassfish-message-queue (ha-cluster) 4.4-0.21.0                 ---
+ha-cluster/data-service/goldengate (ha-cluster)   4.4-0.21.0                 ---
+ha-cluster/data-service/ha-zones (ha-cluster)     4.4-0.21.0                 ---
+ha-cluster/data-service/iplanet-web-server (ha-cluster) 4.4-0.21.0                 ---
+ha-cluster/data-service/mysql (ha-cluster)        4.4-0.21.0                 ---
+ha-cluster/data-service/nfs (ha-cluster)          4.4-0.21.0                 ---
+ha-cluster/data-service/oracle-database (ha-cluster) 4.4-0.21.0                 ---
+ha-cluster/data-service/oracle-external-proxy (ha-cluster) 4.4-0.21.0                 ---
+ha-cluster/data-service/oracle-fmw (ha-cluster)   4.4-0.21.0                 ---
+ha-cluster/data-service/oracle-http-server (ha-cluster) 4.4-0.21.0                 ---
+ha-cluster/data-service/oracle-pmn-server (ha-cluster) 4.4-0.21.0                 ---
+ha-cluster/data-service/oracle-traffic-director (ha-cluster) 4.4-0.21.0                 ---
+ha-cluster/data-service/postgresql (ha-cluster)   4.4-0.21.0                 ---
+ha-cluster/data-service/samba (ha-cluster)        4.4-0.21.0                 ---
+ha-cluster/data-service/sap-livecache (ha-cluster) 4.4-0.21.0                 ---
+ha-cluster/data-service/sapdb (ha-cluster)        4.4-0.21.0                 ---
+ha-cluster/data-service/sapnetweaver (ha-cluster) 4.4-0.21.0                 ---
+ha-cluster/data-service/sybase (ha-cluster)       4.4-0.21.0                 ---
+ha-cluster/data-service/timesten (ha-cluster)     4.4-0.21.0                 ---
+ha-cluster/data-service/tomcat (ha-cluster)       4.4-0.21.0                 ---
+ha-cluster/data-service/weblogic (ha-cluster)     4.4-0.21.0                 ---
+ha-cluster/data-service/websphere-message-queue (ha-cluster) 4.4-0.21.0                 ---
+ha-cluster/developer/agent-builder (ha-cluster)   4.4-0.21.0                 ---
+ha-cluster/developer/api (ha-cluster)             4.4-0.21.0                 ---
+ha-cluster/geo/geo-framework (ha-cluster)         4.4-0.21.0                 ---
+ha-cluster/geo/manual (ha-cluster)                4.4-0.21.0                 ---
+ha-cluster/geo/replication/availability-suite (ha-cluster) 4.4-0.1.0                  --o
+ha-cluster/geo/replication/data-guard (ha-cluster) 4.4-0.21.0                 ---
+ha-cluster/geo/replication/sbp (ha-cluster)       4.4-0.21.0                 ---
+ha-cluster/geo/replication/srdf (ha-cluster)      4.4-0.21.0                 ---
+ha-cluster/geo/replication/truecopy-ur (ha-cluster) 4.4-0.21.0                 ---
+ha-cluster/geo/replication/zfs-sa (ha-cluster)    4.4-0.21.0                 ---
+ha-cluster/geo/replication/zfs-snapshot (ha-cluster) 4.4-0.21.0                 ---
+ha-cluster/group-package/ha-cluster-data-services-full (ha-cluster) 4.4-0.21.0                 ---
+ha-cluster/group-package/ha-cluster-framework-full (ha-cluster) 4.4-0.21.0                 ---
+ha-cluster/group-package/ha-cluster-framework-l10n (ha-cluster) 4.4-0.21.0                 ---
+ha-cluster/group-package/ha-cluster-framework-minimal (ha-cluster) 4.4-0.21.0                 ---
+ha-cluster/group-package/ha-cluster-framework-scm (ha-cluster) 4.4-0.21.0                 ---
+ha-cluster/group-package/ha-cluster-framework-slm (ha-cluster) 4.4-0.21.0                 ---
+ha-cluster/group-package/ha-cluster-full (ha-cluster) 4.4-0.21.0                 ---
+ha-cluster/group-package/ha-cluster-geo-full (ha-cluster) 4.4-0.21.0                 ---
+ha-cluster/group-package/ha-cluster-geo-incorporation (ha-cluster) 4.4-0.21.0                 ---
+ha-cluster/group-package/ha-cluster-incorporation (ha-cluster) 4.4-0.21.0                 ---
+ha-cluster/group-package/ha-cluster-minimal (ha-cluster) 4.4-0.21.0                 ---
+ha-cluster/group-package/ha-cluster-quorum-server-full (ha-cluster) 4.4-0.21.0                 ---
+ha-cluster/group-package/ha-cluster-quorum-server-l10n (ha-cluster) 4.4-0.21.0                 ---
+ha-cluster/ha-service/derby (ha-cluster)          4.4-0.21.0                 ---
+ha-cluster/ha-service/gds (ha-cluster)            4.4-0.21.0                 ---
+ha-cluster/ha-service/gds2 (ha-cluster)           4.4-0.21.0                 ---
+ha-cluster/ha-service/logical-hostname (ha-cluster) 4.4-0.21.0                 ---
+ha-cluster/ha-service/smf-proxy (ha-cluster)      4.4-0.21.0                 ---
+ha-cluster/ha-service/telemetry (ha-cluster)      4.4-0.21.0                 ---
+ha-cluster/library/cacao (ha-cluster)             4.4-0.21.0                 ---
+ha-cluster/library/ucmm (ha-cluster)              4.4-0.21.0                 ---
+ha-cluster/locale (ha-cluster)                    4.4-0.21.0                 ---
+ha-cluster/release/name (ha-cluster)              4.4-0.21.0                 ---
+ha-cluster/service/management (ha-cluster)        4.4-0.21.0                 ---
+ha-cluster/service/management/analytics (ha-cluster) 4.4-0.21.0                 ---
+ha-cluster/service/management/slm (ha-cluster)    4.4-0.21.0                 ---
+ha-cluster/service/quorum-server (ha-cluster)     4.4-0.21.0                 ---
+ha-cluster/service/quorum-server/locale (ha-cluster) 4.4-0.21.0                 ---
+ha-cluster/service/quorum-server/manual (ha-cluster) 4.4-0.21.0                 ---
+ha-cluster/service/quorum-server/manual/locale (ha-cluster) 4.4-0.21.0                 ---
+ha-cluster/storage/svm-mediator (ha-cluster)      4.4-0.21.0                 ---
+ha-cluster/storage/zfssa-client (ha-cluster)      1.0.6-2                    ---
+ha-cluster/storage/zfssa-gcclient (ha-cluster)    1.1.0-11                   ---
+ha-cluster/system/cfgchk (ha-cluster)             4.4-0.21.0                 ---
+ha-cluster/system/core (ha-cluster)               4.4-0.21.0                 ---
+ha-cluster/system/dsconfig-wizard (ha-cluster)    4.4-0.21.0                 ---
+ha-cluster/system/dsconfig-wizard/locale (ha-cluster) 4.4-0.21.0                 ---
+ha-cluster/system/install (ha-cluster)            4.4-0.21.0                 ---
+ha-cluster/system/management/puppet/oracle-solaris_cluster (ha-cluster) 4.4-0.21.0                 ---
+ha-cluster/system/manager (ha-cluster)            4.4-0.21.0                 ---
+ha-cluster/system/manager-glassfish3 (ha-cluster) 4.4-0.1.0                  --o
+ha-cluster/system/manager-wls (ha-cluster)        4.4-0.21.0                 ---
+ha-cluster/system/manual (ha-cluster)             4.4-0.21.0                 ---
+ha-cluster/system/manual/data-services (ha-cluster) 4.4-0.21.0                 ---
+ha-cluster/system/manual/locale (ha-cluster)      4.4-0.21.0                 ---
+ha-cluster/system/preinstall (ha-cluster)         4.4-0.21.0                 ---
+
+pkg install ha-cluster-incorporation
+ha-cluster/system/core
+ha-cluster/developer/api
+ha-cluster/ha-service/gds
+pkg install ha-cluster/data-service/ha-zones
