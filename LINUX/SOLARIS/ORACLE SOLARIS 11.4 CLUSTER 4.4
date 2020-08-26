@@ -2,6 +2,29 @@
 +     ORACLE SOLARIS 11.4 CLUSTER 4.4    +
 ++++++++++++++++++++++++++++++++++++++++++
 
+#NOTE
++----------------------------------------+
+| Environment deploy on Virtual Box	 |
++----------------------------------------+
+SOLARIS_114_CLUSTER44_n1
+cpu 1
+4GB ram
+36GB disk 1
+BRIDGE NETWORK
+INTERNAL NETWORK privnet1
+INTERNAL NETWORK privnet2
++----------------------------------------+
+SOLARIS_114_CLUSTER44_n2
+cpu 1
+4GB ram
+36GB disk 1
+BRIDGE NETWORK
+INTERNAL NETWORK privnet1
+INTERNAL NETWORK privnet2
++----------------------------------------+
+
+#PREPARE ENVIRONMENT
+
 1 - COPY osc-4_4-repo-full.iso TO NODE 1
 
 2 - MOUNT ISO ON NODE 1
