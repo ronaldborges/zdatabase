@@ -66,6 +66,41 @@ Name:   www.google.com
 Address: 172.217.29.132
 > exit
 
+#ENABLE ISCSI SOLARIS 11
+svcadm enable network/iscsi/initiator
+
+svcs -a network/iscsi/initiator
+svcs: -a ignored when used with arguments.
+STATE          STIME    FMRI
+online          5:59:57 svc:/network/iscsi/initiator:default
+
+#LIST INITIATOR-NODE
+iscsiadm list initiator-node
+Initiator node name: iqn.1986-03.com.sun:01:94036b4f1ba0.5f4cbc0d
+Initiator node alias: solarisrac1
+        Login Parameters (Default/Configured):
+                Header Digest: NONE/-
+                Data Digest: NONE/-
+                Max Connections: 65535/-
+        Authentication Type: NONE
+        RADIUS Server: NONE
+        RADIUS Access: unknown
+        Tunable Parameters (Default/Configured):
+                Session Login Response Time: 60/-
+                Maximum Connection Retry Time: 180/-
+                Login Retry Time Interval: 60/-
+        Configured Sessions: 1
+
+#CHAP: SET THE SECRET KEY ON THE INITIATOR
+iscsiadm modify initiator-node --CHAP-secret
+Enter secret: CHAPsecret22
+Re-enter secret: CHAPsecret22
+
+#CONFIGURE TARGET
+iscsiadm add static-config iqn.1986-03.com.sun:01:94036b4f1ba0.5f4cbc0d,<$IP>:2360
+iscsiadm list static-config
+iscsiadm modify discovery --static enable
+
 #SOLARIS PREPACKAGE INSTALLATION
 pkg install solaris-minimal-server
            Packages to install:  1
