@@ -32,18 +32,14 @@ Executing…
 SQL> select * from dba_blockers;
 
 HOLDING_SESSION CON_ID
-
-————— ———-
-
-              5 0
+——————————————— ———————
+5               0
 
 SQL> select sid, serial #, last_call_et from v $ session where sid = 5;
 
-       SID SERIAL # LAST_CALL_ET
-
-———- ———- ————
-
-         5 15512 90
+SID SERIAL# LAST_CALL_ET
+——— ——————— —————————————
+5   15512   90
 
 SQL> /
 
@@ -53,18 +49,13 @@ SQL> select * from dba_blockers;
 
 no rows selected
 
-
 2020-06-29T06: 09: 35.379265 + 00: 00
-
 KILL SESSION for sid = (5, 15512):
+Reason = max_idle_blocker_time parameter
+Mode = KILL HARD SAFE - / - / NO_REPLAY
+Requestor = PMON (orapid = 2, ospid = 27752, inst = 1)
+Owner = Process: USER (orapid = 64, ospid = 21818)
+Result = ORA-0
 
-  Reason = max_idle_blocker_time parameter
 
-  Mode = KILL HARD SAFE - / - / NO_REPLAY
-
-  Requestor = PMON (orapid = 2, ospid = 27752, inst = 1)
-
-  Owner = Process: USER (orapid = 64, ospid = 21818)
-
-  Result = ORA-0
 
