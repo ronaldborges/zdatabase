@@ -1,0 +1,99 @@
++++++++++++++++++++++++++++++++++++++
++  ORACLE DATABASE 19C HINT_REPORT  +
++++++++++++++++++++++++++++++++++++++
+
+#NOTE
+When using multiple HINTs in the command text (especially a complex query), we may be looking for a way to ensure that Oracle uses these HINTs, 
+or to know which of these hints to spend in general. Commented and how many hints have been used?
+A new and simple feature in Oracle 19c was introduced so that you can view a report while reading the execution plan about the optimizer hearing letter 
+from the hints in the command text.
+To display this feature, we create a table and enter information in it
+
+SQL> create table mytbl (id number, name varchar2 (100), last_name varchar2 (100));
+
+Table created.
+
+SQL> insert into mytbl values ​​(1, 'DANILO', 'TESTE');
+
+1 row (s) inserted.
+
+SQL> commit;
+
+Statement processed.
+
+#NOTE
+We are going to use parallel hint and FULL hint to read the mytbl table.
+Next, by studying the execution plan of the command, we will check whether these hints are used when referring to the desired table or not?
+
+SQL> explain plan for select /*+ FULL (a) parallel (10) */* from mytbl a;
+
+Statement processed.
+
+SQL> SELECT * FROM table (DBMS_XPLAN.DISPLAY (FORMAT => 'BASIC + HINT_REPORT '));
+
+Plan hash value: 2441970110
+
+-------------------------------------------------------
+| Id | Operation                     | Name           |
+-------------------------------------------------------
+| 0  | SELECT STATEMENT              |                |
+| 1  |  PX COORDINATOR               |                |
+| 2  |   PX SEND QC (RANDOM)         | :TQ10000       |
+| 3  |    PX BLOCK ITERATOR          |                |
+| 4  |      TABLE ACCESS STORAGE FULL| MYTBL          |
+-------------------------------------------------------
+
+Hint Report (identified by operation id / Query Block Name / Object Alias):
+Total hints for statement: 2
+---------------------------------------------------------------------------
+
+  0 - STATEMENT
+       - parallel(10)
+       
+  4 - SEL$1 / A@SEL$1
+       - FULL(a)
+       
+#NOTE
+In the output of the previous command, it is visible, which uses both hints in the text 
+
+Hint Report (identified by operation id / Query Block Name / Object Alias):
+  Total hints for statement: 2
+
+#NOTE
+Now, to get more familiar with the specialized terms of this report, we will use other 
+
+Suppose we mistakenly enter the phrase "parallel" in the text of the command, we also use the hints index and use_nl, 
+what will happen in the previous report?
+
+SQL> explain plan for select /*+ FULL (a) use_nl (a) use_nl (mm) index (a) paralell (10) */* from mytbl a;
+
+Statement processed.
+
+SQL> SELECT * FROM table (DBMS_XPLAN.DISPLAY (FORMAT => 'BASIC + HINT_REPORT '));
+
+-------------------------------------------------------
+| Id | Operation                     | Name           |
+-------------------------------------------------------
+| 0  | SELECT STATEMENT              |                |
+| 0  |   TABLE ACCESS STORAGE FULL   |  MYTBL         |
+-------------------------------------------------------
+
+Hint Report (identified by operation id / Query Block Name / Object Alias):
+Total hints for statement: 5 (U - Unused (3), N - Unresolved (1), E - Syntax error (1))
+-----------------------------------------------------------------------------------------
+
+  1 - SEL$1
+        N - use_nl(mm)
+        E - paralell
+        
+  1 - SEL$1 / A@SEL$1
+        U - FULL (a) / hint conflicts with another in sibling query block
+        U - index(a) / hint conflicts with another in sibling query block
+        U - use_nl(a)
+
+#NOTE
+As can be seen in the output of the command, due to the syntax error, the parallel
+hint is not used. Also, there is a conflict between the two hints, FULL and INDEX. 
+use_nl (a will also be meaningless and useless. Also, using hint (use_nl (mm) in this command is basically meaningless
+
+
