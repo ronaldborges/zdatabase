@@ -1,0 +1,260 @@
+++++++++++++++++++++++++++++++++++++++++++++++++++++++
++  ORACLE DATABASE 19C SCHEMA ONLY ACCOUNTS FEATURE  +
+++++++++++++++++++++++++++++++++++++++++++++++++++++++
+
+#NOTE
+In pre-Oracle 18c versions, creating a user was only possible by specifying its AUTHENTICATION method, and in general, 
+in these versions (12c, 11g, 10g), there are three AUTHENTICATION methods for users:
+
+Password : SQL> create user usef1 identified by password;
+
+External : SQL> create user usef2 identified externally;
+
+Global : SQL> create user usef3 identified globally;
+
+#NOTE
+If you use the Password method, the hashed form of the user's password is stored in a table of the bank ($ user table) and 
+in the other two cases (External - Global), the user's password will not be stored in the database and AUTHENTICATION is performed outside the database.
+By offering a new feature, Oracle 18c made it possible to create a user without specifying the AUTHENTICATION method, 
+which will make it impossible to log in directly to this type of user.
+In other words, this feature can eliminate the possibility of direct logging into application schemas due to security 
+sensitivities as well as their high level of access. This feature can also be enabled (with the help of the alter user command).
+In this case, the possibility of direct login for user usef_schema will be lost and the password of this user will not be stored in the $ user table:
+Also for this type of user, the AUTHENTICATION_TYPE field in the dba_users view will be NONE:
+Granting privileges and roles to this type of user can be done like other users:
+By granting these permissions, you can create objects for this user or manage the objects of this user through licensed users:
+For example, with the following command, the user usef_schema will be created without specifying the AUTHENTICATION method:
+
+SQL> CREATE USER usef_schema NO AUTHENTICATION;
+
+User created.
+
+SQL> conn usef_schema
+
+ORA-01017: invalid username / password; logon denied
+
+SQL> select name, password from user $ where name like '% USEF%';
++--------------+------------------+
+| NAME         | PASSWORD         |
++--------------+------------------+
+| USEF_SCHEMA  | 6960C12A05241444 |
++--------------+------------------+
+| USEF1        | A0B2E99486DA58BF |
++--------------+------------------+
+| USEF2        | EXTERNAL         |
++--------------+------------------+
+| USEF3        | GLOBAL           |
++--------------+------------------+
+
+SQL> select USERNAME, AUTHENTICATION_TYPE from dba_users where USERNAME = 'USEF_SCHEMA';
++--------------+---------------------+
+| USERNAME     | AUTHENTICATION_TYPE |
++--------------+---------------------+
+| USEF         | PASSWORD            |
++--------------+---------------------+
+| USEF1        | PASSWORD            |
++--------------+---------------------+
+| USEF2        | EXTERNAL            |
++--------------+---------------------+
+| USEF3        | GLOBAL              |
++--------------+---------------------+
+| USEF_SCHEMA  | NONE                |
++--------------+---------------------+
+
+SQL> grant connect, resource to usef_schema;
+
+Grant succeeded.
+
+SQL> alter user usef_schema quota unlimited on users ;
+
+User altered.
+
+SQL> alter user usef_schema default tablespace users;
+
+User altered.
+
+SQL> grant connect, unlimited tablespace, create any table, select any table to usef;
+
+Grant succeeded.
+
+SQL> conn usef/a
+
+Connected.
+
+SQL> create table usef_schema.mytbl as select * from dual;
+
+Table created.
+
+SQL> drop table usef_schema.mytbl;
+
+ORA-01031: insufficient privileges
+The following command will display a list of USEF_SCHEMA user objects
+
+SQL> select owner, object_name, object_type from dba_objects p where p.owner = 'USEF_SCHEMA';
++-------------+-------------+-------------+
+| OWNER       | OBJECT_NAME | OBJECT_TYPE |
++-------------+-------------+-------------+
+| USEF_SCHEMA | MYTBL       | TABLE       |
++-------------+-------------+-------------+
+
+#NOTE
+If you use the Schema Only Accounts feature, you can connect to this type of schema through a proxy connection. 
+This can be done by granting proxy authentication to a user.
+Connection can be done both locally and remotely:
+For example, by running the following command, you can connect to usef_schema via the usef user:
+
+SQL> ALTER USER usef_schema GRANT CONNECT THROUGH usef;
+
+User altered.
+
+–Local
+
+SQL> CONN usef [usef_schema]/a
+
+Connected.
+
+–Remote
+
+SQL> CONN usef [usef_schema]/a@//<$IP>:1521/service_name
+
+Connected.
+
+#NOTE
+By executing the show user command and using the USERENV app context, we will see that we are connected to the usef_schema schema:
+
+SQL> show user
+
+USER is “USEF_SCHEMA”
+
+SQL> select sys_context ('USERENV', 'SESSION_USER') as session_user, sys_context ('USERENV', 'SESSION_SCHEMA') as session_schema, sys_context ('USERENV', 'PROXY_USER') as proxy from dual;
+
+SESSION_USER SESSION_SCHEMA PROXY
+———————————— —————————————— ——————————
+USEF_SCHEMA  USEF_SCHEMA    USEF
+
+#NOTE
+You have already noticed that the usef user could not delete the mytbl table due to lack of the necessary permissions.
+
+SQL> drop table usef_schema.mytbl;
+
+Table dropped.
+
+#NOTE
+As you can see, the mytbl table has been removed.
+Proxy authentication can be granted to multiple users, for example, with the following command, we also give this permission to the nima user:
+
+SQL> ALTER USER usef_schema GRANT CONNECT THROUGH nima;
+
+User altered.
+
+#NOTE
+Question! If the nima user makes a change after connecting to usef_schema, is it detectable in auditing?
+The answer is yes. See the example below.
+First we create an audit policy called mypol1:
+Enable the created audit policy for user usef_schema:
+With the help of the nima user, we connect to usef_schema schema and delete and create a table:
+
+SQL>  create audit policy mypol1 roles dba;
+
+Audit policy created.
+
+SQL> audit policy mypol1 by usef_schema;
+
+Audit succeeded.
+
+SQL>  conn nima [usef_schema]/a
+
+Connected.
+
+SQL> drop table mytbl;
+
+Table dropped.
+
+SQL>  create table mytbl as select name from v $ datafile;
+
+Table created.
+
+#NOTE
+By visiting the unified_audit_trail view, we will see that in the DBPROXY_USERNAME column  , the nima username is also visible:
+
+SQL> select p.dbusername, p.dbproxy_username, p.action_name, p.event_timestamp, p.sql_text from unified_audit_trail p where p.unified_audit_policies = 'MYPOL1 ′;
++----------------+--------------+--------------+--------------------+-----------------------------------------------------+
+|  DBUSERNAME    | DBPROXY_USER | ACTION_NAME  | EVENT_TIMESTAMP    | SQL_TEXT                                            |
++----------------+--------------+--------------+--------------------+-----------------------------------------------------+
+| USEF_SCHEMA    | NIMA         | LOGON        | 02-APR-19 12.21.39 |                                                     |
++----------------+--------------+--------------+--------------------+-----------------------------------------------------+
+| USEF_SCHEMA    | NIMA         | CREATE TABLE | 02-APR-19 12.21.53 | CREATE TABLE MYTABLE AS SELECT NAME FROM V$DATAFILE |
++----------------+--------------+--------------+--------------------+-----------------------------------------------------+
+
+#NOTE
+To view the list of proxy users, you can use the proxy_users view
+
+SQL> select * from proxy_users where client = 'USEF_SCHEMA';
+PROXY CLIENT      AUT FLAGS
+————— ——————————— ——— ————————————————————————————————————
+USEF  USEF_SCHEMA NO  PROXY MAY ACTIVATE ALL CLIENT ROLES
+NIMA  USEF_SCHEMA NO  PROXY MAY ACTIVATE ALL CLIENT ROLES
+
+#NOTE
+In Oracle 18c , it is not possible to grant Administrative privileges including sysdba and sysoper to Schema Only Accounts users:
+
+SQL> grant sysdba to USEF_SCHEMA;
+
+ORA-40366: Administrative privilege cannot be granted to this user.
+As a new feature in Oracle 19c , admin privileges can be granted to Schema Only Accounts
+
+sqlplus "/ as sysdba"
+
+SQL * Plus: Release 19.0.0.0.0 - Production on Fri Apr 5 02:52:25 2019
+
+Version 19.2.0.0.0
+
+SQL> CREATE USER usef_schema NO AUTHENTICATION;
+
+User created.
+
+SQL> grant sysdba to USEF_SCHEMA;
+
+Grant succeeded.
+
+#NOTE
+After creating a user, its AUTHENTICATION method can be changed or if the user is of the Schema Only Accounts type, 
+an AUTHENTICATION method can be defined for that, this can be done easily with the help of the alter user command.
+For example, usef_schema will exit Schema Only Accounts mode with the following.
+You can also use the alter user command to convert a user with a specific AUTHENTICATION method to Schema Only Accounts:
+
+SQL> alter user USEF_SCHEMA identified by a;
+
+User altered.
+
+SQL> conn usef_schema/a
+
+Connected.
+
+SQL> select USERNAME, AUTHENTICATION_TYPE from dba_users where USERNAME = 'USEF_SCHEMA';
+USERNAME    AUTHENTI
+——————————— —————————
+USEF_SCHEMA PASSWORD
+
+SQL> alter user usef no AUTHENTICATION;
+
+User altered.
+
+#END
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
