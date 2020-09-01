@@ -6,7 +6,7 @@ The objective of this procedure is to establish a database environment distribut
 follow the steps
 
 #INSTALL DEVELOPMENT TOOLS PACKAGES
-yum group install "Development Tools"
+yum install -y glibc-static libstdc++-static
 
 #DOWNLOAD RPMS FILES FROM ORACLE WEBSITE
 oracle-instantclient19.6-basic-19.6.0.0.0-1.x86_64.rpm
