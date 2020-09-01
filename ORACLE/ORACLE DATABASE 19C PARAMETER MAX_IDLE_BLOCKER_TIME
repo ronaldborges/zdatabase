@@ -1,0 +1,70 @@
++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
++  ORACLE DATABASE 19C PARAMETER MAX_IDLE_BLOCKER_TIME  +
++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+
+#NOTE
+You can kill a session that holds the record (generally a resource) and subsequently blocks another session after a certain period of time, 
+provided that this session (the blocker) ) During this time, be idle. For example, by executing the following command, 
+the blocker will be killed after being idle for one minute.
+
+SQL> alter system set max_idle_blocker_time = 1;
+
+–Session 1:
+
+SQL> select sid, serial # from v $ session where sid = (select sid from v $ mystat where rownum = 1);
+
+SID SERIAL#
+——— ————————
+5   15512
+
+SQL> delete mtbl where file # = 1;
+
+1 row deleted.
+
+–Session 2:
+
+SQL> delete mtbl where file # = 1;
+
+Executing…
+
+–Session 3:
+
+SQL> select * from dba_blockers;
+
+HOLDING_SESSION CON_ID
+
+————— ———-
+
+              5 0
+
+SQL> select sid, serial #, last_call_et from v $ session where sid = 5;
+
+       SID SERIAL # LAST_CALL_ET
+
+———- ———- ————
+
+         5 15512 90
+
+SQL> /
+
+no rows selected
+
+SQL> select * from dba_blockers;
+
+no rows selected
+
+
+2020-06-29T06: 09: 35.379265 + 00: 00
+
+KILL SESSION for sid = (5, 15512):
+
+  Reason = max_idle_blocker_time parameter
+
+  Mode = KILL HARD SAFE - / - / NO_REPLAY
+
+  Requestor = PMON (orapid = 2, ospid = 27752, inst = 1)
+
+  Owner = Process: USER (orapid = 64, ospid = 21818)
+
+  Result = ORA-0
+
