@@ -254,6 +254,44 @@ from
 ) as tabledefinition
 group by table_schema, relname, foreign_server_name, usename;
 
+#GENERATE ALL FOREIGN TABLE METADATA POSTGRES ON REMOTE DATABASE MANUAL
+SELECT                                          
+	'CREATE SCHEMA IF NOT EXISTS ' || table_schema || ' AUTHORIZATION ' || usename || ';' || E'\n' ||
+	'DROP FOREIGN TABLE ' || table_schema || '.' || relname || ';' || E'\n' ||
+	'CREATE FOREIGN TABLE ' || table_schema || '.' || relname || E'\n(\n' ||
+  array_to_string(
+    array_agg(
+      '    ' || column_name || ' ' ||  type || ' '|| not_null
+    )
+    , E',\n'
+  ) || E'\n)\n SERVER ' || foreign_server_name  || E'\n OPTIONS (schema_name ''' || table_schema || ''', table_name ''' || relname || ''');' || E'\n ALTER TABLE ' || table_schema || '.' || relname || ' OWNER TO ' || usename || ';' || E'\n GRANT SELECT ON TABLE ' || table_schema || '.' || relname || ' TO ' || usename || ';'
+from
+(SELECT ftl.table_schema,
+    c.relname, 
+    a.attname AS column_name,
+    pg_catalog.format_type(a.atttypid, a.atttypmod) as type,
+    case 
+      when a.attnotnull
+    then 'NOT NULL' 
+    else 'NULL' 
+    END as not_null,
+    ftl.foreign_server_name,
+    ftl.usename
+  FROM pg_class_f c,
+   pg_attribute_f a,
+   pg_type_f t,
+   pg_namespace_f pn,
+   fdw_tables_list ftl
+   where c.relnamespace = pn.oid
+   AND pn.nspname = ftl.table_schema
+   AND c.relname = ftl.table_name
+   AND a.attnum > 0
+   AND a.attrelid = c.oid
+   AND a.atttypid = t.oid
+ ORDER BY a.attnum
+) as tabledefinition
+group by table_schema, relname, foreign_server_name, usename;
+
 #END
 
 
