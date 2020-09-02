@@ -1,0 +1,135 @@
++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
++  ORACLE DATABASE 19C AUDIT ONLY TOP-LEVEL SQL STATEMENTS  +
++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+
+#NOTE
+If the volume of logs created by the unified auditing feature is relatively large, 
+we may encounter performance problems and a lack of storage to refer to and maintain audit trail information, 
+so auditing should be configured so that, if possible, additional information in the relevant table, Not to be registered.
+A new Oracle 19c feature called Auditing Only Top-Level SQL Statements can be effective in this regard.
+With this feature, you can only enable auditing for commands that are executed directly by the user (so-called Top-Level commands), 
+and avoid auditing commands that are executed following a procedure call.
+To use this feature, you just need to add the phrase ONLY TOPLEVEL to the CREATE AUDIT POLICY command. 
+Also, by referring to the AUDIT_ONLY_TOPLEVEL column in the AUDIT_UNIFIED_POLICIES view, 
+you can see the names of the audit policies that use this feature. See the example below.
+We want to audit some of the actions of the usef user. For this purpose, we create an audit policy with the following command:
+Then we enable the created audit policy for the usef user:
+The usef user runs the myproc1 procedure:
+
+SQL> create or replace procedure myproc1  as
+begin
+insert into  mytbl select * from v $ datafile;
+insert into  mytbl select * from v $ datafile;
+insert into  mytbl select * from v $ datafile;
+insert into  mytbl select * from v $ datafile;
+insert into  mytbl select * from v $ datafile;
+insert into  mytbl select * from v $ datafile;
+insert into  mytbl select * from v $ datafile;
+insert into  mytbl select * from v $ datafile;
+insert into  mytbl select * from v $ datafile;
+commit;
+end;
+
+Procedure created
+
+SQL> create audit policy actions_all_pol actions all;
+
+Audit policy created
+
+SQL> audit policy actions_all_pol by usef;
+
+Audit succeeded.
+
+SQL> exec myproc1;
+
+PL / SQL procedure successfully completed
+
+#NOTE
+By referring to the unified_audit_trail view, we will see that 11 records have been added to the audit trail to execute this command:
+We see the registered information by executing the following command:
+
+SQL> select count (*) from unified_audit_trail f where f.unified_audit_policies = 'ACTIONS_ALL_POL';
+
+11
+
+SQL> select f.sessionid, f.action_name, f.object_schema, f.object_name from unified_audit_trail f where f.unified_audit_policies = 'ACTIONS_ALL_POL';
+
++-----------+-------------+---------------------------------------------+
+| SESSIONID | ACTION_NAME | SQL_TEXT                                    |
++-----------+-------------+---------------------------------------------+
+| 61235836  | INSERT      | INSERT INTO MYTBL SELECT * FROM V$DATAFILE  |
++-----------+-------------+---------------------------------------------+
+| 61235836  | COMMIT      | COMIT                                       |
++-----------+-------------+---------------------------------------------+
+| 61235836  | EXECUTE     | BEGIN MYPROC1; END;                         | 
++-----------+-------------+---------------------------------------------+
+| 61235836  | INSERT      | INSERT INTO MYTBL SELECT * FROM V$DATAFILE  |
++-----------+-------------+---------------------------------------------+
+| 61235836  | INSERT      | INSERT INTO MYTBL SELECT * FROM V$DATAFILE  |
++-----------+-------------+---------------------------------------------+
+| 61235836  | INSERT      | INSERT INTO MYTBL SELECT * FROM V$DATAFILE  |
++-----------+-------------+---------------------------------------------+
+| 61235836  | INSERT      | INSERT INTO MYTBL SELECT * FROM V$DATAFILE  |
++-----------+-------------+---------------------------------------------+
+| 61235836  | INSERT      | INSERT INTO MYTBL SELECT * FROM V$DATAFILE  |
++-----------+-------------+---------------------------------------------+
+| 61235836  | INSERT      | INSERT INTO MYTBL SELECT * FROM V$DATAFILE  |
++-----------+-------------+---------------------------------------------+
+| 61235836  | INSERT      | INSERT INTO MYTBL SELECT * FROM V$DATAFILE  |
++-----------+-------------+---------------------------------------------+
+| 61235836  | INSERT      | INSERT INTO MYTBL SELECT * FROM V$DATAFILE  |
++-----------+-------------+---------------------------------------------+
+
+#NOTE
+As can be seen, the text of the insert commands contained in the myproc1 procedure are recorded in the audit trail.
+Now we are going to use the Auditing Only Top-Level SQL Statements feature and prevent additional information from being recorded. 
+So we repeat the procedure again.
+Delete the current aud $ unified table information and deactivate the created audit policy:
+Creating a new audit policy with the phrase ONLY TOPLEVEL:
+Activate the audit policy created for the user usef:
+Execution of the procedure by the user usef:
+By running this procedure, only 1 record will be added to the audit trail:
+
+SQL> begin
+dbms_audit_mgmt . clean_audit_trail (audit_trail_type => dbms_audit_mgmt.audit_trail_unified, use_last_arch_timestamp => false);
+end;
+/
+
+SQL> noaudit policy actions_all_pol by usef ;
+
+Noaudit succeeded.
+
+SQL> create audit policy TOPLEVEL_on  actions all ONLY TOPLEVEL ;
+
+Audit policy created.
+
+SQL> audit policy TOPLEVEL_on  by usef;
+
+Audit succeeded.
+
+SQL> exec myproc1;
+
+PL/SQL procedure successfully completed
+
+SQL> select f.sessionid, f.action_name, f.sql_text from unified_audit_trail f where f.unified_audit_policies = 'TOPLEVEL_ON';
+
++-----------+-------------+---------------------------------------------+
+| SESSIONID | ACTION_NAME | SQL_TEXT                                    |
++-----------+-------------+---------------------------------------------+
+| 2032623954| EXECUTE     | BEGIN MYPROC1; END;                         | 
++-----------+-------------+---------------------------------------------+
+
+#NOTE
+As you can see, with the Auditing Only Top-Level SQL Statements feature, only the command executed directly by the user will be recorded in the audit trail.
+
+
+
+
+
+
+
+
+
+
+
+
