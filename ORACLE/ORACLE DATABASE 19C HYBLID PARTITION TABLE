@@ -1,0 +1,186 @@
+++++++++++++++++++++++++++++++++++++++++++++++++
++  ORACLE DATABASE 19C HYBLID PARTITION TABLE  +
+++++++++++++++++++++++++++++++++++++++++++++++++
+
+#NOTE
+Hybrid Partition is a new feature introduced in Oracle 19c. With this feature, a combination of external and internal partitions can be created for a table.
+Note: For external tables or partitions , only the metadata and its definition form will be stored in the bank and the related data will 
+be placed outside the database and at the operating system level.
+We want to enter information such as national code, name, surname and organizational code of people in a table called mytbl. With the following command, 
+we partition this table based on the organizational code:,
+The information of people whose organizational code is equal to one or two is to be stored internally in the database:
+For some reason, we want to keep the information of people whose organizational code is equal to three or four outside the database and externally. 
+The information is in two files, part3.txt and part4.txt:
+To access this information in the database environment, we create two directories named part3dir and part4dir in this environment:
+Using the Hybrid Partition feature, we add two external partitions to the mytbl table:
+Enable EXTERNAL PARTITION attribute for mytbl table:
+
+
+
+cat /part3/part3.txt
+104, javad, akbarian, 3
+105, mina, karimi, 3
+106, sima, kabiri, 3
+107, nima, kasiri, 3
+
+cat /part4/part4.txt
+108, chemistry, hasani, 4
+109, cobra, armani, 4
+110, kazem, kalvandi, 4
+111, usef, kalvani, 4
+
+SQL> CREATE TABLE mytbl (national_id NUMBER, name VARCHAR2 (20), last_name VARCHAR2 (20), org_id number)
+PARTITION BY LIST (org_id)
+    (
+        PARTITION p1 VALUES (1),
+        PARTITION p2 CURRENT (2)
+    );
+    
+Table created
+
+SQL> insert into mytbl values (100, 'ali', 'rezai', 1);
+
+SQL> insert into mytbl values (101, 'hadi', 'alavi', 1);
+
+SQL> insert into mytbl values (102, 'reza', 'karimi', 2);
+
+SQL> insert into mytbl values (103, 'hossein', 'akbari', 2);
+
+SQL> commit;
+
+SQL> create directory part3dir as '/ part3';
+
+Directory created.
+
+SQL> create directory part4dir as '/ part4';
+
+Directory created.
+
+SQL> ALTER TABLE mytbl
+ADD EXTERNAL PARTITION ATTRIBUTES
+(TYPE ORACLE_LOADER
+DEFAULT DIRECTORY part3dir
+ACCESS PARAMETERS (
+FIELDS TERMINATED BY ',' (national_id, name, last_name, org_id)
+)
+);
+
+#NOTE
+Add required partitions:
+By adding these two partitions, the table structure will look like this:
+
+SQL> ALTER TABLE mytbl ADD PARTITION p3 VALUES (3) EXTERNAL LOCATION (part3dir: 'part3.txt');
+
+SQL> ALTER TABLE mytbl ADD PARTITION p4 VALUES (4) EXTERNAL LOCATION (part4dir: 'part4.txt');
+
+SQL> create table MYTBL
+(
+ national_id NUMBER,
+ name VARCHAR2 (20),
+ last_name VARCHAR2 (20),
+ org_id NUMBER
+)
+organization external
+(
+ type ORACLE_LOADER
+ default directory PART3DIR
+ access parameters
+(
+FIELDS TERMINATED BY ',' (national_id, name, last_name, org_id)
+)
+)
+reject limit 0
+partition by list (ORG_ID)
+(
+partition P1 values ​​(1),
+partition P2 values ​​(2),
+partition P3 values ​​(3),
+partition P4 values ​​(4)
+);
+
+SQL> select * from mytbl where org_id = 3;
+
++-------------+-------+-----------+--------+
+| NATIONAL_ID | NAME  | LAST_NAME | ORG_ID | 
++-------------+-------+-----------+--------+
+| 104         | javad | akbarian  | 3      |
++-------------+-------+-----------+--------+
+| 105         | mina  | karimi    | 3      |
++-------------+-------+-----------+--------+
+| 106         | sima  | karimi    | 3      |
++-------------+-------+-----------+--------+
+| 107         | nima  | karimi    | 3      |
++-------------+-------+-----------+--------+
+
+#NOTE
+Execution plan related to organizational code two and three can be seen below:
+
+SQL> select * from mytbl where org_id = 2;
+
++----+------------------------+-------+-------+--------+-------+-----------------+
+| ID | OPERATION              | NAME  | ROWS  | BYTES  | COST  | TIME            |
++----+------------------------+-------+-------+--------+-------+-----------------+
+| 0  | SELECT STATEMENTS      |       | 1     | 50     | 2     | 00:00:01        |
++----+------------------------+-------+-------+--------+-------+-----------------+
+| 1  | PARTITION LIST SINGLE  |       | 1     | 50     | 2     | 00:00:01        |
++----+------------------------+-------+-------+--------+-------+-----------------+
+| 2  | TABLE ACCESS FULL      |       | 1     | 50     | 2     | 00:00:01        |
++----+------------------------+-------+-------+--------+-------+-----------------+
+
+SQL> select * from mytbl where org_id = 3;
+
++----+--------------------------------+-------+-------+--------+-------+---------+
+| ID | OPERATION                      | NAME  | ROWS  | BYTES  | COST  | TIME    |
++----+--------------------------------+-------+-------+--------+-------+---------+
+| 0  | SELECT STATEMENTS              |       | 82    | 4100   | 2     | 00:00:01|
++----+--------------------------------+-------+-------+--------+-------+---------+
+| 1  | PARTITION LIST SINGLE          |       | 82    | 4100   | 2     | 00:00:01|
++----+--------------------------------+-------+-------+--------+-------+---------+
+| 2  | EXTERNAL TABLE ACCESS FULL     | MYTBL | 82    | 4100   | 2     | 00:00:01|
++----+--------------------------------+-------+-------+--------+-------+---------+
+
+#NODE
+Finally, we enumerate some of the features and limitations of the Hybrid Partition feature.
+For this type of tables, only partial index can be used:
+DML commands can only be executed on internal partitions
+It is not possible to add LOB and LONG data types in this type of tables:
+To view the names of tables that use this feature, you can use the following query:
+
+SQL> create index ind1 on mytbl (name);
+
+ORA-14354: operation not supported for a hybrid-partitioned table
+
+SQL> create index ind1 on mytbl (name) local;
+
+ORA-14354: operation not supported for a hybrid-partitioned table
+
+SQL> create index ind1 on mytbl (name) indexing partial;
+
+Index created
+
+SQL> create index ind1 on mytbl (name) local indexing partial;
+
+Index created
+
+SQL> insert into mytbl values ​​(130, 'hossein', 'zaker', 4);
+
+ORA-14466: Data in a read-only partition or subpartition cannot be modified.
+
+SQL> insert into mytbl values ​​(130, 'hossein', 'zaker', 1);
+
+1 row inserted
+
+SQL> alter table MYTBL add pic blob;
+
+ORA-03001: unimplemented feature
+
+SQL> alter table MYTBL add id number;
+
+Table altered
+
+SQL> select TABLE_NAME, HYBRID from user_tables where HYBRID = 'YES';
+
+
+
+
+
