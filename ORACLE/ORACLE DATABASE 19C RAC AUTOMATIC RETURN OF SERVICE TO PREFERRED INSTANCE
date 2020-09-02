@@ -1,0 +1,114 @@
++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
++     ORACLE DATABASE 19C RAC AUTOMATIC RETURN OF SERVICE TO PREFERRED INSTANCE     +
++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+
+#NOTE
+As you know, in the RAC environment and when creating a service, you can specify preferred instance and available instance. 
+In this case, the service will run in the preferred instance by default.
+If for any reason the preferred instance has a problem or in general, the node related to it is out of reach, 
+the service will be transferred to the available instance and even with restarting the preferred instance, 
+there will be no so-called failback for this service. And the service will continue to work in the same available instance, 
+and to transfer it to the preferred instance, you must perform the relocate operation manually .
+we create a service called mysrv in Oracle 11g
+
+[grid~]$ crsctl query crs releaseversion
+Oracle High Availability Services release version on the local node is [11.2.0.4.0]
+
+[oracle~]$ srvctl add service -d mydb -s mysrv  -r instance1 -a instance2
+
+#NOTE
+After creating the service, start it and we will see that this service is running in the preferred instance:
+
+[oracle~]$ srvctl start service -d mydb -s mysrv
+
+[oracle~]$ srvctl status  service -d mydb -s mysrv
+Service mysrv is running on instance(s) instance1
+
+#NOTE
+What happens to this service if the preferred instance has a problem?
+
+[oracle~]$ srvctl stop instance –d mydb –I instance1 –f
+
+#NOTE
+By looking at the status of the mysrv service, we will see that this service has been automatically transferred to the second instance:
+
+[oracle~]$ srvctl status  service –d mydb –s mysrv
+Service mysrv is running on instance(s) instance2
+
+#NOTE
+Also, by restarting instance1, the service will still remain in the same instance number two, and will not return to the first instance, 
+which is so-called preferred for this service:
+
+[oracle~]$ srvctl start instance -d mydb -i instance1
+
+[oracle~]$ srvctl status  service -d mydb -s mysrv
+Service mysrv is running on instance(s) instance2
+
+#NOTE
+To manually relocate this service to instance1, the following command can be executed:
+
+[oracle~]$ srvctl relocate service -d mydb -s mysrv -i instance2 -t instance1
+
+[oracle~]$ srvctl status  service -d mydb -s mysrv
+Service mysrv is running on instance(s) instance1
+
+#NOTE
+As you can see, by running the srvctl relocate service command , the service is moved from instance2 to instance1.
+
+-------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+#NOTE
+In Oracle 19c, a parameter called failback was added to the srvctl add service command, which allows the service to be automatically relocated 
+in such situations. See the example below.
+We want to create two services named srv_nonfailback and srv_failback with the following command, 
+the failback feature is only enabled for the srv_failback service:
+
+[grid~]$ crsctl query crs releaseversion
+Oracle High Availability Services release version on the local node is [19.0.0.0.0]
+
+[oracle~]$ srvctl add service -d db19c -service srv_nonfailback -preferred instance1 -available instance2
+
+[oracle~]$ srvctl add service -d db19c -service srv_failback -preferred instance1 -available instance2 -failback YES
+
+[oracle~]$ srvctl config service -d db19c|egrep -i ‘Service name|instances’
+
+Service name: srv_failback
+Preferred instances: instance1
+Available instances: instance2
+Service name: srv_nonfailback
+Preferred instances: instance1
+Available instances: instance2
+
+#NOTE
+By running the srvctl start service command, we will see that both of these services will run in instance1:
+
+[oracle~]$ srvctl start service -d db19c -s srv_nonfailback,srv_failback
+
+[oracle~]$ srvctl status service -d db19c -s srv_nonfailback,srv_failback
+Service srv_nonfailback is running on instance(s) instance1
+Service srv_failback is running on instance(s) instance1
+
+#NOTE
+By going down, we want to examine the behavior of these two services, so with the reboot command, we make the first node completely inaccessible:
+
+[root@~]# init 6
+
+#NOTE
+When this node is down, the service will move to instance2:
+
+[oracle~]$ srvctl status service -d db19c
+Service srv_failback is running on instance(s) instance2
+Service srv_nonfailback is running on instance(s) instance2
+
+#NOTE
+By restarting the first node, the srv_failback service will be automatically relocated to this node, 
+but the srv_nonfailback service will still run in the second instance:
+
+[oracle~]$ srvctl status service -d db19c
+Service srv_failback is running on instance(s) instance1
+Service srv_nonfailback is running on instance(s) instance2
+
+
+
+
+
