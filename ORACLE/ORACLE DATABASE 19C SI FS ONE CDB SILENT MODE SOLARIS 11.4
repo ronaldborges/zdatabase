@@ -65,10 +65,6 @@ vi /etc/resolv.conf
 nameserver 8.8.8.8
 nameserver 8.8.4.4
 
-vim /etc/nsswitch.dns
-hosts: files dns
-:wq
-
 cp /etc/nsswitch.dns /etc/nsswitch.conf
 
 svccfg -s name-service/switch
