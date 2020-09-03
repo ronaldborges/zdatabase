@@ -1,0 +1,169 @@
++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
++  ORACLE DATABASE 19C SEND UNIFIED AUDIT TRAIL TO SYSLOG AND EVENT VIEWER  +
++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+
+#NOTE 18C
+In Oracle 18c, a parameter called UNIFIED_AUDIT_SYSTEMLOG has been added that allows you to write a unified audit trail in the operating system environment. 
+With this feature, you can send key unified audit trail fields to syslog in Linux and Event Viewer in Windows.
+
+SQL>  show parameter unified_audit_systemlog
+NAME                    TYPE VALUE
+——————————————————————— ——————————
+unified_audit_systemlog string
+
+#NOTE
+We are going to configure this feature in the Linux environment in a few steps.
+STEP 1 - Set the UNIFIED_AUDIT_SYSTEMLOG parameter
+To set this parameter in the Linux environment, you must first specify the facility and priority:
+UNIFIED_AUDIT_SYSTEMLOG = 'facility_clause.priority_clause'
+Allowed values for facility and priority:
+facility_clause :: = {USER | LOCAL [0 | 1 | 2 | 3 | 4 | 5 | 6 | 7]}
+priority_clause :: = {NOTICE | INFO | DEBUG | WARNING | ERR | CRIT | ALERT | EMERG}
+For example, the following command sets LOCAL6 as a facility and EMERG as a priority:
+Also in the Windows environment, to send a log to the Event Viewer, you just need to 
+STEP 2 - In this step we configure the rsyslog service configuration file:
+With this setting, the unified audit trail will be written to the oracle_audit.log file.
+STEP 3: Restart the rsyslog service:
+STEP 4: Restart the database:
+
+SQL> alter system set UNIFIED_AUDIT_SYSTEMLOG = 'LOCAL6.EMERG' scope = spfile;
+
+System altered.
+
+SQL> alter system set UNIFIED_AUDIT_SYSTEMLOG = TRUE scope = spfile;
+
+System altered.
+
+[root~]# vi /etc/rsyslog.conf
+local6.emerg /var/log/oracle_audit.log
+
+[root~] # systemctl restart rsyslog
+
+SQL> startup force;
+
+#NOTE
+After configuring this feature, we intend to create an audit policy to audit the usef user activity:
+The usef user creates a table named mytbl and then deletes it:
+By creating and deleting the mytbl table by usef user, information will be added to the oracle_audit.log file:
+The registered information for the mytbl table is as follows:
+As you can see in the log information, 
+there is no action_name column and to determine the action performed (command executed) you must use the audit_actions view:
+
+
+SQL> create audit policy audpol actions all;
+
+Audit policy created.
+
+SQL> audit policy audpol by usef ;
+
+Audit succeeded.
+
+SQL> create table mytbl (id number, name varchar2 (10));
+
+Table created.
+
+SQL> drop table mytbl;
+
+Table dropped.
+
+[root~] # ls -l /var/log/oracle_audit.log
+-rw ——- 1 root root 149653 Sep 3 10:31 /var/log/oracle_audit.log
+
+[root @ ol7 ~] # cat /var/log/oracle_audit.log|grep MYTB
+2020-08-03T10:31:49.871015 + 04: 30 ol7 Oracle Unified Audit [32293]: LENGTH: '166' TYPE: ”4 ″ DBID:” 1820349651 ″ SESID: ”1063221700 ″ CLIENTID:” ”ENTRYID:” 101 ″ STMTID: ”22 ″ DBUSER:” USEF ”CURUSER:” USEF ”ACTION:” 1 ″ RETCODE: ”0 ″ SCHEMA:” USEF ”OBJNAME:” MYTBL ”
+2020-08-03T10:31:56.547434 + 04: 30 ol7 Oracle Unified Audit [32293]: LENGTH : '167' TYPE : ”4 ″ DBID :” 1820349651 ″ SESID : ”1063221700 ″ CLIENTID :” ” ENTRYID :” 600 ″ STMTID : "90 ″ DBUSER :" USEF " CURUSER :" USEF " ACTION :" 12 ″ RETCODE : "0 ″ SCHEMA :" USEF " OBJNAME :" MYTBL "
+
+SQL> select * from audit_actions where action IN (1,12);
+ACTION NAME
+—————— ————————————
+1      CREATE TABLE
+12     DROP TABLE
+
+#NOTE
+a column called PDB_GUID is also sent to syslog and Event Viewer to determine which pdb this log belongs to.
+In the following section, we are going to create a table of the same name in two different pdb and check the difference between 
+the logs recorded in the versions 18c
+As you can see in the log, there is no trace of the name pdb and it is practically impossible to identify in which pdb this command was executed
+
+–Oracle 18c:
+
+—-Pdb1
+
+SQL> create table TBLPDB (id number, name varchar2 (10));
+
+Table created.
+
+[root~]# cat /var/log/oracle_audit.log|grep TBLPDB
+
+2019-06-24T16: 27: 06.572337 + 04: 30 ol7 Oracle Unified Audit [22250]: LENGTH: '166' TYPE: ”4 ″ DBID:” 557546386 ″ SESID: ”2034358282 ″ CLIENTID:” ”ENTRYID:” 69 ″ STMTID: ”14 ″ DBUSER:” USEF ”CURUSER:” USEF ”ACTION:” 1 ″ RETCODE: ”0 ″ SCHEMA:” USEF ”OBJNAME:” TBLPDB ”
+
+—Pdb2
+
+SQL> create table TBLPDB (id number, name varchar2 (10));
+
+Table created.
+
+[root~]# cat /var/log/oracle_audit.log|grep TBLPDB
+
+2019-06-24T16: 30: 24.700120 + 04: 30 ol7 Oracle Unified Audit [23295]: LENGTH: '166' TYPE: ”4 ″ DBID:” 4267074312 ″ SESID: ”3992345619 ″ CLIENTID:” ”ENTRYID:” 41 ″ STMTID: ”12 ″ DBUSER:” USEF ”CURUSER:” USEF ”ACTION:” 1 ″ RETCODE: ”0 ″ SCHEMA:” USEF ”OBJNAME:” TBLPDB ”
+
+-------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+#NOTE 19C
+In Oracle 19c , a slight improvement was made, according to which, for multitenant environments, 
+a column called PDB_GUID is also sent to syslog and Event Viewer to determine which pdb this log belongs to.
+In the following section, we are going to create a table of the same name in two different pdb and check the difference between 
+the logs recorded in the versions 19c.
+In the output of this log, guides related to pdb are recorded:
+
+
+–Oracle 19c:
+
+—Pdb1
+
+SQL> create table TBLPDB (id number, name varchar2 (10));
+
+Table created.
+
+[root~]# cat /var/log/oracle_audit.log|grep TBL
+
+2019-06-24T16: 42: 46.357614 + 04: 30 ol7 journal: Oracle Unified Audit [21617]: LENGTH: '208' TYPE: ”4 ″ DBID:” 4079153754 ″ SESID: ”437400285 ″ CLIENTID:” ”ENTRYID:” 36 ″ STMTID: ”9 ″ DBUSER:” USEF ”CURUSER:” USEF ”ACTION:” 1 ″ RETCODE: ”0 ″ SCHEMA:” USEF ”OBJNAME:” TBLPDB ” PDB_GUID :” 8C117B2E612D6DC8E053097B200
+
+—Pdb2
+
+SQL> create table TBLPDB (id number, name varchar2 (10));
+
+Table created.
+
+[root~]# cat /var/log/oracle_audit.log|grep TBL
+
+2019-06-24T16: 45: 03.615033 + 04: 30 ol7 journal: Oracle Unified Audit [23669]: LENGTH: '208' TYPE: ”4 ″ DBID:” 2881540304 ″ SESID: ”2348227237 ″ CLIENTID:” ”ENTRYID:” 8 ″ STMTID: ”7 ″ DBUSER:” USEF ”CURUSER:” USEF ”ACTION:” 1 ″ RETCODE: ”0 ″ SCHEMA:” USEF ”OBJNAME:” TBLPDB ” PDB_GUID :” 8C119BA276F84229E053049B200A00F
+
+SQL> select PDB_NAME, GUID from cdb_pdbs where PDB_NAME are ('PDB1′,' PDB2');
+
+PDB_NAME GUID
+———————— —————————————————————————————————
+PDB1     8C117B2E612D6DC8E053069B200A0597
+PDB2     8C119BA276F84229E053049B200A00FB
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
