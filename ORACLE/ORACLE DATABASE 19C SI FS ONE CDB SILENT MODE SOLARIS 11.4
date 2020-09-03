@@ -24,6 +24,26 @@ net0: flags=100001000843<UP,BROADCAST,RUNNING,MULTICAST,IPv4,PHYSRUNNING> mtu 15
         inet 192.168.1.115 netmask ffffff00 broadcast 192.168.1.255
         ether 8:0:27:db:b0:1b
 
+#CHANGE HOSTNAME SOLARIS
+svccfg -s system/identity:node listprop config
+config                       application
+config/enable_mapping       boolean     true
+config/ignore_dhcp_hostname boolean     false
+config/loopback             astring
+config/nodename             astring     solaris
+
+svccfg -s system/identity:node setprop config/loopback="solaris19c"
+svccfg -s system/identity:node setprop config/nodename="solaris19c"
+svcadm refresh system/identity:node
+svcadm restart system/identity:node
+
+svccfg -s system/identity:node listprop config
+config                       application
+config/enable_mapping       boolean     true
+config/ignore_dhcp_hostname boolean     false
+config/nodename             astring     geekserver
+config/loopback             astring     geekserver
+
 #LOGIN AS ROOT IN SOLARIS WITH PUTTY
 #CHANGE SSHD_CONFIG FILE
 vim /etc/ssh/sshd_config
@@ -44,6 +64,11 @@ online         23:14:48 svc:/network/dns/client:default
 vi /etc/resolv.conf
 nameserver 8.8.8.8
 nameserver 8.8.4.4
+
+vim /etc/nsswitch.dns
+hosts: files dns
+:wq
+
 cp /etc/nsswitch.dns /etc/nsswitch.conf
 
 svccfg -s name-service/switch
@@ -212,7 +237,7 @@ cat > /export/home/oracle/scripts/setEnv.sh <<EOF
 export TMP=/tmp
 export TMPDIR=\$TMP
 
-export ORACLE_HOSTNAME=solaris
+export ORACLE_HOSTNAME=solaris19c
 export ORACLE_UNQNAME=appscdb
 export ORACLE_BASE=/u01/app/oracle
 export ORACLE_HOME=\$ORACLE_BASE/product/19.5.0/dbhome_1
