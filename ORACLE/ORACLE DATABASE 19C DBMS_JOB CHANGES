@@ -1,0 +1,193 @@
+++++++++++++++++++++++++++++++++++++++++++
++  ORACLE DATABASE 19C DBMS_JOB CHANGES  +
+++++++++++++++++++++++++++++++++++++++++++
+
+#NOTE10G
+Prior to Oracle Version 10g, to create jobs in the database, 
+depending dbms_job used in version 10g improvement in these areas were created and Oracle package Dbms_Scheduler, 
+many of the weaknesses of dbms_job covered effectively using this package Minimized.
+However, users can still use this package (dbms_job) to define new jobs or manage previous jobs (jobs created in older versions), 
+and even Oracle can use the same package to schedule some tasks. he does.
+For example, when creating MV (MATERIALIZED VIEW) , if a time and interval is defined for automatic MV updating, 
+Oracle creates a dbms_job job to update MATERIALIZED VIEW:
+
+SQL> CREATE MATERIALIZED VIEW “USEF”.”MVTEST”
+BUILD IMMEDIATE 
+REFRESH FORCE
+START WITH to_date(’10-Jul-2019 02:08:26 PM’,’dd-Mon-yyyy HH:MI:SS AM’)
+NEXT sysdate + 1
+ENABLE QUERY REWRITE
+AS  select * from jj;
+
+SQL> select job,schema_user,interval,what from dba_jobs where schema_user=’USEF’;
+
++------+--------------+-----------+-------------------------------------------------------+
+| JOB  |  SCHEMA_USER |  INTERVAL |   WHAT                                                |
++------+--------------+-----------+-------------------------------------------------------+
+| 7603 | USEF         | sysdate   | dbms_refresh.refresh('"USEF"."MVTEST"');              |
++------+--------------+-----------+-------------------------------------------------------+
+
+#NOTE18C
+Oracle 18c changed this behavior, and Oracle no longer uses dbms_job to update MATERIALIZED VIEW:
+
+SQL> CREATE MATERIALIZED VIEW “USEF”. ”MVTEST”
+
+…
+
+SQL> select job, schema_user, interval, what from dba_jobs where schema_user = 'USEF';
+
+no rows selected
+
+select OWNER, JOB_NAME, JOB_ACTION, REPEAT_INTERVAL from dba_scheduler_jobs where owner = 'USEF';
+
++--------+-------------------+------------------------------------------+----------------------+
+| OWNER  |  JOB_NAME         |  JOB_ACTION                              | REPEAT_INTERVAL      |
++--------+-------------------+------------------------------------------+----------------------+
+| USEF   | MV_RF$J_0_S_62022 | dbms_refresh.refresh('"USEF"."MVTEST"'); | sysdate+1            |
++--------+-------------------+------------------------------------------+----------------------+
+
+#NOTE19C
+also changed the behavior of the dbms_job package
+We are going to create a job in a database with version 18c with the help of the dbms_job package, 
+and after upgrading this database to version 19c, we will check what changes are made in this job.
+So by executing the following command, we create a job. This job executes myproc1 procedure in a period of one minute.
+The created job number is two. Also, the dba_jobs view will display information about this job
+After the usef build is created by the usef user, 
+we upgrade the database from version 18c to version 19c and review the status of the created job again:
+As you can see, the dba_jobs view still displays Job # 2 info, but with the DBA_SCHEDULER_JOBS view, we come to the following:
+
+–Oracle 18c
+
+SQL> var job VARCHAR2 (2000)
+
+SQL> begin sys.dbms_job.submit(job => :job,what => ‘myproc1;’,interval => ‘sysdate+1/24/60’);commit;end;
+
+  2 /
+
+PL/SQL procedure successfully completed
+
+job
+——————
+2
+
+SQL> select job, schema_user, interval, what from dba_jobs;
+
++------+--------------+-------------------+-------------------------------------------------------+
+| JOB  |  SCHEMA_USER |  INTERVAL         |   WHAT                                                |
++------+--------------+-------------------+-------------------------------------------------------+
+| 2    | USEF         | sysdate+1/24/60   | myproc1;                                              |
++------+--------------+-------------------+-------------------------------------------------------+
+
+SQL> select count (*) from DBA_SCHEDULER_JOBS where owner = 'USEF';
+
+0
+
+SQL> select job, schema_user, interval, what from dba_jobs;
+
++------+--------------+-------------------+-------------------------------------------------------+
+| JOB  |  SCHEMA_USER |  INTERVAL         |   WHAT                                                |
++------+--------------+-------------------+-------------------------------------------------------+
+| 2    | USEF         | sysdate+1/24/60   | myproc1;                                              |
++------+--------------+-------------------+-------------------------------------------------------+
+
+SQL> select count (*) from DBA_SCHEDULER_JOBS where owner = 'USEF';
+
+1
+
+#NOTE19C
+It was mentioned that before upgrading to version 19c, the scheduler userf was not defined as a scheduler, 
+but after the upgrade, the output of this command returns the number one !! By executing the following command, we see the specifications of this job:
+
+SQL> select OWNER, JOB_NAME, JOB_ACTION, REPEAT_INTERVAL from dba_scheduler_jobs where owner = 'USEF';
+
++--------+-------------------+------------------------------------------+----------------------+
+| OWNER  |  JOB_NAME         |  JOB_ACTION                              | REPEAT_INTERVAL      |
++--------+-------------------+------------------------------------------+----------------------+
+| USEF   | DBMS_JOB$_2       | myproc1;                                 | sysdate+1/24/60      |
++--------+-------------------+------------------------------------------+----------------------+
+
+Yes you are right! Similar to the job created with the help of the dbms_job package, 
+there is also a job in this section that is going to run the myrpoc1 procedure at the same time!
+With two views dba_jobs and DBA_SCHEDULER_JOBS, we compare the next execution time of this job and the last execution time :
+Both views return the same date! This job can also be run through both dbms_job and dbms_scheduler packages:
+With the help of the dbms_job package, we make a change in the type of action that the job is supposed to execute (what), 
+this change will also be applied in the job_acion section of the scholar:
+
+SQL> select s.LAST_DATE, s.NEXT_DATE from dba_jobs s;
+
++--------------------------------------+--------------------------------------------+
+| LAST_DATE                            | NEXT_DATE                                  | 
++--------------------------------------+--------------------------------------------+
+| 11-JUL-19 03.40.38.204893 PM -04:00  | 11-JUL-19 03.41.38.204893 PM -04:00        |
++--------------------------------------+--------------------------------------------+
+
+SQL> select p.last_start_date, p.next_run_date from dba_scheduler_jobs p where p.job_name = 'DBMS_JOB $ _2 ′;
+
++--------------------------------------+--------------------------------------------+
+| LAST_DATE                            | NEXT_DATE                                  | 
++--------------------------------------+--------------------------------------------+
+| 11-JUL-19 03.40.38.204893 PM -04:00  | 11-JUL-19 03.41.38.204893 PM -04:00        |
++--------------------------------------+--------------------------------------------+
+
+SQL> exec dbms_scheduler.run_job(job_name => ‘DBMS_JOB$_2’);
+
+PL/SQL procedure successfully completed
+
+SQL> exec dbms_job.run(job => 2);
+
+PL/SQL procedure successfully completed
+
+SQL> exec dbms_job.what(job => 2,what => ‘proc5’);
+
+PL/SQL procedure successfully completed
+
+SQL> commit;
+
+Commit complete
+
+SQL> select (select job_action from dba_scheduler_jobs p where p.job_name=’DBMS_JOB$_2′) scheduler, (select what from dba_jobs s) dba_jobs from dual;
+
++---------------+----------+
+| SCHEDULER     | DBA_JOBS |
++---------------+----------+
+| proc5         | proc5    |
++---------------+----------+
+
+#NOTE19C
+As you can see, the equivalent of the jobs created through dbms_job will be created through the dbms_scheduler package, 
+and this job can be managed through any of these packages. 
+Jobs recently created in Oracle version 19c (via the dbms_job package) also have the same structure:
+In version 19c, a table called scheduler $_dbmsjob_map has been added to the datasheet tables, 
+which can be used to determine which job has been mapped to which scooter:
+This table will also show information about deleted jobs.
+
+SQL> var job VARCHAR2(2000)
+
+SQL> begin sys.dbms_job.submit(job => :job,what => ‘proc19c;’,interval => ‘sysdate+10’);commit;end;
+
+  2  /
+
+PL/SQL procedure successfully completed
+
+job
+———
+22
+
+SQL> select (select job_name from dba_scheduler_jobs p where p.job_name like ‘%22’) scheduler, (select job from dba_jobs s where job=22) dba_jobs from dual;
+
++---------------+----------+
+| SCHEDULER     | DBA_JOBS |
++---------------+----------+
+| DBMS_JOB$_22  | 22       |
++---------------+----------+
+
+SQL> select * from sys.scheduler$_dbmsjob_map;
+
++-------------------+-------------+--------------------+
+| DBMS_JOB_NUMBER   | JOB_OWNER   | JOB_NAME           |
++-------------------+-------------+--------------------+
+| 2                 | USEF        | DBMS_JOB$_2        |
++-------------------+-------------+--------------------+
+| 21                | USEF        | DBMS_JOB$_21       |
++-------------------+-------------+--------------------+
+
