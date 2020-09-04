@@ -1,0 +1,23 @@
++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
++  ORACLE DATABASE 19C UNABLE TO USE ALTER USER RENAME  +
++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+
+With the release of version 19c, a change was made in this area that makes it impossible to use ALTER USER RENAME.
+As you can see, running the ALTER USER RENAME command in version 19c will fail.
+
+SQL*Plus: Release 19.0.0.0.0 – Production on Mon Jul 29 13:44:52 2019
+
+Version 19.3.1.0.0
+
+SQL> alter session set “_enable_rename_user”=true;
+
+Session altered.
+
+SQL> alter system enable restricted session;
+
+System altered.
+
+SQL> alter user usef rename to vahid identified by a;
+
+ORA-03001: unimplemented feature
+
