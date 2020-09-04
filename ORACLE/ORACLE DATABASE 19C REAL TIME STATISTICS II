@@ -1,0 +1,151 @@
++++++++++++++++++++++++++++++++++++++++++++++++++
++  ORACLE DATABASE 19C REAL TIME STATISTICS II  +
++++++++++++++++++++++++++++++++++++++++++++++++++
+
+#NOTE
+Prior to Oracle version 12c, executing DML commands on a table (both Conventional and Direct-path) did not update the statistics of that table, 
+and online collection of statistics could only be done at the time of indexing. Was.
+In version 12c there was a slight improvement, according to which, along with the Bulk load operation on a table, 
+the statistics of that table will also be updated online, but still for DML commands that are executed CONVENTIONALLY, 
+a change in Table statistics are not generated.
+One of the new features of Oracle version 19c is the Real-Time Statistics feature, 
+which will provide the ability to update some important statistics online along with the execution of DML commands.
+This new feature only improves the data collection process, and the previous data collection structure is still the same in this version of Oracle.
+In the following example, we will look at this new Oracle feature in more detail.
+With the following command, we create the mytbl table:
+As expected, no statistics were recorded for this table:
+We plan to include 1000 records in this table:
+By referring to the dba_tab_statistics and dba_tab_col_statistics views, we review the statistics related to this table:
+
+SQL>create table usef.mytbl (id number,name varchar2(100));
+
+Table created
+
+SQL> select table_name, num_rows,last_analyzed from dba_tab_statistics where table_name='MYTBL';
+
++---------------+-------------+---------------------------------+
+| TABLE_NAME    | NUM_ROWS    | LAST_ANALYZED                   |
++---------------+-------------+---------------------------------+
+| MYTBL         |             |                                 | 
++---------------+-------------+---------------------------------+
+
+SQL> select table_name, column_name, low_value, high_value,notes,LAST_ANALYZED from dba_tab_col_statistics where table_name='MYTBL';
+
+no rows selected
+
+SQL> exec DBMS_STATS.GATHER_TABLE_STATS(‘USEF’, ‘MYTBL’, METHOD_OPT=>’FOR ALL COLUMNS SIZE 5′);
+
+PL/SQL procedure successfully completed
+
+SQL> select table_name, num_rows,last_analyzed from dba_tab_statistics where table_name='MYTBL';
+
++---------------+-------------+---------------------------------+
+| TABLE_NAME    | NUM_ROWS    | LAST_ANALYZED                   |
++---------------+-------------+---------------------------------+
+| MYTBL         | 0           | 2020/09/03 11:40:06 AM          | 
++---------------+-------------+---------------------------------+
+
+SQL> BEGIN
+  2     for i in 1..1000 loop
+  3        insert into usef.MYTBL values(i,’DBA’);
+  4     end loop;
+  5  END;
+  6  /
+
+PL/SQL procedure successfully completed
+
+SQL> select owner,table_name, num_rows,last_analyzed,notes from dba_tab_statistics where table_name='MYTBL';
+
++--------+-------------+-----------+-----------------------------+-----------------------------------+
+| OWNER  | TABLE_NAME  | NUM_ROWS  | LAST_ANALYZED               | NOTES                             |
++--------+-------------+-----------+-----------------------------+-----------------------------------+
+| USEF   | MYTBL       | 0         | 2020/09/03 11:40:06 AM      |                                   |
++--------+-------------+-----------+-----------------------------+-----------------------------------+
+| USEF   | MYTBL       | 1000      | 2020/09/03 11:44:06 AM      | STATS_ON_CONVENTIOAL_DML          |
++--------+-------------+-----------+-----------------------------+-----------------------------------+
+
+SQL> select column_name, low_value, high_value,notes,LAST_ANALYZED from dba_tab_col_statistics s where notes = ‘STATS_ON_CONVENTIONAL_DML’ and table_name='MYTBL';
+
++-------------+-----------+--------------+-----------------------------------+----------------------------------------+
+| COLUMN_NAME | LOW_VALUE | HIGH_VALUE   | NOTES                             | LAST_ANALYZED                          |
++-------------+-----------+--------------+-----------------------------------+----------------------------------------+
+| NAME        | 444241    | 444241       | STATS_ON_CONVENTIONAL_DML         | 2020/09/03 11:44:06 AM                 |
++-------------+-----------+--------------+-----------------------------------+----------------------------------------+
+| ID          | C126      | C20840       | STATS_ON_CONVENTIONAL_DML         | 2020/09/03 11:44:06 AM                 |
++-------------+-----------+--------------+-----------------------------------+----------------------------------------+
+
+#NOTE
+By looking at the value of the NOTES column in these two views, we will see that the statistics have been updated as STATS_ON_CONVENTIONAL_DML. 
+Effective from memory to disk:
+
+SQL> EXEC DBMS_STATS.FLUSH_DATABASE_MONITORING_INFO;
+
+PL/SQL procedure successfully completed
+
++----+----------------------------+--------+------+-------+------+------------+
+| ID | OPERATION                  | NAME   | ROWS | BYTES | COST | TIME       |
++----+----------------------------+--------+------+-------+------+------------+
+| 0  | SELECT STATEMENTS          |        | 1000 | 6000  | 3    | 00:00:01   |
++----+----------------------------+--------+------+-------+------+------------+
+| 1  | TABLE ACCESS FULL          | MYTBL  | 1000 | 6000  | 3    | 00:00:01   |
++----+----------------------------+--------+------+-------+------+------------+
+
+#NOTE
+Also, if another 1 million records are entered in this table, we will see that this plan will change automatically:
+In the following plan you can see that the FULL TABLE SCAN cost of this table has changed to 550:
+With the following command, we will see that the collected statistics (during the dml operation) will be used during the execution of the command:
+The Real-Time Statistics feature can be disabled with the help of the hidden parameter optimizer_gather_stats_on_conventional_dml_, 
+at both system and session levels. You can also disable this feature at the command level with the help of NO_GATHER_OPTIMIZER_STATISTICS Hint.
+
+SQL> BEGIN
+   for i in 1..1000000 loop
+      insert into usef.MYTBL values(i,’DBA’);
+   end loop;
+END;
+/
+
+SQL> EXEC DBMS_STATS.FLUSH_DATABASE_MONITORING_INFO;
+
+PL/SQL procedure successfully completed
+
+SQL> select * from mytbl;
+
++----+----------------------------+--------+---------+----------+--------+------------+
+| ID | OPERATION                  | NAME   | ROWS    | BYTES    | COST   | TIME       |
++----+----------------------------+--------+---------+----------+--------+------------+
+| 0  | SELECT STATEMENTS          |        | 1001000 | 7007000  | 550    | 00:00:01   |
++----+----------------------------+--------+---------+----------+--------+------------+
+| 1  | TABLE ACCESS FULL          | MYTBL  | 1001000 | 7007000  | 550    | 00:00:01   |
++----+----------------------------+--------+---------+----------+--------+------------+
+
+SQL> select count(*) from mytbl;
+
+COUNT(*)
+—————————
+1000000
+
+SQL> select count(*) from usef.mytbl;
+
+COUNT(*)
+—————————
+1000000
+
+SQL> SELECT * FROM TABLE(DBMS_XPLAN.DISPLAY_CURSOR(format=>’TYPICAL‘));
+
+Plan hash value: 404528059
+————————————————————————————————————————————————————————————————————
+| Id  | Operation          | Name  | Rows  | Cost (%CPU)| Time     |
+————————————————————————————————————————————————————————————————————
+|   0 | SELECT STATEMENT   |       |       |   550 (100)|          |
+|   1 |  SORT AGGREGATE    |       |     1 |            |          |
+
+PLAN_TABLE_OUTPUT
+————————————————————————————————————————————————————————————————————
+|   2 |   TABLE ACCESS FULL| MYTBL |  1001K|   550   (1)| 00:00:01 |
+————————————————————————————————————————————————————————————————————
+
+Note
+   – dynamic statistics used: statistics for conventional DML
+   
+   
+
