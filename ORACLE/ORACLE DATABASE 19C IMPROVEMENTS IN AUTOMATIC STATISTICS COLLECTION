@@ -1,0 +1,128 @@
++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
++  ORACLE DATABASE 19C IMPROVEMENTS IN AUTOMATIC STATISTICS COLLECTION  +
++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+
+#NOTE
+In environments where the rate of change is relatively high, it may not be as efficient to use statistics updated through automated maintenance tasks overnight. In an article, we examined one of these features called Real-time Statistic.
+In this article, we are going to look at another of these features called High-frequency Optimizer Statistics Collection.
+With this new Oracle 19c feature, you can update tables whose statistics are in stale mode at regular intervals. Of course, 
+this feature is disabled by default.
+To view the current status of this feature, you can use the following command:
+To activate it, the following command can be executed:
+This feature can only be used in the exadata environment:
+By default, AUTO_TASK for this feature runs in 900 seconds:
+
+SQL> select dbms_stats.get_prefs(‘AUTO_TASK_STATUS‘) “enable/disable” from dual;
+
+enable/disable
+———————————————
+OFF
+
+SQL> exec dbms_stats.set_global_prefs(‘AUTO_TASK_STATUS‘,’ON‘)
+
+PL/SQL procedure successfully completed
+
+SQL> select dbms_stats.get_prefs(‘AUTO_TASK_STATUS’) “enable/disable” from dual;
+
+enable/disable
+———————————————
+ON
+
+SQL> alter system set “_exadata_feature_on”=true scope=spfile;
+
+System altered.
+
+SQL>  select dbms_stats.get_prefs(‘AUTO_TASK_INTERVAL‘)  AUTO_TASK_INTERVAL from dual;
+
+AUTO_TASK_INTERVAL
+——————————————————————————–
+900
+
+SQL>  select dbms_stats.get_prefs(‘AUTO_TASK_MAX_RUN_TIME’) AUTO_TASK_MAX_RUN_TIME from dual;
+
+AUTO_TASK_MAX_RUN_TIME
+———————————————————————
+3600
+
+SQL> exec dbms_stats.set_global_prefs(‘AUTO_TASK_MAX_RUN_TIME’,’600′)
+
+PL/SQL procedure successfully completed
+
+#NOTE
+By referring to the table $ OPTSTAT_HIST_CONTROL you can see the names and values of other parameters related to this feature such as STALE_PERCENT, 
+PUBLISH, CASCADE and select sname, spare4 from sys.OPTSTAT_HIST_CONTROL$;
+After reviewing or making these settings, to design the quality of this feature, we design a simple scenario.
+First we create a table from the structure of the $ source table:
+With the feature added from Oracle 12c, by executing the CTAS command, statistics will be automatically recorded for newly created tables:
+From the output of the following command, it can be seen that the statistics of the mytbl table is not in stale mode:
+We intend to enter information in this table so that the available statistics from this table are in stale mode:
+By entering this information, the recorded statistics from this table will not be updated:
+And the statistics status of this table is in stale mode:
+
+SQL> create table mytbl as select * from sys.source$ where 1=2;
+
+Table created
+
+SQL> select num_rows,blocks from dba_tables k where k.TABLE_NAME=’MYTBL’;
+
+NUM_ROWS BLOCKS
+———————— ————————
+0        0
+
+SQL> select t.stale_stats from dba_tab_statistics t where table_name=’MYTBL’;
+
+STALE_STATS
+————————————
+NO
+
+SQL> insert into mytbl select * from sys.source$;
+
+295528 rows inserted
+
+SQL> commit;
+
+Commit complete
+
+SQL> select num_rows,blocks from dba_tables k where k.TABLE_NAME=’MYTBL’;
+
+NUM_ROWS BLOCKS
+———————— ————————
+0        0
+
+SQL> select t.stale_stats from dba_tab_statistics t where table_name=’MYTBL’;
+
+STALE_STATS
+————————————
+YES
+
+#NOTE
+With the settings initially made, statistics were to be collected in 100 seconds (based on the time set for the ‘AUTO_TASK_INTERVAL’ attribute)
+from tables whose statistics are in stale mode.
+After the specified time, we will see that the statistics for the mytbl table has been updated and removed from the stale mode:
+
+SQL> select t.stale_stats from dba_tab_statistics t where table_name=’MYTBL’;
+
+STALE_STATS
+————————————
+NO
+
+SQL> select num_rows,blocks from dba_tables k where k.TABLE_NAME=’MYTBL’;
+
+NUM_ROWS BLOCKS
+———————— ————————
+295528   4780
+
+SQL> select start_time, end_time, failed, timed_out, origin from DBA_AUTO_STAT_EXECUTIONS;
+
++--------------------------------------+--------------------------------------+----------+-----------+--------------+
+| START_TIME                           | END_TIME                             | FAILED   | TIME_OUT  | ORIGIN       |
++--------------------------------------+--------------------------------------+----------+-----------+--------------+
+| 03-SEP-20 01.10.17.163396 PM +04:30  | 03-SEP-20 01.10.19.935107 PM +04:30  | 0        | 0         | AUTO_TASK    |
++--------------------------------------+--------------------------------------+----------+-----------+--------------+
+
+You can also find more information about the latest implementation of this feature by referring to the atsk table $ _schedule_control:
+
+SQL> select dbid, atskid,mrct_task_time, interval, suspendable_time,status, num_failure, max_run_time, enable ,last_exec_instnum, mrct_task_time_tz, duration   from  sys.atsk$_schedule_control;
+
+
+
