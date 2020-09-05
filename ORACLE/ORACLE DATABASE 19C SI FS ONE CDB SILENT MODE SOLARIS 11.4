@@ -65,7 +65,11 @@ vi /etc/resolv.conf
 nameserver 8.8.8.8
 nameserver 8.8.4.4
 
+#CONFIGURE IMULTABLE FILE RESOLV.CONF
 chmod S+ci /etc/resolv.conf
+
+#CONFIGURE MULTABLE RESOLV.CONF FILE IF YOU NEED TO MODIFY
+chmod S-ci /etc/resolv.conf
 
 cp /etc/nsswitch.dns /etc/nsswitch.conf
 
