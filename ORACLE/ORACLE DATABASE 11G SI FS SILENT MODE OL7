@@ -1,5 +1,5 @@
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++
-+   	ORACLE DATABASE 11G R2 SI FS SILENT MODE OL7   	+
++   	ORACLE DATABASE 11G SI FS SILENT MODE OL7   	+
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
 #ORACLE DATABASE MACHINE
@@ -105,11 +105,15 @@ chmod u+x /home/oracle/scripts/*.sh
 source .bash_profile
 
 #DOWNLOAD AND INSTALL ORACLE DATABASE 11.2.0.4g
-wget https://download.oracle.com/otn/linux/oracle11g/112000/p13390677_112040_Linux-x86-64_1of7.zip?AuthParam=1577574051_dcd3a71670cb8ddcb11b27e39a41738e
+wget https://download.oracle.com/otn/linux/oracle11g/112000/p13390677_112040_Linux-x86-64_1of7_database.zip?AuthParam=1577574051_dcd3a71670cb8ddcb11b27e39a41738e
+wget https://download.oracle.com/otn/linux/oracle11g/112000/p13390677_112040_Linux-x86-64_2of7_database.zip?AuthParam=1577574051_dcd3a71670cb8ddcb11b27e39a41738e
 
 #UNCOMPRESS ORACLE DATABASE SOFTWARE
-unzip p13390677_112040_Linux-x86-64_1of7.zip
-rm -vf p13390677_112040_Linux-x86-64_1of7.zip
+unzip p13390677_112040_Linux-x86-64_1of7_database.zip
+unzip p13390677_112040_Linux-x86-64_2of7_database.zip
+
+rm -vf p13390677_112040_Linux-x86-64_1of7_database.zip
+rm -vf p13390677_112040_Linux-x86-64_2of7_database.zip
 
 #CREATE db_install.rsp INSTALL RESPONSE FILE
 vi /home/oracle/db_install.rsp
