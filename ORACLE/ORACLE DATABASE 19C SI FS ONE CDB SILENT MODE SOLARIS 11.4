@@ -201,17 +201,17 @@ projmod -s -K "process.max-file-descriptor=(priv,655360,deny),(basic,655360,deny
 projmod -s -K "process.max-stack-size=(priv,32768KB,deny),(basic,10240KB,deny)" group.oinstall
 
 projects -l group.oinstall
-group.oinstall
-        projid : 100
-        comment: ""
-        users  : (none)
-        groups : oinstall
-        attribs: process.max-file-descriptor=(priv,655360,deny),(basic,655360,deny)
-                 process.max-stack-size=(priv,33554432,deny),(basic,10485760,deny)
-                 project.max-sem-ids=(priv,256,deny)
-                 project.max-sem-nsems=(priv,512,deny)
-                 project.max-shm-ids=(priv,256,deny)
-                 project.max-shm-memory=(priv,3006477107,deny)
+	group.oinstall
+			projid : 100
+			comment: ""
+			users  : (none)
+			groups : oinstall
+			attribs: process.max-file-descriptor=(priv,655360,deny),(basic,655360,deny)
+					process.max-stack-size=(priv,33554432,deny),(basic,10485760,deny)
+					project.max-sem-ids=(priv,256,deny)
+					project.max-sem-nsems=(priv,512,deny)
+					project.max-shm-ids=(priv,256,deny)
+					project.max-shm-memory=(priv,3006477107,deny)
 
 echo "set max_nprocs = 65536" >> /etc/system
 echo "user_reserve_hint_pct = 70" >> /etc/system
