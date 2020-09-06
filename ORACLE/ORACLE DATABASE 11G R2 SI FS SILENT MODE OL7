@@ -1,0 +1,229 @@
++++++++++++++++++++++++++++++++++++++++++++++++++++++++
++   	ORACLE DATABASE 11G R2 SI FS SILENT MODE OL7   	+
++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+
+#ORACLE DATABASE MACHINE
+IP 192.168.1.123
+Disk /dev/sda: 37.6 GB
+/dev/sda1 /boot 350 MB
+/dev/sda2 /		31  GB
+/dev/sda3 swap	4	GB	
+
+#INSTALL PRE-INSTALL PACKAGES
+yum install http://yum.oracle.com/repo/OracleLinux/OL7/latest/x86_64/getPackage/oracle-rdbms-server-11gR2-preinstall-1.0-6.el7.x86_64.rpm
+
+#DISABLE SELINUX AND FIREWALLD
+sed -i 's/SELINUX=.*/SELINUX=disabled/' /etc/selinux/config && setenforce 0
+systemctl stop firewalld && systemctl disable firewalld
+
+#CONFIGURE STATIC NETWORK
+TYPE=Ethernet
+PROXY_METHOD=none
+BROWSER_ONLY=no
+BOOTPROTO=none
+DEFROUTE=yes
+IPV4_FAILURE_FATAL=no
+IPV6INIT=no
+IPV6_AUTOCONF=yes
+IPV6_DEFROUTE=yes
+IPV6_FAILURE_FATAL=no
+IPV6_ADDR_GEN_MODE=stable-privacy
+NAME=enp0s3
+UUID=49c279da-7065-40f5-b914-176973db2a0a
+DEVICE=enp0s3
+ONBOOT=yes
+IPADDR=192.168.1.123
+PREFIX=24
+GATEWAY=192.168.1.1
+DNS1=8.8.8.8
+
+#CONFIGURE HOSTNAME
+hostnamectl 
+hostnamectl set-hostname ol711g
+hostnamectl --static 
+
+#CONFIGURE /ETC/HOSTS
+192.168.1.123   ol711g
+
+#CREATE ORACLE_BASE AND ORACLE_HOME DIRECTORIES
+mkdir -p /u01
+chown oracle:oinstall -R /u01
+mkdir -p /u01/app/oracle/product/11.2.0.4/dbhome_1
+mkdir -p /u01/app/oracle/oradata
+chown -R oracle:oinstall /u01
+chmod -R 775 /u01
+
+#CONFIGURE VARIABLES
+su - oracle
+mkdir /home/oracle/scripts
+
+cat > /home/oracle/scripts/setEnv.sh <<EOF
+# Oracle Settings
+export TMP=/tmp
+export TMPDIR=\$TMP
+
+export ORACLE_HOSTNAME=ol711g
+export ORACLE_UNQNAME=appscdb
+export ORACLE_BASE=/u01/app/oracle
+export ORACLE_HOME=\$ORACLE_BASE/product/11.2.0.4/dbhome_1
+export ORA_INVENTORY=/u01/app/oraInventory
+export ORACLE_SID=appscdb1
+
+export PATH=/usr/sbin:/usr/local/bin:\$PATH
+export PATH=\$ORACLE_HOME/bin:\$PATH
+
+export LD_LIBRARY_PATH=\$ORACLE_HOME/lib:/lib:/usr/lib
+export CLASSPATH=\$ORACLE_HOME/jlib:\$ORACLE_HOME/rdbms/jlib
+EOF
+
+echo ". /home/oracle/scripts/setEnv.sh" >> /home/oracle/.bash_profile
+
+cat > /home/oracle/scripts/start_all.sh <<EOF
+#!/bin/bash
+. /home/oracle/scripts/setEnv.sh
+
+export ORAENV_ASK=NO
+. oraenv
+export ORAENV_ASK=YES
+
+dbstart \$ORACLE_HOME
+EOF
+
+cat > /home/oracle/scripts/stop_all.sh <<EOF
+#!/bin/bash
+. /home/oracle/scripts/setEnv.sh
+
+export ORAENV_ASK=NO
+. oraenv
+export ORAENV_ASK=YES
+
+dbshut \$ORACLE_HOME
+EOF
+
+chown -R oracle:oinstall /home/oracle/scripts
+chmod u+x /home/oracle/scripts/*.sh
+source .bash_profile
+
+#DOWNLOAD AND INSTALL ORACLE DATABASE 11.2.0.4g
+wget https://download.oracle.com/otn/linux/oracle11g/112000/p13390677_112040_Linux-x86-64_1of7.zip?AuthParam=1577574051_dcd3a71670cb8ddcb11b27e39a41738e
+
+#UNCOMPRESS ORACLE DATABASE SOFTWARE
+unzip p13390677_112040_Linux-x86-64_1of7.zip
+rm -vf p13390677_112040_Linux-x86-64_1of7.zip
+
+#CREATE db_install.rsp INSTALL RESPONSE FILE
+vi /home/oracle/db_install.rsp
+oracle.install.responseFileVersion=/oracle/install/rspfmt_dbinstall_response_schema_v11_2_0
+oracle.install.option=INSTALL_DB_SWONLY
+ORACLE_HOSTNAME=ol711g
+UNIX_GROUP_NAME=oinstall
+INVENTORY_LOCATION=/u01/app/oraInventory
+SELECTED_LANGUAGES=en
+ORACLE_HOME=/u01/app/oracle/product/11.2.0.4/dbhome_1
+ORACLE_BASE=/u01/app/oracle
+oracle.install.db.InstallEdition=EE
+oracle.install.db.EEOptionsSelection=false
+oracle.install.db.optionalComponents=oracle.rdbms.partitioning:11.2.0.4.0,oracle.oraolap:11.2.0.4.0,oracle.rdbms.dm:11.2.0.4.0,oracle.rdbms.dv:11.2.0.4.0,oracle.rdbms.lbac:11.2.0.4.0,oracle.rdbms.rat:11.2.0.4.0
+oracle.install.db.DBA_GROUP=dba
+oracle.install.db.OPER_GROUP=oinstall
+oracle.install.db.CLUSTER_NODES=
+oracle.install.db.isRACOneInstall=
+oracle.install.db.racOneServiceName=
+oracle.install.db.config.starterdb.type=
+oracle.install.db.config.starterdb.globalDBName=
+oracle.install.db.config.starterdb.SID=
+oracle.install.db.config.starterdb.characterSet=AL32UTF8
+oracle.install.db.config.starterdb.memoryOption=true
+oracle.install.db.config.starterdb.memoryLimit=
+oracle.install.db.config.starterdb.installExampleSchemas=false
+oracle.install.db.config.starterdb.enableSecuritySettings=true
+oracle.install.db.config.starterdb.password.ALL=
+oracle.install.db.config.starterdb.password.SYS=
+oracle.install.db.config.starterdb.password.SYSTEM=
+oracle.install.db.config.starterdb.password.SYSMAN=
+oracle.install.db.config.starterdb.password.DBSNMP=
+oracle.install.db.config.starterdb.control=DB_CONTROL
+oracle.install.db.config.starterdb.gridcontrol.gridControlServiceURL=
+oracle.install.db.config.starterdb.automatedBackup.enable=false
+oracle.install.db.config.starterdb.automatedBackup.osuid=
+oracle.install.db.config.starterdb.automatedBackup.ospwd=
+oracle.install.db.config.starterdb.storageType=
+oracle.install.db.config.starterdb.fileSystemStorage.dataLocation=
+oracle.install.db.config.starterdb.fileSystemStorage.recoveryLocation=
+oracle.install.db.config.asm.diskGroup=
+oracle.install.db.config.asm.ASMSNMPPassword=
+MYORACLESUPPORT_USERNAME=
+SECURITY_UPDATES_VIA_MYORACLESUPPORT=
+DECLINE_SECURITY_UPDATES=true
+PROXY_HOST=
+PROXY_PORT=
+PROXY_USER=
+PROXY_PWD=
+PROXY_REALM=
+COLLECTOR_SUPPORTHUB_URL=
+oracle.installer.autoupdates.option=
+oracle.installer.autoupdates.downloadUpdatesLoc=
+AUTOUPDATES_MYORACLESUPPORT_USERNAME=
+AUTOUPDATES_MYORACLESUPPORT_PASSWORD=
+
+#RUN ORACLE DATABASE SOFTWARE INSTALLER 
+database/runInstaller -silent -responseFile /home/oracle/db_install.rsp
+
+Starting Oracle Universal Installer...
+
+Checking Temp space: must be greater than 120 MB.   Actual 17907 MB    Passed
+Checking swap space: must be greater than 150 MB.   Actual 4095 MB    Passed
+Preparing to launch Oracle Universal Installer from /tmp/OraInstall2020-09-06_03-42-21PM. Please wait ...[oracle@ol711g ~]$ [WARNING] [INS-13014] Target environment do not meet some optional requirements.
+   CAUSE: Some of the optional prerequisites are not met. See logs for details. /tmp/OraInstall2020-09-06_03-42-21PM/installActions2020-09-06_03-42-21PM.log
+   ACTION: Identify the list of failed prerequisite checks from the log: /tmp/OraInstall2020-09-06_03-42-21PM/installActions2020-09-06_03-42-21PM.log. Then either from the log file or from installation manual find the appropriate configuration to meet the prerequisites and fix it manually.
+You can find the log of this install session at:
+ /u01/app/oraInventory/logs/installActions2020-09-06_03-42-21PM.log
+The installation of Oracle Database 11g was successful.
+Please check '/u01/app/oraInventory/logs/silentInstall2020-09-06_03-42-21PM.log' for more details.
+
+As a root user, execute the following script(s):
+        1. /u01/app/oraInventory/orainstRoot.sh
+        2. /u01/app/oracle/product/11.2.0.4/dbhome_1/root.sh
+
+
+Successfully Setup Software.
+
+exit
+/u01/app/oraInventory/orainstRoot.sh
+Changing permissions of /u01/app/oraInventory.
+Adding read,write permissions for group.
+Removing read,write,execute permissions for world.
+
+Changing groupname of /u01/app/oraInventory to oinstall.
+The execution of the script is complete.
+
+/u01/app/oracle/product/11.2.0.4/dbhome_1/root.sh
+Check /u01/app/oracle/product/11.2.0.4/dbhome_1/install/root_ol711g_2020-09-06_15-47-01.log for the output of root script
+
+su - oracle
+dbca -silent 
+-createDatabase 
+-templateName General_Purpose.dbc 
+-gdbName treinace 
+-sid treinace 
+-SysPassword oracle 
+-SystemPassword oracle 
+-emConfiguration NONE 
+-datafileDestination /u01/app/oracle/oradata
+-redoLogFileSize 100 
+-storageType FS 
+-characterSet WE8MSWIN1252 
+-totalMemory 4096
+
+
+
+
+
+
+
+
+
+
+
+
+
