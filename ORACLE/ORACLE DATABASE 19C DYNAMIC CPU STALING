@@ -1,0 +1,72 @@
++++++++++++++++++++++++++++++++++++++++++++++
++  ORACLE DATABASE 19C DYNAMIC CPU STALING  +
++++++++++++++++++++++++++++++++++++++++++++++
+
+#NOTE
+From Oracle Database 19c (19.4) includes the ability to dynamically scale compute for Pluggable Databases (PDBs) 
+up and down in response to workload demands using CPU min/max ranges. Scale-up and scale-down of compute resources available to a Pluggable Database 
+can be configured to happen automatically, instantly, and dynamically without intervention.
+CPU min/max ranges work automatically, dynamically, and immediately, resulting in more effective use of compute resources in On-Premises and Cloud environments 
+resulting in lower overall costs
+
+sqlplus / as sysdba
+
+SQL*Plus: Release 19.0.0.0.0 - Production on Sun Sep 6 11:49:46 2020
+Version 19.5.0.0.0
+
+Copyright (c) 1982, 2019, Oracle.  All rights reserved.
+
+
+Connected to:
+Oracle Database 19c Enterprise Edition Release 19.0.0.0.0 - Production
+Version 19.5.0.0.0
+
+SQL> show pdbs
+
+    CON_ID CON_NAME                       OPEN MODE  RESTRICTED
+---------- ------------------------------ ---------- ----------
+         2 PDB$SEED                       READ ONLY  YES
+         3 APPSPDB                        READ WRITE YES
+SQL> show con_name
+
+CON_NAME
+------------------------------
+CDB$ROOT
+SQL> show parameter cpu;
+
+NAME                                 TYPE        VALUE
+------------------------------------ ----------- ------------------------------
+cpu_count                            integer     1
+cpu_min_count                        string      1
+parallel_threads_per_cpu             integer     1
+resource_manager_cpu_allocation      integer     1
+SQL> show parameter resource;
+
+NAME                                 TYPE        VALUE
+------------------------------------ ----------- ------------------------------
+resource_limit                       boolean     TRUE
+resource_manage_goldengate           boolean     FALSE
+resource_manager_cpu_allocation      integer     1
+resource_manager_plan                string
+SQL> alter session set container=APPSPDB;
+
+Session altered.
+
+SQL> show con_name
+
+CON_NAME
+------------------------------
+APPSPDB
+SQL> show parameter cpu;
+
+NAME                                 TYPE        VALUE
+------------------------------------ ----------- ------------------------------
+cpu_count                            integer     1
+cpu_min_count                        string      1
+parallel_threads_per_cpu             integer     1
+resource_manager_cpu_allocation      integer     1
+SQL>
+
+
+#Reference
+https://blogs.oracle.com/database/dynamic-cpu-scaling-in-oracle-database-19c
