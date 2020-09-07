@@ -1,0 +1,128 @@
+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
++   ZERO DOWNTIME DATABASE UPGRADE FROM 11G TO 19C USING ORACLE GOLDENGATE     +
+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+
+#INSTALL ORACLE DATABASE 11.2.0.4 ON ORACLE LINUX 7
+#CONFIGURE ENVIROMENTS TO INSTALL GOLGEN GATE
+
+#CREATE DIRETORY FOR GOLDENGATE
+mkdir -p /u01/app/oracle/product/gg
+
+#CREATE RESPONSE FILE TO INSTALL GOLDENGATE SOFTWARE IN SILENT MODE
+vi /home/oracle/oggcore.rsp
+oracle.install.responseFileVersion=/oracle/install/rspfmt_ogginstall_response_schema_v19_1_0
+INSTALL_OPTION=ORA11g
+SOFTWARE_LOCATION=/u01/app/oracle/product/gg
+START_MANAGER=true
+MANAGER_PORT=7809
+DATABASE_LOCATION=/u01/app/oracle/product/11.2.0.4/dbhome_1/
+INVENTORY_LOCATION=/u01/app/oraInventory/
+UNIX_GROUP_NAME=oinstall
+
+#ADD GOLDENGATE VARIABLES TO BASH_PROFILE
+cd /home/oracle/scripts
+vi setEnv.sh
+export GGATE=/u01/app/oracle/product/gg
+cd
+
+#VALIDATE
+source .bash_profile
+echo $GGATE
+/u01/app/oracle/product/gg
+
+#DONWLOAD GOLDEN GATE 19C FOR LINUX X86_64
+https://download.oracle.com/otn/goldengate/191000/191004_fbo_ggs_Linux_x64_shiphome.zip?AuthParam=1599498135_98cf694ae075cacf6e3553c7b4f8eee2
+
+#UNZIP FILE
+mkdir -p /tmp/gg
+unzip 191004_fbo_ggs_Linux_x64_shiphome.zip
+
+#NAVIGATE TO 
+cd /tmp/gg/fbo_ggs_Linux_x64_shiphome/Disk1
+
+#RUN INSTALLER
+./runInstaller -silent -responseFile /home/oracle/oggcore.rsp
+
+	Starting Oracle Universal Installer...
+	
+	Checking Temp space: must be greater than 120 MB.   Actual 8562 MB    Passed
+	Checking swap space: must be greater than 150 MB.   Actual 4095 MB    Passed
+	Preparing to launch Oracle Universal Installer from /tmp/OraInstall2020-09-07_02-55-10PM. Please wait ...[oracle@ol711g Disk1]$ You can find the log of this install session at:
+	/u01/app/oraInventory/logs/installActions2020-09-07_02-55-10PM.log
+	The installation of Oracle GoldenGate Core was successful.
+	Please check '/u01/app/oraInventory/logs/silentInstall2020-09-07_02-55-10PM.log' for more details.
+	Successfully Setup Software.
+
+#CONNECT GOLDEN GATE
+/u01/app/oracle/product/gg/ggsci
+
+Oracle GoldenGate Command Interpreter for Oracle
+Version 19.1.0.0.4 OGGCORE_19.1.0.0.0_PLATFORMS_191017.1054_FBO
+Linux, x64, 64bit (optimized), Oracle 11g on Oct 17 2019 23:13:12
+Operating system character set identified as UTF-8.
+
+Copyright (C) 1995, 2019, Oracle and/or its affiliates. All rights reserved.
+
+GGSCI (ol711g) 1>
+
+---------------------------------------------------------------------------------------------------------------------------------------------
+
+#INSTALL ORACLE DATABASE 19.5 ON SOLARIS 11 
+#CONFIGURE ENVIROMENTS TO INSTALL GOLGEN GATE
+
+#CREATE RESPONSE FILE TO INSTALL GOLDENGATE SOFTWARE IN SILENT MODE
+vi /export/home/oracle/oggcore.rsp
+oracle.install.responseFileVersion=/oracle/install/rspfmt_ogginstall_response_schema_v19_1_0
+INSTALL_OPTION=ORA19c
+SOFTWARE_LOCATION=/u01/app/oracle/product/gg
+START_MANAGER=true
+MANAGER_PORT=7809
+DATABASE_LOCATION=/u01/app/oracle/product/19.5.0/dbhome_1
+INVENTORY_LOCATION=/u01/app/oraInventory/
+UNIX_GROUP_NAME=oinstall
+
+#ADD GOLDENGATE VARIABLES TO BASH_PROFILE
+cd /export/home/oracle/scripts
+vi setEnv.sh
+export GGATE=/u01/app/oracle/product/gg
+cd
+
+#VALIDATE
+source .profile
+echo $GGATE
+/u01/app/oracle/product/gg
+
+#DOWNLOAD GOLDEN GATE 19C FOR SOLARIS X86_64
+https://download.oracle.com/otn/goldengate/19100/191004_fbo_ggs_Solaris_x86_64_shiphome.zip?AuthParam=1599498167_080a89303236c99c6e69d12efcdee568
+
+#UNZIP FILE
+mkdir -p /tmp/gg
+unzip 191004_fbo_ggs_Solaris_x86_64_shiphome.zip
+
+#NAVIGATE TO 
+cd /tmp/gg/fbo_ggs_Solaris_x86_64_shiphome/Disk1/
+
+#RUN INSTALLER
+./runInstaller -silent -responseFile /export/home/oracle/oggcore.rsp
+
+	Starting Oracle Universal Installer...
+	
+	Checking Temp space: must be greater than 120 MB.   Actual 934 MB    Passed
+	Checking swap space: must be greater than 150 MB.   Actual 2698 MB    Passed
+	Preparing to launch Oracle Universal Installer from /tmp/OraInstall2020-09-07_11-50-40AM. Please wait ...oracle@solaris19c:/tmp/gg/fbo_ggs_Solaris_x86_64_shiphome/Disk1$ You can find the log of this install session at:
+	/u01/app/oraInventory/logs/installActions2020-09-07_11-50-40AM.log
+	The installation of Oracle GoldenGate Core was successful.
+	Please check '/u01/app/oraInventory/logs/silentInstall2020-09-07_11-50-40AM.log' for more details.
+	'Successfully Setup Software.
+	
+#CONNECT GOLDEN GATE	
+/u01/app/oracle/product/gg/ggsci
+
+Oracle GoldenGate Command Interpreter for Oracle
+Version 19.1.0.0.4 OGGCORE_19.1.0.0.0_PLATFORMS_191017.1054_FBO
+Solaris, x64, 64bit (optimized), Oracle 19c on Oct 19 2019 22:24:03
+Operating system character set identified as US-ASCII.
+
+Copyright (C) 1995, 2019, Oracle and/or its affiliates. All rights reserved.
+
+GGSCI (solaris19c) 1>
