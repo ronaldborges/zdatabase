@@ -29,6 +29,7 @@ UNIX_GROUP_NAME=oinstall
 #ADD GOLDENGATE VARIABLES TO BASH_PROFILE
 cd /home/oracle/scripts
 vi setEnv.sh
+export GGATE=/u01/app/oracle/product/gg
 
 #VALIDATE
 source .bash_profile
