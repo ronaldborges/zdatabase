@@ -1,6 +1,6 @@
-++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-+   ZERO DOWNTIME DATABASE UPGRADE FROM 11G TO 19C USING ORACLE GOLDENGATE     +
-++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
++   ZERO DOWNTIME DATABASE UPGRADE FROM 11G ON OL7 X86_64 TO 19C ON SOLARIS X86_64 USING ORACLE GOLDENGATE     +
+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
 #INSTALL ORACLE DATABASE 11.2.0.4 ON ORACLE LINUX 7
 #CONFIGURE ENVIROMENTS TO INSTALL GOLGEN GATE
