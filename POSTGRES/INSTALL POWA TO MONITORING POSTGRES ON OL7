@@ -307,3 +307,37 @@ kill -9 $PID
 nohup /usr/bin/powa-collector.py > /var/log/powa-collector 2>&1 & 
 OR
 nohup /usr/local/bin/powa-collector.py > /var/log/powa-collector 2>&1 & 
+
+********************************************************************************************************************************************************************************
+
+#ON MASTER/CLIENT COLLECTOR 
+#ENABLE VACUUM DAILY 
+
+vi /postgres/backup/scripts/desfrag_banco_powa.sh
+#/bin/bash
+/usr/local/pgsql-11.3/bin/pg_isready
+export ISREADY=`echo $?`
+if [ $ISREADY -eq 0 ]; then
+for tablename in $(/usr/local/pgsql-11.3/bin/psql -U postgres -d powa -p 5433 -t -c "SELECT DISTINCT table_schema || '.' || table_name AS _table FROM information_schema.tables t, pg_class c WHERE pg_stat_get_dead_tuples(c.oid) >= 10 AND c.relname<>'t_exame_solic_log' AND table_type='BASE TABLE' AND table_schema<>'pg_catalog' ORDER BY 1 desc"); do
+echo $tablename
+/usr/local/pgsql-11.3/bin/psql -U postgres -d powa -p 5433 -c "vacuum full analyze ${tablename};"
+/usr/local/pgsql-11.3/bin/psql -U postgres -d powa -p 5433 -c "reindex table ${tablename};"
+done
+export RESVACUUM=`echo -e "OK"`
+export SAIDABOT=`echo -e "Desfrag DB POWA :" $RESVACUUM`
+curl -s -X POST https://api.telegram.org/bot$id/sendMessage -d chat_id=$chatid -d text="$SAIDABOT"
+else
+export RESVACUUM=`echo -e "FALHA"`
+export SAIDABOT=`echo -e "Desfrag DB POWA :" $RESVACUUM`
+curl -s -X POST https://api.telegram.org/bot$id/sendMessage -d chat_id=$chatid -d text="$SAIDABOT"
+fi
+
+crontab -e -u postgres
+30 04 * * * /postgres/backup/scripts/desfrag_banco_powa.sh >> /postgres/backup/scripts/desfrag_banco_powa.log 2>&1
+
+#END
+
+
+
+
+
