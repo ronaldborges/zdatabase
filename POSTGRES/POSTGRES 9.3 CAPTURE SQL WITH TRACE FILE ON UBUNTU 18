@@ -1,0 +1,181 @@
++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
++	    POSTGRES 9.3 CAPTURE SQL WITH TRACE FILE ON UBUNTU 18     +
++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+
+#INSTALL PRE-REQUIRES PACKAGES
+
+apt-get update
+apt-get install systemtap-sdt-dev
+apt install systemtap-client
+apt install systemtap-runtime
+apt install systemtap
+apt-get install linux-headers-$(uname -r)
+apt-get install fakeroot build-essential crash kexec-tools makedumpfile kernel-wedge
+apt remove systemtap
+apt install g++ make git libelf-dev libdw-dev
+git clone git://sourceware.org/git/systemtap.git
+cd systemtap/
+./configure && make         // no errors
+make install
+
+#VALIDATE STAP
+
+stap -e 'probe begin { printf("Hello, World!\n"); exit() }'
+[sudo] password for knudfl: 
+Hello, World!
+
+#DOWNLOAD POSTGRES
+apt install libreadline-dev
+wget https://ftp.postgresql.org/pub/source/v9.$/postgresql-9.3$.tar.gz
+tar xvfz postgresql-9.3$.tar.gz
+cd postgresql-9.3$
+mkdir -p /usr/local/pgsql-9.3.$
+
+#INSTALL SFW DATABASE POSTGRES WITH --enable-dtrace
+## install in default path /usr/local/pgsql using port 5432
+./configure --with-openssl
+example [./configure --prefix=$path/pgsql-9.3.$ --enable-dtrace]
+make
+make install
+cd contrib/
+make
+make install
+ls -l /usr/local/pgsql-9.3$
+
+#ADD USER POSTGRES
+adduser postgres
+
+#ADD DATA DIRECTORY
+mkdir -p /dados/data
+chown postgres:postgres -R /dados
+
+#CREATE DATABASE
+su - postgres -c "/usr/local/pgsql-9.3.6/bin/initdb --locale=pt_BR.UTF-8 -D /dados/data/"
+
+#START INSTANCE
+su - postgres -c "/usr/local/pgsql-9.3.6/bin/pg_ctl -D /dados/data/ -l logfile start"
+
+#CREATE TABLE TO TEST
+/usr/local/pgsql-9.3.6/bin/psql -U postgres
+psql (9.3.6)
+Type "help" for help.
+
+postgres=# create table test(id int primary key, info text, crt_time timestamp);
+CREATE TABLE
+postgres=# create or replace function f_test(i_id int) returns void as $$  
+postgres$# declare  
+postgres$# begin  
+postgres$#   update test set info=md5(random()::text), crt_time=clock_timestamp() where id=i_id;  
+postgres$#   if not found then  
+postgres$#     insert into test(id,info,crt_time) values(i_id,md5(random()::text),clock_timestamp());  
+postgres$#   end if;  
+postgres$#   return;  
+postgres$#   exception when others then  
+postgres$#     return;  
+postgres$# end;  
+postgres$# $$ language plpgsql strict;
+CREATE FUNCTION
+postgres=# \q
+
+#CHECK HOW MANY PROBES THERE ARE
+sudo stap -l 'process("/usr/local/pgsql-9.3.6/bin/postgres").mark("**")'
+process("/usr/local/pgsql-9.3.6/bin/postgres").mark("buffer__checkpoint__done")
+process("/usr/local/pgsql-9.3.6/bin/postgres").mark("buffer__checkpoint__start")
+process("/usr/local/pgsql-9.3.6/bin/postgres").mark("buffer__checkpoint__sync__start")
+process("/usr/local/pgsql-9.3.6/bin/postgres").mark("buffer__flush__done")
+process("/usr/local/pgsql-9.3.6/bin/postgres").mark("buffer__flush__start")
+process("/usr/local/pgsql-9.3.6/bin/postgres").mark("buffer__read__done")
+process("/usr/local/pgsql-9.3.6/bin/postgres").mark("buffer__read__start")
+process("/usr/local/pgsql-9.3.6/bin/postgres").mark("buffer__sync__done")
+process("/usr/local/pgsql-9.3.6/bin/postgres").mark("buffer__sync__start")
+process("/usr/local/pgsql-9.3.6/bin/postgres").mark("buffer__sync__written")
+process("/usr/local/pgsql-9.3.6/bin/postgres").mark("buffer__write__dirty__done")
+process("/usr/local/pgsql-9.3.6/bin/postgres").mark("buffer__write__dirty__start")
+process("/usr/local/pgsql-9.3.6/bin/postgres").mark("checkpoint__done")
+process("/usr/local/pgsql-9.3.6/bin/postgres").mark("checkpoint__start")
+process("/usr/local/pgsql-9.3.6/bin/postgres").mark("clog__checkpoint__done")
+process("/usr/local/pgsql-9.3.6/bin/postgres").mark("clog__checkpoint__start")
+process("/usr/local/pgsql-9.3.6/bin/postgres").mark("deadlock__found")
+process("/usr/local/pgsql-9.3.6/bin/postgres").mark("lock__wait__done")
+process("/usr/local/pgsql-9.3.6/bin/postgres").mark("lock__wait__start")
+process("/usr/local/pgsql-9.3.6/bin/postgres").mark("lwlock__acquire")
+process("/usr/local/pgsql-9.3.6/bin/postgres").mark("lwlock__condacquire")
+process("/usr/local/pgsql-9.3.6/bin/postgres").mark("lwlock__condacquire__fail")
+process("/usr/local/pgsql-9.3.6/bin/postgres").mark("lwlock__release")
+process("/usr/local/pgsql-9.3.6/bin/postgres").mark("lwlock__wait__done")
+process("/usr/local/pgsql-9.3.6/bin/postgres").mark("lwlock__wait__start")
+process("/usr/local/pgsql-9.3.6/bin/postgres").mark("lwlock__wait__until__free")
+process("/usr/local/pgsql-9.3.6/bin/postgres").mark("lwlock__wait__until__free__fail")
+process("/usr/local/pgsql-9.3.6/bin/postgres").mark("multixact__checkpoint__done")
+process("/usr/local/pgsql-9.3.6/bin/postgres").mark("multixact__checkpoint__start")
+process("/usr/local/pgsql-9.3.6/bin/postgres").mark("query__done")
+process("/usr/local/pgsql-9.3.6/bin/postgres").mark("query__execute__done")
+process("/usr/local/pgsql-9.3.6/bin/postgres").mark("query__execute__start")
+process("/usr/local/pgsql-9.3.6/bin/postgres").mark("query__parse__done")
+process("/usr/local/pgsql-9.3.6/bin/postgres").mark("query__parse__start")
+process("/usr/local/pgsql-9.3.6/bin/postgres").mark("query__plan__done")
+process("/usr/local/pgsql-9.3.6/bin/postgres").mark("query__plan__start")
+process("/usr/local/pgsql-9.3.6/bin/postgres").mark("query__rewrite__done")
+process("/usr/local/pgsql-9.3.6/bin/postgres").mark("query__rewrite__start")
+process("/usr/local/pgsql-9.3.6/bin/postgres").mark("query__start")
+process("/usr/local/pgsql-9.3.6/bin/postgres").mark("smgr__md__read__done")
+process("/usr/local/pgsql-9.3.6/bin/postgres").mark("smgr__md__read__start")
+process("/usr/local/pgsql-9.3.6/bin/postgres").mark("smgr__md__write__done")
+process("/usr/local/pgsql-9.3.6/bin/postgres").mark("smgr__md__write__start")
+process("/usr/local/pgsql-9.3.6/bin/postgres").mark("sort__done")
+process("/usr/local/pgsql-9.3.6/bin/postgres").mark("sort__start")
+process("/usr/local/pgsql-9.3.6/bin/postgres").mark("statement__status")
+process("/usr/local/pgsql-9.3.6/bin/postgres").mark("subtrans__checkpoint__done")
+process("/usr/local/pgsql-9.3.6/bin/postgres").mark("subtrans__checkpoint__start")
+process("/usr/local/pgsql-9.3.6/bin/postgres").mark("transaction__abort")
+process("/usr/local/pgsql-9.3.6/bin/postgres").mark("transaction__commit")
+process("/usr/local/pgsql-9.3.6/bin/postgres").mark("transaction__start")
+process("/usr/local/pgsql-9.3.6/bin/postgres").mark("twophase__checkpoint__done")
+process("/usr/local/pgsql-9.3.6/bin/postgres").mark("twophase__checkpoint__start")
+process("/usr/local/pgsql-9.3.6/bin/postgres").mark("wal__buffer__write__dirty__done")
+process("/usr/local/pgsql-9.3.6/bin/postgres").mark("wal__buffer__write__dirty__start")
+process("/usr/local/pgsql-9.3.6/bin/postgres").mark("xlog__insert")
+process("/usr/local/pgsql-9.3.6/bin/postgres").mark("xlog__switch")
+
+#RUN SQL TESTE
+/usr/local/pgsql-9.3.6/bin/psql -U postgres
+psql (9.3.6)
+Type "help" for help.
+
+postgres=# create table blockchain(  
+postgres(#   block_hash text primary key, -- block hash value
+postgres(#   prev_block text, -- The hash value of the previous block
+postgres(#   height int  -- The height of the current block, indicating how many blocks are in front, and the height of the starting block is 0
+postgres(# ); 
+CREATE TABLE
+postgres=# do language plpgsql $$  
+postgres$# declare  
+postgres$#   v_id1 text;  
+postgres$#   v_id2 text;  
+postgres$# begin  
+postgres$#   v_id1 := ( md5(random()::text||clock_timestamp()::text) || md5(random()::text||clock_timestamp()::text) );  
+postgres$#   v_id2 := ( md5(random()::text||clock_timestamp()::text) || md5(random()::text||clock_timestamp()::text) );  
+postgres$#   for i in 1..10000000 loop  
+postgres$#       if i <> 1 then  
+postgres$#         insert into blockchain(block_hash, prev_block, height) values (v_id2, v_id1, i-1);  
+postgres$#       else  
+postgres$#         insert into blockchain(block_hash, prev_block, height) values (v_id2, '0', 0);  
+postgres$#       end if;  
+postgres$#       v_id1 := v_id2;   
+postgres$#       v_id2 := ( md5(random()::text||clock_timestamp()::text) || md5(random()::text||clock_timestamp()::text) );  
+postgres$#   end loop;  
+postgres$# end;  
+postgres$# $$; 
+
+
+#PROBE USE TEST IN ANOTHER TERMINAL
+sudo stap -e '  
+global var  
+probe process("/usr/local/pgsql-9.3.6/bin/postgres").mark("query__execute__done") {  
+  var++  
+}  
+probe timer.s($1) {  
+  printf("qps:%d\n", var/$1)  
+  var=0  
+}' 3 
+
