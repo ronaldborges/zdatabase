@@ -137,6 +137,25 @@ process("/usr/local/pgsql-9.3.6/bin/postgres").mark("wal__buffer__write__dirty__
 process("/usr/local/pgsql-9.3.6/bin/postgres").mark("xlog__insert")
 process("/usr/local/pgsql-9.3.6/bin/postgres").mark("xlog__switch")
 
+#CREATE PROBE FILE
+vi test.d
+probe process("/usr/local/pgsql-9.3.6/bin/postgres").mark("transaction__start")
+{
+        printf("Transaction start: %d\n", pid())
+}
+
+probe process("/usr/local/pgsql-9.3.6/bin/postgres").mark("lwlock__condacquire") {
+        printf("lock wait start at %d for process %d on cpu %d\n", gettimeofday_s(), pid(), cpu())
+}
+
+probe process("/usr/local/pgsql-9.3.6/bin/postgres").mark("sort__start") {
+        printf("transaction abort at %d for process %d on cpu %d\n", gettimeofday_s(), pid(), cpu())
+}
+
+probe process("/usr/local/pgsql-9.3.6/bin/postgres").mark("smgr__md__write__done") {
+        printf("smgr-md-write-done at %d for process %d on cpu %d\n", gettimeofday_s(), pid(), cpu())
+}
+
 #RUN SQL TESTE
 /usr/local/pgsql-9.3.6/bin/psql -U postgres
 psql (9.3.6)
@@ -148,34 +167,144 @@ postgres(#   prev_block text, -- The hash value of the previous block
 postgres(#   height int  -- The height of the current block, indicating how many blocks are in front, and the height of the starting block is 0
 postgres(# ); 
 CREATE TABLE
-postgres=# do language plpgsql $$  
-postgres$# declare  
-postgres$#   v_id1 text;  
-postgres$#   v_id2 text;  
-postgres$# begin  
-postgres$#   v_id1 := ( md5(random()::text||clock_timestamp()::text) || md5(random()::text||clock_timestamp()::text) );  
-postgres$#   v_id2 := ( md5(random()::text||clock_timestamp()::text) || md5(random()::text||clock_timestamp()::text) );  
-postgres$#   for i in 1..10000000 loop  
-postgres$#       if i <> 1 then  
-postgres$#         insert into blockchain(block_hash, prev_block, height) values (v_id2, v_id1, i-1);  
-postgres$#       else  
-postgres$#         insert into blockchain(block_hash, prev_block, height) values (v_id2, '0', 0);  
-postgres$#       end if;  
-postgres$#       v_id1 := v_id2;   
-postgres$#       v_id2 := ( md5(random()::text||clock_timestamp()::text) || md5(random()::text||clock_timestamp()::text) );  
-postgres$#   end loop;  
-postgres$# end;  
-postgres$# $$; 
+postgres=# do language plpgsql $$
+postgres$# declare
+postgres$#   v_id1 text;
+postgres$#   v_id2 text;
+postgres$# begin
+postgres$#   v_id1 := ( md5(random()::text||clock_timestamp()::text) || md5(random()::text||clock_timestamp()::text) );
+postgres$#   v_id2 := ( md5(random()::text||clock_timestamp()::text) || md5(random()::text||clock_timestamp()::text) );
+postgres$#   for i in 1..100 loop
+postgres$#       if i <> 1 then
+postgres$#         insert into blockchain(block_hash, prev_block, height) values (v_id2, v_id1, i-1);
+postgres$#       else
+postgres$#         insert into blockchain(block_hash, prev_block, height) values (v_id2, '0', 0);
+postgres$#       end if;
+postgres$#       v_id1 := v_id2;
+postgres$#       v_id2 := ( md5(random()::text||clock_timestamp()::text) || md5(random()::text||clock_timestamp()::text) );
+postgres$#   end loop;
+postgres$# end;
+postgres$# $$;
+DO
+postgres=# select * from blockchain;
+                            block_hash                            |                            prev_block                            | height 
+------------------------------------------------------------------+------------------------------------------------------------------+--------
+ a1cb2ad08c8ea6d30db30ea99782371f49fcff9993b630bebe621eccabb5e22c | 0                                                                |      0
+ 8f73d34d0f7e6d5533a60d0137c3204cb1e85ef484914c8ac1cdc3625fbf95da | a1cb2ad08c8ea6d30db30ea99782371f49fcff9993b630bebe621eccabb5e22c |      1
+ aca3487ec728e140d019c239cfc159afc1df75b095979d90ad5b7579ecee7e96 | 8f73d34d0f7e6d5533a60d0137c3204cb1e85ef484914c8ac1cdc3625fbf95da |      2
+ 2ba5990c1875ff1a4c11498945ae1cd8d3b760874cb7f779523e51144ceceed0 | aca3487ec728e140d019c239cfc159afc1df75b095979d90ad5b7579ecee7e96 |      3
+ b705fc2a424799b7d879926c0f7ccd75a83d3dfdf3f8b091d95b1ef6343e235b | 2ba5990c1875ff1a4c11498945ae1cd8d3b760874cb7f779523e51144ceceed0 |      4
+ dfc47ba80d652571de3986deafe97349169017e004462b60ad6be5b0fcf8533c | b705fc2a424799b7d879926c0f7ccd75a83d3dfdf3f8b091d95b1ef6343e235b |      5
+ 42f8e3895685c678eb65e045a486c46392db4e42653449d13bc11d7e3bae9a2d | dfc47ba80d652571de3986deafe97349169017e004462b60ad6be5b0fcf8533c |      6
+ d5c29fb61a614b5be189a1728cf06dc61eeb5306f73466326b0f2fd4a4b4b215 | 42f8e3895685c678eb65e045a486c46392db4e42653449d13bc11d7e3bae9a2d |      7
+ 5a7bdebdbc843ec19e9ec3e61d7e24d60a8b16fb8573ac09196b9770895f2400 | d5c29fb61a614b5be189a1728cf06dc61eeb5306f73466326b0f2fd4a4b4b215 |      8
+ 5e7f607a5aeab21b0765369494ca5049b0beaabe2d8ce725d0a74f2b42c1fdcb | 5a7bdebdbc843ec19e9ec3e61d7e24d60a8b16fb8573ac09196b9770895f2400 |      9
+ dad3250c59088b86a79120ceccb950839de52dce28980c085adec4a82e4bc05c | 5e7f607a5aeab21b0765369494ca5049b0beaabe2d8ce725d0a74f2b42c1fdcb |     10
+ 8cdccf7c54eb6b58efc2c8bb7d9a4a12f498aa42cf13df0bbf43ccc24da0f4f5 | dad3250c59088b86a79120ceccb950839de52dce28980c085adec4a82e4bc05c |     11
+ 2018c781a093bac5c741c103122be8f18539526c55d7919806913be61145797d | 8cdccf7c54eb6b58efc2c8bb7d9a4a12f498aa42cf13df0bbf43ccc24da0f4f5 |     12
+ 53a1f302923811c1c837e4306cbc7adebcf57f16d284335f1ed613dc80fb055d | 2018c781a093bac5c741c103122be8f18539526c55d7919806913be61145797d |     13
+ c3f2fed613bca96fa45817066a065c271093aaf7546075646e14f6f43deb8e04 | 53a1f302923811c1c837e4306cbc7adebcf57f16d284335f1ed613dc80fb055d |     14
+ e3ceb53955cff434f1dc5409be3e670e523e88af4a7de7289088a3d3e1a93efa | c3f2fed613bca96fa45817066a065c271093aaf7546075646e14f6f43deb8e04 |     15
+ 76af9c9e553ba374a4d7ce59ac67bdd58d7cb77017484c8f73e17f18a11dc4f5 | e3ceb53955cff434f1dc5409be3e670e523e88af4a7de7289088a3d3e1a93efa |     16
+ c2f162f35313f224e45835be7bd8049ab1cc1e26eb3ca1c6fefbe7439d67c940 | 76af9c9e553ba374a4d7ce59ac67bdd58d7cb77017484c8f73e17f18a11dc4f5 |     17
+ b0a91a8d80863cfa7d879af0eea43b289e0ede8dba1b8e54d66cc693508fbdb7 | c2f162f35313f224e45835be7bd8049ab1cc1e26eb3ca1c6fefbe7439d67c940 |     18
+ 2a3a26f34e5c354cbae9b6ff86f65eda4e2ecfa23ae3f01d22f1fd63a02fb9eb | b0a91a8d80863cfa7d879af0eea43b289e0ede8dba1b8e54d66cc693508fbdb7 |     19
+ 6749b2bbe8cf2c40a9c0329b4d87e8eba2ffceed6353575b783c36e312606bfd | 2a3a26f34e5c354cbae9b6ff86f65eda4e2ecfa23ae3f01d22f1fd63a02fb9eb |     20
+ c34a1e52e331b55b052616d45b215c6a9fdfaadb9bc3d9b6a65513ceaac8159d | 6749b2bbe8cf2c40a9c0329b4d87e8eba2ffceed6353575b783c36e312606bfd |     21
+ b3abbf7671f27f8afe59455d353bc9fe6d4e32953fbea0e47ca22b712d4c6c81 | c34a1e52e331b55b052616d45b215c6a9fdfaadb9bc3d9b6a65513ceaac8159d |     22
+ 67e598dc8826ef06a1ef708c4efa1dd79f2fa34298b1f3f5b6309e67725664c2 | b3abbf7671f27f8afe59455d353bc9fe6d4e32953fbea0e47ca22b712d4c6c81 |     23
+ 01e98eaa4853b4c9fa406bea4d9ac96d453ed000c073a4fac86f2dc6ed8cd152 | 67e598dc8826ef06a1ef708c4efa1dd79f2fa34298b1f3f5b6309e67725664c2 |     24
+ 7bf9891013314a27544edaab44db09ab4d6d69d2a32182ad947d686550393b26 | 01e98eaa4853b4c9fa406bea4d9ac96d453ed000c073a4fac86f2dc6ed8cd152 |     25
+ 575f94fa2d52234293c94e63c90573d8826ed53734062ebd31bef5b164f5a414 | 7bf9891013314a27544edaab44db09ab4d6d69d2a32182ad947d686550393b26 |     26
+ 252b76667f0e7d2f41dab737573afd5979af31b085508213e7b5868bc857332b | 575f94fa2d52234293c94e63c90573d8826ed53734062ebd31bef5b164f5a414 |     27
+ 51a1178065ec5c163b51d0c3dd185a778ffd64455c0edd8fe509f635fa565ea4 | 252b76667f0e7d2f41dab737573afd5979af31b085508213e7b5868bc857332b |     28
+ 81458b101fafb49825aa0444112644929d082d26b2fbb305bdd5dab37e401d4c | 51a1178065ec5c163b51d0c3dd185a778ffd64455c0edd8fe509f635fa565ea4 |     29
+ 1f0de850394c809690cc80718c96b741f0653659d1db1074e7059dded650587b | 81458b101fafb49825aa0444112644929d082d26b2fbb305bdd5dab37e401d4c |     30
+ 9ed031b458a9bcd371c21eb0dd60dade6c2a1c40dc4ad558815bef233c878d7b | 1f0de850394c809690cc80718c96b741f0653659d1db1074e7059dded650587b |     31
+ cc36b6072d6cf9e0f376088d769c8a2ea9422c5eaa25ffc66958203e9a857484 | 9ed031b458a9bcd371c21eb0dd60dade6c2a1c40dc4ad558815bef233c878d7b |     32
+ d671d114023205050f8992c3edc40e2d123de472e2f7d66947950b2bf56c5458 | cc36b6072d6cf9e0f376088d769c8a2ea9422c5eaa25ffc66958203e9a857484 |     33
+ beaa0aee947fccd1c1a282d13d10a05b095a823a960315199f9d894da3a40bd3 | d671d114023205050f8992c3edc40e2d123de472e2f7d66947950b2bf56c5458 |     34
+ 9294b33e55812734591a2469c16e47b364c6a53995aed477235db95f15c8c52f | beaa0aee947fccd1c1a282d13d10a05b095a823a960315199f9d894da3a40bd3 |     35
+ ef42fbf9dca992ac77f105d5403014003e9e72c305ae091fbea8123f449402c6 | 9294b33e55812734591a2469c16e47b364c6a53995aed477235db95f15c8c52f |     36
+ 74466f43998b399bbf513177d9292b0b1dae88b157751fe31589fa363a55d707 | ef42fbf9dca992ac77f105d5403014003e9e72c305ae091fbea8123f449402c6 |     37
+ 66df82b578d3c8dc72337e96ec77dd177fc8b88a7de8162e7421c41ba9c9fc54 | 74466f43998b399bbf513177d9292b0b1dae88b157751fe31589fa363a55d707 |     38
+ f37f8680626fa83aae3d747f0d8a8892c0dd65da1ba60c7045f772892c05ca78 | 66df82b578d3c8dc72337e96ec77dd177fc8b88a7de8162e7421c41ba9c9fc54 |     39
+ ac4cd556045c934fe92db3a8344cf4e11d500047ca5e933c17afa10a3ea430b2 | f37f8680626fa83aae3d747f0d8a8892c0dd65da1ba60c7045f772892c05ca78 |     40
+ 14bb19d154d4a09a4bcf9703846674e0e065ea59eab90944bc5088166df54c73 | ac4cd556045c934fe92db3a8344cf4e11d500047ca5e933c17afa10a3ea430b2 |     41
+ e0e054f48a6999d4cfe3b1dc75245975c49f6e01b2adaf3363570d244a1dc4d0 | 14bb19d154d4a09a4bcf9703846674e0e065ea59eab90944bc5088166df54c73 |     42
+ fd0f839322ec3aabe5c0dfb8137bb2571011aee180cd3101f943d774750e287a | e0e054f48a6999d4cfe3b1dc75245975c49f6e01b2adaf3363570d244a1dc4d0 |     43
+ 965a7d13ee7f639e679a0a0aef5d4308d811ca5ce64d38abb168f719619272ec | fd0f839322ec3aabe5c0dfb8137bb2571011aee180cd3101f943d774750e287a |     44
+ 88e1aa32935b4435ab72ed6ceaf2dc414b6d5a4026b16b87a4bb375f48e3437d | 965a7d13ee7f639e679a0a0aef5d4308d811ca5ce64d38abb168f719619272ec |     45
+ bd62431b81fd13639ba4814e4a432272a39063cdd264d21c932c4e6d04b1b380 | 88e1aa32935b4435ab72ed6ceaf2dc414b6d5a4026b16b87a4bb375f48e3437d |     46
+ 3c5412e81a2ac5aaf8f87203cf1f174e0cabaf55d59eddc43a1787efe29cf9ce | bd62431b81fd13639ba4814e4a432272a39063cdd264d21c932c4e6d04b1b380 |     47
+ a251523b65dcb80a18f20ce8f01eea2220f71a2023bd8675c5d269d888043d60 | 3c5412e81a2ac5aaf8f87203cf1f174e0cabaf55d59eddc43a1787efe29cf9ce |     48
+ bffa1da9b4f951f301d7c1db602d6406ffecc49f8194fe09411dad519cde45d8 | a251523b65dcb80a18f20ce8f01eea2220f71a2023bd8675c5d269d888043d60 |     49
+ f28038f0d465a96924740e3f4e258f5c3530c0c7072e6139cfef2299aac1768c | bffa1da9b4f951f301d7c1db602d6406ffecc49f8194fe09411dad519cde45d8 |     50
+ d08122b92e0fcf5199f6ae739d0545bde2cea9e8384d7c0697c0378a8b2ad69d | f28038f0d465a96924740e3f4e258f5c3530c0c7072e6139cfef2299aac1768c |     51
+ 4a2c10583018261227ca3017ec957b682641fc1f97f5398ad7ff29dba762815a | d08122b92e0fcf5199f6ae739d0545bde2cea9e8384d7c0697c0378a8b2ad69d |     52
+ 027cc28fecdca459f4200197d9167e19e424df3779a88590a48402eb44355cd5 | 4a2c10583018261227ca3017ec957b682641fc1f97f5398ad7ff29dba762815a |     53
+ faad7ea0f647c86bbd401364a805f7ae4d02a36eac78c90b69c7235ccd9a3bdc | 027cc28fecdca459f4200197d9167e19e424df3779a88590a48402eb44355cd5 |     54
+ 5373a16fd76ed9a0df13afe13164e1519253f8e146489f7e7947735a3543a74a | faad7ea0f647c86bbd401364a805f7ae4d02a36eac78c90b69c7235ccd9a3bdc |     55
+ e36058a901f1d070ec76ae4dd5e7365935859f7503a87936efa187d4d364b96f | 5373a16fd76ed9a0df13afe13164e1519253f8e146489f7e7947735a3543a74a |     56
+ 757c6576856f7c015ed4cf8a066b04e976a659ce1c8771e8e51b1ca1cbb90c63 | e36058a901f1d070ec76ae4dd5e7365935859f7503a87936efa187d4d364b96f |     57
+ 91c886db4ddd3001e8d37033c93cab420474cc883564c81bf4afa42024adaa29 | 757c6576856f7c015ed4cf8a066b04e976a659ce1c8771e8e51b1ca1cbb90c63 |     58
+ b4c7fdf1bb551a56b87fcbf359afacaf4a80e3a3a6de2af2957bc0901f9139fe | 91c886db4ddd3001e8d37033c93cab420474cc883564c81bf4afa42024adaa29 |     59
+ 70c5166d3f67ff84cc6e3179d14b1e8cb38777367c73cb770423f5655cc95be8 | b4c7fdf1bb551a56b87fcbf359afacaf4a80e3a3a6de2af2957bc0901f9139fe |     60
+ 8f3673a39d74d5b2c9db8cc567431fa0345e8aacb7b8bfa3910f36d13f9c9f67 | 70c5166d3f67ff84cc6e3179d14b1e8cb38777367c73cb770423f5655cc95be8 |     61
+ 14b7bfe051c3aaffd9dd46af6216069d874268699f98dd303873ecf09fd64824 | 8f3673a39d74d5b2c9db8cc567431fa0345e8aacb7b8bfa3910f36d13f9c9f67 |     62
+ abd60b94dd0c672310d0095f3117c2757521ddd1cea3661ff4b9b07fd216858e | 14b7bfe051c3aaffd9dd46af6216069d874268699f98dd303873ecf09fd64824 |     63
+ 5d82cefca60bdd1bb95318461e1856153de11b6c9bd80ce8f2605e1614cb7ab7 | abd60b94dd0c672310d0095f3117c2757521ddd1cea3661ff4b9b07fd216858e |     64
+ 44edaee9dc23bee2824ce4e7d496e25343565683b825bcba02d43d49e3d0515d | 5d82cefca60bdd1bb95318461e1856153de11b6c9bd80ce8f2605e1614cb7ab7 |     65
+ 87e2df6cab56fe01887a04c03a144f9b27e1282ae040cd0e2f9d3cb81db5a2a8 | 44edaee9dc23bee2824ce4e7d496e25343565683b825bcba02d43d49e3d0515d |     66
+ a636a1e8bf27b94c56d432bce32d4e9da007624a01b07a6687118b71755f6eac | 87e2df6cab56fe01887a04c03a144f9b27e1282ae040cd0e2f9d3cb81db5a2a8 |     67
+ 7e44c26b7b58861bb8ef9ab6ea8edc69d0e6988636af56f40804999c6ec9194e | a636a1e8bf27b94c56d432bce32d4e9da007624a01b07a6687118b71755f6eac |     68
+ 24ef32e544d74525fe21f9a920234703fa5dbde78bb004a03183a93cc40f9abd | 7e44c26b7b58861bb8ef9ab6ea8edc69d0e6988636af56f40804999c6ec9194e |     69
+ 5ff6c8dae04818e34dbe3a68455d3c7ff91cd69e525f64ded9c52cea770f22f0 | 24ef32e544d74525fe21f9a920234703fa5dbde78bb004a03183a93cc40f9abd |     70
+ cefd98e4e9fb64f576c8cb6767c5674bbc706925fdcd5f4bac3aa87f1b86aefe | 5ff6c8dae04818e34dbe3a68455d3c7ff91cd69e525f64ded9c52cea770f22f0 |     71
+ 68914ec47ef2f94c4c52d183cc12126140fbdf6443637612950aceab0462e522 | cefd98e4e9fb64f576c8cb6767c5674bbc706925fdcd5f4bac3aa87f1b86aefe |     72
+ 2abc91c015c005ef62173c7862a966c1529f2fb6ccece83b724b4c942058b170 | 68914ec47ef2f94c4c52d183cc12126140fbdf6443637612950aceab0462e522 |     73
+ 7e5740c384a1cd5a9c30bd30b9cb58458da8117f5f99457f315bdd3a67036178 | 2abc91c015c005ef62173c7862a966c1529f2fb6ccece83b724b4c942058b170 |     74
+ d469341070c3a0da78f7a953128762f202a35a1aa2fefd304574502ab9861c4c | 7e5740c384a1cd5a9c30bd30b9cb58458da8117f5f99457f315bdd3a67036178 |     75
+ 97b0cc18b634027c91a8de825be270ab300c2aa388f10bfbdc2d3dbc12d67e2b | d469341070c3a0da78f7a953128762f202a35a1aa2fefd304574502ab9861c4c |     76
+ e573e8b907b44dbb117633fc4f6515767c72d25f2b1d14313f7759eec82d053b | 97b0cc18b634027c91a8de825be270ab300c2aa388f10bfbdc2d3dbc12d67e2b |     77
+ e12f4f7c8165422f3f7f6501c6e537c29825d5ec4b485f19c2ca79bc038c6704 | e573e8b907b44dbb117633fc4f6515767c72d25f2b1d14313f7759eec82d053b |     78
+ 4d5b9e60c2632e42b8c96aac15407ab04b7dea1b95ad6aa135b1593c5f499476 | e12f4f7c8165422f3f7f6501c6e537c29825d5ec4b485f19c2ca79bc038c6704 |     79
+ 857e272bed3d4de6319c795c9704c14b78e4453e96b39b735a65ac3bf0350626 | 4d5b9e60c2632e42b8c96aac15407ab04b7dea1b95ad6aa135b1593c5f499476 |     80
+ 043e7b3918ccd0f06220f1897c8863cc6449fb45f606ac09b63e49904f37e0f7 | 857e272bed3d4de6319c795c9704c14b78e4453e96b39b735a65ac3bf0350626 |     81
+ 3b34f933c70a369610c33e6f772f219a87bc1350ffd41d92210a1e32df5213c9 | 043e7b3918ccd0f06220f1897c8863cc6449fb45f606ac09b63e49904f37e0f7 |     82
+ 2ccee9626694069fe46c0cfdfb3855e2a9bd68a2537c3a102d331064075b5cd4 | 3b34f933c70a369610c33e6f772f219a87bc1350ffd41d92210a1e32df5213c9 |     83
+ 51f70df5e3a67dee46ae72b62f3ed88ced98446073f71e8347f78164b11727b6 | 2ccee9626694069fe46c0cfdfb3855e2a9bd68a2537c3a102d331064075b5cd4 |     84
+ ad363fff7a20ad8346a0e041399eb48d5da8dab73ca137b6d129e597fbe6ac0f | 51f70df5e3a67dee46ae72b62f3ed88ced98446073f71e8347f78164b11727b6 |     85
+ 4d5e7f714409c361b72087bc40e5773a3449974799e3664cb7eb8b3aa470ad8f | ad363fff7a20ad8346a0e041399eb48d5da8dab73ca137b6d129e597fbe6ac0f |     86
+ ccdfcce3b276cdb7c99dc9248f74d3f5de90bc489a6b7c4a1df009a4802c53c4 | 4d5e7f714409c361b72087bc40e5773a3449974799e3664cb7eb8b3aa470ad8f |     87
+ 80caac52713ee28e88de193e465d028577f9ebd07cd2f43c5b2b19b075abb73d | ccdfcce3b276cdb7c99dc9248f74d3f5de90bc489a6b7c4a1df009a4802c53c4 |     88
+ 0038e511858c74787ffcf7800bd22f900db2c3d9bdec90a2a5193989e1963016 | 80caac52713ee28e88de193e465d028577f9ebd07cd2f43c5b2b19b075abb73d |     89
+ 7c920d0697752cf9f028caecce16e6eae7aeb1c38b794599101b86f8b4730d45 | 0038e511858c74787ffcf7800bd22f900db2c3d9bdec90a2a5193989e1963016 |     90
+ f031fabf48f4d78800be3ad8c8229d27c2f74201edf7527b831f9dac02f0e018 | 7c920d0697752cf9f028caecce16e6eae7aeb1c38b794599101b86f8b4730d45 |     91
+ 2609d8801463db0aaa8cfce22a627b114ba3e2dd9aeaf9b9a7c0e1a1ead3c540 | f031fabf48f4d78800be3ad8c8229d27c2f74201edf7527b831f9dac02f0e018 |     92
+ 45a07b8f1ee7688f1c8b1b0948b532796ca9c980c14fd8a3aec591c00755ef01 | 2609d8801463db0aaa8cfce22a627b114ba3e2dd9aeaf9b9a7c0e1a1ead3c540 |     93
+ 7f3168327c1f60009048c286d3e92c13efd727fad2a1ae8a852a4f308b48dcd3 | 45a07b8f1ee7688f1c8b1b0948b532796ca9c980c14fd8a3aec591c00755ef01 |     94
+ 33cc2b3cc84f21d4d864975aec4cd9ea6a7d300487c422c9fdfcc019576d1c83 | 7f3168327c1f60009048c286d3e92c13efd727fad2a1ae8a852a4f308b48dcd3 |     95
+ c2d26da2b737456e53fbe84015b3138372121c8dc2b33bdda29d3f7fd533ae1f | 33cc2b3cc84f21d4d864975aec4cd9ea6a7d300487c422c9fdfcc019576d1c83 |     96
+ c16c228d7991321f03eb6c9a2d4ebc5427faa6da52f6247f9c65c3910fae7819 | c2d26da2b737456e53fbe84015b3138372121c8dc2b33bdda29d3f7fd533ae1f |     97
+ 453f9d9c8de9d4f286fe76d39cc78ef0683a8fd695d9992d95b9df76f9ba85ac | c16c228d7991321f03eb6c9a2d4ebc5427faa6da52f6247f9c65c3910fae7819 |     98
+ d6926034774cec82ad74da556824dd3f1168bba034b7974882b323da263ef89e | 453f9d9c8de9d4f286fe76d39cc78ef0683a8fd695d9992d95b9df76f9ba85ac |     99
+(100 rows)
 
-
-#PROBE USE TEST IN ANOTHER TERMINAL
-sudo stap -e '  
-global var  
-probe process("/usr/local/pgsql-9.3.6/bin/postgres").mark("query__execute__done") {  
-  var++  
-}  
-probe timer.s($1) {  
-  printf("qps:%d\n", var/$1)  
-  var=0  
-}' 3 
-
+#PROBE USE TEST test.d
+sudo stap -v test.d
+Pass 1: parsed user script and 476 library scripts using 124636virt/88140res/5816shr/82580data kb, in 130usr/40sys/173real ms.
+Pass 2: analyzed script: 7 probes, 4 functions, 1 embed, 0 globals using 126352virt/90876res/6792shr/84296data kb, in 0usr/10sys/7real ms.
+Pass 3: using cached /root/.systemtap/cache/0c/stap_0cebbf8f2b062f64238c3a7bc4c9e9c6_3372.c
+Pass 4: using cached /root/.systemtap/cache/0c/stap_0cebbf8f2b062f64238c3a7bc4c9e9c6_3372.ko
+Pass 5: starting run.
+Transaction start: 6374
+lock wait start at 1599577105 for process 6374 on cpu 1
+lock wait start at 1599577105 for process 6374 on cpu 1
+Transaction start: 4975
+Transaction start: 6375
+Transaction start: 6375
+Transaction start: 6374
+lock wait start at 1599577112 for process 6374 on cpu 1
+lock wait start at 1599577112 for process 6374 on cpu 1
+Transaction start: 6374
