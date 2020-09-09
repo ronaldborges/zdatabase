@@ -1,0 +1,84 @@
++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
++  WORKING WITH SCALA LIBRARIES SPARK-SHELL ON UBUNTU 20  +
++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+
+Welcome to
+      ____              __
+     / __/__  ___ _____/ /__
+    _\ \/ _ \/ _ `/ __/  '_/
+   /___/ .__/\_,_/_/ /_/\_\   version 3.0.0
+      /_/
+         
+Using Scala version 2.12.10 (OpenJDK 64-Bit Server VM, Java 1.8.0_265)
+Type in expressions to have them evaluated.
+Type :help for more information.
+
+scala> import sys.process._
+import sys.process._
+
+scala> val lines = scala.io.Source.fromFile("LabData/nycweather.csv").mkString
+lines: String =
+""2013-01-01",1,0
+"2013-01-02",-2,0
+"2013-01-03",-2,0
+"2013-01-04",1,0
+"2013-01-05",3,0
+"2013-01-06",4,0
+"2013-01-07",5,0
+"2013-01-08",6,0
+"2013-01-09",7,0
+"2013-01-10",7,0
+"2013-01-11",6,13.97
+"2013-01-12",7,0.51
+"2013-01-13",8,0
+"2013-01-14",8,2.29
+"2013-01-15",3,3.05
+"2013-01-16",2,17.53
+"2013-01-17",4,0
+"2013-01-18",-1,0
+"2013-01-19",5,0
+"2013-01-20",6,0
+"2013-01-21",-2,0
+"2013-01-22",-7,0
+"2013-01-23",-9,0
+"2013-01-24",-8,0
+"2013-01-25",-7,1.78
+"2013-01-26",-6,0
+"2013-01-27",-3,0
+"2013-01-28",1,5.59
+"2013-01-29",6,1.52
+"2013-01-30",9,1.02
+"2013-01-31",8,22.86
+"2013-02-01",-2,0
+"2013-02-02",-4,0.51
+"2013-02-03",-3,0.51
+"2013-02-04",-3,0
+"2013-02-05",-1,0.51
+"2013-02-06",1,0
+"2013-02-07",-2,0
+"2013-02-08",-1,29.21
+"2013-02-09",-3,9.65
+"2013-0...
+
+scala> val sqlContext = new org.apache.spark.sql.SQLContext(sc)
+warning: there was one deprecation warning (since 2.0.0); for details, enable `:setting -deprecation' or `:replay -deprecation'
+sqlContext: org.apache.spark.sql.SQLContext = org.apache.spark.sql.SQLContext@773236a7
+
+scala> import sqlContext.implicits._
+import sqlContext.implicits._
+
+scala> case class Weather(date: String, temp: Int, precipitation: Double)
+defined class Weather
+
+scala> val weather = sc.textFile("LabData/nycweather.csv").map(_.split(",")). map(w => Weather(w(0), w(1).trim.toInt, w(2).trim.toDouble)).toDF()
+weather: org.apache.spark.sql.DataFrame = [date: string, temp: int ... 1 more field]
+
+scala> weather.registerTempTable("weather")
+warning: there was one deprecation warning (since 2.0.0); for details, enable `:setting -deprecation' or `:replay -deprecation'
+
+scala> val hottest_with_precip = sqlContext.sql("SELECT * FROM weather WHERE precipitation > 0.0 ORDER BY temp DESC")
+hottest_with_precip: org.apache.spark.sql.DataFrame = [date: string, temp: int ... 1 more field]
+
+scala> hottest_with_precip.collect()
+res1: Array[org.apache.spark.sql.Row] = Array(["2013-06-26",27,1.27], ["2013-06-27",27,6.1], ["2013-07-08",27,5.59], ["2013-07-09",27,5.84], ["2013-07-22",27,1.52], ["2013-07-23",27,7.87], ["2013-08-09",27,1.27], ["2013-06-02",26,21.59], ["2013-07-03",26,13.46], ["2013-08-27",26,0.25], ["2013-08-28",26,10.92], ["2013-09-02",26,1.27], ["2013-09-10",26,0.25], ["2013-09-12",26,40.64], ["2013-06-17",25,0.25], ["2013-07-02",25,2.03], ["2013-07-29",25,0.25], ["2013-07-01",24,21.34], ["2013-08-08",24,11.68], ["2013-08-12",24,1.27], ["2013-08-22",24,6.35], ["2013-08-26",24,1.02], ["2013-09-03",24,0.76], ["2013-06-18",23,4.83], ["2013-07-12",23,6.35], ["2013-07-13",23,1.52], ["2013-07-28",23,6.1], ["2013-08-03",23,1.52], ["2013-08-13",23,21.59], ["2013-05-23",22,45.97],...
+
