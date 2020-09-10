@@ -160,6 +160,8 @@ https://www.google.com/maps/place/40%C2%B045'25.2%22N+73%C2%B058'51.1%22W/@40.75
 
 CREATING A SPARK APPLICATION USING SPARK STREAMING
 
+./spark-shell
+
 Welcome to
       ____              __
      / __/__  ___ _____/ /__
