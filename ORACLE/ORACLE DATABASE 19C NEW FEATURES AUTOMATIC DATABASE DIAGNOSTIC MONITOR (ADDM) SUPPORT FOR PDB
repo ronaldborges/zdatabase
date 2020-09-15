@@ -84,6 +84,9 @@ awr_pdb_autoflush_enabled            boolean     FALSE
 SQL> ALTER SYSTEM SET AWR_PDB_AUTOFLUSH_ENABLED=TRUE SCOPE=spfile;
 System altered.
 
+SQL> ALTER SYSTEM SET AWR_PDB_AUTOFLUSH_ENABLED=TRUE;
+System altered.
+
 SQL> show parameter AWR_PDB_AUTOFLUSH_ENABLED;
 NAME                                 TYPE        VALUE
 ------------------------------------ ----------- ------------------------------
@@ -104,6 +107,9 @@ NAME                                 TYPE        VALUE
 awr_pdb_autoflush_enabled            boolean     FALSE
 
 SQL> ALTER SYSTEM SET AWR_PDB_AUTOFLUSH_ENABLED=TRUE SCOPE=spfile;
+System altered.
+
+SQL> ALTER SYSTEM SET AWR_PDB_AUTOFLUSH_ENABLED=TRUE;
 System altered.
 
 SQL> show parameter AWR_PDB_AUTOFLUSH_ENABLED;
@@ -467,6 +473,4 @@ SQL>
 
 #VIEWS CONTAIN EXTRA INFORMATION
 DBA_ADDM_* and DBA_ADVISOR_*
-
-    
-    
+   
