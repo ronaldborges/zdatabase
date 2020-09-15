@@ -48,6 +48,54 @@ FROM dual;
 
 § BACKGROUND AUTOMATIC INDEX OPERATION
 #################################################################################################################################################################
+# col name for a65
+# col description for a80
+# col value for a65
+# set lines 300 pages 100
+# select i.ksppinm name,
+# i.ksppdesc description,
+# CV.ksppstvl VALUE,
+# CV.ksppstdf isdefault,
+# DECODE(BITAND(CV.ksppstvf, 7),1,'MODIFIED', 4, 'SYSTEM_MOD', 'FALSE') ismodified,
+# DECODE(BITAND(CV.ksppstvf, 2), 2, 'TRUE', 'FALSE') isadjusted
+# FROM sys.x$ksppi i, sys.x$ksppcv CV
+# WHERE i.inst_id = USERENV('Instance') AND CV.inst_id = USERENV('Instance') AND i.indx = CV.indx AND i.ksppinm LIKE '%exadata%'
+# ORDER BY REPLACE(i.ksppinm, '_', '');
+#
+# NAME								  DESCRIPTION									   VALUE							     ISDEFAULT ISMODIFIED ISADJ
+# --------------------------------------------------------------- -------------------------------------------------------------------------------- ----------------------------------------------------------------- --------- ---------- -----
+# _auto_manage_exadata_disks					  Automate Exadata disk management						   TRUE 							     TRUE      FALSE	  FALSE
+# _exadata_feature_on						  Exadata Feature On								   FALSE							     TRUE      FALSE	  FALSE
+# _lm_exadata_fence_type					  if FALSE disable Exadata fence type						   TRUE 							     TRUE      FALSE	  FALSE
+# _rm_exadata_partition_fc					  Partition flash cache for Exadata						   FALSE							     TRUE      FALSE	  FALSE
+# _rm_exadata_pdb_cpu_cnt 					  Use PDB CPU cnt for Exadata smart scan					   FALSE							     TRUE      FALSE	  FALSE
+# _rm_exadata_pdb_cpu_cnt_mult					  Multiplication factor for PDB cpu count					   2								     TRUE      FALSE	  FALSE
+#
+# alter system set "_exadata_feature_on"=true scope=spfile;
+# shut immediate;
+# Database closed.
+# Database dismounted.
+# ORACLE instance shut down.
+# startup
+# ORACLE instance started.
+#
+# col parameter_name FORMAT A40
+# col parameter_value FORMAT A15
+# select con_id, parameter_name, parameter_value from cdb_auto_index_config ORDER BY 1, 2;SQL> SQL>   2  
+#
+#    CON_ID PARAMETER_NAME			    PARAMETER_VALUE
+# --------- ---------------------------------------- ---------------
+#	  5 AUTO_INDEX_COMPRESSION		    OFF
+#	  5 AUTO_INDEX_DEFAULT_TABLESPACE
+#	  5 AUTO_INDEX_MODE			    OFF
+#	  5 AUTO_INDEX_REPORT_RETENTION		    31
+#	  5 AUTO_INDEX_RETENTION_FOR_AUTO	    373
+#	  5 AUTO_INDEX_RETENTION_FOR_MANUAL
+#	  5 AUTO_INDEX_SCHEMA
+#	  5 AUTO_INDEX_SPACE_BUDGET		    50
+#
+# 8 rows selected.
+#
 # col DESCRIPTION for a30
 # col ADVISOR_NAME for a25
 # col task_name for a30
