@@ -12,39 +12,39 @@ To activate it, the following command can be executed:
 This feature can only be used in the exadata environment:
 By default, AUTO_TASK for this feature runs in 900 seconds:
 
-SQL> select dbms_stats.get_prefs(‘AUTO_TASK_STATUS‘) “enable/disable” from dual;
+SQL> select dbms_stats.get_prefs('AUTO_TASK_STATUS') "enable/disable" from dual;
 
 enable/disable
 ———————————————
 OFF
 
-SQL> exec dbms_stats.set_global_prefs(‘AUTO_TASK_STATUS‘,’ON‘)
+SQL> exec dbms_stats.set_global_prefs('AUTO_TASK_STATUS','ON')
 
 PL/SQL procedure successfully completed
 
-SQL> select dbms_stats.get_prefs(‘AUTO_TASK_STATUS’) “enable/disable” from dual;
+SQL> select dbms_stats.get_prefs('AUTO_TASK_STATUS') "enable/disable" from dual;
 
 enable/disable
 ———————————————
 ON
 
-SQL> alter system set “_exadata_feature_on”=true scope=spfile;
+SQL> alter system set "_exadata_feature_on"=true scope=spfile;
 
 System altered.
 
-SQL>  select dbms_stats.get_prefs(‘AUTO_TASK_INTERVAL‘)  AUTO_TASK_INTERVAL from dual;
+SQL> select dbms_stats.get_prefs('AUTO_TASK_INTERVAL')  AUTO_TASK_INTERVAL from dual;
 
 AUTO_TASK_INTERVAL
 ——————————————————————————–
 900
 
-SQL>  select dbms_stats.get_prefs(‘AUTO_TASK_MAX_RUN_TIME’) AUTO_TASK_MAX_RUN_TIME from dual;
+SQL> select dbms_stats.get_prefs('AUTO_TASK_MAX_RUN_TIME') AUTO_TASK_MAX_RUN_TIME from dual;
 
 AUTO_TASK_MAX_RUN_TIME
 ———————————————————————
 3600
 
-SQL> exec dbms_stats.set_global_prefs(‘AUTO_TASK_MAX_RUN_TIME’,’600′)
+SQL> exec dbms_stats.set_global_prefs('AUTO_TASK_MAX_RUN_TIME','600')
 
 PL/SQL procedure successfully completed
 
@@ -100,13 +100,13 @@ With the settings initially made, statistics were to be collected in 100 seconds
 from tables whose statistics are in stale mode.
 After the specified time, we will see that the statistics for the mytbl table has been updated and removed from the stale mode:
 
-SQL> select t.stale_stats from dba_tab_statistics t where table_name=’MYTBL’;
+SQL> select t.stale_stats from dba_tab_statistics t where table_name='MYTBL';
 
 STALE_STATS
 ————————————
 NO
 
-SQL> select num_rows,blocks from dba_tables k where k.TABLE_NAME=’MYTBL’;
+SQL> select num_rows,blocks from dba_tables k where k.TABLE_NAME='MYTBL';
 
 NUM_ROWS BLOCKS
 ———————— ————————

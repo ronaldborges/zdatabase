@@ -169,12 +169,21 @@ FROM dual;
 # -------------------------- --------------- ------------------------------ ---------- --------------------
 # _AUTO_INDEX_TASK_INTERVAL             1800 06-AUG-19 07.02.01.000000 PM   SYS
 #
+# //There are three parameters to enable automatic indexing:
+# EXEC DBMS_AUTO_INDEX.CONFIGURE('AUTO_INDEX_MODE','IMPLEMENT|REPORT ONLY|OFF');
+# IMPLEMENT: Enable automatic indexing and set the created index to visible, which can be used by the optimizer.
+# REPORT ONLY: Enabled, index is invisible auto index
+# OFF:Turn off automatic indexing
+# //Keep the system using the following stored procedures by default
+# EXEC DBMS_AUTO_INDEX.CONFIGURE('AUTO_INDEX_DEFAULT_TABLESPACE',NULL);
 #################################################################################################################################################################
 
 § EXAMPLE
 #################################################################################################################################################################
+# create tablespace tbs_auto_appspdb1 datafile '/u01/app/oracle/oradata/ORA19/appspdb1/tbs_auto01.dbf' size 5g autoextend on next 50m maxsize 31g;
+# EXEC DBMS_AUTO_INDEX.CONFIGURE('AUTO_INDEX_DEFAULT_TABLESPACE','tbs_auto_sesa1pdb');
 # EXEC DBMS_AUTO_INDEX.CONFIGURE('AUTO_INDEX_MODE','IMPLEMENT');
-#
+# EXEC DBMS_AUTO_INDEX.CONFIGURE('AUTO_INDEX_COMPRESSION','ON');
 # col PARAMETER_NAME for a40
 # col PARAMETER_VALUE for a15
 # col LAST_MODIFIED for a20
@@ -214,4 +223,90 @@ FROM dual;
 # end;
 # /
 # 
+# COLUMN task_name FORMAT A30
+# COLUMN advisor_name FORMAT A30
+#
+# TASK_NAME															 ADVISOR_NAME
+# -------------------------------------------------------------------------------------------------------------------------------- --------------------------------------------------------------------------------------------------------------------------------
+# SYS_AUTO_SPM_EVOLVE_TASK													   SPM Evolve Advisor
+# SYS_AI_SPM_EVOLVE_TASK													   SPM Evolve Advisor
+# SYS_AI_VERIFY_TASK														   SQL Performance Analyzer
+# SYS_AUTO_INDEX_TASK														   SQL Access Advisor
+# AUTO_STATS_ADVISOR_TASK 													   Statistics Advisor
+# INDIVIDUAL_STATS_ADVISOR_TASK													   Statistics Advisor
+# SYS_AUTO_SPCADV242070220082020												   Segment Advisor
+# SYS_AUTO_SPCADV339090221082020												   Segment Advisor
+# SYS_AUTO_SPCADV355090221082020												   Segment Advisor
+# SYS_AUTO_SPCADV458000222082020												   Segment Advisor
+# SYS_AUTO_SPCADV414010222082020												   Segment Advisor
+# SYS_AUTO_SPCADV515001022082020												   Segment Advisor
+# SYS_AUTO_SPCADV531001022082020												   Segment Advisor
+# SYS_AUTO_SPCADV647011422082020												   Segment Advisor
+# SYS_AUTO_SPCADV603021422082020												   Segment Advisor
+# SYS_AUTO_SPCADV701021822082020												   Segment Advisor
+# SYS_AUTO_SPCADV717021822082020												   Segment Advisor
+# SYS_AUTO_SPCADV815022222082020												   Segment Advisor
+# SYS_AUTO_SPCADV831022222082020												   Segment Advisor
+# SYS_AUTO_SPCADV925020223082020												   Segment Advisor
+# SYS_AUTO_SPCADV941020223082020												   Segment Advisor
+# SYS_AUTO_SPCADV015001023082020												   Segment Advisor
+# SYS_AUTO_SPCADV031001023082020												   Segment Advisor
+# SYS_AUTO_SPCADV112031423082020												   Segment Advisor
+# SYS_AUTO_SPCADV128031423082020												   Segment Advisor
+# SYS_AUTO_SPCADV226031823082020												   Segment Advisor
+# SYS_AUTO_SPCADV242031823082020												   Segment Advisor
+# SYS_AUTO_SPCADV339032223082020												   Segment Advisor
+# SYS_AUTO_SPCADV355032223082020												   Segment Advisor
+# SYS_AUTO_SPCADV449030224082020												   Segment Advisor
+# SYS_AUTO_SPCADV404040224082020												   Segment Advisor
+# SYS_AUTO_SPCADV515000225082020												   Segment Advisor
+# SYS_AUTO_SPCADV531000225082020												   Segment Advisor
+# SYS_AUTO_SPCADV616000226082020												   Segment Advisor
+# SYS_AUTO_SPCADV632000226082020												   Segment Advisor
+# SYS_AUTO_SPCADV717000227082020												   Segment Advisor
+# SYS_AUTO_SPCADV730000227082020												   Segment Advisor
+# SYS_AUTO_SPCADV818000228082020												   Segment Advisor
+# SYS_AUTO_SPCADV832000228082020												   Segment Advisor
+# SYS_AUTO_SPCADV912000229082020												   Segment Advisor
+# SYS_AUTO_SPCADV919000229082020												   Segment Advisor
+# SYS_AUTO_SPCADV016001029082020												   Segment Advisor
+# SYS_AUTO_SPCADV022001029082020												   Segment Advisor
+# SYS_AUTO_SPCADV139011429082020												   Segment Advisor
+# SYS_AUTO_SPCADV144011429082020												   Segment Advisor
+# SYS_AUTO_SPCADV255011829082020												   Segment Advisor
+# SYS_AUTO_SPCADV201021829082020												   Segment Advisor
+# SYS_AUTO_SPCADV211000203092020												   Segment Advisor
+# SYS_AUTO_SPCADV307000204092020												   Segment Advisor
+# SYS_AUTO_SPCADV406000205092020												   Segment Advisor
+# SYS_AUTO_SPCADV508001005092020												   Segment Advisor
+# SYS_AUTO_SPCADV621011405092020												   Segment Advisor
+# SYS_AUTO_SPCADV736011805092020												   Segment Advisor
+# SYS_AUTO_SPCADV851012205092020												   Segment Advisor
+# SYS_AUTO_SPCADV902020206092020												   Segment Advisor
+# SYS_AUTO_SPCADV008001006092020												   Segment Advisor
+# SYS_AUTO_SPCADV143021406092020												   Segment Advisor
+# SYS_AUTO_SPCADV200031806092020												   Segment Advisor
+# SYS_AUTO_SPCADV313032206092020												   Segment Advisor
+# SYS_AUTO_SPCADV424030207092020												   Segment Advisor
+# SYS_AUTO_SPCADV505000208092020												   Segment Advisor
+# SYS_AUTO_SPCADV608000209092020												   Segment Advisor
+# SYS_AUTO_SPCADV708000210092020												   Segment Advisor
+# SYS_AUTO_SPCADV809000211092020												   Segment Advisor
+# SYS_AUTO_SPCADV012000215092020												   Segment Advisor
+# ADDM:2076846695_1_2														   ADDM
+# TASK_203															   ADDM
+# ADDM:2076846695_1_3														   ADDM
+# ADDM:2076846695_1_4														   ADDM
+# ADDM:2076846695_1_5														   ADDM
+# TASK_207															   ADDM
+# ADDM:2076846695_1_6														   ADDM
+# TASK_210															   ADDM
+# ADDM:2076846695_1_7														   ADDM
+# ADDM:2076846695_1_8														   ADDM
+# ADDM:2076846695_1_9														   ADDM
+# 
+# 76 rows selected.
+#
 ################################################################################################################################################################# 
+
+https://programmer.group/oracle-19c-virtual-automatic-index-test.html
