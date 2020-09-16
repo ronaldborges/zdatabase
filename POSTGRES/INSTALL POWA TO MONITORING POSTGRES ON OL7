@@ -39,8 +39,16 @@ make
 cp pg_stat_kcache.so /usr/local/pgsql-<$version>/lib/
 cp pg_stat_kcache.control pg_stat_kcache.c pg_stat_kcache--2.1.1.sql pg_stat_kcache--2.1.0.sql pg_stat_kcache--2.1.0--2.1.1.sql /usr/local/pgsql-<$version>/share/extension/
 
+#FOR REDHAT
 wget https://download.postgresql.org/pub/repos/yum/<$version>/<$DISTRIBUITION>/<$SO>/pg_wait_sampling_<$version>.1.1-1.<$SO>.x86_64.rpm
+#FOR DEBIAN
+wget https://download.postgresql.org/pub/repos/apt/pool/<$version>/p/postgresql-<$version>/postgresql-<$version>-pg-wait-sampling_1.1.1-1.pgdg+1_amd64.deb
+#FOR REDHAT
 rpm2cpio pg_wait_sampling_<$version>.1.1-1.<$SO>.x86_64.rpm | cpio -idmv
+#FOR DEBIAN
+ar vx postgresql-9.6-pg-wait-sampling_1.1.1-1.pgdg+1_amd64.deb
+tar -xf data.tar.xz
+
 cp usr/pgsql-<$version>/lib/pg_wait_sampling.so /usr/local/pgsql-<$version>/lib/
 cp usr/pgsql-<$version>/share/extension/pg_wait_sampling* /usr/local/pgsql-<$version>/share/extension/
 
