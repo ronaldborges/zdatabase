@@ -21,6 +21,8 @@ make install
 cp powa.so /usr/local/pgsql-<$version>/lib/
 cp powa.control powa.c powa--4.0.1.sql powa--4.0.0.sql powa--3.2.0.sql powa--3.1.2--3.2.0.sql powa--3.1.1--3.1.2.sql powa--3.1.0--3.1.1.sql /usr/local/pgsql-<$version>/share/extension/
 
+________________________________________________________________________________________________________________________________________________________________________________
+
 wget https://github.com/powa-team/pg_qualstats/archive/2.0.2.tar.gz
 tar xvfz 2.0.2.tar.gz
 cd pg_qualstats-2.0.2
@@ -30,6 +32,8 @@ make
 cp pg_qualstats.so /usr/local/pgsql-<$version>/lib/
 cp pg_qualstats.control pg_qualstats.c pg_qualstats--2.0.2.sql /usr/local/pgsql-<$version>/share/extension/
 
+________________________________________________________________________________________________________________________________________________________________________________
+
 wget https://github.com/powa-team/pg_stat_kcache/archive/REL2_1_1.tar.gz
 tar xvfz REL2_1_1.tar.gz
 cd pg_stat_kcache-REL2_1_1
@@ -38,6 +42,8 @@ PG_CONFIG ?= /usr/local/pgsql-<$version>/bin/pg_config
 make
 cp pg_stat_kcache.so /usr/local/pgsql-<$version>/lib/
 cp pg_stat_kcache.control pg_stat_kcache.c pg_stat_kcache--2.1.1.sql pg_stat_kcache--2.1.0.sql pg_stat_kcache--2.1.0--2.1.1.sql /usr/local/pgsql-<$version>/share/extension/
+
+________________________________________________________________________________________________________________________________________________________________________________
 
 #FOR REDHAT
 wget https://download.postgresql.org/pub/repos/yum/<$version>/<$DISTRIBUITION>/<$SO>/pg_wait_sampling_<$version>.1.1-1.<$SO>.x86_64.rpm
@@ -52,15 +58,36 @@ tar -xf data.tar.xz
 cp usr/pgsql-<$version>/lib/pg_wait_sampling.so /usr/local/pgsql-<$version>/lib/
 cp usr/pgsql-<$version>/share/extension/pg_wait_sampling* /usr/local/pgsql-<$version>/share/extension/
 
+________________________________________________________________________________________________________________________________________________________________________________
+
+#FOR REDHAT
 wget https://download.postgresql.org/pub/repos/yum/<$version>/<$DISTRIBUITION>/<$SO>/hypopg_<$version>.1.1-1.<$SO>.x86_64.rpm
 rpm2cpio hypopg_<$version>.1.1-1.<$SO>.x86_64.rpm | cpio -idmv
 cp usr/pgsql-<$version>/lib/hypopg.so /usr/local/pgsql-<$version>/lib/
 cp usr/pgsql-<$version>/share/extension/hypopg* /usr/local/pgsql-<$version>/share/extension/
 
+#FOR DEBIAN
+wget https://codeload.github.com/HypoPG/hypopg/zip/master
+mv master hypopg-master.zip
+unzip hypopg-master.zip
+cd hypopg-master
+vi Makefile
+PG_CONFIG ?= /usr/local/pgsql-$version/bin/pg_config
+make
+make install
+
+________________________________________________________________________________________________________________________________________________________________________________
+
+#FOR REDHAT
 wget https://github.com/rjuju/pg_track_settings/archive/2.0.0.tar.gz -O pg_track_settings-2.0.0.tar.gz
 tar xvfz pg_track_settings-2.0.0.tar.gz
 cd pg_track_settings-2.0.0
 cp pg_track_settings.control pg_track_settings--2.0.0.sql pg_track_settings--1.1.0.sql pg_track_settings--1.0.1.sql pg_track_settings--1.0.1--1.1.0.sql pg_track_settings--1.0.0.sql pg_track_settings--1.0.0--1.0.1.sql /usr/local/pgsql-<$version>/share/extension/
+
+#FOR DEBIAN
+wget https://apt.postgresql.org/pub/repos/apt/pool/main/p/pg-track-settings/postgresql-<$version>-pg-track-settings_2.0.0-1.pgdg<$OS>%2B1_all.deb
+ar vx postgresql-9.6-pg-track-settings_2.0.0-1.pgdg18.04+1_all.deb
+tar -xf data.tar.xz
 
 #DATABASE SETUP
 su - postgres
