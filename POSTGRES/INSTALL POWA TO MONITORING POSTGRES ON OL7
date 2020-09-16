@@ -88,6 +88,7 @@ cp pg_track_settings.control pg_track_settings--2.0.0.sql pg_track_settings--1.1
 wget https://apt.postgresql.org/pub/repos/apt/pool/main/p/pg-track-settings/postgresql-<$version>-pg-track-settings_2.0.0-1.pgdg<$OS>%2B1_all.deb
 ar vx postgresql-9.6-pg-track-settings_2.0.0-1.pgdg18.04+1_all.deb
 tar -xf data.tar.xz
+cp usr/pgsql-<$version>/share/extension/pg_track-settings* /usr/local/pgsql-<$version>/share/extension/
 
 #DATABASE SETUP
 su - postgres
