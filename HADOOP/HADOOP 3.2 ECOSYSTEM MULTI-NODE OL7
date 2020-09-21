@@ -619,9 +619,13 @@ vi /home/hadoop/hbase/conf/hbase-site.xml
     <name>hbase.zookeeper.property.clientPort</name>
     <value>2181</value>
   </property>
+#  <property>
+#    <name>hbase.zookeeper.property.dataDir</name>
+#    <value>hdfs://hadoopmaster1:9000/user/hadoop/zookeeper</value>
+#  </property>
   <property>
     <name>hbase.zookeeper.property.dataDir</name>
-    <value>hdfs://hadoopmaster1:9000/user/hadoop/zookeeper</value>
+    <value>/home/hadoop/zookeeper/data</value>
   </property>
   <property>
     <name>hbase.tmp.dir</name>
@@ -740,6 +744,29 @@ Version 2.2.6, r88c9a386176e2c2b5fd9915d0e9d3ce17d0e456e, Tue Sep 15 17:36:14 CS
 Took 0.0017 seconds                                                                                                                                                                                                                                                      
 hbase(main):001:0> 
 
+#STOP HBASE SERVICE
+stop-hbase.sh
+stopping hbase............
+OpenJDK 64-Bit Server VM warning: If the number of processors is expected to increase from one, then you should configure the number of parallel GC threads appropriately using -XX:ParallelGCThreads=N
+SLF4J: Class path contains multiple SLF4J bindings.
+SLF4J: Found binding in [jar:file:/home/hadoop/hadoop/share/hadoop/common/lib/slf4j-log4j12-1.7.25.jar!/org/slf4j/impl/StaticLoggerBinder.class]
+SLF4J: Found binding in [jar:file:/home/hadoop/hbase/lib/client-facing-thirdparty/slf4j-log4j12-1.7.25.jar!/org/slf4j/impl/StaticLoggerBinder.class]
+SLF4J: See http://www.slf4j.org/codes.html#multiple_bindings for an explanation.
+SLF4J: Actual binding is of type [org.slf4j.impl.Log4jLoggerFactory]
+OpenJDK 64-Bit Server VM warning: If the number of processors is expected to increase from one, then you should configure the number of parallel GC threads appropriately using -XX:ParallelGCThreads=N
+SLF4J: Class path contains multiple SLF4J bindings.
+SLF4J: Found binding in [jar:file:/home/hadoop/hadoop/share/hadoop/common/lib/slf4j-log4j12-1.7.25.jar!/org/slf4j/impl/StaticLoggerBinder.class]
+SLF4J: Found binding in [jar:file:/home/hadoop/hbase/lib/client-facing-thirdparty/slf4j-log4j12-1.7.25.jar!/org/slf4j/impl/StaticLoggerBinder.class]
+SLF4J: See http://www.slf4j.org/codes.html#multiple_bindings for an explanation.
+SLF4J: Actual binding is of type [org.slf4j.impl.Log4jLoggerFactory]
+hadoopslave2: running zookeeper, logging to /home/hadoop/hbase/logs/hbase-hadoop-zookeeper-hadoopslave2.out
+hadoopslave1: running zookeeper, logging to /home/hadoop/hbase/logs/hbase-hadoop-zookeeper-hadoopslave1.out
+hadoopmaster1: running zookeeper, logging to /home/hadoop/hbase/logs/hbase-hadoop-zookeeper-hadoopmaster1.out
+hadoopslave2: stopping zookeeper.
+hadoopslave1: stopping zookeeper.
+hadoopmaster1: stopping zookeeper.
+
+
 #DOWNLOAD ZOOKEEPER ON ALL NODES
 wget http://ftp.unicamp.br/pub/apache/zookeeper/zookeeper-3.6.2/apache-zookeeper-3.6.2-bin.tar.gz,
 
@@ -751,6 +778,66 @@ mv apache-zookeeper-3.6.2-bin zookeeper
 
 #EDIT PROFILE FILE TO ADD VARIABLE HBASE_HOME ON ALL NODES
 vi /home/hadoop/.bashrc
+
+#CREATE DIRECTORY ON ALL NODES 
+mkdir -p /home/hadoop/zookeeper/data
+mkdir -p /home/hadoop/zookeeper/log
+chmod -R 755 /home/hadoop/zookeeper/data
+chmod -R 755 /home/hadoop/zookeeper/log
+
+#CREATE ZOOKEEPER FILE CONFIGURATION
+cp /home/hadoop/zookeeper/conf/zoo_sample.cfg /home/hadoop/zookeeper/conf/zoo.cfg
+
+vi /home/hadoop/zookeeper/conf/zoo.cfg
+tickTime=2000
+initLimit=10
+syncLimit=5
+dataDir=/home/hadoop/zookeeper/data
+dataLogDir=/home/hadoop/zookeeper/log
+clientPort=2181
+server.1=hadoopmaster1:2888:3888
+server.2=hadoopslave1:2888:3888
+server.3=hadoopslave2:2888:3888
+
+#ON EACH NODE CREATE ONE FILE CALLED MYPID WITH THE RESPECTIVE NUMBER 
+#ON MASTER NODE
+vi /home/hadoop/zookeeper/data/myid
+1
+
+#COPY ZOOKEEPER CONFIGURATION FILES TO SLAVE NODES
+scp -r /home/hadoop/zookeeper/conf/* hadoopslave1:/home/hadoop/zookeeper/conf/
+scp -r /home/hadoop/zookeeper/conf/* hadoopslave2:/home/hadoop/zookeeper/conf/
+
+#CONFIGURE ENVIRONMENTS VARIABLES FOR ZOOKEEPER
+vi .bashrc
+#JAVA
+export JAVA_HOME=/usr/lib/jvm/java-1.8.0-openjdk-1.8.0.262.b10-0.el7_8.x86_64/jre
+
+#ZOOKEEPER
+export ZOOKEEPER_HOME=/home/hadoop/zookeeper
+export PATH=$PATH:$ZOOKEEPER_HOME/sbin:$ZOOKEEPER_HOME/bin
+
+#HBASE
+export HBASE_HOME=/home/hadoop/hbase
+export PATH=$PATH:$HBASE_HOME/sbin:$HBASE_HOME/bin
+
+#HADOOP
+export HADOOP_HOME=/home/hadoop/hadoop
+export HADOOP_INSTALL=$HADOOP_HOME
+export HADOOP_MAPRED_HOME=$HADOOP_HOME
+export HADOOP_COMMON_HOME=$HADOOP_HOME
+export HADOOP_HDFS_HOME=$HADOOP_HOME
+export YARN_HOME=$HADOOP_HOME
+export HADOOP_COMMON_LIB_NATIVE_DIR=$HADOOP_HOME/lib/native
+export PATH=$PATH:$HADOOP_HOME/sbin:$HADOOP_HOME/bin
+
+source .bashrc
+
+zkServer.sh start
+ZooKeeper JMX enabled by default
+Using config: /home/hadoop/zookeeper/bin/../conf/zoo.cfg
+Starting zookeeper ... STARTED
+
 
 
 
