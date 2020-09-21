@@ -636,6 +636,110 @@ vi /home/hadoop/hbase/conf/hbase-site.xml
 scp -r /home/hadoop/hbase/conf/* hadoopslave1:/home/hadoop/hbase/conf/
 scp -r /home/hadoop/hbase/conf/* hadoopslave2:/home/hadoop/hbase/conf/
 
+#START HBASE SERVICE ON MASTER NODE
+start-hbase.sh
+OpenJDK 64-Bit Server VM warning: If the number of processors is expected to increase from one, then you should configure the number of parallel GC threads appropriately using -XX:ParallelGCThreads=N
+SLF4J: Class path contains multiple SLF4J bindings.
+SLF4J: Found binding in [jar:file:/home/hadoop/hadoop/share/hadoop/common/lib/slf4j-log4j12-1.7.25.jar!/org/slf4j/impl/StaticLoggerBinder.class]
+SLF4J: Found binding in [jar:file:/home/hadoop/hbase/lib/client-facing-thirdparty/slf4j-log4j12-1.7.25.jar!/org/slf4j/impl/StaticLoggerBinder.class]
+SLF4J: See http://www.slf4j.org/codes.html#multiple_bindings for an explanation.
+SLF4J: Actual binding is of type [org.slf4j.impl.Log4jLoggerFactory]
+OpenJDK 64-Bit Server VM warning: If the number of processors is expected to increase from one, then you should configure the number of parallel GC threads appropriately using -XX:ParallelGCThreads=N
+SLF4J: Class path contains multiple SLF4J bindings.
+SLF4J: Found binding in [jar:file:/home/hadoop/hadoop/share/hadoop/common/lib/slf4j-log4j12-1.7.25.jar!/org/slf4j/impl/StaticLoggerBinder.class]
+SLF4J: Found binding in [jar:file:/home/hadoop/hbase/lib/client-facing-thirdparty/slf4j-log4j12-1.7.25.jar!/org/slf4j/impl/StaticLoggerBinder.class]
+SLF4J: See http://www.slf4j.org/codes.html#multiple_bindings for an explanation.
+SLF4J: Actual binding is of type [org.slf4j.impl.Log4jLoggerFactory]
+hadoopmaster1: running zookeeper, logging to /home/hadoop/hbase/logs/hbase-hadoop-zookeeper-hadoopmaster1.out
+hadoopslave1: running zookeeper, logging to /home/hadoop/hbase/logs/hbase-hadoop-zookeeper-hadoopslave1.out
+hadoopslave2: running zookeeper, logging to /home/hadoop/hbase/logs/hbase-hadoop-zookeeper-hadoopslave2.out
+hadoopmaster1: OpenJDK 64-Bit Server VM warning: If the number of processors is expected to increase from one, then you should configure the number of parallel GC threads appropriately using -XX:ParallelGCThreads=N
+hadoopmaster1: SLF4J: Class path contains multiple SLF4J bindings.
+hadoopmaster1: SLF4J: Found binding in [jar:file:/home/hadoop/hadoop/share/hadoop/common/lib/slf4j-log4j12-1.7.25.jar!/org/slf4j/impl/StaticLoggerBinder.class]
+hadoopmaster1: SLF4J: Found binding in [jar:file:/home/hadoop/hbase/lib/client-facing-thirdparty/slf4j-log4j12-1.7.25.jar!/org/slf4j/impl/StaticLoggerBinder.class]
+hadoopmaster1: SLF4J: See http://www.slf4j.org/codes.html#multiple_bindings for an explanation.
+hadoopmaster1: SLF4J: Actual binding is of type [org.slf4j.impl.Log4jLoggerFactory]
+hadoopslave1: OpenJDK 64-Bit Server VM warning: If the number of processors is expected to increase from one, then you should configure the number of parallel GC threads appropriately using -XX:ParallelGCThreads=N
+hadoopslave1: SLF4J: Class path contains multiple SLF4J bindings.
+hadoopslave1: SLF4J: Found binding in [jar:file:/home/hadoop/hadoop/share/hadoop/common/lib/slf4j-log4j12-1.7.25.jar!/org/slf4j/impl/StaticLoggerBinder.class]
+hadoopslave1: SLF4J: Found binding in [jar:file:/home/hadoop/hbase/lib/client-facing-thirdparty/slf4j-log4j12-1.7.25.jar!/org/slf4j/impl/StaticLoggerBinder.class]
+hadoopslave1: SLF4J: See http://www.slf4j.org/codes.html#multiple_bindings for an explanation.
+hadoopslave1: SLF4J: Actual binding is of type [org.slf4j.impl.Log4jLoggerFactory]
+hadoopslave2: OpenJDK 64-Bit Server VM warning: If the number of processors is expected to increase from one, then you should configure the number of parallel GC threads appropriately using -XX:ParallelGCThreads=N
+hadoopslave2: SLF4J: Class path contains multiple SLF4J bindings.
+hadoopslave2: SLF4J: Found binding in [jar:file:/home/hadoop/hadoop/share/hadoop/common/lib/slf4j-log4j12-1.7.25.jar!/org/slf4j/impl/StaticLoggerBinder.class]
+hadoopslave2: SLF4J: Found binding in [jar:file:/home/hadoop/hbase/lib/client-facing-thirdparty/slf4j-log4j12-1.7.25.jar!/org/slf4j/impl/StaticLoggerBinder.class]
+hadoopslave2: SLF4J: See http://www.slf4j.org/codes.html#multiple_bindings for an explanation.
+hadoopslave2: SLF4J: Actual binding is of type [org.slf4j.impl.Log4jLoggerFactory]
+running master, logging to /home/hadoop/hbase/logs/hbase-hadoop-master-hadoopmaster1.out
+OpenJDK 64-Bit Server VM warning: If the number of processors is expected to increase from one, then you should configure the number of parallel GC threads appropriately using -XX:ParallelGCThreads=N
+SLF4J: Class path contains multiple SLF4J bindings.
+SLF4J: Found binding in [jar:file:/home/hadoop/hadoop/share/hadoop/common/lib/slf4j-log4j12-1.7.25.jar!/org/slf4j/impl/StaticLoggerBinder.class]
+SLF4J: Found binding in [jar:file:/home/hadoop/hbase/lib/client-facing-thirdparty/slf4j-log4j12-1.7.25.jar!/org/slf4j/impl/StaticLoggerBinder.class]
+SLF4J: See http://www.slf4j.org/codes.html#multiple_bindings for an explanation.
+SLF4J: Actual binding is of type [org.slf4j.impl.Log4jLoggerFactory]
+hadoopslave1: running regionserver, logging to /home/hadoop/hbase/logs/hbase-hadoop-regionserver-hadoopslave1.out
+hadoopslave2: running regionserver, logging to /home/hadoop/hbase/logs/hbase-hadoop-regionserver-hadoopslave2.out
+hadoopslave1: OpenJDK 64-Bit Server VM warning: If the number of processors is expected to increase from one, then you should configure the number of parallel GC threads appropriately using -XX:ParallelGCThreads=N
+hadoopslave1: SLF4J: Class path contains multiple SLF4J bindings.
+hadoopslave1: SLF4J: Found binding in [jar:file:/home/hadoop/hadoop/share/hadoop/common/lib/slf4j-log4j12-1.7.25.jar!/org/slf4j/impl/StaticLoggerBinder.class]
+hadoopslave1: SLF4J: Found binding in [jar:file:/home/hadoop/hbase/lib/client-facing-thirdparty/slf4j-log4j12-1.7.25.jar!/org/slf4j/impl/StaticLoggerBinder.class]
+hadoopslave1: SLF4J: See http://www.slf4j.org/codes.html#multiple_bindings for an explanation.
+hadoopslave1: SLF4J: Actual binding is of type [org.slf4j.impl.Log4jLoggerFactory]
+hadoopslave2: OpenJDK 64-Bit Server VM warning: If the number of processors is expected to increase from one, then you should configure the number of parallel GC threads appropriately using -XX:ParallelGCThreads=N
+hadoopslave2: SLF4J: Class path contains multiple SLF4J bindings.
+hadoopslave2: SLF4J: Found binding in [jar:file:/home/hadoop/hadoop/share/hadoop/common/lib/slf4j-log4j12-1.7.25.jar!/org/slf4j/impl/StaticLoggerBinder.class]
+hadoopslave2: SLF4J: Found binding in [jar:file:/home/hadoop/hbase/lib/client-facing-thirdparty/slf4j-log4j12-1.7.25.jar!/org/slf4j/impl/StaticLoggerBinder.class]
+hadoopslave2: SLF4J: See http://www.slf4j.org/codes.html#multiple_bindings for an explanation.
+hadoopslave2: SLF4J: Actual binding is of type [org.slf4j.impl.Log4jLoggerFactory]
+hadoopslave2: running master, logging to /home/hadoop/hbase/logs/hbase-hadoop-master-hadoopslave2.out
+hadoopslave1: running master, logging to /home/hadoop/hbase/logs/hbase-hadoop-master-hadoopslave1.out
+
+#CHECK SERVICE HBASE ON MASTER
+jps
+25722 HQuorumPeer
+22442 NameNode
+25853 HMaster
+26141 Jps
+23101 ResourceManager
+22671 SecondaryNameNode
+
+#CHECK SERVICE HBASE ON SLAVE
+jps
+22784 NodeManager
+24435 HRegionServer
+24279 HQuorumPeer
+24583 HMaster
+24888 Jps
+22569 DataNode
+
+#CHECK HBASE MASTER
+http://192.168.56.124:16010/master-status
+
+#CHECK HBASE BACKUP MASTER
+http://192.168.56.125:16010/master-status
+http://192.168.56.126:16010/master-status
+
+#CHECK REGION SERVER 
+http://192.168.56.125:16030/rs-status
+http://192.168.56.126:16030/rs-status
+
+#RUN HBASE SHELL
+hbase shell
+OpenJDK 64-Bit Server VM warning: If the number of processors is expected to increase from one, then you should configure the number of parallel GC threads appropriately using -XX:ParallelGCThreads=N
+SLF4J: Class path contains multiple SLF4J bindings.
+SLF4J: Found binding in [jar:file:/home/hadoop/hadoop/share/hadoop/common/lib/slf4j-log4j12-1.7.25.jar!/org/slf4j/impl/StaticLoggerBinder.class]
+SLF4J: Found binding in [jar:file:/home/hadoop/hbase/lib/client-facing-thirdparty/slf4j-log4j12-1.7.25.jar!/org/slf4j/impl/StaticLoggerBinder.class]
+SLF4J: See http://www.slf4j.org/codes.html#multiple_bindings for an explanation.
+SLF4J: Actual binding is of type [org.slf4j.impl.Log4jLoggerFactory]
+HBase Shell
+Use "help" to get list of supported commands.
+Use "exit" to quit this interactive shell.
+For Reference, please visit: http://hbase.apache.org/2.0/book.html#shell
+Version 2.2.6, r88c9a386176e2c2b5fd9915d0e9d3ce17d0e456e, Tue Sep 15 17:36:14 CST 2020
+Took 0.0017 seconds                                                                                                                                                                                                                                                      
+hbase(main):001:0> 
+
 #DOWNLOAD ZOOKEEPER ON ALL NODES
 wget http://ftp.unicamp.br/pub/apache/zookeeper/zookeeper-3.6.2/apache-zookeeper-3.6.2-bin.tar.gz,
 
@@ -647,6 +751,7 @@ mv apache-zookeeper-3.6.2-bin zookeeper
 
 #EDIT PROFILE FILE TO ADD VARIABLE HBASE_HOME ON ALL NODES
 vi /home/hadoop/.bashrc
+
 
 
 
