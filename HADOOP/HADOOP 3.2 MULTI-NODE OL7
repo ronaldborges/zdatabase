@@ -344,6 +344,13 @@ Erasure Coded Block Groups:
 
 -------------------------------------------------
 
+#ONLY ON MASTER NODE JPS PROCESSES
+jps
+23970 Jps
+22442 NameNode
+23101 ResourceManager
+22671 SecondaryNameNode
+
 #ONLY IN SLAVES LIST JPS PROCESSES
 jps 
 22294 Jps
