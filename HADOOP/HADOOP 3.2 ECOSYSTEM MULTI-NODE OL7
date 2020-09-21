@@ -2,6 +2,9 @@
 +   HADOOP MULTI-NODE OL7    +
 ++++++++++++++++++++++++++++++
 
+#model base
+https://d1jnx9ba8s6j9r.cloudfront.net/blog/wp-content/uploads/2016/10/HADOOP-ECOSYSTEM-Edureka-768x601.png
+
 THE APACHE HADOOP FRAMEWORK CONSISTS OF THE FOLLOWING MODULES:
 * HADOOP COMMON - CONTAINS THE COMMON LIBRARIES AND FILES NEEDED FOR ALL HADOOP MODULES.
 * HADOOP DISTRIBUTED FILE SYSTEM (HDFS) - DISTRIBUTED FILE SYSTEM THAT STORES DATA ON MACHINES WITHIN THE CLUSTER, ON DEMAND, ALLOWING VERY LARGE BANDWIDTH ACROSS THE CLUSTER.
@@ -16,6 +19,15 @@ vi /etc/hosts
 192.168.56.124  hadoopmaster1
 192.168.56.125  hadoopslave1
 192.168.56.126  hadoopslave2
+
+#CONFIGURE MAXIMUM OPEN FILES ON ALL HOSTS
+ulimit -n 10000
+
+#VALIDATE MAXIMUM OPEN FILES ON ALL HOSTS
+ulimit -Sn 
+10000
+ulimit -Hn 
+10000
 
 #DISABLE SELINUX AND STOP FIREWALL IN ALL NODES 
 sed -i 's/SELINUX=.*/SELINUX=disabled/' /etc/selinux/config && setenforce 0
@@ -45,6 +57,29 @@ yum repolist
 yum install pdsh.x86_64 -y
 yum install java-1.8.0-openjdk.x86_64 -y
 yum install java-1.8.0-openjdk-devel.x86_64
+yum install python3 -y
+yum install -y ntp 
+
+#CONFIGURE NTPD SERVICE ON ALL NODES
+vi /etc/ntp.conf 
+server a.ntp.br
+server b.ntp.br
+server c.ntp.br
+
+systemctl start ntpd
+
+systemctl status ntpd
+● ntpd.service - Network Time Service
+   Loaded: loaded (/usr/lib/systemd/system/ntpd.service; disabled; vendor preset: disabled)
+   Active: active (running) since Seg 2020-09-21 16:05:02 -03; 1min 3s ago
+  Process: 963 ExecStart=/usr/sbin/ntpd -u ntp:ntp $OPTIONS (code=exited, status=0/SUCCESS)
+ Main PID: 965 (ntpd)
+    Tasks: 1
+   CGroup: /system.slice/ntpd.service
+           └─965 /usr/sbin/ntpd -u ntp:ntp -g
+
+systemctl enable ntpd
+Created symlink from /etc/systemd/system/multi-user.target.wants/ntpd.service to /usr/lib/systemd/system/ntpd.service.
 
 #CHECK JAVA VERSION
 java -version
@@ -849,7 +884,7 @@ Stopping zookeeper ... STOPPED
 zkCli.sh
 Connecting to localhost:2181
 2020-09-21 14:29:03,618 [myid:] - INFO  [main:Environment@98] - Client environment:zookeeper.version=3.6.2--803c7f1a12f85978cb049af5e4ef23bd8b688715, built on 09/04/2020 12:44 GMT
-2020-09-21 14:29:03,620 [myid:] - INFO  [main:Environment@98] - Client environment:host.name=ol71
+2020-09-21 14:29:03,620 [myid:] - INFO  [main:Environment@98] - Client environment:host.name=hadoopmaster1
 2020-09-21 14:29:03,620 [myid:] - INFO  [main:Environment@98] - Client environment:java.version=1.8.0_262
 2020-09-21 14:29:03,621 [myid:] - INFO  [main:Environment@98] - Client environment:java.vendor=Oracle Corporation
 2020-09-21 14:29:03,621 [myid:] - INFO  [main:Environment@98] - Client environment:java.home=/usr/lib/jvm/java-1.8.0-openjdk-1.8.0.262.b10-0.el7_8.x86_64/jre
@@ -895,10 +930,102 @@ WatchedEvent state:Closed type:None path:null
 2020-09-21 14:32:23,863 [myid:] - ERROR [main:ServiceUtils@42] - Exiting JVM with code 127
 2020-09-21 14:32:23,865 [myid:] - INFO  [main-EventThread:ClientCnxn$EventThread@577] - EventThread shut down for session: 0x10000f4ae7d0005
 
+#DOWNLOAD SPARK ON ALL NODES
+wget http://mirror.nbtelecom.com.br/apache/spark/spark-3.0.1/spark-3.0.1-bin-hadoop3.2.tgz
 
+#UNCOMPRESS SPARK ON ALL NODES
+tar -xzvf spark-3.0.1-bin-hadoop3.2.tgz
 
+#RENAME SPARK
+mv spark-3.0.1-bin-hadoop3.2 spark
 
+#CREATE SPARK-ENV ON MASTER NODE
+cp spark/conf/spark-env.sh.template spark/conf/spark-env.sh
+cp spark/conf/slaves.template spark/conf/slaves
 
+#CONFIGURE SPARK-ENV ON MASTER NODE
+vi spark/conf/spark-env.sh
+SPARK_MASTER_HOST='hadoopmaster1'
+SPARK_MASTER_PORT=7077
+export JAVA_HOME=/usr/lib/jvm/java-1.8.0-openjdk-1.8.0.262.b10-0.el7_8.x86_64/jre
+
+vi spark/conf/slaves
+hadoopmaster1
+hadoopslave1
+hadoopslave2
+
+#CONFIGURE ENVIRONMENTS VARIABLES FOR SPARK
+vi .bashrc
+#JAVA
+export JAVA_HOME=/usr/lib/jvm/java-1.8.0-openjdk-1.8.0.262.b10-0.el7_8.x86_64/jre
+
+#ZOOKEEPER
+export ZOOKEEPER_HOME=/home/hadoop/zookeeper
+export PATH=$PATH:$ZOOKEEPER_HOME/sbin:$ZOOKEEPER_HOME/bin
+
+#HBASE
+export HBASE_HOME=/home/hadoop/hbase
+export PATH=$PATH:$HBASE_HOME/sbin:$HBASE_HOME/bin
+
+#SPARK
+export SPARK_HOME=/home/hadoop/spark
+export PATH=$PATH:$SPARK_HOME/sbin:$SPARK_HOME/bin
+PYSPARK_PYTHON=python3
+
+#HADOOP
+export HADOOP_HOME=/home/hadoop/hadoop
+export HADOOP_INSTALL=$HADOOP_HOME
+export HADOOP_MAPRED_HOME=$HADOOP_HOME
+export HADOOP_COMMON_HOME=$HADOOP_HOME
+export HADOOP_HDFS_HOME=$HADOOP_HOME
+export YARN_HOME=$HADOOP_HOME
+export HADOOP_COMMON_LIB_NATIVE_DIR=$HADOOP_HOME/lib/native
+export PATH=$PATH:$HADOOP_HOME/sbin:$HADOOP_HOME/bin
+
+#COPY CONFIGURATION FILES TO SLAVES
+scp -r /home/hadoop/spark/conf/* hadoopmaster1:/home/hadoop/spark/conf/
+scp -r /home/hadoop/spark/conf/* hadoopmaster2:/home/hadoop/spark/conf/
+
+#RUN SPARK ON MASTER
+home/hadoop/spark/sbin/start-all.sh
+starting org.apache.spark.deploy.master.Master, logging to /home/hadoop/spark/logs/spark-hadoop-org.apache.spark.deploy.master.Master-1-hadoopmaster1.out
+hadoopslave1: starting org.apache.spark.deploy.worker.Worker, logging to /home/hadoop/spark/logs/spark-hadoop-org.apache.spark.deploy.worker.Worker-1-hadoopslave1.out
+hadoopmaster1: starting org.apache.spark.deploy.worker.Worker, logging to /home/hadoop/spark/logs/spark-hadoop-org.apache.spark.deploy.worker.Worker-1-hadoopmaster1.out
+hadoopslave2: starting org.apache.spark.deploy.worker.Worker, logging to /home/hadoop/spark/logs/spark-hadoop-org.apache.spark.deploy.worker.Worker-1-hadoopslave2.out
+
+jps
+30465 QuorumPeerMain
+338 Worker
+32724 Master
+388 Jps
+30932 HMaster
+22442 NameNode
+23101 ResourceManager
+22671 SecondaryNameNode
+
+#ACCESS SPARK WEB
+http://hadoopmaster1:8081/
+
+spark-shell 
+20/09/21 15:47:58 WARN NativeCodeLoader: Unable to load native-hadoop library for your platform... using builtin-java classes where applicable
+Using Spark's default log4j profile: org/apache/spark/log4j-defaults.properties
+Setting default log level to "WARN".
+To adjust logging level use sc.setLogLevel(newLevel). For SparkR, use setLogLevel(newLevel).
+Spark context Web UI available at http://hadoopmaster1:4040
+Spark context available as 'sc' (master = local[*], app id = local-1600714086128).
+Spark session available as 'spark'.
+Welcome to
+      ____              __
+     / __/__  ___ _____/ /__
+    _\ \/ _ \/ _ `/ __/  '_/
+   /___/ .__/\_,_/_/ /_/\_\   version 3.0.1
+      /_/
+         
+Using Scala version 2.12.10 (OpenJDK 64-Bit Server VM, Java 1.8.0_262)
+Type in expressions to have them evaluated.
+Type :help for more information.
+
+scala> :quit
 
 
 
