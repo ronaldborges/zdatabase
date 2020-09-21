@@ -344,6 +344,12 @@ Erasure Coded Block Groups:
 
 -------------------------------------------------
 
+#ONLY IN SLAVES LIST JPS PROCESSES
+jps 
+22294 Jps
+21560 NodeManager
+21352 DataNode
+
 #LIST HELP HDFS
 hdfs dfsadmin -help
 
