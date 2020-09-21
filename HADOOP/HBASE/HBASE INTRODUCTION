@@ -1,0 +1,78 @@
+###############################
+#     HBASE INTRODUCTION      #
+###############################
+
+#CREATE TABLE, INSERT VALUE, GET VALUE AND DROP TABLE 
+
+hbase shell
+OpenJDK 64-Bit Server VM warning: If the number of processors is expected to increase from one, then you should configure the number of parallel GC threads appropriately using -XX:ParallelGCThreads=N
+SLF4J: Class path contains multiple SLF4J bindings.
+SLF4J: Found binding in [jar:file:/home/hadoop/hadoop/share/hadoop/common/lib/slf4j-log4j12-1.7.25.jar!/org/slf4j/impl/StaticLoggerBinder.class]
+SLF4J: Found binding in [jar:file:/home/hadoop/hbase/lib/client-facing-thirdparty/slf4j-log4j12-1.7.25.jar!/org/slf4j/impl/StaticLoggerBinder.class]
+SLF4J: See http://www.slf4j.org/codes.html#multiple_bindings for an explanation.
+SLF4J: Actual binding is of type [org.slf4j.impl.Log4jLoggerFactory]
+HBase Shell
+Use "help" to get list of supported commands.
+Use "exit" to quit this interactive shell.
+For Reference, please visit: http://hbase.apache.org/2.0/book.html#shell
+Version 2.2.6, r88c9a386176e2c2b5fd9915d0e9d3ce17d0e456e, Tue Sep 15 17:36:14 CST 2020
+Took 0.0018 seconds                                                                                                                                                                                                                                                      
+
+hbase(main):001:0> create 'testeTable', 'cf'
+Created table testeTable
+Took 2.0206 seconds                                                                                                                                                                                                                                                      
+=> Hbase::Table - testeTable
+
+hbase(main):002:0> list
+TABLE                                                                                                                                                                                                                                                                    
+testeTable                                                                                                                                                                                                                                                               
+1 row(s)
+Took 0.0575 seconds                                                                                                                                                                                                                                                      
+=> ["testeTable"]
+
+hbase(main):003:0> put 'testeTable', 'rowA', 'cf:columnName', 'val1'
+Took 0.3169 seconds                                                                                                                                                                                                                                                      
+
+hbase(main):004:0> get 'testeTable', 'rowA'
+COLUMN                                                              CELL                                                                                                                                                                                                 
+ cf:columnName                                                      timestamp=1600718852652, value=val1                                                                                                                                                                  
+1 row(s)
+Took 0.0818 seconds                                                                                                                                                                                                                                                      
+
+hbase(main):006:0> scan 'testeTable'
+ROW                                                                 COLUMN+CELL                                                                                                                                                                                          
+ rowA                                                               column=cf:columnName, timestamp=1600718852652, value=val1                                                                                                                                            
+1 row(s)
+Took 0.0292 seconds                                                                                                                                                                                                                                                      
+
+hbase(main):007:0> disable 'testeTable'
+Took 1.3588 seconds              
+
+hbase(main):008:0> drop 'testTable'
+Took 1.3588 seconds   
+
+hbase(main):009:0> create_namespace 'big_data'
+Took 0.5421 seconds                              
+
+hbase(main):010:0> create 'big_data:big_table', 'cf'
+Created table big_data:big_table
+Took 1.2832 seconds                                                                                                                                                                                                                                                      
+=> Hbase::Table - big_data:big_table
+
+hbase(main):012:0> list_namespace_tables 'big_data'
+TABLE                                                                                                                                                                                                                                                                    
+big_table                                                                                                                                                                                                                                                                
+1 row(s)
+Took 0.0348 seconds                                                                                                                                                                                                                                                      
+=> ["big_table"]
+
+hbase(main):017:0> disable 'big_data:big_table'
+Took 0.7992 seconds                          
+
+hbase(main):019:0> drop 'big_data:big_table'
+Took 0.5140 seconds 
+
+hbase(main):020:0> drop_namespace 'big_data'
+Took 0.2906 seconds 
+
+
