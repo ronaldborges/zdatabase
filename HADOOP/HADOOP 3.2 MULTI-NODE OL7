@@ -220,6 +220,10 @@ vi ~/hadoop/etc/hadoop/workers
 hadoopslave1
 hadoopslave2
 
+#COPY CONFIGURATION FILES TO SLAVES
+scp -r ~/hadoop/etc/hadoop/* hadoopslave1:/home/hadoop/hadoop/etc/hadoop/
+scp -r ~/hadoop/etc/hadoop/* hadoopslave2:/home/hadoop/hadoop/etc/hadoop/
+
 #FORMAT THE HDFS FILE SYSTEM, USING THE COMMANDS BELOW:
 hdfs namenode -format
 2020-01-29 15:06:16,374 INFO namenode.NameNode: STARTUP_MSG: 
