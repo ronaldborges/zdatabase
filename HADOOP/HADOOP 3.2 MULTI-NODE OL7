@@ -553,6 +553,7 @@ export JAVA_HOME=/usr/lib/jvm/java-1.8.0-openjdk-1.8.0.262.b10-0.el7_8.x86_64/jr
 
 #HBASE
 export HBASE_HOME=/home/hadoop/hbase
+export PATH=$PATH:$HBASE_HOME/sbin:$HBASE_HOME/bin
 
 #HADOOP
 export HADOOP_HOME=/home/hadoop/hadoop
@@ -566,6 +567,90 @@ export PATH=$PATH:$HADOOP_HOME/sbin:$HADOOP_HOME/bin
 
 #RELOAD PROFILE FILE ON ALL NODES
 source /home/hadoop/.bashrc
+
+#CREATE PID DIRECTORY FOR HBASE ON ALL NODES
+mkdir -p /home/hadoop/hbase/pids
+
+#CONFIGURE HBASE-ENV.SH ON MASTER NODE
+vi /home/hadoop/hbase/conf/hbase-env.sh
+export JAVA_HOME=/usr/lib/jvm/java-1.8.0-openjdk-1.8.0.262.b10-0.el7_8.x86_64/jre
+export HBASE_REGIONSERVERS=${HBASE_HOME}/conf/regionservers
+export HBASE_MANAGES_ZK=true
+export HBASE_PID_DIR=/home/hadoop/hbase/pids
+
+#CONFIGURE REGIONSERVERS ON MASTER NODE
+vi /home/hadoop/hbase/conf/regionservers
+hadoopslave1
+hadoopslave2
+
+#CONFIGURE BACKUP-MASTER ON MASTER NODE
+vi /home/hadoop/hbase/conf/backup-masters
+hadoopslave1
+hadoopslave2
+
+#ADD NEW DIRECTORY FOR HBASE ON MASTER NODE
+hdfs dfs -mkdir -p hbase
+hdfs dfs -mkdir -p zookeeper
+
+hdfs dfs -ls
+Found 2 items
+drwxr-xr-x   - hadoop supergroup          0 2020-09-21 11:52 hbase
+drwxr-xr-x   - hadoop supergroup          0 2020-09-21 11:53 zookeeper
+
+#CONFIGURE HBASE-SITE FILE ON MASTER NODE
+vi /home/hadoop/hbase/conf/hbase-site.xml
+<property>
+    <name>hbase.rootdir</name>
+    <value>hdfs://hadoopmaster1:9000/user/hadoop/hbase</value>
+  </property>
+  <property>
+    <name>hbase.cluster.distributed</name>
+    <value>true</value>
+  </property>
+  <property>
+  <name>hbase.zookeeper.quorum</name>
+    <value>hadoopmaster1,hadoopslave1,hadoopslave2</value>
+    </property>
+  <property>
+    <name>hbase.master</name>
+    <value>hadoopmaster1:60010</value>       
+  </property>
+  <property>
+    <name>hbase.zookeeper.property.clientPort</name>
+    <value>2181</value>
+  </property>
+  <property>
+    <name>hbase.zookeeper.property.dataDir</name>
+    <value>hdfs://hadoopmaster1:9000/user/hadoop/zookeeper</value>
+  </property>
+  <property>
+    <name>hbase.tmp.dir</name>
+    <value>./tmp</value>
+  </property>
+  <property>
+    <name>hbase.unsafe.stream.capability.enforce</name>
+    <value>false</value>
+  </property>
+
+#COPY CONFIGURATION FILES TO SLAVES
+scp -r /home/hadoop/hbase/conf/* hadoopslave1:/home/hadoop/hbase/conf/
+scp -r /home/hadoop/hbase/conf/* hadoopslave2:/home/hadoop/hbase/conf/
+
+#DOWNLOAD ZOOKEEPER ON ALL NODES
+wget http://ftp.unicamp.br/pub/apache/zookeeper/zookeeper-3.6.2/apache-zookeeper-3.6.2-bin.tar.gz,
+
+#UNCOMPRESS ZOOKEEPER FILE ON ALL NODES
+tar xzf apache-zookeeper-3.6.2-bin.tar.gz
+
+#MOVE TO NEW NAME ON ALL NODES
+mv apache-zookeeper-3.6.2-bin zookeeper
+
+#EDIT PROFILE FILE TO ADD VARIABLE HBASE_HOME ON ALL NODES
+vi /home/hadoop/.bashrc
+
+
+
+
 
 
 
