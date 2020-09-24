@@ -35,11 +35,13 @@ export TNS_ADMIN=/usr/lib/oracle/19.6/client64/lib/network/admin
 exit
 
 #EXPORT ORACLE HOME FOR INSTALLATION AS ROOT
+vi .bash_profile
 export ORACLE_HOME=/usr/lib/oracle/19.6/client64
 export PATH=$PATH:/usr/lib/oracle/19.6/client64/bin
 export LD_LIBRARY_PATH=/usr/lib/oracle/19.6/client64/lib
 export TNS_ADMIN=/usr/lib/oracle/19.6/client64/lib/network/admin
 export PATH
+source .bash_profile
 
 #INSTALL ORACLE_FDW-1.0.0
 wget http://api.pgxn.org/dist/oracle_fdw/2.2.1/oracle_fdw-2.2.1.zip
