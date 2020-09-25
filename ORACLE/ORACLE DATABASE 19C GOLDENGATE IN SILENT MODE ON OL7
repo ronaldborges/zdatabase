@@ -112,7 +112,27 @@ Sending STOP request to MANAGER ...
 Request processed.
 Manager stopped.
 
-GGSCI (ol7db1) 3> exit
+GGSCI (ol7db1) 4> create subdirs
+
+Creating subdirectories under current directory /u01/app/oracle/product/gg
+
+Parameter file                 /u01/app/oracle/product/gg/dirprm: already exists.
+Report file                    /u01/app/oracle/product/gg/dirrpt: already exists.
+Checkpoint file                /u01/app/oracle/product/gg/dirchk: already exists.
+Process status files           /u01/app/oracle/product/gg/dirpcs: already exists.
+SQL script files               /u01/app/oracle/product/gg/dirsql: already exists.
+Database definitions files     /u01/app/oracle/product/gg/dirdef: already exists.
+Extract data files             /u01/app/oracle/product/gg/dirdat: already exists.
+Temporary files                /u01/app/oracle/product/gg/dirtmp: already exists.
+Credential store files         /u01/app/oracle/product/gg/dircrd: already exists.
+Masterkey wallet files         /u01/app/oracle/product/gg/dirwlt: already exists.
+Dump files                     /u01/app/oracle/product/gg/dirdmp: already exists.
+
+
+GGSCI (ol7db1) 5> exit
+
+
+
 
 
 
