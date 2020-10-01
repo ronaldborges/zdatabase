@@ -3,15 +3,7 @@
 +++++++++++++++++++++++++++++++++++++++++++++++
 
 #INSTALL PRE-REQUIRES
-yum install geos.x86_64
-yum install geos-devel.x86_64
-yum install proj.x86_64
-yum install proj-devel.x86_64
-yum install gdal.x86_64
-yum install gdal-devel.x86_64
-yum install libxml2.x86_64
-yum install libxml2-devel.x86_64
-yum install json-c-devel.x86_64
+yum install -y geos.x86_64 geos-devel.x86_64 proj.x86_64 proj-devel.x86_64 gdal.x86_64 gdal-devel.x86_64 libxml2.x86_64 libxml2-devel.x86_64 json-c-devel.x86_64
 
 #DOWNLOAD POSTGIS SFW
 wget https://download.osgeo.org/postgis/source/postgis-2.4.4.tar.gz
@@ -22,14 +14,78 @@ tar xvfz postgis-2.4.4.tar.gz
 #COMPILE AND INSTALL
 cd postgis-2.4.4
 ./autogen.sh
+* Running /bin/libtoolize (2.4.2)
+   OPTIONS = --force --copy --install
+libtoolize: putting auxiliary files in AC_CONFIG_AUX_DIR, `build-aux'.
+libtoolize: copying file `build-aux/config.guess'
+libtoolize: copying file `build-aux/config.sub'
+libtoolize: copying file `build-aux/install-sh'
+libtoolize: copying file `build-aux/ltmain.sh'
+libtoolize: putting macros in AC_CONFIG_MACRO_DIR, `macros'.
+libtoolize: copying file `macros/libtool.m4'
+libtoolize: copying file `macros/ltoptions.m4'
+libtoolize: copying file `macros/ltsugar.m4'
+libtoolize: copying file `macros/ltversion.m4'
+libtoolize: copying file `macros/lt~obsolete.m4'
+libtoolize: Consider adding `-I macros' to ACLOCAL_AMFLAGS in Makefile.am.
+* Running /bin/aclocal (1.13.4)
+* Running /bin/autoconf (2.69)
+======================================
+Now you are ready to run './configure'
+======================================
+
 ./configure --with-pgconfig=/usr/local/pgsql-10.3/bin/pg_config
+
+  PostGIS is now configured for x86_64-unknown-linux-gnu
+ -------------- Compiler Info ------------- 
+  C compiler:           gcc -g -O2
+  SQL preprocessor:     /bin/cpp -traditional-cpp -w -P
+ -------------- Additional Info ------------- 
+  Interrupt Tests:   DISABLED use: --with-interrupt-tests to enable
+ -------------- Dependencies -------------- 
+  GEOS config:          /bin/geos-config
+  GEOS version:         3.4.2
+  GDAL config:          /bin/gdal-config
+  GDAL version:         1.11.4
+  PostgreSQL config:    /usr/local/pgsql-10.3/bin/pg_config
+  PostgreSQL version:   PostgreSQL 10.6
+  PROJ4 version:        48
+  Libxml2 config:       /bin/xml2-config
+  Libxml2 version:      2.9.1
+  JSON-C support:       yes
+  protobuf-c support:   no
+  PCRE support:         no
+  Perl:                 /bin/perl
+ --------------- Extensions --------------- 
+  PostGIS Raster:       enabled
+  PostGIS Topology:     enabled
+  SFCGAL support:       disabled
+  Address Standardizer support:       disabled
+ -------- Documentation Generation -------- 
+  xsltproc:             /bin/xsltproc
+  xsl style sheets:     /usr/share/sgml/docbook/xsl-stylesheets
+  dblatex:              
+  convert:              
+  mathml2.dtd:          http://www.w3.org/Math/DTD/mathml2/mathml2.dtd
+configure: WARNING:  --------- GEOS VERSION WARNING ------------ 
+configure: WARNING:   You are building against GEOS 3.4.2 
+configure: WARNING:   To take advantage of all the features of 
+configure: WARNING:   this PostGIS version requires GEOS 3.7.0 or higher which is not out yet.
+configure: WARNING:   To take advantage of most of the features of this PostGIS
+configure: WARNING:   we recommend GEOS 3.6 or higher
+configure: WARNING:   You can download the latest versions from 
+configure: WARNING:   http://trac.osgeo.org/geos 
+configure: WARNING: 
+
 make
 make install
 
 #CREATE EXTENSION
 su - postgres
 /usr/local/pgsql-10.3/bin/psql -U postgres
-create extension postgis;
+postgres=# create extension postgis;
+CREATE EXTENSION
 \q
+
 
 
