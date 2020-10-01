@@ -1,0 +1,35 @@
++++++++++++++++++++++++++++++++++++++++++++++++
++   INSTALL POSTFIX 2.4.4 POSTGRES 10 ON OL7  +
++++++++++++++++++++++++++++++++++++++++++++++++
+
+#INSTALL PRE-REQUIRES
+yum install geos.x86_64
+yum install geos-devel.x86_64
+yum install proj.x86_64
+yum install proj-devel.x86_64
+yum install gdal.x86_64
+yum install gdal-devel.x86_64
+yum install libxml2.x86_64
+yum install libxml2-devel.x86_64
+yum install json-c-devel.x86_64
+
+#DOWNLOAD POSTGIS SFW
+wget https://download.osgeo.org/postgis/source/postgis-2.4.4.tar.gz
+
+#UNCOMPRESS
+tar xvfz postgis-2.4.4.tar.gz
+
+#COMPILE AND INSTALL
+cd postgis-2.4.4
+./autogen.sh
+./configure --with-pgconfig=/usr/local/pgsql-10.3/bin/pg_config
+make
+make install
+
+#CREATE EXTENSION
+su - postgres
+/usr/local/pgsql-10.3/bin/psql -U postgres
+create extension postgis;
+\q
+
+
