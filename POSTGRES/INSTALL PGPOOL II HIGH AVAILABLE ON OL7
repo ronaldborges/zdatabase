@@ -163,6 +163,7 @@ max_wal_senders = 10
 wal_keep_segments = 32
 hot_standby = on
 wal_log_hints = on 
+password_encryption = on
 
 systemctl stop postgresql.service
 systemctl start postgresql.service
