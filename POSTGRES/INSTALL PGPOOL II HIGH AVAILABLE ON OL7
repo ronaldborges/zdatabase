@@ -168,7 +168,7 @@ systemctl stop postgresql.service
 systemctl start postgresql.service
 
 #CREATE USER FOR REPLICATION PRIMARY
-su - postgtres
+su - postgres
 /usr/local/pgsql-11.4/bin/psql -U postgres -p 5432
 SET password_encryption = 'scram-sha-256';
 CREATE ROLE pgpool WITH LOGIN;
