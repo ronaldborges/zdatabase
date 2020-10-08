@@ -770,6 +770,18 @@ pgpool:AESheq2ZMZjynddMWk5sKP/Rw==
 postgres:AESHs/pWL5rtXy2IwuzroHfqg==
 exit
 
+#CLIENTE AUTHENTICATION CONFIGURATION MD5
+su - postgres
+pg_md5 --md5auth -f /etc/pgpool-II/pgpool.conf -u pgpool -p
+password:
+pg_md5 --md5auth -f /etc/pgpool-II/pgpool.conf -u postgres -p
+password:
+
+cat /etc/pgpool-II/pool_passwd
+pgpool:md54708c571d9a1fe1ad8cdbacfafc96631
+postgres:md59a8ee011bb6f7949a97cf41fa875c9af
+
+
 #WATCHDOG CONFIGURATION
 visudo
 postgres ALL=NOPASSWD: /sbin/ip
