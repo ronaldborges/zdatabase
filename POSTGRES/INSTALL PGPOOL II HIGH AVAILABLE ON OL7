@@ -820,6 +820,9 @@ echo 'pgpool:'`pg_md5 PCP passowrd` >> /etc/pgpool-II/pcp.conf
 echo 'localhost:9898:pgpool:pgpool' > ~/.pcppass
 chmod 600 ~/.pcppass
 
+#CHANGE OWNER IN DIRECTORY TREE /etc/pgpool-II ON ALL SERVERS
+chown postgres:postgres -R /etc/pgpool-II
+
 #START SERVICE 
 systemctl start pgpool.service
 
