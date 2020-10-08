@@ -190,6 +190,7 @@ CREATE ROLE repl WITH REPLICATION LOGIN;
 \password repl
 \password postgres
 GRANT pg_monitor TO pgpool;
+GRANT pg_signal_backend TO pgpool;
 \q
 exit
 
