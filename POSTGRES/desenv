@@ -1,9 +1,34 @@
-############ prerequisitos ##############
-# - utilizar oracle linux 7 ou centos 7 #
-# - setar ip estatico de configuração   #
-# - setar hostname                      #
-# - ter acesso a internet               #
-#########################################
+############ prerequisitos ########################
+# - utilizar oracle linux 7 ou centos 7           #
+----------------------------------------------------------------------------------------------------------------------------------------------------
+# - setar ip estatico de configuração             #
+----------------------------------------------------------------------------------------------------------------------------------------------------
+# - setar hostname                                #
+----------------------------------------------------------------------------------------------------------------------------------------------------
+# - ter acesso a internet                         #
+----------------------------------------------------------------------------------------------------------------------------------------------------
+# - ter criado usuario postgres                   #   [root@pgpool2_prim ~]# useradd postgres; groupadd postgres; usermod -a -G postgres postgres
+#                                                 #   [root@pgpool2_prim ~]# passwd postgres
+#                                                 #   [root@pgpool2_stdb1 ~]# useradd postgres; groupadd postgres; usermod -a -G postgres postgres
+#                                                 #   [root@pgpool2_stdb1 ~]# passwd postgres
+----------------------------------------------------------------------------------------------------------------------------------------------------
+# - trocar as chaves dos usuarios root e postgres #   [root@pgpool2_prim ~]# ssh-keygen -t rsa
+#                                                 #   [root@pgpool2_stdb1 ~]# ssh-keygen -t rsa
+#                                                 #   [root@pgpool2_prim ~]# su - postgres
+#                                                 #   [postgres@pgpool2_prim ~]$ ssh-keygen -t rsa
+#                                                 #   [postgres@pgpool2_prim ~]$ exit
+#                                                 #   [root@pgpool2_stdb1 ~]# su - postgres
+#                                                 #   [postgres@pgpool2_stdb1 ~]$ ssh-keygen -t rsa
+#                                                 #   [postgres@pgpool2_stdb1 ~]$ exit
+#                                                 #   [root@pgpool2_prim ~]# cd .ssh/
+#                                                 #   [root@pgpool2_prim .ssh]# ssh-copy-id -i id_rsa.pub root@pgpool2_stdb1
+#                                                 #   [root@pgpool2_prim ~]# su - postgres
+#                                                 #   [postgres@pgpool2_prim .ssh]# ssh-copy-id -i id_rsa.pub postgres@pgpool2_stdb1
+#                                                 #   [root@pgpool2_stdb1 ~]# cd .ssh/
+#                                                 #   [root@pgpool2_stdb1 .ssh]# ssh-copy-id -i id_rsa.pub root@pgpool2_prim
+#                                                 #   [root@pgpool2_stdb1 ~]# su - postgres
+#                                                 #   [postgres@pgpool2_stdb1 .ssh]# ssh-copy-id -i id_rsa.pub postgres@pgpool2_prim
+###################################################  
 
 #############################################################
 # EXECUTE O SCRIPT ABAIXO PARA TODAS AS MAQUINAS DO CLUSTER #
@@ -32,9 +57,6 @@ EOF
 
 #instalar as dependencias de pacotes
 [root@localhost ~]# yum repolist; yum install -y net-tools openssl-devel libtermcap-devel readline-devel gcc bison flex perl libconfig-devel kernel-devel rsync zlib jzlib zlib-devel wget libmemcached libmemcached-devel memcached.x86_64 memcached-devel libpqxx.x86_64 libpqxx-devel.x86_64
-
-#criar usuario postgres e grupo postgres
-[root@localhost ~]# useradd postgres; groupadd postgres; usermod -a -G postgres postgres
 
 #baixe a versao do pgpool II 4.1.4
 [root@localhost ~]# wget http://www.pgpool.net/download.php?f=pgpool-II-4.1.4.tar.gz
