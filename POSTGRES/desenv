@@ -130,7 +130,7 @@ EOF
 [root@localhost ~]# systemctl daemon-reload; systemctl enable postgresql.service
 
 #criar database
-[root@localhost ~]# systemctl stop postgresql.service; rm -Rvf /dados/data/*; rm -Rvf /postgres/wals; mkdir -p /dados/data/; mkdir -p /postgres/wals/; chown postgres:postgres -R /dados; chown postgres:postgres -R /postgres; echo "Z6PT7@6E*UuBrHG30"> /home/postgres/pdwfile; chown postgres:postgres /home/postgres/pdwfile; su - postgres -c "/usr/local/pgsql-9.6.14/bin/initdb --locale=pt_BR.UTF-8 -D /dados/data/ --pwfile=/home/postgres/pdwfile"; systemctl start postgresql.service; rm -vf /home/postgres/pdwfile
+[root@localhost ~]# systemctl stop postgresql.service; rm -Rvf /dados/data/*; rm -Rvf /postgres/wals; mkdir -p /dados/data/; mkdir -p /postgres/wals/; chown postgres:postgres -R /dados; chown postgres:postgres -R /postgres; echo "senhadb"> /home/postgres/pdwfile; chown postgres:postgres /home/postgres/pdwfile; su - postgres -c "/usr/local/pgsql-9.6.14/bin/initdb --locale=pt_BR.UTF-8 -D /dados/data/ --pwfile=/home/postgres/pdwfile"; systemctl start postgresql.service; rm -vf /home/postgres/pdwfile
 
 ####################################################
 # EXECUTE O SCRIPT ABAIXO PARA O AMBIENTE PRIMARIO #
