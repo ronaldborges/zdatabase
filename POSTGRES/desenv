@@ -32,6 +32,15 @@
 #                                                 #   [root@pgpool2_stdb1 .ssh]# ssh-copy-id -i id_rsa.pub root@pgpool2_prim                        #
 #                                                 #   [root@pgpool2_stdb1 ~]# su - postgres                                                         #
 #                                                 #   [postgres@pgpool2_stdb1 .ssh]# ssh-copy-id -i id_rsa.pub postgres@pgpool2_prim                #
+----------------------------------------------------------------------------------------------------------------------------------------------------#
+# - configurar arquivo /etc/hosts                 #   [root@pgpool2_prim ~]# cat >> /etc/hosts <<EOF                                                #
+#                                                 #   <IP_PRIMARIO>    pgpool2_prim                                                                 #
+#                                                 #   <IP_SECUNDARIO>    pgpool2_stdb1                                                              #
+#                                                 #   EOF                                                                                           #
+#                                                 #   [root@pgpool2_stdb1 ~]# cat >> /etc/hosts <<EOF                                               #
+#                                                 #   <IP_PRIMARIO>    pgpool2_prim                                                                 #
+#                                                 #   <IP_SECUNDARIO>    pgpool2_stdb1                                                              #
+#                                                 #   EOF                                                                                           #
 #####################################################################################################################################################  
 
 #############################################################
