@@ -1,0 +1,68 @@
++++++++++++++++++++++++++++++++++++++++++
++    REMOTE RESTORE DATABASE POSTGRES   +
++++++++++++++++++++++++++++++++++++++++++
+
+#NOTE
+The database postgres allows the restoration of a remote cluster using a command. As long as it meets some communication and authentication prerequisites.
+
+-------------------------------------
+| RUN ON MASTER DATABASE            |
+-------------------------------------
+
+#CONFIGURE TIME IN POINT RECOVERY IN MASTER DATABASE, USING POSTGRESQL.CONF FILE
+wal_level = hot_standby                                 
+max_wal_senders = 5                                     
+wal_keep_segments = 32                                  
+archive_mode = on
+archive_command = 'cp %p <destination>%f'
+archive_timeout = 600
+
+#RESTART DATABASE
+systemctl restart postgresql.service
+
+#CREATE REPLICATION USER IN MASTER DATABASE
+CREATE ROLE replication WITH REPLICATION PASSWORD '********' LOGIN;
+
+#ENABLE ACCESS THROUGH THE PG_HBA.CONF FILE
+host    replication     postgres        $remoteIP/32          md5
+host    replication     replication     $remoteIP/32          md5
+
+#RELOAD CONFIGURATIONS IN MASTER DATABASE
+systemctl reload postgresql.service
+
+-------------------------------------
+| RUN ON REMOTE DATABASE            |
+-------------------------------------
+
+#CREATE DIRECTORY TO RESTORE
+mkdir -p /dados/data
+chown postgres:postgres
+
+#CREATE PASSWORD FILE ON HOME DIRECTORY OF POSTGRES USER
+echo *:*:replication:replication:******** > /dados/.pgpass
+chown postgres:postgres /dados/.pgpass
+chmod 0600 /dados/.pgpass
+
+#RUN BACKUP-RESTORE DATABASE
+pg_basebackup -v -D /dados/data -R -P -h $remoteIP -p 5432 -U replication
+pg_basebackup: initiating base backup, waiting for checkpoint to complete
+pg_basebackup: checkpoint completed
+6867523/6867523 kB (100%), 1/1 tablespace                                         
+NOTICE:  pg_stop_backup complete, all required WAL segments have been archived
+pg_basebackup: base backup completed
+
+#CHANGE PERMISSION
+chmod 700 -R /dados/data
+
+#REMOVE RECOVERY FILE AND BACKUP LABEL
+rm -vf /dados/data/recovery.conf
+rm -vf /dados/data/backup_label
+
+#COPY TRANSACTION FILES FROM PG_XLOG OF MASTER
+scp postgres@$remoteIP:/dados/data/pg_xlog/* /dados/data/pg_xlog/
+
+#START DATABASE
+systemctl start postgresql.service
+
+#FINISH
+
