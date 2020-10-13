@@ -68,7 +68,7 @@ fi
 
 ##connect to primary database
 $path/psql -U postgres -p 5432
-CREATE ROLE replication WITH REPLICATION PASSWORD 'replication' LOGIN;
+CREATE ROLE replication WITH REPLICATION PASSWORD '*********' LOGIN;
 ##list if the role was created successfully!
 \du
  
@@ -83,7 +83,7 @@ hot_standby = on
 ##create parameter file recovery.conf:
 restore_command = 'gunzip -c /$path/wals/%f > %p'
 standby_mode = 'on'
-primary_conninfo = 'host = $IP_MASTER port = 5432 user = replication password = replication'
+primary_conninfo = 'host = $IP_MASTER port = 5432 user = replication password = *********'
 
 ## enable lines in pg_hab.conf
 host    replication     postgres        127.0.0.1/32            trust
