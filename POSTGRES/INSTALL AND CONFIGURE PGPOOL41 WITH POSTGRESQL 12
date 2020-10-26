@@ -1,0 +1,195 @@
+++++++++++++++++++++++++++++++++++++++++++++++++++++++++
++   INSTALL AND CONFIGURE PGPOOL41 WITH POSTGRESQL 12  +
+++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+
+#################################################
+# RUN THE SCRIPT BELOW FOR ALL CLUSTER MACHINES #
+#################################################
+
+# - set static ip on machines
+# STEP 0
+
+# - set hostname
+# STEP 1                             
+[root@pg1 ~]# hostnamectl set-hostname pg1
+[root@pg1 ~]# hostnamectl --static                  
+[root@pg2 ~]# hostnamectl set-hostname pg2
+[root@pg2 ~]# hostnamectl --static                  
+
+# - ter acesso a internet 
+# STEP 2                 
+[root@pg1 ~]# ping www.google.com
+[root@pg2 ~]# ping www.google.com
+
+# - configure file /etc/hosts
+# STEP 3
+[root@pg1 ~]# cat >> /etc/hosts <<EOF
+<IP_PRIMARIO>    	pg1                 
+<IP_SECUNDARIO>     	pg2
+<IP_VIP>		vip               
+                                        
+# - setting the date and time
+# STEP 4
+[root@pg1 ~]# rm -vf /etc/localtime; ln -s /usr/share/zoneinfo/America/Fortaleza /etc/localtime
+
+# - disable firewall
+# STEP 5
+[root@localhost ~]# sed -i 's/SELINUX=.*/SELINUX=disabled/' /etc/selinux/config && setenforce 0; systemctl stop firewalld && systemctl disable firewalld
+
+# - execution permission on the following commands
+# STEP 6
+[root@localhost ~]# chmod u+x /usr/sbin/ip; chmod u+s /usr/sbin/arping; chmod u+s /sbin/ip; chmod u+s /sbin/ifconfig
+
+# - install package dependencies
+# STEP 7
+[root@localhost ~]# pkill -f "yum"; yum repolist; yum install -y net-tools openssl-devel rsync; yum install -y https://download.postgresql.org/pub/repos/yum/reporpms/EL-7-x86_64/pgdg-redhat-repo-latest.noarch.rpm; yum install -y postgresql12-contrib.x86_64 postgresql12-libs.x86_64 postgresql12-server.x86_64 postgresql12.x86_64; yum install -y https://www.pgpool.net/yum/rpms/4.1/redhat/rhel-7-x86_64/pgpool-II-release-4.1-2.noarch.rpm; yum -y install pgpool-II-pg12 pgpool-II-pg12-debuginfo pgpool-II-pg12-devel pgpool-II-pg12-extensions;
+
+# - add entry to the file /etc/environment
+# STEP 8
+echo "PGDATA=/var/lib/pgsql/12/data/" >> /etc/environment
+echo "PGHOME=/usr/pgsql-12/" >> /etc/environment
+
+# - change postgres user password
+# STEP 9
+[root@pg1 ~]# passwd postgres
+[root@pg2 ~]# passwd postgres
+
+[root@pg1 ~]# su - postgres
+[postgres@pg1 ~]$ mkdir ~/.ssh; chmod 700 ~/.ssh; touch ~/.ssh/authorized_keys; chmod 600 ~/.ssh/authorized_keys; cd ~/.ssh; ssh-keygen -t rsa -f id_rsa_pgpool
+[postgres@pg1 ~]$ exit
+[root@pg2 ~]# su - postgres
+[postgres@pg2 ~]$ mkdir ~/.ssh; chmod 700 ~/.ssh; touch ~/.ssh/authorized_keys; chmod 600 ~/.ssh/authorized_keys; cd ~/.ssh; ssh-keygen -t rsa -f id_rsa_pgpool
+[postgres@pg1 .ssh]# ssh-copy-id -i id_rsa_pgpool.pub postgres@pg2
+[postgres@pg1 .ssh]# ssh-copy-id -i id_rsa_pgpool.pub postgres@pg1
+[root@pg2 ~]# su - postgres
+[postgres@pg2 .ssh]# ssh-copy-id -i id_rsa_pgpool.pub postgres@pg1
+[postgres@pg2 .ssh]# ssh-copy-id -i id_rsa_pgpool.pub postgres@pg2
+
+# - create environment variable file
+# STEP 10
+[root@localhost ~]# cat > /etc/sysconfig/pgpool <<EOF
+# Options for pgpool
+
+# -n: don't run in daemon mode. does not detatch control tty
+# -d: debug mode. lots of debug information will be printed
+
+OPTS=" -d -n"
+#OPTS=" -n"
+
+STOP_OPTS=" -m fast"
+EOF
+chown postgres:postgres /etc/sysconfig/pgpool
+
+# - enable pgpool-II service, postgresql-12
+# STEP 11
+[root@localhost ~]# systemctl daemon-reload; systemctl enable pgpool.service; systemctl daemon-reload; systemctl enable postgresql-12.service;
+
+####################################################
+# RUN THE SCRIPT BELOW FOR THE PRIMARY ENVIRONMENT #
+####################################################
+
+# - create database
+# STEP 12
+[root@localhost ~]# systemctl stop postgresql-12.service; rm -Rvf /var/lib/pgsql/12/data/*; rm -Rvf /var/lib/pgsql/archivedir; mkdir -p /var/lib/pgsql/archivedir; chown postgres:postgres -R /var/lib/pgsql/archivedir; echo "postgres"> /var/lib/pgsql/pdwfile; chown postgres:postgres /var/lib/pgsql/pdwfile; su - postgres -c "/usr/pgsql-12/bin/initdb --locale=pt_BR.UTF-8 -D /var/lib/pgsql/12/data/ --pwfile=/var/lib/pgsql/pdwfile"; systemctl start postgresql-12.service; rm -vf /var/lib/pgsql/pdwfile; echo *:5432:*:postgres:postgres > /var/lib/pgsql/.pgpass; chown postgres:postgres /var/lib/pgsql/.pgpass; chmod 0600 /var/lib/pgsql/.pgpass; rm -vf /home/postgres/useraccts.sql
+
+# - extra copy backup of .conf files (run only on primary)
+# STEP 13
+[root@pg1 ~]# cp -vf /var/lib/pgsql/12/data/postgresql.conf /var/lib/pgsql/12/data/postgresql.conf-bkp; chown postgres:postgres /var/lib/pgsql/12/data/postgresql.conf-bkp; cp /var/lib/pgsql/12/data/pg_hba.conf /var/lib/pgsql/12/data/pg_hba.conf-bkp; chown postgres:postgres /var/lib/pgsql/12/data/pg_hba.conf-bkp
+
+# - configure pgpool.conf
+# STEP 14
+[root@localhost ~]# su - postgres -c "cp -vf /etc/pgpool-II/pgpool.conf.sample /etc/pgpool-II/pgpool.conf"; sed -e "/listen_addresses/s/'.*'/'*'/" /etc/pgpool-II/pgpool.conf > /etc/pgpool-II/pgpool.conf-new; mv -vf /etc/pgpool-II/pgpool.conf-new /etc/pgpool-II/pgpool.conf; chown postgres:postgres /etc/pgpool-II/pgpool.conf; sed -e "/socket_dir =/s/'\/tmp'/'\/var\/run\/postgresql'/" /etc/pgpool-II/pgpool.conf > /etc/pgpool-II/pgpool.conf-new; mv -vf /etc/pgpool-II/pgpool.conf-new /etc/pgpool-II/pgpool.conf; chown postgres:postgres /etc/pgpool-II/pgpool.conf; sed -e "/backend_hostname0/s/'.*'/'pg1'/" /etc/pgpool-II/pgpool.conf > /etc/pgpool-II/pgpool.conf-new; mv -vf /etc/pgpool-II/pgpool.conf-new /etc/pgpool-II/pgpool.conf; chown postgres:postgres /etc/pgpool-II/pgpool.conf; sed -e "s/#backend_hostname1/backend_hostname1/" /etc/pgpool-II/pgpool.conf > /etc/pgpool-II/pgpool.conf-new; mv -vf /etc/pgpool-II/pgpool.conf-new /etc/pgpool-II/pgpool.conf; chown postgres:postgres /etc/pgpool-II/pgpool.conf; sed -e "/backend_hostname1/s/'.*'/'pg2'/" /etc/pgpool-II/pgpool.conf > /etc/pgpool-II/pgpool.conf-new; mv -vf /etc/pgpool-II/pgpool.conf-new /etc/pgpool-II/pgpool.conf; chown postgres:postgres /etc/pgpool-II/pgpool.conf; sed -e "s/#backend_port1/backend_port1/" /etc/pgpool-II/pgpool.conf > /etc/pgpool-II/pgpool.conf-new; mv -vf /etc/pgpool-II/pgpool.conf-new /etc/pgpool-II/pgpool.conf; chown postgres:postgres /etc/pgpool-II/pgpool.conf; sed -e "/backend_port1/s/5433/5432/" /etc/pgpool-II/pgpool.conf > /etc/pgpool-II/pgpool.conf-new; mv -vf /etc/pgpool-II/pgpool.conf-new /etc/pgpool-II/pgpool.conf; chown postgres:postgres /etc/pgpool-II/pgpool.conf; sed -e "s/#backend_weight1/backend_weight1/" /etc/pgpool-II/pgpool.conf > /etc/pgpool-II/pgpool.conf-new; mv -vf /etc/pgpool-II/pgpool.conf-new /etc/pgpool-II/pgpool.conf; chown postgres:postgres /etc/pgpool-II/pgpool.conf; sed -e "s/#backend_data_directory1 =/backend_data_directory1 =/" /etc/pgpool-II/pgpool.conf > /etc/pgpool-II/pgpool.conf-new; mv -vf /etc/pgpool-II/pgpool.conf-new /etc/pgpool-II/pgpool.conf; chown postgres:postgres /etc/pgpool-II/pgpool.conf; sed -e "/backend_data_directory1/s/'.*'/'\/var\/lib\/pgsql\/12\/data'/" /etc/pgpool-II/pgpool.conf > /etc/pgpool-II/pgpool.conf-new; mv -vf /etc/pgpool-II/pgpool.conf-new /etc/pgpool-II/pgpool.conf; chown postgres:postgres /etc/pgpool-II/pgpool.conf; sed -e "/backend_data_directory0/s/'.*'/'\/var\/lib\/pgsql\/12\/data'/" /etc/pgpool-II/pgpool.conf > /etc/pgpool-II/pgpool.conf-new; mv -vf /etc/pgpool-II/pgpool.conf-new /etc/pgpool-II/pgpool.conf; chown postgres:postgres /etc/pgpool-II/pgpool.conf; sed -e "s/#backend_flag1/backend_flag1/" /etc/pgpool-II/pgpool.conf > /etc/pgpool-II/pgpool.conf-new; mv -vf /etc/pgpool-II/pgpool.conf-new /etc/pgpool-II/pgpool.conf; chown postgres:postgres /etc/pgpool-II/pgpool.conf; sed -e "/sr_check_user =/s/'nobody'/'replication'/" /etc/pgpool-II/pgpool.conf > /etc/pgpool-II/pgpool.conf-new; mv -vf /etc/pgpool-II/pgpool.conf-new /etc/pgpool-II/pgpool.conf; chown postgres:postgres /etc/pgpool-II/pgpool.conf; sed -e "/sr_check_password =/s/''/'replication'/" /etc/pgpool-II/pgpool.conf > /etc/pgpool-II/pgpool.conf-new; mv -vf /etc/pgpool-II/pgpool.conf-new /etc/pgpool-II/pgpool.conf; chown postgres:postgres /etc/pgpool-II/pgpool.conf; sed -e "/health_check_period =/s/0/10/" /etc/pgpool-II/pgpool.conf > /etc/pgpool-II/pgpool.conf-new; mv -vf /etc/pgpool-II/pgpool.conf-new /etc/pgpool-II/pgpool.conf; chown postgres:postgres /etc/pgpool-II/pgpool.conf; sed -e "/health_check_user =/s/'nobody'/'postgres'/" /etc/pgpool-II/pgpool.conf > /etc/pgpool-II/pgpool.conf-new; mv -vf /etc/pgpool-II/pgpool.conf-new /etc/pgpool-II/pgpool.conf; chown postgres:postgres /etc/pgpool-II/pgpool.conf; sed -e "/health_check_password =/s/''/'postgres'/" /etc/pgpool-II/pgpool.conf > /etc/pgpool-II/pgpool.conf-new; mv -vf /etc/pgpool-II/pgpool.conf-new /etc/pgpool-II/pgpool.conf; chown postgres:postgres /etc/pgpool-II/pgpool.conf; sed -e "/failover_command =/s/''/'\/etc\/pgpool-II\/failover.sh \%d \%h \%p \%D \%m \%H \%M \%P \%r \%R \%N \%S'/" /etc/pgpool-II/pgpool.conf > /etc/pgpool-II/pgpool.conf-new; mv -vf /etc/pgpool-II/pgpool.conf-new /etc/pgpool-II/pgpool.conf; chown postgres:postgres /etc/pgpool-II/pgpool.conf; sed -e "/recovery_user =/s/'nobody'/'postgres'/" /etc/pgpool-II/pgpool.conf > /etc/pgpool-II/pgpool.conf-new; mv -vf /etc/pgpool-II/pgpool.conf-new /etc/pgpool-II/pgpool.conf; chown postgres:postgres /etc/pgpool-II/pgpool.conf; sed -e "/recovery_password =/s/''/'postgres'/" /etc/pgpool-II/pgpool.conf > /etc/pgpool-II/pgpool.conf-new; mv -vf /etc/pgpool-II/pgpool.conf-new /etc/pgpool-II/pgpool.conf; chown postgres:postgres /etc/pgpool-II/pgpool.conf; sed -e "/recovery_1st_stage_command =/s/''/'recovery_1st_stage'/" /etc/pgpool-II/pgpool.conf > /etc/pgpool-II/pgpool.conf-new; mv -vf /etc/pgpool-II/pgpool.conf-new /etc/pgpool-II/pgpool.conf; chown postgres:postgres /etc/pgpool-II/pgpool.conf; sed -e "/use_watchdog =/s/off/on/" /etc/pgpool-II/pgpool.conf > /etc/pgpool-II/pgpool.conf-new; mv -vf /etc/pgpool-II/pgpool.conf-new /etc/pgpool-II/pgpool.conf; chown postgres:postgres /etc/pgpool-II/pgpool.conf; sed -e "/delegate_IP =/s/''/'192.168.1.121'/" /etc/pgpool-II/pgpool.conf > /etc/pgpool-II/pgpool.conf-new; mv -vf /etc/pgpool-II/pgpool.conf-new /etc/pgpool-II/pgpool.conf; chown postgres:postgres /etc/pgpool-II/pgpool.conf; sed -e "/if_up_cmd =/s/'\/usr\/bin\/sudo \/sbin\/ip addr add \$_IP_\$\/24 dev eth0 label eth0\:0'/'\/usr\/bin\/sudo \/sbin\/ip addr add \$_IP_\$\/24 dev enp0s3 label enp0s3\:0'/" /etc/pgpool-II/pgpool.conf > /etc/pgpool-II/pgpool.conf-new; mv -vf /etc/pgpool-II/pgpool.conf-new /etc/pgpool-II/pgpool.conf; chown postgres:postgres /etc/pgpool-II/pgpool.conf; sed -e "/if_down_cmd =/s/'\/usr\/bin\/sudo \/sbin\/ip addr del \$_IP_\$\/24 dev eth0'/'\/usr\/bin\/sudo \/sbin\/ip addr del \$_IP_\$\/24 dev enp0s3'/" /etc/pgpool-II/pgpool.conf > /etc/pgpool-II/pgpool.conf-new; mv -vf /etc/pgpool-II/pgpool.conf-new /etc/pgpool-II/pgpool.conf; chown postgres:postgres /etc/pgpool-II/pgpool.conf; sed -e "/arping_cmd =/s/'\/usr\/bin\/sudo \/usr\/sbin\/arping -U \$_IP_\$ -w 1 -I eth0'/'\/usr\/bin\/sudo \/usr\/sbin\/arping -U \$_IP_\$ -w 1 -I enp0s3'/" /etc/pgpool-II/pgpool.conf > /etc/pgpool-II/pgpool.conf-new; mv -vf /etc/pgpool-II/pgpool.conf-new /etc/pgpool-II/pgpool.conf; chown postgres:postgres /etc/pgpool-II/pgpool.conf; sed -e "/wd_hostname =/s/''/'pg1'/" /etc/pgpool-II/pgpool.conf > /etc/pgpool-II/pgpool.conf-new; mv -vf /etc/pgpool-II/pgpool.conf-new /etc/pgpool-II/pgpool.conf; chown postgres:postgres /etc/pgpool-II/pgpool.conf; sed -e "s/#other_pgpool_hostname0/other_pgpool_hostname0/" /etc/pgpool-II/pgpool.conf > /etc/pgpool-II/pgpool.conf-new; mv -vf /etc/pgpool-II/pgpool.conf-new /etc/pgpool-II/pgpool.conf; chown postgres:postgres /etc/pgpool-II/pgpool.conf; sed -e "/other_pgpool_hostname0 =/s/'host0'/'pg2'/" /etc/pgpool-II/pgpool.conf > /etc/pgpool-II/pgpool.conf-new; mv -vf /etc/pgpool-II/pgpool.conf-new /etc/pgpool-II/pgpool.conf; chown postgres:postgres /etc/pgpool-II/pgpool.conf; sed -e "s/#other_pgpool_port0/other_pgpool_port0/" /etc/pgpool-II/pgpool.conf > /etc/pgpool-II/pgpool.conf-new; mv -vf /etc/pgpool-II/pgpool.conf-new /etc/pgpool-II/pgpool.conf; chown postgres:postgres /etc/pgpool-II/pgpool.conf; sed -e "/other_pgpool_port0 =/s/5432/9999/" /etc/pgpool-II/pgpool.conf > /etc/pgpool-II/pgpool.conf-new; mv -vf /etc/pgpool-II/pgpool.conf-new /etc/pgpool-II/pgpool.conf; chown postgres:postgres /etc/pgpool-II/pgpool.conf; sed -e "s/#other_wd_port0/other_wd_port0/" /etc/pgpool-II/pgpool.conf > /etc/pgpool-II/pgpool.conf-new; mv -vf /etc/pgpool-II/pgpool.conf-new /etc/pgpool-II/pgpool.conf; chown postgres:postgres /etc/pgpool-II/pgpool.conf; sed -e "/heartbeat_destination0 =/s/'host0_ip1'/'pg2'/" /etc/pgpool-II/pgpool.conf > /etc/pgpool-II/pgpool.conf-new; mv -vf /etc/pgpool-II/pgpool.conf-new /etc/pgpool-II/pgpool.conf; chown postgres:postgres /etc/pgpool-II/pgpool.conf; sed -e "/heartbeat_device0 =/s/'.*'/'enp0s3'/" /etc/pgpool-II/pgpool.conf > /etc/pgpool-II/pgpool.conf-new; mv -vf /etc/pgpool-II/pgpool.conf-new /etc/pgpool-II/pgpool.conf; chown postgres:postgres /etc/pgpool-II/pgpool.conf; sed -e "/health_check_database =/s/''/'postgres'/" /etc/pgpool-II/pgpool.conf > /etc/pgpool-II/pgpool.conf-new; mv -vf /etc/pgpool-II/pgpool.conf-new /etc/pgpool-II/pgpool.conf; chown postgres:postgres /etc/pgpool-II/pgpool.conf; sed -e "/load_balance_mode =/s/off/on/" /etc/pgpool-II/pgpool.conf > /etc/pgpool-II/pgpool.conf-new; mv -vf /etc/pgpool-II/pgpool.conf-new /etc/pgpool-II/pgpool.conf; chown postgres:postgres /etc/pgpool-II/pgpool.conf; sed -e "/master_slave_mode =/s/off/on/" /etc/pgpool-II/pgpool.conf > /etc/pgpool-II/pgpool.conf-new; mv -vf /etc/pgpool-II/pgpool.conf-new /etc/pgpool-II/pgpool.conf; chown postgres:postgres /etc/pgpool-II/pgpool.conf; sed -e "/sr_check_period =/s/0/5/" /etc/pgpool-II/pgpool.conf > /etc/pgpool-II/pgpool.conf-new; mv -vf /etc/pgpool-II/pgpool.conf-new /etc/pgpool-II/pgpool.conf; chown postgres:postgres /etc/pgpool-II/pgpool.conf; sed -e "/allow_multiple_failover_requests_from_node =/s/off/on/" /etc/pgpool-II/pgpool.conf > /etc/pgpool-II/pgpool.conf-new; mv -vf /etc/pgpool-II/pgpool.conf-new /etc/pgpool-II/pgpool.conf; chown postgres:postgres /etc/pgpool-II/pgpool.conf; sed -e "/enable_consensus_with_half_votes =/s/off/on/" /etc/pgpool-II/pgpool.conf > /etc/pgpool-II/pgpool.conf-new; mv -vf /etc/pgpool-II/pgpool.conf-new /etc/pgpool-II/pgpool.conf; chown postgres:postgres /etc/pgpool-II/pgpool.conf; sed -e "/enable_consensus_with_half_votes =/s/off/on/" /etc/pgpool-II/pgpool.conf > /etc/pgpool-II/pgpool.conf-new; mv -vf /etc/pgpool-II/pgpool.conf-new /etc/pgpool-II/pgpool.conf; chown postgres:postgres /etc/pgpool-II/pgpool.conf; su - postgres -c "cp -vf /etc/pgpool-II/pool_hba.conf.sample /etc/pgpool-II/pool_hba.conf"; chown postgres:postgres -R /etc/pgpool-II; mkdir -p /var/log/pgpool/; chown postgres:postgres -R /var/log/pgpool;
+
+# - adjust the postgres /var/lib/pgsql/12/data/postgresql.conf and /var/lib/pgsql/12/data/pg_hba.conf instance files and restart the main instance
+# STEP 15
+[root@localhost ~]# systemctl stop postgresql-12.service; yes | cp -vf /var/lib/pgsql/12/data/postgresql.conf-bkp /var/lib/pgsql/12/data/postgresql.conf; chown postgres:postgres /var/lib/pgsql/12/data/postgresql.conf; sed -e "s/#listen_addresses/listen_addresses/" /var/lib/pgsql/12/data/postgresql.conf > /var/lib/pgsql/12/data/postgresql.conf-new; mv -vf /var/lib/pgsql/12/data/postgresql.conf-new /var/lib/pgsql/12/data/postgresql.conf; chown postgres:postgres /var/lib/pgsql/12/data/postgresql.conf; sed -e "/listen_addresses = /s/'.*'/'*'/" /var/lib/pgsql/12/data/postgresql.conf > /var/lib/pgsql/12/data/postgresql.conf-new; mv -vf /var/lib/pgsql/12/data/postgresql.conf-new /var/lib/pgsql/12/data/postgresql.conf; chown postgres:postgres /var/lib/pgsql/12/data/postgresql.conf; sed -e "s/#port/port/" /var/lib/pgsql/12/data/postgresql.conf > /var/lib/pgsql/12/data/postgresql.conf-new; mv -vf /var/lib/pgsql/12/data/postgresql.conf-new /var/lib/pgsql/12/data/postgresql.conf; chown postgres:postgres /var/lib/pgsql/12/data/postgresql.conf; sed -e "/max_connections = /s/100/500/" /var/lib/pgsql/12/data/postgresql.conf > /var/lib/pgsql/12/data/postgresql.conf-new; mv -vf /var/lib/pgsql/12/data/postgresql.conf-new /var/lib/pgsql/12/data/postgresql.conf; chown postgres:postgres /var/lib/pgsql/12/data/postgresql.conf; sed -e "/shared_buffers = /s/128MB/1024MB/" /var/lib/pgsql/12/data/postgresql.conf > /var/lib/pgsql/12/data/postgresql.conf-new; mv -vf /var/lib/pgsql/12/data/postgresql.conf-new /var/lib/pgsql/12/data/postgresql.conf; chown postgres:postgres /var/lib/pgsql/12/data/postgresql.conf; sed -e "s/#work_mem/work_mem/" /var/lib/pgsql/12/data/postgresql.conf > /var/lib/pgsql/12/data/postgresql.conf-new; mv -vf /var/lib/pgsql/12/data/postgresql.conf-new /var/lib/pgsql/12/data/postgresql.conf; chown postgres:postgres /var/lib/pgsql/12/data/postgresql.conf; sed -e "/work_mem = /s/4MB/256MB/" /var/lib/pgsql/12/data/postgresql.conf > /var/lib/pgsql/12/data/postgresql.conf-new; mv -vf /var/lib/pgsql/12/data/postgresql.conf-new /var/lib/pgsql/12/data/postgresql.conf; chown postgres:postgres /var/lib/pgsql/12/data/postgresql.conf; sed -e "s/#effective_io_concurrency/effective_io_concurrency/" /var/lib/pgsql/12/data/postgresql.conf > /var/lib/pgsql/12/data/postgresql.conf-new; mv -vf /var/lib/pgsql/12/data/postgresql.conf-new /var/lib/pgsql/12/data/postgresql.conf; chown postgres:postgres /var/lib/pgsql/12/data/postgresql.conf; sed -e "/effective_io_concurrency =/s/1/500/" /var/lib/pgsql/12/data/postgresql.conf > /var/lib/pgsql/12/data/postgresql.conf-new; mv -vf /var/lib/pgsql/12/data/postgresql.conf-new /var/lib/pgsql/12/data/postgresql.conf; chown postgres:postgres /var/lib/pgsql/12/data/postgresql.conf; sed -e "s/#max_worker_processes/max_worker_processes/" /var/lib/pgsql/12/data/postgresql.conf > /var/lib/pgsql/12/data/postgresql.conf-new; mv -vf /var/lib/pgsql/12/data/postgresql.conf-new /var/lib/pgsql/12/data/postgresql.conf; chown postgres:postgres /var/lib/pgsql/12/data/postgresql.conf; sed -e "s/#max_parallel_maintenance_workers/max_parallel_maintenance_workers/" /var/lib/pgsql/12/data/postgresql.conf > /var/lib/pgsql/12/data/postgresql.conf-new; mv -vf /var/lib/pgsql/12/data/postgresql.conf-new /var/lib/pgsql/12/data/postgresql.conf; chown postgres:postgres /var/lib/pgsql/12/data/postgresql.conf; sed -e "/max_parallel_maintenance_workers =/s/2/4/" /var/lib/pgsql/12/data/postgresql.conf > /var/lib/pgsql/12/data/postgresql.conf-new; mv -vf /var/lib/pgsql/12/data/postgresql.conf-new /var/lib/pgsql/12/data/postgresql.conf; chown postgres:postgres /var/lib/pgsql/12/data/postgresql.conf; sed -e "s/#max_parallel_workers/max_parallel_workers/" /var/lib/pgsql/12/data/postgresql.conf > /var/lib/pgsql/12/data/postgresql.conf-new; mv -vf /var/lib/pgsql/12/data/postgresql.conf-new /var/lib/pgsql/12/data/postgresql.conf; chown postgres:postgres /var/lib/pgsql/12/data/postgresql.conf; sed -e "s/#maintenance_work_mem/maintenance_work_mem/" /var/lib/pgsql/12/data/postgresql.conf > /var/lib/pgsql/12/data/postgresql.conf-new; mv -vf /var/lib/pgsql/12/data/postgresql.conf-new /var/lib/pgsql/12/data/postgresql.conf; chown postgres:postgres /var/lib/pgsql/12/data/postgresql.conf; sed -e "/maintenance_work_mem = /s/64MB/512MB/" /var/lib/pgsql/12/data/postgresql.conf > /var/lib/pgsql/12/data/postgresql.conf-new; mv -vf /var/lib/pgsql/12/data/postgresql.conf-new /var/lib/pgsql/12/data/postgresql.conf; chown postgres:postgres /var/lib/pgsql/12/data/postgresql.conf; sed -e "/maintenance_work_mem = /s/6256MB/1024MB/" /var/lib/pgsql/12/data/postgresql.conf > /var/lib/pgsql/12/data/postgresql.conf-new; mv -vf /var/lib/pgsql/12/data/postgresql.conf-new /var/lib/pgsql/12/data/postgresql.conf; chown postgres:postgres /var/lib/pgsql/12/data/postgresql.conf; sed -e "s/#max_replication_slots/max_replication_slots/" /var/lib/pgsql/12/data/postgresql.conf > /var/lib/pgsql/12/data/postgresql.conf-new; mv -vf /var/lib/pgsql/12/data/postgresql.conf-new /var/lib/pgsql/12/data/postgresql.conf; chown postgres:postgres /var/lib/pgsql/12/data/postgresql.conf; sed -e "s/#synchronous_standby_names = /synchronous_standby_names = /" /var/lib/pgsql/12/data/postgresql.conf > /var/lib/pgsql/12/data/postgresql.conf-new; mv -vf /var/lib/pgsql/12/data/postgresql.conf-new /var/lib/pgsql/12/data/postgresql.conf; chown postgres:postgres /var/lib/pgsql/12/data/postgresql.conf; sed -e "/synchronous_standby_names = /s/''/'\*'/" /var/lib/pgsql/12/data/postgresql.conf > /var/lib/pgsql/12/data/postgresql.conf-new; mv -vf /var/lib/pgsql/12/data/postgresql.conf-new /var/lib/pgsql/12/data/postgresql.conf; chown postgres:postgres /var/lib/pgsql/12/data/postgresql.conf; sed -e "s/#wal_level/wal_level/" /var/lib/pgsql/12/data/postgresql.conf > /var/lib/pgsql/12/data/postgresql.conf-new; mv -vf /var/lib/pgsql/12/data/postgresql.conf-new /var/lib/pgsql/12/data/postgresql.conf; chown postgres:postgres /var/lib/pgsql/12/data/postgresql.conf; sed -e "/wal_level = /s/minimal/replica/" /var/lib/pgsql/12/data/postgresql.conf > /var/lib/pgsql/12/data/postgresql.conf-new; mv -vf /var/lib/pgsql/12/data/postgresql.conf-new /var/lib/pgsql/12/data/postgresql.conf; chown postgres:postgres /var/lib/pgsql/12/data/postgresql.conf; sed -e "s/#wal_sender_timeout\ \=/wal_sender_timeout\ \=/" /var/lib/pgsql/12/data/postgresql.conf > /var/lib/pgsql/12/data/postgresql.conf-new; mv -vf /var/lib/pgsql/12/data/postgresql.conf-new /var/lib/pgsql/12/data/postgresql.conf; chown postgres:postgres /var/lib/pgsql/12/data/postgresql.conf; sed -e "s/#archive_mode/archive_mode/" /var/lib/pgsql/12/data/postgresql.conf > /var/lib/pgsql/12/data/postgresql.conf-new; mv -vf /var/lib/pgsql/12/data/postgresql.conf-new /var/lib/pgsql/12/data/postgresql.conf; chown postgres:postgres /var/lib/pgsql/12/data/postgresql.conf; sed -e "/archive_mode = /s/off/on/" /var/lib/pgsql/12/data/postgresql.conf > /var/lib/pgsql/12/data/postgresql.conf-new; mv -vf /var/lib/pgsql/12/data/postgresql.conf-new /var/lib/pgsql/12/data/postgresql.conf; chown postgres:postgres /var/lib/pgsql/12/data/postgresql.conf; sed -e "s/#archive_command/archive_command/" /var/lib/pgsql/12/data/postgresql.conf > /var/lib/pgsql/12/data/postgresql.conf-new; mv -vf /var/lib/pgsql/12/data/postgresql.conf-new /var/lib/pgsql/12/data/postgresql.conf; chown postgres:postgres /var/lib/pgsql/12/data/postgresql.conf; sed -e "/archive_command = /s/'.*'/'\"\/usr\/bin\/cp\"\ \"\%p\"\ \"\/var\/lib\/pgsql\/archivedir\/\%f\"'/" /var/lib/pgsql/12/data/postgresql.conf > /var/lib/pgsql/12/data/postgresql.conf-new; mv -vf /var/lib/pgsql/12/data/postgresql.conf-new /var/lib/pgsql/12/data/postgresql.conf; chown postgres:postgres /var/lib/pgsql/12/data/postgresql.conf; sed -e "s/#archive_timeout/archive_timeout/" /var/lib/pgsql/12/data/postgresql.conf > /var/lib/pgsql/12/data/postgresql.conf-new; mv -vf /var/lib/pgsql/12/data/postgresql.conf-new /var/lib/pgsql/12/data/postgresql.conf; chown postgres:postgres /var/lib/pgsql/12/data/postgresql.conf; sed -e "/archive_timeout = /s/0/600/" /var/lib/pgsql/12/data/postgresql.conf > /var/lib/pgsql/12/data/postgresql.conf-new; mv -vf /var/lib/pgsql/12/data/postgresql.conf-new /var/lib/pgsql/12/data/postgresql.conf; chown postgres:postgres /var/lib/pgsql/12/data/postgresql.conf; sed -e "s/#max_wal_senders/max_wal_senders/" /var/lib/pgsql/12/data/postgresql.conf > /var/lib/pgsql/12/data/postgresql.conf-new; mv -vf /var/lib/pgsql/12/data/postgresql.conf-new /var/lib/pgsql/12/data/postgresql.conf; chown postgres:postgres /var/lib/pgsql/12/data/postgresql.conf; sed -e "/max_wal_senders = /s/'.*'/10/" /var/lib/pgsql/12/data/postgresql.conf > /var/lib/pgsql/12/data/postgresql.conf-new; mv -vf /var/lib/pgsql/12/data/postgresql.conf-new /var/lib/pgsql/12/data/postgresql.conf; chown postgres:postgres /var/lib/pgsql/12/data/postgresql.conf; sed -e "s/#wal_keep_segments/wal_keep_segments/" /var/lib/pgsql/12/data/postgresql.conf > /var/lib/pgsql/12/data/postgresql.conf-new; mv -vf /var/lib/pgsql/12/data/postgresql.conf-new /var/lib/pgsql/12/data/postgresql.conf; chown postgres:postgres /var/lib/pgsql/12/data/postgresql.conf; sed -e "/wal_keep_segments = /s/0/60/" /var/lib/pgsql/12/data/postgresql.conf > /var/lib/pgsql/12/data/postgresql.conf-new; mv -vf /var/lib/pgsql/12/data/postgresql.conf-new /var/lib/pgsql/12/data/postgresql.conf; chown postgres:postgres /var/lib/pgsql/12/data/postgresql.conf; sed -e "s/#hot_standby/hot_standby/" /var/lib/pgsql/12/data/postgresql.conf > /var/lib/pgsql/12/data/postgresql.conf-new; mv -vf /var/lib/pgsql/12/data/postgresql.conf-new /var/lib/pgsql/12/data/postgresql.conf; chown postgres:postgres /var/lib/pgsql/12/data/postgresql.conf; sed -e "/hot_standby = /s/off/on/" /var/lib/pgsql/12/data/postgresql.conf > /var/lib/pgsql/12/data/postgresql.conf-new; mv -vf /var/lib/pgsql/12/data/postgresql.conf-new /var/lib/pgsql/12/data/postgresql.conf; chown postgres:postgres /var/lib/pgsql/12/data/postgresql.conf; sed -e "s/#wal_log_hints/wal_log_hints/" /var/lib/pgsql/12/data/postgresql.conf > /var/lib/pgsql/12/data/postgresql.conf-new; mv -vf /var/lib/pgsql/12/data/postgresql.conf-new /var/lib/pgsql/12/data/postgresql.conf; chown postgres:postgres /var/lib/pgsql/12/data/postgresql.conf; sed -e "/wal_log_hints = /s/off/on/" /var/lib/pgsql/12/data/postgresql.conf > /var/lib/pgsql/12/data/postgresql.conf-new; mv -vf /var/lib/pgsql/12/data/postgresql.conf-new /var/lib/pgsql/12/data/postgresql.conf; chown postgres:postgres /var/lib/pgsql/12/data/postgresql.conf; sed -e "s/#effective_cache_size/effective_cache_size/" /var/lib/pgsql/12/data/postgresql.conf > /var/lib/pgsql/12/data/postgresql.conf-new; mv -vf /var/lib/pgsql/12/data/postgresql.conf-new /var/lib/pgsql/12/data/postgresql.conf; chown postgres:postgres /var/lib/pgsql/12/data/postgresql.conf; sed -e "/effective_cache_size = /s/4G/2G/" /var/lib/pgsql/12/data/postgresql.conf > /var/lib/pgsql/12/data/postgresql.conf-new; mv -vf /var/lib/pgsql/12/data/postgresql.conf-new /var/lib/pgsql/12/data/postgresql.conf; chown postgres:postgres /var/lib/pgsql/12/data/postgresql.conf; sed -e "s/#log_min_duration_statement/log_min_duration_statement/" /var/lib/pgsql/12/data/postgresql.conf > /var/lib/pgsql/12/data/postgresql.conf-new; mv -vf /var/lib/pgsql/12/data/postgresql.conf-new /var/lib/pgsql/12/data/postgresql.conf; chown postgres:postgres /var/lib/pgsql/12/data/postgresql.conf; sed -e "/log_min_duration_statement = /s/-1/30000/" /var/lib/pgsql/12/data/postgresql.conf > /var/lib/pgsql/12/data/postgresql.conf-new; mv -vf /var/lib/pgsql/12/data/postgresql.conf-new /var/lib/pgsql/12/data/postgresql.conf; chown postgres:postgres /var/lib/pgsql/12/data/postgresql.conf; sed -e "s/#log_hostname/log_hostname/" /var/lib/pgsql/12/data/postgresql.conf > /var/lib/pgsql/12/data/postgresql.conf-new; mv -vf /var/lib/pgsql/12/data/postgresql.conf-new /var/lib/pgsql/12/data/postgresql.conf; chown postgres:postgres /var/lib/pgsql/12/data/postgresql.conf; sed -e "/log_hostname = /s/off/on/" /var/lib/pgsql/12/data/postgresql.conf > /var/lib/pgsql/12/data/postgresql.conf-new; mv -vf /var/lib/pgsql/12/data/postgresql.conf-new /var/lib/pgsql/12/data/postgresql.conf; chown postgres:postgres /var/lib/pgsql/12/data/postgresql.conf; sed -e "/log_line_prefix = /s/'.*'/'\%t\%d\%a\%u\%h\%p\%i'/" /var/lib/pgsql/12/data/postgresql.conf > /var/lib/pgsql/12/data/postgresql.conf-new; mv -vf /var/lib/pgsql/12/data/postgresql.conf-new /var/lib/pgsql/12/data/postgresql.conf; chown postgres:postgres /var/lib/pgsql/12/data/postgresql.conf; sed -e "/autovacuum = /s/on/off/" /var/lib/pgsql/12/data/postgresql.conf > /var/lib/pgsql/12/data/postgresql.conf-new; mv -vf /var/lib/pgsql/12/data/postgresql.conf-new /var/lib/pgsql/12/data/postgresql.conf; chown postgres:postgres /var/lib/pgsql/12/data/postgresql.conf; sed -e "s/#synchronous_commit/synchronous_commit/" /var/lib/pgsql/12/data/postgresql.conf > /var/lib/pgsql/12/data/postgresql.conf-new; mv -vf /var/lib/pgsql/12/data/postgresql.conf-new /var/lib/pgsql/12/data/postgresql.conf; chown postgres:postgres /var/lib/pgsql/12/data/postgresql.conf; sed -e "/synchronous_commit/s/\ =\ on/\ =\ off/" /var/lib/pgsql/12/data/postgresql.conf > /var/lib/pgsql/12/data/postgresql.conf-new; mv -vf /var/lib/pgsql/12/data/postgresql.conf-new /var/lib/pgsql/12/data/postgresql.conf; chown postgres:postgres /var/lib/pgsql/12/data/postgresql.conf
+
+# - configure pg_hba pgpool
+# STEP 16
+[root@localhost ~]# cat >> /etc/pgpool-II/pool_hba.conf <<EOF
+host    all         all         0.0.0.0/0             md5
+host    all         all         0/0                   md5
+EOF
+
+# - configure pg_hba postgres
+# STEP 17
+[root@localhost ~]# yes | cp -vf /var/lib/pgsql/12/data/pg_hba.conf-bkp /var/lib/pgsql/12/data/pg_hba.conf; chown postgres:postgres /var/lib/pgsql/12/data/pg_hba.conf; sed -e "s/#host    replication/host    replication/" /var/lib/pgsql/12/data/pg_hba.conf > /var/lib/pgsql/12/data/pg_hba.conf-new; mv -vf /var/lib/pgsql/12/data/pg_hba.conf-new /var/lib/pgsql/12/data/pg_hba.conf; chown postgres:postgres /var/lib/pgsql/12/data/pg_hba.conf; cat >> /var/lib/pgsql/12/data/pg_hba.conf <<EOF
+host    all             all             0.0.0.0/0               md5
+host    replication     replication     0.0.0.0/0               md5
+EOF
+
+# - create users and grant permission
+# STEP 18
+[root@localhost ~]# systemctl stop postgresql-12.service; systemctl start postgresql-12.service; rm -vf /var/lib/pgsql/replica.sql; echo "create role replication with login replication password 'replication';" > /var/lib/pgsql/replica.sql; echo "alter role postgres with password 'postgres';" >> /var/lib/pgsql/replica.sql; chown postgres:postgres /var/lib/pgsql/replica.sql; su - postgres -c "/usr/pgsql-12/bin/psql -U postgres -p 5432 -f /var/lib/pgsql/replica.sql"; yes | cp -vf /etc/pgpool-II/pcp.conf.sample /etc/pgpool-II/pcp.conf; export pcp=``; export pcp=`pg_md5 postgres`; echo postgres:$pcp >> /etc/pgpool-II/pcp.conf; chown postgres:postgres /etc/pgpool-II/pcp.conf; rm -vf /var/lib/pgsql/.pgpass; rm -vf /var/lib/pgsql/.pcppass; echo "*:*:*:replication:replication" > /var/lib/pgsql/.pgpass; echo "*:*:*:postgres:postgres" >> /var/lib/pgsql/.pgpass; chown postgres:postgres /var/lib/pgsql/.pgpass; echo "pg1:9898:postgres:postgres" > /var/lib/pgsql/.pcppass; echo "pg2:9898:postgres:postgres" >> /var/lib/pgsql/.pcppass; chown postgres:postgres /var/lib/pgsql/.pcppass; chmod 600 /var/lib/pgsql/.pcppass; chmod 600 /var/lib/pgsql/.pgpass
+
+# - create pool_passwd file via command (you will be asked for the postgres user's bank password)
+# STEP 19
+[root@localhost ~]# su - postgres -c "cd /etc/pgpool-II/; rm -vf /etc/pgpool-II/pool_passwd; pg_md5 -p -m -u postgres"
+
+# - automatic replication setup
+# STEP 20
+[root@localhost ~]# systemctl stop pgpool.service; yes | cp -vf /etc/pgpool-II/failover.sh.sample /etc/pgpool-II/failover.sh; sed -e "s/PGHOME=\/usr\/pgsql\-11/PGHOME=\/usr\/pgsql\-12/" /etc/pgpool-II/failover.sh > /etc/pgpool-II/failover.sh-new; mv -vf /etc/pgpool-II/failover.sh-new /etc/pgpool-II/failover.sh; chown postgres:postgres /etc/pgpool-II/failover.sh; chmod 777 /etc/pgpool-II/failover.sh; yes | cp -vf /etc/pgpool-II/recovery_1st_stage.sample /var/lib/pgsql/12/data/recovery_1st_stage; sed -e "s/PGHOME=\/usr\/pgsql\-11/PGHOME=\/usr\/pgsql\-12/" /var/lib/pgsql/12/data/recovery_1st_stage > /var/lib/pgsql/12/data/recovery_1st_stage-new; mv -vf /var/lib/pgsql/12/data/recovery_1st_stage-new /var/lib/pgsql/12/data/recovery_1st_stage; sed -e "/REPLUSER=/s/repl/replication/" /var/lib/pgsql/12/data/recovery_1st_stage > /var/lib/pgsql/12/data/recovery_1st_stage-new; mv -vf /var/lib/pgsql/12/data/recovery_1st_stage-new /var/lib/pgsql/12/data/recovery_1st_stage; chown postgres:postgres -R /var/lib/pgsql/12/data; chown postgres:postgres -R /etc/pgpool-II;
+
+########################################################
+# RUN THE SCRIPT BELOW FOR THE REPLICATION ENVIRONMENT #
+########################################################
+
+# - copy configuration files for the replica and adjust
+# STEP 21
+[root@localhost ~]# chown postgres:postgres -R /etc/pgpool-II; rm -vf /etc/pgpool-II/*; su - postgres -c "scp -i /var/lib/pgsql/.ssh/id_rsa_pgpool postgres@pg1:/etc/pgpool-II/* /etc/pgpool-II/"; chown postgres:postgres -R /etc/pgpool-II; sed -e "/wd_hostname =/s/'pg1'/'pg2'/" /etc/pgpool-II/pgpool.conf > /etc/pgpool-II/pgpool.conf-new; mv -vf /etc/pgpool-II/pgpool.conf-new /etc/pgpool-II/pgpool.conf; chown postgres:postgres /etc/pgpool-II/pgpool.conf; sed -e "/other_pgpool_hostname0 =/s/'pg2'/'pg1'/" /etc/pgpool-II/pgpool.conf > /etc/pgpool-II/pgpool.conf-new; mv -vf /etc/pgpool-II/pgpool.conf-new /etc/pgpool-II/pgpool.conf; chown postgres:postgres /etc/pgpool-II/pgpool.conf; sed -e "/heartbeat_destination0 =/s/'pg2'/'pg1'/" /etc/pgpool-II/pgpool.conf > /etc/pgpool-II/pgpool.conf-new; mv -vf /etc/pgpool-II/pgpool.conf-new /etc/pgpool-II/pgpool.conf; chown postgres:postgres /etc/pgpool-II/pgpool.conf;
+
+# - restore of the standby databsae
+# STEP 22
+[root@localhost ~]# systemctl stop postgresql-12.service; rm -Rvf /var/lib/pgsql/12/data/*; rm -Rvf /var/lib/pgsql/archivedir; mkdir -p /var/lib/pgsql/archivedir; chown postgres:postgres -R /var/lib/pgsql/archivedir; su - postgres -c "scp -i /var/lib/pgsql/.ssh/id_rsa_pgpool postgres@pg1:/var/lib/pgsql/.pcppass /var/lib/pgsql/.pcppass"; chmod 600 /var/lib/pgsql/.pcppass; su - postgres -c "scp -i /var/lib/pgsql/.ssh/id_rsa_pgpool postgres@pg1:/var/lib/pgsql/.pgpass /var/lib/pgsql/.pgpass"; chmod 600 /var/lib/pgsql/.pgpass; su - postgres -c "/usr/pgsql-12/bin/pg_basebackup -h pg1 -p 5432 -U replication -Fp -Xs -Pv -R -D /var/lib/pgsql/12/data"; chmod 700 -R /var/lib/pgsql/12/data; chown postgres:postgres -R /var/lib/pgsql/12/data; su - postgres -c "/usr/pgsql-12/bin/pg_ctl -D /var/lib/pgsql/12/data start -l /var/lib/pgsql/logstart"; su - postgres -c "/usr/pgsql-12/bin/pg_ctl -D /var/lib/pgsql/12/data stop -m fast"; systemctl enable postgresql-12.service; systemctl start postgresql-12.service; systemctl status -l postgresql-12.service;
+
+####################################################
+# RUN THE SCRIPT BELOW FOR THE PRIMARY ENVIRONMENT #
+####################################################
+
+# - start primary pgpool
+# STEP 23
+[root@pg1 ~]# systemctl start pgpool.service; systemctl status -l pgpool.service
+
+# - start pgpool standby
+# STEP 24
+[root@pg2 ~]# systemctl start pgpool.service; systemctl status -l pgpool.service
+
+# - enable cross copy of wals
+# STEP 25
+[root@pg1 ~]# rm -vf cron_postgres; echo "*/2 * * * * rsync -av -e 'ssh -p 22 -i /var/lib/pgsql/.ssh/id_rsa_pgpool' postgres@pg2:/var/lib/pgsql/archivedir/* /var/lib/pgsql/archivedir" > cron_postgres; crontab -u postgres cron_postgres; rm -vf cron_postgres
+[root@pg2 ~]# rm -vf cron_postgres; echo "*/2 * * * * rsync -av -e 'ssh -p 22 -i /var/lib/pgsql/.ssh/id_rsa_pgpool' postgres@pg1:/var/lib/pgsql/archivedir/* /var/lib/pgsql/archivedir" > cron_postgres; crontab -u postgres cron_postgres; rm -vf cron_postgres
+
+# - attach the primary and standby
+# STEP 25
+[root@pg1 ~]# su - postgres
+-bash-4.2$ pcp_attach_node -d -U postgres -h vip -p 9898 -n 0
+-bash-4.2$ pcp_attach_node -d -U postgres -h vip -p 9898 -n 1
+
+# - check pool nodes
+# STEP 26
+[root@pg1 ~]# su - postgres
+-bash-4.2$ /usr/pgsql-12/bin/psql -h vip -p9999 -Upostgres -d postgres -c "show pool_nodes;"
+
+################################
+# MAINTENANCE AFTER A FAILOVER #
+################################
+
+# - failback pg2 to pg1
+systemctl stop postgresql-12.service; rm -Rvf /var/lib/pgsql/12/data/*; su - postgres -c "pg_basebackup -h pg2 -p 5432 -U replication -Fp -Xs -Pv -R -D /var/lib/pgsql/12/data"; systemctl start postgresql-12.service; 
+# - perform step 25 to activate the database in the pgpool
+# - then check the situation of the databases
+-bash-4.2$ /usr/pgsql-12/bin/psql -h vip -p9999 -Upostgres -d postgres -c "show pool_nodes;"
+ node_id |   hostname    | port | status | lb_weight |  role   | select_cnt | load_balance_node | replication_delay | replication_state | replication_sync_state | last_status_change
+---------+---------------+------+--------+-----------+---------+------------+-------------------+-------------------+-------------------+------------------------+---------------------
+ 0       | pg1 | 5432 | up     | 0.500000  | standby | 0          | false             | 0                 |                   |                        | 2020-10-24 18:22:26
+ 1       | pg2 | 5432 | up     | 0.500000  | primary | 0          | true              | 0                 |                   |                        | 2020-10-24 18:14:17
+
+#failback pg1 to pg2
+systemctl stop postgresql-12.service; rm -Rvf /var/lib/pgsql/12/data/*; su - postgres -c "pg_basebackup -h pg1 -p 5432 -U replication -Fp -Xs -Pv -R -D /var/lib/pgsql/12/data"; systemctl start postgresql-12.service; 
+# - perform step 25 to activate the database in the pgpool
+# - then check the situation of the databases
+-bash-4.2$ /usr/pgsql-12/bin/psql -h vip -p9999 -Upostgres -d postgres -c "show pool_nodes;"
+ node_id |   hostname    | port | status | lb_weight |  role   | select_cnt | load_balance_node | replication_delay | replication_state | replication_sync_state | last_status_change
+---------+---------------+------+--------+-----------+---------+------------+-------------------+-------------------+-------------------+------------------------+---------------------
+ 0       | pg1 | 5432 | up     | 0.500000  | primary | 0          | false             | 0                 |                   |                        | 2020-10-24 18:22:26
+ 1       | pg2 | 5432 | up     | 0.500000  | standby | 0          | true              | 0                 |                   |                        | 2020-10-24 18:14:17  
