@@ -52,3 +52,53 @@ Importing plotly failed. Interactive plots will not work.
 3  2007-12-13  8.072467
 4  2007-12-14  7.893572
 
+# - NOTE 
+We fit the model by instantiating a new Prophet object. Any settings to the forecasting procedure are passed into the constructor. 
+Then you call its fit method and pass in the historical dataframe. Fitting should take 1-5 seconds.
+
+>>> m = Prophet()
+>>> m.fit(df)
+INFO:fbprophet:Disabling daily seasonality. Run prophet with daily_seasonality=True to override this.
+Initial log joint probability = -19.4685
+    Iter      log prob        ||dx||      ||grad||       alpha      alpha0  # evals  Notes 
+      99       7975.41    0.00109841       326.358      0.7019      0.7019      127   
+    Iter      log prob        ||dx||      ||grad||       alpha      alpha0  # evals  Notes 
+     199       7990.03    0.00870456       663.895      0.4236      0.4236      245   
+    Iter      log prob        ||dx||      ||grad||       alpha      alpha0  # evals  Notes 
+     299        7994.7    0.00088867       189.435       2.393      0.2393      373   
+    Iter      log prob        ||dx||      ||grad||       alpha      alpha0  # evals  Notes 
+     399       7999.23   0.000490727       311.727       0.255           1      491   
+    Iter      log prob        ||dx||      ||grad||       alpha      alpha0  # evals  Notes 
+     431       8000.37   3.72506e-05       109.303   1.977e-07       0.001      577  LS failed, Hessian reset 
+     499       8001.34    0.00358046       233.206           1           1      661   
+    Iter      log prob        ||dx||      ||grad||       alpha      alpha0  # evals  Notes 
+     516       8001.75   8.59838e-05       172.808   8.777e-07       0.001      725  LS failed, Hessian reset 
+     599       8002.95   0.000121156       94.0174       0.761       0.761      825   
+    Iter      log prob        ||dx||      ||grad||       alpha      alpha0  # evals  Notes 
+     699       8004.19   0.000501805       173.003      0.8915      0.8915      948   
+    Iter      log prob        ||dx||      ||grad||       alpha      alpha0  # evals  Notes 
+     799       8004.38   4.38799e-05       92.2042      0.4563      0.4563     1068   
+    Iter      log prob        ||dx||      ||grad||       alpha      alpha0  # evals  Notes 
+     848       8004.41   8.52041e-07       60.2517           1           1     1134   
+Optimization terminated normally: 
+  Convergence detected: relative gradient magnitude is below tolerance
+<fbprophet.forecaster.Prophet object at 0x7fa1afcd4550>
+
+>>> future = m.make_future_dataframe(periods=365)
+>>> future.tail()
+             ds
+3265 2017-01-15
+3266 2017-01-16
+3267 2017-01-17
+3268 2017-01-18
+3269 2017-01-19
+>>> 
+
+>>> forecast = m.predict(future)
+>>> forecast[['ds', 'yhat', 'yhat_lower', 'yhat_upper']].tail()
+             ds      yhat  yhat_lower  yhat_upper
+3265 2017-01-15  8.204125    7.470652    8.936291
+3266 2017-01-16  8.529148    7.804651    9.222550
+3267 2017-01-17  8.316555    7.566763    9.060825
+3268 2017-01-18  8.149153    7.375376    8.900461
+3269 2017-01-19  8.161075    7.431424    8.920251
