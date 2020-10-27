@@ -1,0 +1,54 @@
++++++++++++++++
++   PROPHET   +
++++++++++++++++
+
+# - NOTE
+Prophet is a procedure for forecasting time series data based on an additive model where non-linear trends are fit with yearly, 
+weekly, and daily seasonality, plus holiday effects. It works best with time series that have strong seasonal effects and several seasons of historical data. 
+Prophet is robust to missing data and shifts in the trend, and typically handles outliers well.
+
+USE PROPHET WITH PYSPARK
+
+# - INSTALL
+pip3 install pystan
+pip3 install fbprophet
+
+# - DOWNLOAD EXAMPLES
+wget https://codeload.github.com/facebook/prophet/zip/master
+mv master master.zip; unzip master.zip
+
+# - NOTE
+Prophet follows the sklearn model API. We create an instance of the Prophet class and then call its fit and predict methods.
+The input to Prophet is always a dataframe with two columns: ds and y. 
+The ds (datestamp) column should be of a format expected by Pandas, ideally YYYY-MM-DD for a date or YYYY-MM-DD HH:MM:SS for a timestamp. 
+The y column must be numeric, and represents the measurement we wish to forecast.
+
+As an example, let’s look at a time series of the log daily page views for the Wikipedia page for Peyton Manning. 
+We scraped this data using the Wikipediatrend package in R. 
+Peyton Manning provides a nice example because it illustrates some of Prophet’s features, like multiple seasonality, changing growth rates, 
+and the ability to model special days (such as Manning’s playoff and superbowl appearances). The CSV is "example_wp_log_peyton_manning.csv"
+
+# - USE PYSPARK
+
+Welcome to
+      ____              __
+     / __/__  ___ _____/ /__
+    _\ \/ _ \/ _ `/ __/  '_/
+   /__ / .__/\_,_/_/ /_/\_\   version 3.0.0
+      /_/
+
+Using Python version 3.8.5 (default, Jul 28 2020 12:59:40)
+SparkSession available as 'spark'.
+>>> import pandas as pd
+>>> from fbprophet import Prophet
+Importing plotly failed. Interactive plots will not work.
+>>> 
+>>> df = pd.read_csv('prophet-master/examples/example_wp_log_peyton_manning.csv')
+>>> df.head()
+           ds         y
+0  2007-12-10  9.590761
+1  2007-12-11  8.519590
+2  2007-12-12  8.183677
+3  2007-12-13  8.072467
+4  2007-12-14  7.893572
+
