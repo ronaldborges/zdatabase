@@ -260,5 +260,171 @@ CHILD_NUMBER IS_BIND_SENSITIVE IS_BIND_AWARE EXECUTIONS BUFFER_GETS
 0             Y                 N            2          41496
 1             Y                 Y            1          6922
 
+Striving to minimize the number of plans in the cache forces the optimizer to stumble before deciding whether to have different plans for the same query. 
+Note that this can be avoided by manually prompting the optimizer in advance.
+
+--------------
+-- POSTGRES --
+--------------
+
+There is no global parsed query cache in Postgres. Moreover, if no special efforts are made, the request will not be saved locally in the process memory either.
+In particular, when repeating the same request, it will be completely parsed anew each time. Of course, a process written in this way will not work optimally, 
+but this, at least, does not directly affect other processes.
+
+Consider an example: Let's execute the following PL / pgSQL code: In order to save the parsing results, a query must be prepared, 
+and only then the saved query can be reused: This is exactly what happens if an SQL command is called in a PL / pgSQL block without using execute, 
+as in the first example. In our case, this gives a gain in speed by 3.5 times:
+
+create table t(
+id serial primary key,
+n numeric not null);
+insert into t(n) select 1 from generate_series(1,100000);
+analyze t;
+
+\timing on
+do $$
+declare
+i record;
+begin
+for i in (select id from t) loop
+execute 'update t set n = n + 1 where id = '||i.id;
+end loop;
+end;
+$$ language plpgsql;
+DO
+Time: 36164,377 ms
+
+prepare u(integer) as update t set n = n + 1 where id = $1;
+execute u(1);
+execute u(2);
+...
+execute u(100000);
+
+do $$
+declare
+i record;
+begin
+for i in (select id from t) loop
+update t set n = n + 1 where id = i.id;
+end loop;
+end;
+$$ language plpgsql;
+DO
+Time: 10000,000 ms
+
+(And the correct option - one SQL command - is three times faster.)
+
+The general scheme of parsing a query consists of the following stages:
+
+1 - Parsing;
+2 - Semantic Analysis;
+3 - Rewriting the request (according to the rules, both system and user);
+4 - Optimization.
+
+When preparing a query, it is parsed and rewritten. Optimization is performed anew each time it is executed - thus, 
+a "private" plan is built for each value of the binding variables.
+
+Let's consider an example of non-uniform distribution of data (instead of a symbolic variable, we can use a boolean type): 
+The required histogram will be automatically built when analyzing the table: Prepare a query: 
+To find out which execution plan will be selected for the true flag value, use the explain command. In Postgres, 
+it is aware of the meaning and type of bind variables and shows exactly the plan with which the command will be executed:
+
+alter table t add column
+flag boolean;
+update t
+set flag = mod(id,1000)=0;
+create index on t(flag);
+
+analyze t;
+
+prepare s1(boolean) as select * from t where flag = $1;
+
+explain execute s1(true);
+QUERY PLAN
+------------------------------------------------------------------------
+Index Scan using t_flag_idx on t (cost=0.29..14.31 rows=110 width=10)
+Index Cond: (flag = true)
+Filter: flag
+
+The optimizer assumes that 110 rows are selected (also with a small margin of error) and uses index access.
+
+The explain command is also convenient in that it allows you not only to build a plan, 
+but also to execute the command and immediately get both the expected and actual cardinality values. 
+Let's demonstrate this for a different value of flag: In this case, the optimizer expects to get 99890 rows (actually 99900) and adequately chooses a full table read. 
+This raises the opposite problem to Oracle's: what if the plan doesn't depend on the values ​​of the bind variables? In this case, 
+it would be beneficial not to optimize the query every time.
+
+explain analyze execute s1(false);
+QUERY PLAN
+------------------------------------------------------------------------------------------------------
+Seq Scan on t (cost=0.00..2958.00 rows=99890 width=10) (actual time=0.043..265.272 rows=99900 loops=1)
+Filter: (NOT flag)
+Rows Removed by Filter: 100
+Execution time: 385.455 ms
+
+Indeed, Postgres is able to move from “private” plans to “general” (generic plan), but it does not do it right away. 
+The first five times the query is optimized in any case, 
+and then the general plan is preferred if its cost (as estimated by the optimizer) does not exceed the average cost of private plans. 
+The number five here is a kind of trade-off: a small value does not provide sufficient cost statistics for different values of the binding variables, 
+and a large value negates the optimization itself.
+
+Let's consider this mechanism using an example with a uniform distribution of data: This is a private plan, 
+which can be seen from the condition "Index Cond: (id = 1)" - a specific number is indicated here.
+
+prepare s2(integer) as select * from t where id = $1;
+explain execute s2(1);
+QUERY PLAN
+-----------------------------------------------------------------
+Index Scan using t_pkey on t (cost=0.42..8.44 rows=1 width=10)
+Index Cond: (id = 1)
+
+However, if you call explain or simply execute the query four more times with any variable values, the switch to the general plan will occur: Here, 
+in the "Index Cond: (id = $ 1)" condition, instead of a specific value, 
+the number of the binding variable is indicated - this is the sign of the general plan ... Its cost in this case coincides with the cost of private plans. 
+Now, the query will use a ready-made plan, 
+which increases the efficiency of execution 
+(although it can lead to a problem in case of error in the calculation of the cost or if the first five times turn out to be "not indicative").
+
+execute s2(2);
+...
+execute s2(3);
+...
+execute s2(4);
+...
+execute s2(5);
+...
+explain execute s2(6);
+QUERY PLAN
+-----------------------------------------------------------------
+Index Scan using t_pkey on t (cost=0.42..8.44 rows=1 width=10)
+Index Cond: (id = $1)
+
+----------------
+-- CONCLUSION --
+----------------
+
+The decision to use the global cache of parsed queries in Oracle leads to the desire not to write to it more than is absolutely necessary - 
+both because of the limited size and the danger of crowding out useful plans, and because of the competition of parallel processes for access to the cache. 
+Therefore Oracle starts with one general plan for the query and only if necessary moves on to several private ones.
+
+On the contrary, the decision not to use the global cache in Postgres makes it easier to deal with unnecessary parsing. Postgres, on the contrary, 
+starts with private plans and then, if possible, moves on to the general.
+
+Oracle automatically caches query plans. In this regard, the developer is only required to remember to use the bind variables, 
+which is primarily dictated by the limitations of the global cache. Due to the severity of the problem, 
+Oracle even provides a cursor_sharing parameter that forces all constants to be replaced with variables.
+
+Postgres completely decides on the need to save the parsed request in the hands of the developer - or the development tool. 
+The use of bind variables does not play such a dramatic performance role in Postgres (although security issues from SQL injection are equally relevant for both systems).
+
+If several processes use the same request, in Oracle it will be parsed only one - the first - time. 
+The rest of the processes will use the already prepared plan in the global cache.
+
+In Postgres, each process will have to parse the request itself. On the other hand, 
+one-time requests are executed without the overhead of placing the plan in the cache.
+
+Each of the solutions has both its pros and cons; in any case, developers and administrators who design, implement, 
+and maintain application systems should take these considerations into account.
+
 
 
