@@ -1,0 +1,115 @@
+#########################################################################
+# POSTGRESQL AND ORACLE QUERY PROCESSING: IMPLICATIONS OF ONE SOLUTION  #
+#########################################################################
+
+SQL query processing in both Oracle and Postgres has a lot in common. One way or another, it is necessary to perform parsing, 
+check the semantics (which requires meta information, and it does not matter whether it is called a "data dictionary" or a "system catalog"), 
+perform some transformations, build an optimal execution plan (in both systems, based on the cost, and therefore requiring pre-collected statistics).
+
+But there is one single significant difference that fundamentally changes the whole approach to processing. Of course, 
+we are talking about the fact that Oracle uses the global parsed query cache, and Postgres stores queries locally.
+
+In the article we will try to trace how, due to the difference in one architectural solution, completely different ideology of work in queries in two DBMS logically follows.
+
+The examples provided (which were run on Oracle 11.2 XE and PostgreSQL 9.4) show the query execution time. We are only interested in relative values: 
+how many times the execution time changed after making certain changes to the query. At the same time, the absolute figures can differ by orders of magnitude, 
+depending on the equipment, load and settings. In order not to give reason for meaningless conclusions based on them, 
+all the absolute values in the article are scaled so that one of the requests is 10 seconds in both systems.
+
+------------
+-- ORACLE --
+------------
+
+Oracle uses an instance-wide library cache (library cache). The plan of any executed query is guaranteed to be in the cache: 
+either the query is executed with a ready-made plan from the cache, or a new plan is built and stored in the cache - and this happens automatically.
+
+In a simplified way, the general scheme of query execution can be represented as follows:
+
+1 - Parse the query (whether the SQL command is written correctly).
+2 - Semantic analysis (whether the specified objects exist and whether there is access to them).
+3 - If the ready plan is in the cache, then use it; otherwise - further.
+4 - Transformation (rewriting a query according to heuristic rules).
+5 - Optimization (selection of an execution plan with the lowest cost).
+6 - Putting the selected plan into the cache.
+
+The same request repeated twice in a row will be processed differently. The first time, the so-called hard parse will take place - from the first to the last point. 
+The second time, only a partial parsing (soft parse) will be performed - syntactic and semantic analysis - after which a ready-made plan will be found and used in the cache, 
+which is much more efficient.
+
+The presence of the global cache encourages us to minimize the number of entries in it. 
+One reason is that a large stream of "one-off" requests can force the plans out of the cache, while the requests themselves will never be repeated. But most importantly, 
+concurrent processes access the shared cache, therefore, it must be protected by locks and writing to it can become a bottleneck.
+
+Indeed, a process doing a lot of parsing becomes an instance-wide problem. Consider this situation with the following example: Here we create a table, 
+insert hundreds of thousands of rows into it (the "from dual connect by rowid <= N" construct is an idiom for generating a selection of N rows) and collect statistics. 
+Let's execute the following PL / SQL code that updates the table line by line in a loop using dynamically generated update queries (this example may look contrived, 
+but in practice it is not so): If you trace, then you can find out:
+
+create table t(
+id number primary key,
+n number not null);
+insert into t(id, n) select level, 1 from dual connect by rownum <= 100000; 
+exec dbms_stats.gather_table_stats(user,'T');
+alter session set statistics_level=all;
+
+begin
+for i in (select id from t) loop
+execute immediate 'update t set n = n + 1 where id = '||i.id;
+end loop;
+commit;
+end;
+/
+
+OVERALL TOTALS FOR ALL RECURSIVE STATEMENTS
+
+call    count  cpu      elapsed    disk       query      current    rows
+------- ------ -------- ---------- ---------- ---------- ---------- ----------
+Parse   100003 92.63    95.40       0         2837        0         0
+Execute 100003 13.57    14.29       0         200002      102225    100000
+Fetch   1002   0.87     0.75        0         10173       0         100000
+------- ------ -------- ---------- ---------- ---------- ---------- ----------
+total   201008 107.08   110.46      0         213012      102225    200000
+
+Misses in library cache during parse: 100001
+
+Shown here is information for all SQL queries initiated from a block of code. 
+The elapsed column shows the total elapsed time (which is the sum of cpu and various expectations), and the parse, execute, 
+fetch lines correspond to the stages of parsing, executing and getting the results of the query. 
+As you can see, most of the time (95 seconds out of 110, the elapsed column) was spent on parsing a hundred thousand (count column) queries of the same 
+type and placing their one-time plans in the cache. If you run several similar processes at the same time, 
+you will start to see expectations like "latch: shared pool" and "latch: row cache objects" (names vary from version to version), 
+indicating competition for access to the library cache.
+
+To prevent this from happening, it is customary in Oracle to use bind variables. For example, like this:
+
+begin
+for i in (select id from t) loop
+execute immediate 'update t set n = n + 1 where id = :A' using i.id;
+end loop;
+commit;
+end;
+/
+
+Or, more simply, without dynamic SQL, since PL / SQL automatically converts its variables to database bind variables: Here is what the trace will show in this case: 
+The parsing time has been reduced to a minimum - all update queries now look the same for the DBMS. "Equality", that is, in fact, the key for the cache, 
+is determined by two values:
+
+begin
+for i in (select id from t) loop
+update t set n = n + 1 where id = i.id;
+end loop;
+commit;
+end;
+/
+
+OVERALL TOTALS FOR ALL RECURSIVE STATEMENTS
+
+call    count  cpu      elapsed    disk       query      current    rows
+------- ------ -------- ---------- ---------- ---------- ---------- ----------
+Parse   3       0.02    0.03        0         297         0         0
+Execute 100002  9.08    9.28        0         201694      102315    100000
+Fetch   1001    0.77    0.68        0         10173       0         100000
+------- ------ -------- ---------- ---------- ---------- ---------- ----------
+total   101006  9.87    10.00       0         212164      102315    200000
+
+
