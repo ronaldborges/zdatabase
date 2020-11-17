@@ -1,5 +1,5 @@
 #########################################################################
-# POSTGRESQL AND ORACLE QUERY PROCESSING: IMPLICATIONS OF ONE SOLUTION  #
+# POSTGRES AND ORACLE QUERY PROCESSING: IMPLICATIONS OF ONE SOLUTION  #
 #########################################################################
 
 SQL query processing in both Oracle and Postgres has a lot in common. One way or another, it is necessary to perform parsing, 
