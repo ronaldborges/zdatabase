@@ -5,8 +5,6 @@
 #NOTE
 Air freight - Demo database description
 
-DOWNLOAD 
-
 We present you a demo database for PostgreSQL DBMS. In this document describes a data schema consisting of eight tables and several views. 
 As subject area selected air transportation in Russia. 
 
