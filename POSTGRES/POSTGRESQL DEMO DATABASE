@@ -23,8 +23,13 @@ The demo database is distributed under the PostgreSQL license.
 Installation
 There are three versions of the database available for download:
 • demo_small.zip (21 MB) - flight data for one month (database size 265 MB)
+https://mega.nz/file/UktBhQrC#JdhttwTb080PwQ5BrKnZyhajcDXiofCNYH5HY30cICY
+
 • demo_medium.zip (62 MB) - flight data for three months (database size 666 MB)
+https://mega.nz/file/Yk8RkACY#pg1BvWYiqEj9AXEhUqY4gqWLqqvYQgNZdy4xlNu-WJE
+
 • demo_big.zip (232 MB) - flight data for the year (database size 2502 MB)
+https://mega.nz/file/gsdmxZqI#ZrjwVvwj5EUS7e8GnSSaLneuHEG8Y-KHejCm8BuqlA8
 
 A small database is suitable for writing queries, and it does not take up much space on disk. A large base will give you a feel for how requests behave on large
 data volumes, and think about optimization. The files contain a SQL script that creates the "demo" database and fills it with data (in fact, this is a pg_dump backup). 
