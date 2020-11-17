@@ -1,0 +1,580 @@
+##############################
+# POSTGRES RECURSIVE QUERIES #
+##############################
+
+This post will discuss how to write recursive queries. This topic has been raised more than once or twice, but usually everything is limited to simple "wooden" cases: 
+to go down from the top to the leaves, to go up from the top to the root. We will deal with a more complex case of an arbitrary graph.
+Let's start by repeating the theory (very briefly, because everything is clear with it), and then we'll talk about what to do if it's not clear how to approach the real problem, 
+or it seems clear, but the request stubbornly doesn't want to work.
+For the exercise, we will use the demo database, described in detail earlier, and try to write a query in it to find the shortest route from one airport to another.
+
+A bit of theory
+
+Good old relational SQL does a good job with unordered sets: there is a whole arsenal of tools for them both in the language itself and under the hood of the DBMS. 
+What SQL doesn't like is being tugged on in a loop line by line, instead of executing the task in one statement. 
+The optimizer drops its hands and steps aside, and you are left alone with performance.
+So a recursive query is a way to arrange a loop right inside SQL. Not that this is needed very often, but sometimes it does. 
+And this is where the difficulties begin, since a recursive query is not very similar either to a regular query, much less a regular loop.
+
+The general scheme of a recursive query is as follows:
+
+WITH RECURSIVE t AS (
+non-recursive part (1)
+UNION ALL
+recursive part (2)
+)
+SELECT * FROM t; (3)
+
+The non-recursive part (1) is executed first. Then the recursive part (2) is executed as long as it returns any rows. 
+The recursive part is so named because it can access the result of the previous iteration, which is available to it under the name t.
+Along the way, the result of the execution of each iteration is added to the resulting table, 
+which will be available under the same name t after the entire query has been processed (3). If you write UNION instead of UNION ALL, 
+then duplicate lines will be eliminated at each iteration.
+
+In the form of pseudocode, this can be represented something like this:
+
+res ← EMPTY;
+t ← (non-recursive part);
+WHILE t IS NOT EMPTY LOOP
+res ← res UNION ALL t;
+aux ← (recursive part);
+t ← aux;
+END LOOP;
+t ← res;
+
+
+Simple example:
+
+demo = # WITH RECURSIVE t (n, factorial) AS (
+VALUES (0,1)
+UNION ALL
+SELECT t.n + 1, t.factorial * (t.n + 1) FROM t WHERE t.n <5
+)
+SELECT * FROM t;
+
+n   | factorial
+----+-----------
+0   | 1
+1   | 1
+2   | 2
+3   | 6
+4   | 24
+5   | 120
+(6 строк)
+
+Practice
+
+Armed with the theory, we can now (theoretically) take and write the query mentioned above: finding the shortest path from, say, Ust-Kut (UKX) to Neryungri (CNN).
+From the entire demo database, we need two tables: airports and routes. Formally, routes are a materialized view, but you don't have to think about that. 
+(If you are not already familiar with the structure of the demo base, see its description.)
+The request might look something like this:
+
+WITH RECURSIVE p(last_arrival, destination, hops, flights, found) AS (
+SELECT a_from.airport_code,
+a_to.airport_code,
+ARRAY[a_from.airport_code],
+ARRAY[]::char(6)[],
+a_from.airport_code = a_to.airport_code
+FROM airports a_from, airports a_to
+WHERE a_from.airport_code = 'UKX'
+AND a_to.airport_code = 'CNN'
+UNION ALL
+SELECT r.arrival_airport,
+p.destination,
+(p.hops || r.arrival_airport)::char(3)[],
+(p.flights || r.flight_no)::char(6)[],
+bool_or(r.arrival_airport = p.destination) OVER ()
+FROM routes r, p
+WHERE r.departure_airport = p.last_arrival
+AND NOT r.arrival_airport = ANY(p.hops)
+AND NOT p.found
+)
+SELECT hops,
+flights
+FROM p
+WHERE p.last_arrival = p.destination;
+
+This, of course, is great, but how to get to this when there is still nothing on the screen except the blinking cursor?
+
+    At this point in the cassette, it always seems to him that he accidentally put a beer on the rewind button: 
+    the dancers stop viciously parodying Randy himself and suddenly start moving completely professionally. 
+    It seems that the movements are all the same as before, but be damned if he can distinguish them in creative performance. 
+    There is no smooth transition, which is what infuriates and has always infuriated Randy in these video tutorials. 
+    Any idiot can learn the basic steps in half an hour. But when half an hour expires, the coach for some reason expects you to start fluttering across the stage, 
+    as if the credits “several years have passed” flashed. Probably the same way people in the humanities feel in their math class, Randy thinks. 
+    Here the teacher writes a couple of simple equations on the blackboard, and after ten minutes the speed of light in a vacuum has already been deduced from them.
+
+- Neil Stevenson, Cryptonomicon (my translation)
+
+For example, I cannot write such a request out of my head. Therefore, we will move consistently
+
+So, we need to get the path. The route from point A to point B is a sequence of flights. The first flight departs from A somewhere, 
+the next - from this somewhere else to somewhere, and so on, until the last flight ends at the desired point B. This is the chain of flights with a fixed start, 
+a fixed end and an unknown middle that we need to find.
+
+How do you represent such a chain? From a relational point of view, it would be logical for it to be a table with columns in order and airport. 
+But we need to work with the chain as a single object, so the most convenient way is to represent it as an array: [airport, airport, ...]. 
+(If this is difficult, then read about arrays and functions for working with them.)
+
+It is clear where to start the iteration: from the airport in Ust-Kut.
+
+demo = # SELECT ARRAY [airport_code] FROM airports WHERE airport_code = 'UKX';
+
+array
+-------
+{UKX}
+(1 line)
+
+
+Why not just ARRAY ['UKX']? It is useful to play it safe a little: if we suddenly seal ourselves in the airport code, the request will not return anything.
+
+Now let's imagine that the result of this initial iteration lies in the table, and we need to do the second iteration. 
+You can do just that: create and fill a table and write queries with it. But it's easier to use WITH:
+
+demo = # WITH p (last_arrival, hops) AS (
+SELECT airport_code,
+ARRAY [airport_code]
+FROM airports
+WHERE airport_code = 'UKX'
+)
+SELECT * FROM p;
+
+last_arrival    | hops
+--------------- + -------
+UKX             | {UKX}
+(1 line)
+
+We named the column hops to avoid confusion. In addition, we added one more (last_arrival) for the last item in our future chain. Instead, it would be possible to calculate the last element of the array (p.hops [cardinality (p.hops)]), but this is not so clear.
+
+Now the second iteration:
+
+demo = # WITH p (last_arrival, hops) AS (
+SELECT airport_code,
+ARRAY [airport_code]
+FROM airports
+WHERE airport_code = 'UKX')
+SELECT r.arrival_airport AS last_arrival,
+p.hops || ARRAY [r.arrival_airport] AS hops
+FROM routes r, p
+WHERE r.departure_airport = p.last_arrival;
+
+last_arrival    | hops
+--------------- + -----------
+KJA             | {UKX, KJA}
+(1 line)
+
+What have we done? We took the first iteration (table p) and concatenated it with routes. We indicated the last airport in our chain as the departure airport, 
+and added the arrival airport to the chain on the right. It turns out that you can fly from Ust-Kut to Krasnoyarsk alone.
+Now it is more or less clear how to assemble a recursive query. We add the magic word RESURSIVE, and combine the query with the first iteration using UNION ALL. 
+And in the main request we select the chain that ultimately led to the destination airport (CNN).
+
+More or less like this?
+
+demo = # WITH RECURSIVE p (last_arrival, hops) AS (
+SELECT airport_code,
+ARRAY [airport_code]
+FROM airports
+WHERE airport_code = 'UKX'
+UNION ALL
+SELECT r.arrival_airport,
+p.hops || r.arrival_airport
+FROM routes r, p
+WHERE r.departure_airport = p.last_arrival)
+SELECT *
+FROM p
+WHERE p.last_arrival = (
+SELECT airport_code FROM airports WHERE airport_code = 'CNN');
+
+ERROR: in a recursive query "p" column 2 is of type character (3) [] in the non-recursive part, but as a result of type bpchar []
+LINE 3: ARRAY [airport_code]
+^
+TIP: Cast the result of the non-recursive part to the correct type.
+
+Hmm. Postgres is upset that the second column is of type character (3) [] in the non-recursive term, but the overall type is bpchar []. 
+Bpchar (blank-padded char) is the internal name for char; unfortunately, array concatenation does not preserve the type of the elements, so an explicit cast is required.
+
+demo = # WITH RECURSIVE p (last_arrival, hops) AS (
+SELECT airport_code,
+ARRAY [airport_code]
+FROM airports
+WHERE airport_code = 'UKX'
+UNION ALL
+SELECT r.arrival_airport,
+(p.hops || r.arrival_airport) :: char (3) []
+FROM routes r, p
+WHERE r.departure_airport = p.last_arrival)
+SELECT *
+FROM p
+WHERE p.last_arrival = (
+SELECT airport_code FROM airports WHERE airport_code = 'CNN');
+
+There is no more error, but alas - the request hangs. And now what i can do?
+We'll figure out. Let's try to execute our query "step by step" and see what happens at each iteration.
+It is clear that you can repeat the trick with pushing the first iteration into the table and gradually adding new iterations, but this is very dreary, 
+and it's easy to make a mistake. But there is a better way.
+Let's add another column with the iteration number to our query (let's call it level). In the first iteration, it will be equal to one, 
+and then we will increase it. This alone won't help, but now we can stop the execution of the request anywhere. We saw the first two iterations, 
+let's take a look at the third:
+
+demo = # WITH RECURSIVE p (last_arrival, hops, level) AS (
+SELECT airport_code,
+ARRAY [airport_code],
+1
+FROM airports
+WHERE airport_code = 'UKX'
+UNION ALL
+SELECT r.arrival_airport,
+(p.hops || r.arrival_airport) :: char (3) [],
+p.level + 1
+FROM routes r, p
+WHERE r.departure_airport = p.last_arrival
+AND p.level <3
+)
+SELECT * FROM p;
+
+last_arrival    | hops            | level
+--------------- + --------------- + -------
+UKX             | {UKX}           | 1
+KJA             | {UKX, KJA}      | 2
+UKX             | {UKX, KJA, UKX} | 3
+OVB             | {UKX, KJA, OVB} | 3
+OVB             | {UKX, KJA, OVB} | 3
+NOZ             | {UKX, KJA, NOZ} | 3
+NOZ             | {UKX, KJA, NOZ} | 3
+AER             | {UKX, KJA, AER} | 3
+SVO             | {UKX, KJA, SVO} | 3
+NUX             | {UKX, KJA, NUX} | 3
+UIK             | {UKX, KJA, UIK} | 3
+UIK             | {UKX, KJA, UIK} | 3
+BAX             | {UKX, KJA, BAX} | 3
+KRO             | {UKX, KJA, KRO} | 3
+OVS             | {UKX, KJA, OVS} | 3
+(15 strokes)
+
+This is a failure.  
+
+First, some lines are duplicated (for example, {UKX, KJA, OVB}). This is actually correct, because there are two different flights from Krasnoyarsk (KJA) to Novosibirsk (OVB):
+
+demo = # SELECT flight_no
+FROM routes
+WHERE departure_airport = 'KJA'
+AND arrival_airport = 'OVB';
+
+flight_no
+-----------
+PG0206
+PG0207
+(2 lines)
+
+
+Add the flight number to the request to distinguish strings; we still need it.
+
+demo = # WITH RECURSIVE p (last_arrival, hops, flights, level) AS (
+SELECT airport_code,
+ARRAY [airport_code],
+ARRAY [] :: char (6) [],
+1
+FROM airports
+WHERE airport_code = 'UKX'
+UNION ALL
+SELECT r.arrival_airport,
+(p.hops || r.arrival_airport) :: char (3) [],
+(p.flights || r.flight_no) :: char (6) [],
+p.level + 1
+FROM routes r, p
+WHERE r.departure_airport = p.last_arrival
+AND p.level <3
+)
+SELECT * FROM p;
+
+last_arrival  | hops          | flights         | level
+--------------+---------------+-----------------+-------
+UKX           | {UKX}         | {}              | 1
+KJA           | {UKX,KJA}     | {PG0022}        | 2
+UKX           | {UKX,KJA,UKX} | {PG0022,PG0021} | 3
+OVB           | {UKX,KJA,OVB} | {PG0022,PG0206} | 3
+OVB           | {UKX,KJA,OVB} | {PG0022,PG0207} | 3
+NOZ           | {UKX,KJA,NOZ} | {PG0022,PG0351} | 3
+NOZ           | {UKX,KJA,NOZ} | {PG0022,PG0352} | 3
+AER           | {UKX,KJA,AER} | {PG0022,PG0501} | 3
+SVO           | {UKX,KJA,SVO} | {PG0022,PG0548} | 3
+NUX           | {UKX,KJA,NUX} | {PG0022,PG0623} | 3
+UIK           | {UKX,KJA,UIK} | {PG0022,PG0625} | 3
+UIK           | {UKX,KJA,UIK} | {PG0022,PG0626} | 3
+BAX           | {UKX,KJA,BAX} | {PG0022,PG0653} | 3
+KRO           | {UKX,KJA,KRO} | {PG0022,PG0673} | 3
+OVS           | {UKX,KJA,OVS} | {PG0022,PG0689} | 3
+(15 lines)
+
+Another oddity is worse. One of the lines shows that we can fly back: {UKX, KJA, UKX}. And this means that we will fly in a circle endlessly, 
+the request will not stop. Here is the solution to the hang.
+
+What to do about it? It is necessary to add the condition that each airport can be visited no more than once (in this case, the route will still not be optimal).
+
+demo = # WITH RECURSIVE p (last_arrival, hops, flights, level) AS (
+SELECT airport_code,
+ARRAY [airport_code],
+ARRAY [] :: char (6) [],
+1
+FROM airports
+WHERE airport_code = 'UKX'
+UNION ALL
+SELECT r.arrival_airport,
+(p.hops || r.arrival_airport) :: char (3) [],
+(p.flights || r.flight_no) :: char (6) [],
+p.level + 1
+FROM routes r, p
+WHERE r.departure_airport = p.last_arrival
+AND NOT r.arrival_airport = ANY (p.hops)
+AND p.level <3
+)
+SELECT * FROM p;
+
+last_arrival    | hops            | flights           | level
+--------------- + --------------- + ----------------- + -------
+UKX             | {UKX}           | {}                | 1
+KJA             | {UKX, KJA}      | {PG0022}          | 2
+OVB             | {UKX, KJA, OVB} | {PG0022, PG0206}  | 3
+OVB             | {UKX, KJA, OVB} | {PG0022, PG0207}  | 3
+NOZ             | {UKX, KJA, NOZ} | {PG0022, PG0351}  | 3
+NOZ             | {UKX, KJA, NOZ} | {PG0022, PG0352}  | 3
+AER             | {UKX, KJA, AER} | {PG0022, PG0501}  | 3
+SVO             | {UKX, KJA, SVO} | {PG0022, PG0548}  | 3
+NUX             | {UKX, KJA, NUX} | {PG0022, PG0623}  | 3
+UIK             | {UKX, KJA, UIK} | {PG0022, PG0625}  | 3
+UIK             | {UKX, KJA, UIK} | {PG0022, PG0626}  | 3
+BAX             | {UKX, KJA, BAX} | {PG0022, PG0653}  | 3
+KRO             | {UKX, KJA, KRO} | {PG0022, PG0673}  | 3
+OVS             | {UKX, KJA, OVS} | {PG0022, PG0689}  | 3
+(14 lines)
+
+Seems to be in order now. Do we run without restrictions?
+
+demo = # WITH RECURSIVE p (last_arrival, hops, flights, level) AS (
+SELECT airport_code,
+ARRAY [airport_code],
+ARRAY [] :: char (6) [],
+1
+FROM airports
+WHERE airport_code = 'UKX'
+UNION ALL
+SELECT r.arrival_airport,
+(p.hops || r.arrival_airport) :: char (3) [],
+(p.flights || r.flight_no) :: char (6) [],
+p.level + 1
+FROM routes r, p
+WHERE r.departure_airport = p.last_arrival
+AND NOT r.arrival_airport = ANY (p.hops)
+- AND p.level <3)
+SELECT *
+FROM p
+WHERE p.last_arrival = (
+SELECT airport_code FROM airports WHERE airport_code = 'CNN');
+
+Formally, now everything should work out ... but the request hangs again, and if you are patient, it may fall with the error "out of space for temporary files."
+Why is that? But because we have to build all possible paths of arbitrary length from point A, and only at the very end we select from them those that end in point B. 
+This, to put it mildly, is not the most efficient algorithm. To understand the scale of the disaster, 
+you can see how many lines are obtained at each step by changing the limit to level:
+
+eleven
+2 2
+3 14
+4 165
+5 1978
+6 22322
+7 249942
+8 2316063
+
+
+And so on and so on, and each subsequent request works significantly slower than the previous one.
+Let's think about what number we expect to see in the answer? If we had large cities, then most likely 2 (with a transfer in Moscow). In our case, 
+it will be expected to add at least a couple more on regional flights to fly to a large city. That is, somewhere 4 or 5, well, maybe 6. However, 
+the request is not going to stop at eight: it will reach (if you have enough strength and health) to about a hundred until it can extend any of the chains!
+
+In this case, the algorithm works "in width": first we add all paths of length 1, then all paths of length 2, and so on. 
+That is, as soon as we find at least some first available path from A to B, this path will be the shortest (in terms of the number of transfers). 
+The only question now is how to stop the search in time.
+
+The idea is to set the “path found” sign at each step if at least one of the newly constructed paths ends at the destination. 
+Then we can write down the stop condition.
+
+Let's start by adding a destination to the query itself (before that it only appeared at the very end when it came to filtering all the results found). 
+Let's calculate it at the very beginning, and just leave it unchanged in the recursive part of the query:
+
+demo = # WITH RECURSIVE p (last_arrival, destination, hops, flights, level) AS (
+SELECT a_from.airport_code,
+a_to.airport_code,
+ARRAY [a_from.airport_code],
+ARRAY [] :: char (6) [],
+1
+FROM airports a_from, airports a_to
+WHERE a_from.airport_code = 'UKX'
+AND a_to.airport_code = 'CNN'
+UNION ALL
+SELECT r.arrival_airport,
+p.destination,
+(p.hops || r.arrival_airport) :: char (3) [],
+(p.flights || r.flight_no) :: char (6) [],
+p.level + 1
+FROM routes r, p
+WHERE r.departure_airport = p.hops [cardinality (p.hops)]
+AND NOT r.arrival_airport = ANY (p.hops)
+AND p.level <3
+)
+SELECT * FROM p;
+
+last_arrival    | destination   | hops            | flights           | level
+--------------- + ------------- + --------------- + ----------------- + -------
+UKX             | CNN           | {UKX}           | {}                | 1
+KJA             | CNN           | {UKX, KJA}      | {PG0022}          | 2
+OVB             | CNN           | {UKX, KJA, OVB} | {PG0022, PG0206}  | 3
+OVB             | CNN           | {UKX, KJA, OVB} | {PG0022, PG0207}  | 3
+NOZ             | CNN           | {UKX, KJA, NOZ} | {PG0022, PG0351}  | 3
+NOZ             | CNN           | {UKX, KJA, NOZ} | {PG0022, PG0352}  | 3
+AER             | CNN           | {UKX, KJA, AER} | {PG0022, PG0501}  | 3
+SVO             | CNN           | {UKX, KJA, SVO} | {PG0022, PG0548}  | 3
+NUX             | CNN           | {UKX, KJA, NUX} | {PG0022, PG0623}  | 3
+UIK             | CNN           | {UKX, KJA, UIK} | {PG0022, PG0625}  | 3
+UIK             | CNN           | {UKX, KJA, UIK} | {PG0022, PG0626}  | 3
+BAX             | CNN           | {UKX, KJA, BAX} | {PG0022, PG0653}  | 3
+KRO             | CNN           | {UKX, KJA, KRO} | {PG0022, PG0673}  | 3
+OVS             | CNN           | {UKX, KJA, OVS} | {PG0022, PG0689}  | 3
+(14 lines)
+
+Now the attribute of the found path is easy to calculate: it must be set if the last point of the path matches the destination for at least one line. 
+For this we need the bool_or window function (if window functions are something new to you, start with the introduction, 
+at the end of which there are links to a more detailed description).
+
+demo = # WITH RECURSIVE p (last_arrival, destination, hops, flights, found, level) AS (
+SELECT a_from.airport_code,
+a_to.airport_code,
+ARRAY [a_from.airport_code],
+ARRAY [] :: char (6) [],
+a_from.airport_code = a_to.airport_code,
+1
+FROM airports a_from, airports a_to
+WHERE a_from.airport_code = 'UKX'
+AND a_to.airport_code = 'OVB' - CNN
+UNION ALL
+SELECT r.arrival_airport,
+p.destination,
+(p.hops || r.arrival_airport) :: char (3) [],
+(p.flights || r.flight_no) :: char (6) [],
+bool_or (r.arrival_airport = p.destination) OVER (),
+p.level + 1
+FROM routes r, p
+WHERE r.departure_airport = p.last_arrival
+AND NOT r.arrival_airport = ANY (p.hops)
+AND p.level <3
+)
+SELECT * FROM p;
+
+last_arrival    | destination   | hops            | flights           | found   | level
+--------------- + ------------- + --------------- + ----------------- + ------- + -------
+UKX             | OVB           | {UKX}           | {}                | f       | 1
+KJA             | OVB           | {UKX, KJA}      | {PG0022}          | f       | 2
+OVB             | OVB           | {UKX, KJA, OVB} | {PG0022, PG0206}  | t       | 3
+OVB             | OVB           | {UKX, KJA, OVB} | {PG0022, PG0207}  | t       | 3
+NOZ             | OVB           | {UKX, KJA, NOZ} | {PG0022, PG0351}  | t       | 3
+NOZ             | OVB           | {UKX, KJA, NOZ} | {PG0022, PG0352}  | t       | 3
+AER             | OVB           | {UKX, KJA, AER} | {PG0022, PG0501}  | t       | 3
+SVO             | OVB           | {UKX, KJA, SVO} | {PG0022, PG0548}  | t       | 3
+NUX             | OVB           | {UKX, KJA, NUX} | {PG0022, PG0623}  | t       | 3
+UIK             | OVB           | {UKX, KJA, UIK} | {PG0022, PG0625}  | t       | 3
+UIK             | OVB           | {UKX, KJA, UIK} | {PG0022, PG0626}  | t       | 3
+BAX             | OVB           | {UKX, KJA, BAX} | {PG0022, PG0653}  | t       | 3
+KRO             | OVB           | {UKX, KJA, KRO} | {PG0022, PG0673}  | t       | 3
+OVS             | OVB           | {UKX, KJA, OVS} | {PG0022, PG0689}  | t       | 3
+(14 lines)
+
+
+Here we checked how the request would work for the route from Ust-Kut (UKX) to Novosibirsk (OVB), which, as we already know, has length 3. 
+(For this, by the way, we had to change CNN to OVB only in one place - trifle, but nice.) Everything works!
+
+We also calculate the attribute in the non-recursive part of the request. One could simply write false, 
+but this way the query will be more universal and will correctly determine the number of transfers from A to A.
+
+It remains to add a stop condition and you can run:
+
+demo = # WITH RECURSIVE p (last_arrival, destination, hops, flights, found, level) AS (
+SELECT a_from.airport_code,
+a_to.airport_code,
+ARRAY [a_from.airport_code],
+ARRAY [] :: char (6) [],
+a_from.airport_code = a_to.airport_code,
+1
+FROM airports a_from, airports a_to
+WHERE a_from.airport_code = 'UKX'
+AND a_to.airport_code = 'CNN'
+UNION ALL
+SELECT r.arrival_airport,
+p.destination,
+(p.hops || r.arrival_airport) :: char (3) [],
+(p.flights || r.flight_no) :: char (6) [],
+bool_or (r.arrival_airport = p.destination) OVER (),
+p.level + 1
+FROM routes r, p
+WHERE r.departure_airport = p.last_arrival
+AND NOT r.arrival_airport = ANY (p.hops)
+AND NOT p.found
+- AND p.level <3
+)
+SELECT hops, flights
+FROM p
+WHERE p.last_arrival = p.destination;
+
+hops                      | flights
+------------------------- + --------------------------------
+{UKX, KJA, OVB, MJZ, CNN} | {PG0022, PG0206, PG0390, PG0035}
+{UKX, KJA, OVB, MJZ, CNN} | {PG0022, PG0207, PG0390, PG0035}
+{UKX, KJA, SVO, MJZ, CNN} | {PG0022, PG0548, PG0120, PG0035}
+{UKX, KJA, OVB, MJZ, CNN} | {PG0022, PG0206, PG0390, PG0036}
+{UKX, KJA, OVB, MJZ, CNN} | {PG0022, PG0207, PG0390, PG0036}
+{UKX, KJA, SVO, MJZ, CNN} | {PG0022, PG0548, PG0120, PG0036}
+{UKX, KJA, OVS, LED, CNN} | {PG0022, PG0689, PG0686, PG0245}
+{UKX, KJA, SVO, LED, CNN} | {PG0022, PG0548, PG0472, PG0245}
+{UKX, KJA, SVO, LED, CNN} | {PG0022, PG0548, PG0471, PG0245}
+{UKX, KJA, SVO, LED, CNN} | {PG0022, PG0548, PG0470, PG0245}
+{UKX, KJA, SVO, LED, CNN} | {PG0022, PG0548, PG0469, PG0245}
+{UKX, KJA, SVO, LED, CNN} | {PG0022, PG0548, PG0468, PG0245}
+{UKX, KJA, OVB, PEE, CNN} | {PG0022, PG0206, PG0186, PG0394}
+{UKX, KJA, OVB, PEE, CNN} | {PG0022, PG0207, PG0186, PG0394}
+{UKX, KJA, BAX, ASF, CNN} | {PG0022, PG0653, PG0595, PG0427}
+{UKX, KJA, SVO, ASF, CNN} | {PG0022, PG0548, PG0128, PG0427}
+{UKX, KJA, OVS, DME, CNN} | {PG0022, PG0689, PG0544, PG0709}
+{UKX, KJA, OVS, DME, CNN} | {PG0022, PG0689, PG0543, PG0709}
+{UKX, KJA, KRO, DME, CNN} | {PG0022, PG0673, PG0371, PG0709}
+{UKX, KJA, OVB, DME, CNN} | {PG0022, PG0206, PG0223, PG0709}
+{UKX, KJA, OVB, DME, CNN} | {PG0022, PG0207, PG0223, PG0709}
+{UKX, KJA, NUX, DME, CNN} | {PG0022, PG0623, PG0165, PG0709}
+{UKX, KJA, BAX, DME, CNN} | {PG0022, PG0653, PG0117, PG0709}
+(23 lines)
+
+
+That, in fact, is all. We came to the request from the beginning of the article, and it works out instantly. Now you can remove the "debug" level ... or you can leave it.
+
+Let's summarize the useful tricks:
+
+The array representation of the "path" helps in many cases. You can concatenate strings instead, but this is less convenient.
+Avoiding loops (using the same array).
+Debugging by limiting the number of iterations.
+Sometimes you need a way to stop in time to improve performance.
+Using window functions can work wonders.
+
+As exercise
+
+To reinforce the skill, you can do several variations on the same theme.
+
+What is the maximum number of transfers required to get from any airport to any other?
+Tip 1: The first part of the request must contain all pairs of departure and arrival airports.
+Hint 2: the sign of the found path must be calculated separately for each pair of airports.
+
+Find the best route (from UKX to CNN) in terms of total flight duration (excluding waiting times for connections).
+Hint 1: it may turn out that this path is not optimal in terms of the number of transfers.
+Tip 2: you need to come up with a sign that further brute force is useless.
+
+Find the best route (from UKX to CNN) in terms of the total flight duration, taking into account the waiting time for transfers.
+Consider that we are ready for the first flight at the time bookings.now () - interval '20 days'.
+
+
+
