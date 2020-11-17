@@ -1,0 +1,635 @@
+#############################
+# POSTGRESQL DEMO DATABASE  #
+#############################
+
+#NOTE
+Air freight - Demo database description
+
+DOWNLOAD 
+
+We present you a demo database for PostgreSQL DBMS. In this document describes a data schema consisting of eight tables and several views. 
+As subject area selected air transportation in Russia. 
+
+The database can be used for example
+• for independent study of the SQL query language,
+• for the preparation of books, manuals and training courses on the SQL language,
+• to demonstrate the capabilities of PostgreSQL in articles and notes.
+
+When developing the demo database, we had several goals in mind:
+• data schema should be simple enough to be understood without special explanations,
+• at the same time, the data schema must be complex enough to allow building meaningful requests,
+• the database should be filled with data resembling real ones, with which it will be interesting to work with.
+
+The demo database is distributed under the PostgreSQL license.
+
+Installation
+There are three versions of the database available for download:
+• demo_small.zip (21 MB) - flight data for one month (database size 265 MB)
+• demo_medium.zip (62 MB) - flight data for three months (database size 666 MB)
+• demo_big.zip (232 MB) - flight data for the year (database size 2502 MB)
+
+A small database is suitable for writing queries, and it does not take up much space on disk. A large base will give you a feel for how requests behave on large
+data volumes, and think about optimization. The files contain a SQL script that creates the "demo" database and fills it with data (in fact, this is a pg_dump backup). 
+note that during installation, the existing database "demo" will be deleted and recreated! The database "demo" will be owned by the DBMS user who executed the script.
+
+Description of the circuit The main entity is bookings. Several passengers can be included in one booking, each of whom a separate ticket (tickets) is issued. 
+The ticket has a unique number and contains information about the passenger. As such, the passenger is not a separate entity. Like a name,
+so the number of the passenger's document can change over time, so it is impossible uniquely find all tickets for one person; for simplicity, we can assume that all
+the passengers are unique. A ticket includes one or more flights (ticket_flights). 
+Multiple flights can included in the ticket in cases when there is no direct flight connecting the points departure and destination (flight with transfers), 
+or when the ticket is taken "there and back". There is no hard constraint in the data schema, but it is assumed that all tickets are in one
+bookings have the same set of flights. Each flight (flights) goes from one airport (airports) to another. 
+Flights with one numbers have the same departure and destination points, but will differ in date departure. At check-in, 
+the passenger is issued a boarding pass (boarding_passes), in which the seat on the plane is indicated. A passenger can check in only for the flight that
+is on his ticket. The combination of flight and seat must be unique in order to prevent the issuance of two boarding passes per seat.
+The number of seats (seats) in the aircraft and their distribution by service class depends from a model aircraft (aircrafts) performing a flight. 
+It is assumed that each model the aircraft has only one cabin layout. The data schema does not control what places in boarding passes correspond to those available 
+on the plane (such a check can be done using table triggers or in app)
+
+Schema objects
+Relationship List
+       Name         | Type         | Small  | Medium  | Big     | Description
+------------------- + ------------ + -------+ --------+ ------- + -------------------
+  aircrafts         | table        | 16 kB  | 16 kB   | 16 kB   | Aircraft
+  airports          | table        | 48 kB  | 48 kB   | 48 kB   | Airports
+  boarding_passes   | table        | 31 MB  | 102 MB  | 427 MB  | Boarding passes
+  bookings          | table        | 13 MB  | 30 MB   | 105 MB  | Bookings
+  flights           | table        | 3 MB   | 6 MB    | 19 MB   | Flights
+  flights_v         | presentation | 0 kb   | 0 kB    | 0 kB    | Flights
+  routes            | mat. rep.    | 136 kB | 136 kB  | 136 kB  | Routes
+  seats             | table        | 88 kB  | 88 kB   | 88 kB   | Places
+  ticket_flights    | table        | 64 MB  | 145 MB  | 516 MB  | Flights
+  tickets           | table        | 47 MB  | 107 MB  | 381 MB  | Tickets
+  
+Bookings.aircrafts table
+Each aircraft model is identified by its three-digit code (aircraft_code). The name of the model (model) and the maximum flight range are also indicated. in kilometers (range).
+
+Column          | Type      | Modifiers       | Description
+--------------- + --------- + --------------- + --------- --------------------------
+  aircraft_code | char (3)  | NOT NULL        | Aircraft code, IATA
+  model         | text      | NOT NULL        | Airplane model
+  range         | integer   | NOT NULL        | Maximum flight range, km
+Indices:
+  PRIMARY KEY, btree (aircraft_code)
+Check constraints:
+  CHECK (range> 0)
+External links:
+  TABLE "flights" FOREIGN KEY (aircraft_code)
+  REFERENCES aircrafts (aircraft_code)
+  TABLE "seats" FOREIGN KEY (aircraft_code)
+  REFERENCES aircrafts (aircraft_code) ON DELETE CASCADE
+  
+Bookings.airports table
+The airport is identified by a three-letter code (airport_code) and has its own name (airport_name).
+There is no separate entity for the city, but the name (city) is indicated and can serve to identify the airports of one city. Latitude is also indicated
+(longitude), longitude (latitude) and time zone (timezone).
+
+Column          | Type      | Modifiers       | Description
+--------------- + --------- + --------------- + ---------- ---------------------
+  airport_code  | char (3)  | NOT NULL        | Airport Code
+  airport_name  | text      | NOT NULL        | Airport name
+  city          | text      | NOT NULL        | City
+  longitude     | float     | NOT NULL        | Airport coordinates: longitude
+  latitude      | float     | NOT NULL        | Airport coordinates: latitude
+  timezone      | text      | NOT NULL        | Airport time zone
+Indices:
+  PRIMARY KEY, btree (airport_code)
+External links:
+  TABLE "flights" FOREIGN KEY (arrival_airport)
+  REFERENCES airports (airport_code)
+  TABLE "flights" FOREIGN KEY (departure_airport)
+  REFERENCES airports (airport_code)
+  
+Bookings.boarding_passes table
+When checking in for a flight, which is possible one day before the scheduled departure date, the passenger is issued a boarding pass. 
+It is identified in the same way as the flight - ticket number and flight number. Boarding passes are assigned sequential numbers (boarding_no) in order
+check-in passengers for the flight (this number will be unique only within this flight). The boarding pass indicates the seat number (seat_no).  
+
+Column        | Type          | Modifiers       | Description
+------------- + ------------- + --------------- + --------------------
+  ticket_no   | char (13)     | NOT NULL        | Ticket number
+  flight_id   | integer       | NOT NULL        | Flight ID
+  boarding_no | integer       | NOT NULL        | Boarding pass number
+  seat_no     | varchar (4)   | NOT NULL        | Place number
+Indices:
+  PRIMARY KEY, btree (ticket_no, flight_id)
+  UNIQUE CONSTRAINT, btree (flight_id, boarding_no)
+  UNIQUE CONSTRAINT, btree (flight_id, seat_no)
+Foreign key restrictions:
+  FOREIGN KEY (ticket_no, flight_id)
+  REFERENCES ticket_flights (ticket_no, flight_id)
+
+Bookings.bookings table
+The passenger in advance (book_date, maximum one month before the flight) books a ticket for himself and, possibly a few other passengers. 
+The booking is identified by a number (book_ref, a six-digit combination of letters and numbers).
+The total_amount field stores the total cost of all flights included in the booking. passengers.
+
+ Column         | Type            | Modifiers       | Description
+--------------- + --------------- + --------------- + ---- -----------------------
+ book_ref       | char (6)        | NOT NULL        | Booking number
+ book_date      | timestamptz     | NOT NULL        | Booking date
+ total_amount   | numeric (10,2)  | NOT NULL        | Full booking amount
+Indices:
+ PRIMARY KEY, btree (book_ref)
+External links:
+ TABLE "tickets" FOREIGN KEY (book_ref) REFERENCES bookings (book_ref)
+ 
+ Bookings.flights table
+The natural key of the flights table consists of two fields - flight number (flight_no) and date departures (scheduled_departure). 
+To make foreign keys to this table more compact, the surrogate key (flight_id) is used as the primary key.
+The flight always connects two points - the airports of departure (departure_airport) and arrival (arrival_airport). 
+There is no such thing as a “connecting flight”: if from one airport to another there is no direct flight, the ticket simply includes several necessary flights.
+Each flight has a scheduled departure date and time (scheduled_departure) and arrival (scheduled_arrival). 
+Real time of departure (actual_departure) and arrival (actual_arrival) may differ: usually not much, but sometimes for several hours if the flight is delayed.
+The flight status (status) can take one of the following values:
+• Scheduled The flight is available for booking. This happens one month before the scheduled departure date; before that, the flight record does not exist in the database.
+• On Time The flight is available for check-in (one day before the scheduled departure date) and has not been delayed. 
+• Delayed The flight is available for check-in (one day before the scheduled departure date), but delayed.
+• Departed The plane has already taken off and is in the air.
+• Arrived The plane arrived at its destination.
+• Canceled Flight canceled.
+
+Column                | Type          | Modifiers       | Description
+--------------------- + ------------- + --------------- + -----------------------------
+ flight_id            | serial        | NOT NULL        | Flight ID
+ flight_no            | char (6)      | NOT NULL        | Flight number
+ scheduled_departure  | timestamptz   | NOT NULL        | Scheduled departure time
+ scheduled_arrival    | timestamptz   | NOT NULL        | Scheduled arrival time
+ departure_airport    | char (3)      | NOT NULL        | Departure airport
+ arrival_airport      | char (3)      | NOT NULL        | Arrival airport
+ status               | varchar (20)  | NOT NULL        | Flight status
+ aircraft_code        | char (3)      | NOT NULL        | Aircraft code, IATA
+ actual_departure     | timestamptz   |                 | Actual departure time
+ actual_arrival       | timestamptz   |                 | Actual time of arrival
+Indices:
+ PRIMARY KEY, btree (flight_id)
+ UNIQUE CONSTRAINT, btree (flight_no, scheduled_departure)
+Check constraints:
+ CHECK (scheduled_arrival> scheduled_departure)
+ CHECK ((actual_arrival IS NULL)
+ OR ((actual_departure IS NOT NULL AND actual_arrival IS NOT NULL)
+ AND (actual_arrival> actual_departure)))
+ CHECK (status IN ('On Time', 'Delayed', 'Departed',
+ 'Arrived', 'Scheduled', 'Canceled'))
+Foreign key constraints:
+ FOREIGN KEY (aircraft_code)
+ REFERENCES aircrafts (aircraft_code)
+ FOREIGN KEY (arrival_airport)
+ REFERENCES airports (airport_code)
+ FOREIGN KEY (departure_airport)
+ REFERENCES airports (airport_code)
+External links:
+ TABLE "ticket_flights" FOREIGN KEY (flight_id)
+ REFERENCES flights (flight_id)
+ 
+ Bookings.seats table
+The seats define the interior layout of each model. Each seat is identified by its own number (seat_no) and has an assigned service class (fare_conditions) - Economy,
+Comfort or Business.
+
+  Column          | Type          | Modifiers       | Description
+----------------- + ------------- + --------------- + --- -----------------
+  aircraft_code   | char (3)      | NOT NULL        | Aircraft code, IATA
+  seat_no         | varchar (4)   | NOT NULL        | Place number
+  fare_conditions | varchar (10)  | NOT NULL        | Service class
+Indices:
+  PRIMARY KEY, btree (aircraft_code, seat_no)
+Check constraints:
+  CHECK (fare_conditions IN ('Economy', 'Comfort', 'Business'))
+Foreign key constraints:
+  FOREIGN KEY (aircraft_code)
+  REFERENCES aircrafts (aircraft_code) ON DELETE CASCADE
+  
+Bookings.ticket_flights table
+The flight connects the ticket with the flight and is identified by their numbers. For each flight, its cost (amount) and class of service are indicated
+(fare_conditions).
+
+ Column           | Type            | Modifiers       | Description
+----------------- + --------------- + --------------- + - --------------------
+ ticket_no        | char (13)       | NOT NULL        | Number of ticket
+ flight_id        | integer         | NOT NULL        | Flight ID
+ fare_conditions  | varchar (10)    | NOT NULL        | Service class
+ amount           | numeric (10,2)  | NOT NULL        | Flight cost
+Indices:
+ PRIMARY KEY, btree (ticket_no, flight_id)
+Check constraints:
+ CHECK (amount> = 0)
+ CHECK (fare_conditions IN ('Economy', 'Comfort', 'Business'))
+Foreign key constraints:
+ FOREIGN KEY (flight_id) REFERENCES flights (flight_id)
+ FOREIGN KEY (ticket_no) REFERENCES tickets (ticket_no)
+External links:
+ TABLE "boarding_passes" FOREIGN KEY (ticket_no, flight_id)
+ REFERENCES ticket_flights (ticket_no, flight_id)  
+ 
+Bookings.tickets table
+The ticket has a unique 13-digit number (ticket_no). The ticket contains the passenger ID (passenger_id) - the document number, 
+identifying person - his last name and first name (passenger_name) and contact information (contact_date).
+Neither passenger ID nor name are permanent (you can change your passport,
+you can change your last name), so you can definitely find all tickets for the same passenger impossible.
+ 
+ Column           | Type          | Modifiers     | Description
+----------------- + ------------- + ------------- + -------------------------
+ ticket_no        | char (13)     | NOT NULL      | Number of ticket
+ book_ref         | char (6)      | NOT NULL      | Booking number
+ passenger_id     | varchar (20)  | NOT NULL      | Passenger ID
+ passenger_name   | text          | NOT NULL      | Passenger name
+ contact_data     | jsonb   '     |               | Passenger contact details
+Indices:
+ PRIMARY KEY, btree (ticket_no)
+Foreign key constraints:
+ FOREIGN KEY (book_ref) REFERENCES bookings (book_ref)
+External links:
+ TABLE "ticket_flights" FOREIGN KEY (ticket_no) REFERENCES tickets (ticket_no) 
+ 
+ View "bookings.flights_v"
+The flights_v view was created above the flights table, containing an additional information:
+• decryption of data about the airport of departure (departure_airport, departure_airport_name, departure_city),
+• decryption of data about the airport of arrival (arrival_airport, arrival_airport_name, arrival_city),
+• local departure time (scheduled_departure_local, actual_departure_local),
+• local time of arrival (scheduled_arrival_local, actual_arrival_local),
+• flight duration (scheduled_duration, actual_duration).
+
+ Column                     | Type          | Description
+--------------------------- + ------------- + -------- ------------------------------
+ flight_id                  | integer       | Flight ID
+ flight_no                  | char (6)      | Flight number
+ scheduled_departure        | timestamptz   | Scheduled departure time
+ scheduled_departure_local  | timestamp     | Scheduled departure time,
+                            |               | local time at the point of departure
+ scheduled_arrival          | timestamptz   | Scheduled arrival time
+ scheduled_arrival_local    | timestamp     | Arrival time on schedule,
+                            |               | local time at the point of arrival
+ scheduled_duration         | interval      | Planned flight duration
+ departure_airport          | char (3)      | Departure airport code
+ departure_airport_name     | text          | Departure airport name
+ departure_city             | text          | Departure city
+ arrival_airport            | char (3)      | Arrival airport code
+ arrival_airport_name       | text          | Arrival airport name
+ arrival_city               | text          | Arrival city
+ status                     | varchar (20)  | Flight status
+ aircraft_code              | char (3)      | Aircraft code, IATA
+ actual_departure           | timestamptz   | Actual departure time
+ actual_departure_local     | timestamp     | Actual departure time,
+                            |               | local time at the point of departure
+ actual_arrival             | timestamptz   | Actual time of arrival
+ actual_arrival_local       | timestamp     | Actual time of arrival,
+                            |               | local time at the point of arrival
+ actual_duration            | interval      | Actual flight duration
+ 
+ Materialized view bookings.routes
+The flights table contains redundancy: information could be extracted from it about the route (flight number, airports of departure and destination), which does not depend
+from specific flight dates. This information is what makes up the routes materialized view.
+
+ Column                 | Type        | Description
+----------------------- + ----------- + -----------------------------------
+ flight_no              | char (6)    | Flight number
+ departure_airport      | char (3)    | Departure airport code
+ departure_airport_name | text        | Departure airport name
+ departure_city         | text        | Departure city
+ arrival_airport        | char (3)    | Arrival airport code
+ arrival_airport_name   | text        | Arrival airport name
+ arrival_city           | text        | Arrival city
+ aircraft_code          | char (3)    | Aircraft code, IATA
+ duration               | interval    | Flight duration
+ days_of_week           | integer []  | Days of the week with flights
+Now function
+The demo database contains a temporary "slice" of the data - as if in some the moment the real system was backed up. For example, if some flight
+has the Departed status, which means that at the time of backup the aircraft took off and was in the air. The slice position is stored in the bookings.now () function. 
+It can be used in requests where the now () function would be used in ordinary life. In addition, the value of this function determines the version of the demo database.
+
+Using Scheme bookings
+All of the demo database objects are in the bookings schema. It means that when referring to objects, you either need to explicitly specify the schema name (for example:
+bookings.flights), or first change the configuration parameter search_path (for example: SET search_path = bookings, public;). 
+However, the bookings.now function needs to explicitly specify the schema anyway, so that distinguish it from the standard now function. 
+10 request examples
+To get a better understanding of the contents of the demo database, see on the results of a few simple queries.
+The results below were obtained for the small database version (demo_small) dated October 13, 2016. If your system requests other data,
+check the demo base version (bookings.now function). Minor deviations may be due to local time other than Moscow, and localization settings.
+
+All flights are operated by several types of aircraft:
+
+SELECT * FROM aircrafts;
+
+  aircraft_code | model                 | range
+--------------- + --------------------- + -------
+  773           | Boeing 777-300        | 11100
+  763           | Boeing 767-300        | 7900
+  SU9           | Sukhoi SuperJet-100   | 3000
+  320           | Airbus A320-200       | 5700
+  321           | Airbus A321-200       | 5600
+  319           | Airbus A319-100       | 6700
+  733           | Boeing 737-300        | 4200
+  CN1           | Cessna 208 Caravan    | 1200
+  CR2           | Bombardier CRJ-200    | 2700
+(9 lines)
+
+A list of seats in the cabin is maintained for each aircraft type. For example, here's where you can accommodate in a small Cessna 208 Caravan:
+
+SELECT a.aircraft_code, 
+a.model,
+ s.seat_no,
+ s.fare_conditions
+FROM aircrafts a
+ JOIN seats s ON a.aircraft_code = s.aircraft_code
+WHERE a.model = 'Cessna 208 Caravan'
+ORDER BY s.seat_no;
+
+aircraft_code   | model                 | seat_no   | fare_conditions
+--------------- + --------------------- + --------- + --- --------------
+ CN1            | Cessna 208 Caravan    | 1A        | Economy
+ CN1            | Cessna 208 Caravan    | 1B        | Economy
+ CN1            | Cessna 208 Caravan    | 2A        | Economy
+ CN1            | Cessna 208 Caravan    | 2B        | Economy
+ CN1            | Cessna 208 Caravan    | 3A        | Economy
+ CN1            | Cessna 208 Caravan    | 3B        | Economy
+ CN1            | Cessna 208 Caravan    | 4A        | Economy
+ CN1            | Cessna 208 Caravan    | 4B        | Economy
+ CN1            | Cessna 208 Caravan    | 5A        | Economy
+ CN1            | Cessna 208 Caravan    | 5B        | Economy
+ CN1            | Cessna 208 Caravan    | 6A        | Economy
+ CN1            | Cessna 208 Caravan    | 6B        | Economy
+(12 lines)
+
+Larger aircraft have more seating in different classes service:
+
+SELECT s2.aircraft_code, string_agg (s2.fare_conditions || '(' || s2.num :: text || ')', ',') as fare_conditions
+FROM (SELECT s.aircraft_code, s.fare_conditions, count (*) as num FROM seats s GROUP BY s.aircraft_code, s.fare_conditions ORDER BY s.aircraft_code, s.fare_conditions) s2
+GROUP BY s2.aircraft_code ORDER BY s2.aircraft_code;
+
+ aircraft_code  | fare_conditions
+--------------- + --------------------------------------------
+ 319            | Business (20), Economy (96)
+ 320            | Business (20), Economy (120)
+ 321            | Business (28), Economy (142)
+ 733            | Business (12), Economy (118)
+ 763            | Business (30), Economy (192)
+ 773            | Business (30), Comfort (48), Economy (324)
+ CN1            | Economy (12)
+ CR2            | Economy (50)
+ SU9            | Business (12), Economy (85)
+(9 lines)
+
+The database contains a list of airports in almost all major cities in Russia. Most cities only have one airport. The exceptions are:
+
+SELECT a.airport_code as code,
+ a.airport_name,
+ a.city,
+ a.longitude,
+ a.latitude,
+ a.timezone
+FROM airports a
+WHERE a.city IN (
+ SELECT aa.city
+ FROM airports aa
+ GROUP BY aa.city
+ HAVING COUNT (*)> 1)
+ORDER BY a.city, a.airport_code;
+
+ code   | airport_name          | city        | longitude | latitude    |  timezone
+------- + --------------------- + ----------- + --------- + ----------- + ---------------
+ DME    | Domodedovo            | Moscow      | 37.906111 | 55.408611   | Europe / Moscow
+ SVO    | Sheremetyevo          | Moscow      | 37.414589 | 55.972642   | Europe / Moscow
+ VKO    | Vnukovo               | Moscow      | 37.261486 | 55.591531   | Europe / Moscow
+ ULV    | Baratayevka           | Ulyanovsk   | 48.2267   | 54.268299   | Europe / Samara
+ ULY    | Ulyanovsk-Vostochny   | Ulyanovsk   | 48.8027   | 54.401      | Europe / Samara
+(5 lines)
+
+To understand where and where you can fly from, it is convenient to use the materialized the routes view, which aggregates information about all flights. For example,
+where, on what days of the week and how long it takes to fly from Volgograd:
+
+SELECT r.arrival_city as city,
+  r.arrival_airport as airport_code,
+  r.arrival_airport_name as airport_name,
+  r.days_of_week,
+  r.duration
+FROM routes r
+WHERE r.departure_city = 'Volgograd';
+
+city              | airport_code    | airport_name      | days_of_week    | duration
+----------------- + --------------- + ----------------- + --------------- + ----------
+ Moscow           | SVO             | Sheremetyevo      | {1,2,3,4,5,6,7} | 01:15:00
+ Chelyabinsk      | CEK             | Chelyabinsk       | {1,2,3,4,5,6,7} | 01:50:00
+ Rostov-on-Don    | ROV             | Rostov-on-Don     | {1,2,3,4,5,6,7} | 00:30:00
+ Moscow           | VKO             | Vnukovo           | {1,2,3,4,5,6,7} | 01:10:00
+ Cheboksary       | CSY             | Cheboksary        | {1,2,3,4,5,6,7} | 02:45:00
+ Tomsk            | TOF             | Bogashevo         | {3}             | 03:50:00
+(6 lines)
+
+The database was formed at the point in time returned by the function bookings.now ():
+
+SELECT bookings.now () as now;
+ now
+------------------------
+ 2016-10-13 17: 00: 00 + 03
+
+With respect to this particular time point, all flights are divided into past and future:
+
+SELECT status,
+ count (*) as count,
+ min (scheduled_departure) as min_scheduled_departure,
+ max (scheduled_departure) as max_scheduled_departure
+FROM flights
+GROUP BY status
+ORDER BY min_scheduled_departure;
+
+status      | count   | min_scheduled_departure    | max_scheduled_departure
+----------- + ------- + -------------------------- + ---------------------------
+ Arrived    | 16707   | 2016-09-13 00: 50: 00 + 03 | 2016-10-13 16: 25: 00 + 03
+ Canceled   | 414     | 2016-09-16 10: 35: 00 + 03 | 2016-11-12 19: 55: 00 + 03
+ Departed   | 58      | 2016-10-13 08: 55: 00 + 03 | 2016-10-13 16: 50: 00 + 03
+ Delayed    | 41      | 2016-10-13 14: 15: 00 + 03 | 2016-10-14 16: 25: 00 + 03
+ On Time    | 518     | 2016-10-13 16: 55: 00 + 03 | 2016-10-14 17: 00: 00 + 03
+ Scheduled  | 15383   | 2016-10-14 17: 05: 00 + 03 | 2016-11-12 19: 40: 00 + 03
+(6 lines)
+
+We will find the nearest flight departing from Yekaterinburg to Moscow. Use for this the flight table is not very convenient, 
+since it does not contain information about the departure cities and arrival. So let's use the flights_v view:
+\ x
+SELECT f. *
+FROM flights_v f
+WHERE f.departure_city = 'Yekaterinburg'
+AND f.arrival_city = 'Moscow'
+AND f.scheduled_departure> bookings.now ()
+ORDER BY f.scheduled_departure
+LIMIT 1;
+
+- [RECORD 1] ------------ + -----------------------
+flight_id                 | 10927
+flight_no                 | PG0226
+scheduled_departure       | 2016-10-14 07: 10: 00 + 03
+scheduled_departure_local | 2016-10-14 09:10:00
+scheduled_arrival         | 2016-10-14 08: 55: 00 + 03
+scheduled_arrival_local   | 2016-10-14 08:55:00
+scheduled_duration        | 01:45:00
+departure_airport         | SVX
+departure_airport_name    | Koltsovo
+departure_city            | Ekaterinburg
+arrival_airport           | SVO
+arrival_airport_name      | Sheremetyevo
+arrival_city              | Moscow
+status                    | On Time
+aircraft_code             | 773
+actual_departure          |
+actual_departure_local    |
+actual_arrival            |
+actual_arrival_local      |
+actual_duration           |
+
+Please note that flights_v is not limited to Moscow time, but also the local time at the airports of departure and arrival.
+
+Bookings 
+Each booking can include multiple tickets, one for each passenger. The ticket, in turn, can include several flights. Full information about booking is in three tables: 
+bookings, tickets and ticket_flights. We will find several reservations with the highest value:
+
+SELECT *
+FROM bookings
+ORDER BY total_amount desc
+LIMIT 10;
+
+ book_ref   | book_date | total_amount
+----------- + ------------------------ + --------------
+ 3B54BB     | 2016-09-02 16: 08: 00 + 03 | 1204500.00
+ 3AC131     | 2016-09-28 00: 06: 00 + 03 | 1087100.00
+ 65A6EA     | 2016-08-31 05: 28: 00 + 03 | 1065600.00
+ D7E9AA     | 2016-10-06 04: 29: 00 + 03 | 1062800.00
+ EF479E     | 2016-09-30 14: 58: 00 + 03 | 1035100.00
+ 521C53     | 2016-09-05 08: 25: 00 + 03 | 985500.00
+ 514CA6     | 2016-09-24 04: 07: 00 + 03 | 955000.00
+ D70BD9     | 2016-09-02 11: 47: 00 + 03 | 947500.00
+ EC7EDA     | 2016-08-30 15: 13: 00 + 03 | 946800.00
+ 8E4370     | 2016-09-25 01: 04: 00 + 03 | 945700.00
+(10 lines)
+
+Let's see what tickets the booking with code 521C53 consists of:
+
+SELECT ticket_no,
+ passenger_id,
+ passenger_name
+FROM tickets
+WHERE book_ref = '521C53';
+
+ ticket_no      | passenger_id    | passenger_name
+--------------- + --------------- + --------------------
+ 0005432661914  | 8234 547529     | IVAN IVANOV
+ 0005432661915  | 2034 201228     | ANTONINA KUZNECOVA
+(2 lines)
+
+If we are interested in what flights are included in Antonina Kuznetsova's ticket, then this can be find out by request:
+
+SELECT to_char (f.scheduled_departure, 'DD.MM.YYYY') as when,
+ f.departure_city || '(' || f.departure_airport || ')' as departure,
+ f.arrival_city || '(' || f.arrival_airport || ')' as arrival,
+ tf.fare_conditions as class,
+ tf.amount
+FROM ticket_flights tf
+ JOIN flights_v f ON tf.flight_id = f.flight_id
+WHERE tf.ticket_no = '0005432661915'
+ORDER BY f.scheduled_departure;
+
+ when         | departure             | arrival               | class       | amount
+------------- + --------------------- + --------------------- + ----------- + -----------
+ 26.09.2016   | Moscow (SVO)          | Anadyr (DYR)          | Business    | 185300.00
+ 30.09.2016   | Anadyr (DYR)          | Khabarovsk (KHV)      | Business    | 92200.00
+ 01.10.2016   | Khabarovsk (KHV)      | Blagoveshchensk (BQS) | Business    | 18000.00
+ 06.10.2016   | Blagoveshchensk (BQS) | Khabarovsk (KHV)      | Business    | 18000.00
+ 10.10.2016   | Khabarovsk (KHV)      | Anadyr (DYR)          | Economy     | 30700.00
+ 15.10.2016   | Anadyr (DYR)          | Moscow (SVO)          | Business    | 185300.00
+(6 lines)
+
+As you can see, the high cost of booking is due to the large number of flights. long distance business class.
+Some of the flights in this ticket have dates earlier than the bookings.now () value: 
+this means that they have already been completed. And the last flight is still ahead. 
+After registering for the flight is issued a boarding pass indicating the seat on the plane. 
+We can watch exactly what places Antonina occupied (note the outer left join with table boarding_passes):
+
+SELECT to_char (f.scheduled_departure, 'DD.MM.YYYY') as when,
+ f.departure_city || '(' || f.departure_airport || ')' as departure,
+ f.arrival_city || '(' || f.arrival_airport || ')' as arrival,
+ f.status,
+ bp.seat_no
+FROM ticket_flights tf
+ JOIN flights_v f ON tf.flight_id = f.flight_id
+ LEFT JOIN boarding_passes bp ON tf.flight_id = bp.flight_id
+ AND tf.ticket_no = bp.ticket_no
+WHERE tf.ticket_no = '0005432661915'
+ORDER BY f.scheduled_departure;
+
+when        | departure             | arrival               | status      | seat_no
+----------- + --------------------- + --------------------- + ----------- + ---------
+ 26.09.2016 | Moscow (SVO)          | Anadyr (DYR)          | Arrived     | 5C
+ 30.09.2016 | Anadyr (DYR)          | Khabarovsk (KHV)      | Arrived     | 1D
+ 01.10.2016 | Khabarovsk (KHV)      | Blagoveshchensk (BQS) | Arrived     | 2C
+ 06.10.2016 | Blagoveshchensk (BQS) | Khabarovsk (KHV)      | Arrived     | 2D
+ 10.10.2016 | Khabarovsk (KHV)      | Anadyr (DYR)          | Arrived     | 20B
+ 15.10.2016 | Anadyr (DYR)          | Moscow (SVO)          | Scheduled   |
+(6 lines)
+
+New booking
+Let's try to send Alexander Nikolaevich Radishchev along the route that brought him fame. 
+Free and business class, of course. Let's first find "tomorrow" flight, and we will take care of the return in a week
+
+BEGIN;
+INSERT INTO bookings (book_ref, book_date, total_amount) VALUES ('_QWE12', bookings.now (), 0);
+INSERT INTO tickets (ticket_no, book_ref, passenger_id, passenger_name) VALUES ('_000000000001', '_QWE12', '1749 051790', 'ALEKSANDR RADISHCHEV');
+INSERT INTO ticket_flights (ticket_no, flight_id, fare_conditions, amount) VALUES ('_000000000001', 9720, 'Business', 0), ('_000000000001', 6662, 'Business', 0);
+COMMIT;
+
+We start identifiers with an underscore so as not to overlap the range values present in the database.
+We will immediately check in for tomorrow's flight:
+
+INSERT INTO boarding_passes (ticket_no, flight_id, boarding_no, seat_no) VALUES ('_000000000001', 9720, 1, '1A');
+
+Let's check the information about the created booking:
+
+SELECT b.book_ref,
+ t.ticket_no,
+ t.passenger_id,
+ t.passenger_name,
+ tf.fare_conditions,
+ tf.amount,
+ f.scheduled_departure_local,
+ f.scheduled_arrival_local,
+ f.departure_city || '(' || f.departure_airport || ')' as departure,
+ f.arrival_city || '(' || f.arrival_airport || ')' as arrival,
+ f.status,
+ bp.seat_no
+FROM bookings b
+ JOIN tickets t ON b.book_ref = t.book_ref
+ JOIN ticket_flights tf ON tf.ticket_no = t.ticket_no
+ JOIN flights_v f ON tf.flight_id = f.flight_id
+ LEFT JOIN boarding_passes bp ON tf.flight_id = bp.flight_id
+ AND tf.ticket_no = bp.ticket_no
+WHERE b.book_ref = '_QWE12'
+ORDER BY t.ticket_no, f.scheduled_departure;
+
+- [RECORD 1] -------------- + ---------------------
+book_ref                    | _QWE12
+ticket_no                   | _000000000001
+passenger_id                | 1749 051790
+passenger_name              | ALEKSANDR RADISHCHEV
+fare_conditions             | Business
+amount                      | 0.00
+scheduled_departure_local   | 2016-10-14 08:45:00
+scheduled_arrival_local     | 2016-10-14 09:35:00
+departure                   | St. Petersburg (LED)
+arrival                     | Moscow (SVO)
+status                      | On Time
+seat_no                     | 1A
+
+-[ RECORD 2 ]---------------+---------------------
+book_ref                    | _QWE12
+ticket_no                   | _000000000001
+passenger_id                | 1749 051790
+passenger_name              | ALEKSANDR RADISHCHEV
+fare_conditions             | Business
+amount                      | 0.00
+scheduled_departure_local   | 2016-10-21 09:20:00
+scheduled_arrival_local     | 2016-10-21 10:10:00
+departure                   | Moscow (SVO)
+arrival                     | St. Petersburg (LED)
+status                      | Scheduled
+seat_no                     |
+
+Hopefully, these few simple examples have helped provide an idea. about the contents of the demo database
+
+
