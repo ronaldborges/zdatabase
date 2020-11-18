@@ -954,6 +954,214 @@ live_items   | dead_items
 
 And so on. But you can hardly understand the meaning of all the available fields without studying the source code.
 
+---------
+- Btree -
+---------
+
+Device
+
+The btree index, aka B-tree, is suitable for sorted data. In other words, the greater than, greater than or equal, less than, less than or equal, 
+and equal operators must be defined for the data type. Note that the same data can sometimes be sorted in different ways, 
+which brings us back to the concept of an operator family.
+
+As always, the B-tree index records are packed into pages. In leaf pages, these records contain indexed data (keys) and table row references (TIDs); 
+in internal pages, each record refers to a child index page and contains the minimum key value in that page.
+
+B-trees have several important properties:
+
+ * They are balanced, that is, any leaf page is separated from the root by the same number of internal pages. 
+   Therefore, the search for any value takes the same time.
+ * They are highly branched, that is, each page (usually 8 KB) contains many (hundreds) of TIDs at once. As a result, the depth of B-trees is shallow; 
+   in practice, up to 4–5 for very large tables.
+ * The data in the index is sorted in non-decreasing order (both between pages and within each page), 
+   and pages at the same level are linked in a bidirectional list. Therefore, 
+   we can get an ordered data set by simply traversing the list in one direction or the other, without going back to the root each time.
+
+Here is a schematic example of an index on a single field with integer keys.
+https://mega.nz/file/AwkGBYia#EzRFw9sdSBHF7iDZ44tw_t1hEr-_bLXB7GLeYWYN1sk
+
+At the very beginning of the file is a meta page that refers to the root of the index. 
+Below the root are internal nodes; the bottom row is leaf pages. Down arrows symbolize links from leaf nodes to table rows (TIDs).
+
+Equality search
+
+Consider finding a value in a tree using the "indexed-field = expression" condition. Let's say we are interested in key 49.
+https://mega.nz/file/Y4k2GYZL#YG9rdbyE9V_TWzdfpKGV26RL_VsvgwS7UCBsGQECVRg
+
+The search starts from the root node, and we need to determine which of the child nodes to go down to. Knowing the keys (4, 32, 64) in the root node, 
+we thereby understand the ranges of values in the child nodes. Since 32 ≤ 49 <64, we need to descend to the second child node. 
+Then the same procedure is repeated recursively until a leaf node is reached, from which the necessary TIDs can already be obtained.
+
+In reality, this seemingly simple procedure is complicated by a number of circumstances. For example, an index may contain non-unique keys, 
+and there may be enough identical values that they do not fit on one page. Continuing our example, 
+it seems that from the internal node we should go down the link that leads from the value 49. But, as you can see in the picture, 
+this way we will skip one of the keys 49 in the previous leaf page. Therefore, when we find an exact key equality on the inner page, 
+we have to go down one position to the left, and then look through the index records of the lower level from left to right in search of the key of interest.
+
+(Another difficulty is caused by the fact that during the search, other processes can change the data: the tree can be rebuilt, 
+pages can be split into two, etc. All algorithms are built in such a way that these simultaneous actions do not interfere with each other and 
+do not require unnecessary we will not go into these details.)
+
+Inequality search
+
+When searching for "indexed-field ≤ expression" (or "indexed-field ≥ expression"), 
+first find the value in the index by the equality condition "indexed-field = expression" (if any), 
+and then move through the leaf pages to end in the desired direction.
+The figure illustrates this process for the condition n ≤ 35:
+https://mega.nz/file/goMH0KYa#4LBkWOJoTHqPi7VEaFmkUr-4wBnU7si80TqX1l29_K0
+
+The operators "greater than" and "less" are supported in the same way, you just need to exclude the originally found value.
+
+Range search
+
+When searching in the range "expression1 ≤ indexed-field ≤ expression2", we find the value by the condition "indexed-field = expression1", 
+and then move through the leaf pages while the condition "indexed-field ≤ expression2" is satisfied. Or vice versa: 
+we start with the second expression and move in the other direction until we reach the first.
+
+The figure shows the process for condition 23 ≤ n ≤ 64:
+https://mega.nz/file/4oFVnaCS#6myiocGQ5M4wT4P8FSO8r-Odm-4OnUxAXJembC-XNgY
+
+Example
+
+Let's see how query plans look like with an example. As usual, we will use the demo database and this time we will take the aircraft table. 
+There are only nine rows in it, and the planner will not use the index of its own accord - after all, the entire table fits into one page. 
+But we are interested in it because of its clarity.
+
+demo = # select * from aircrafts;
+aircraft_code   | model                 | range
+--------------- + --------------------- + -------
+773             | Boeing 777-300        | 11100
+763             | Boeing 767-300        | 7900
+SU9             | Sukhoi SuperJet-100   | 3000
+320             | Airbus A320-200       | 5700
+321             | Airbus A321-200       | 5600
+319             | Airbus A319-100       | 6700
+733             | Boeing 737-300        | 4200
+CN1             | Cessna 208 Caravan    | 1200
+CR2             | Bombardier CRJ-200    | 2700
+(9 rows)
+
+demo = # create index on aircrafts (range);
+CREATE INDEX
+
+demo = # set enable_seqscan = off;
+SET
+
+(Or explicitly create index on aircrafts using btree (range), but the B-tree is built by default.)
+
+Equality search:
+
+demo = # explain (costs off) select * from aircrafts where range = 3000;
+QUERY PLAN
+-------------------------------------------------- -
+Index Scan using aircrafts_range_idx on aircrafts
+Index Cond: (range = 3000)
+(2 rows)
+
+Inequality search:
+
+demo = # explain (costs off) select * from aircrafts where range <3000;
+QUERY PLAN
+-------------------------------------------------- -
+Index Scan using aircrafts_range_idx on aircrafts
+Index Cond: (range <3000)
+(2 rows)
+
+And by range:
+
+demo = # explain (costs off) select * from aircrafts where range between 3000 and 5000;
+QUERY PLAN
+-------------------------------------------------- ---
+Index Scan using aircrafts_range_idx on aircrafts
+Index Cond: ((range> = 3000) AND (range <= 5000))
+(2 rows)
+
+Sorting
+
+It is worth emphasizing again that for any scan method (index, index-only, bitmap), the btree accessor returns ordered data, 
+as can be clearly seen in the above figures.
+Therefore, if there is an index on a table by a sort condition, the optimizer will take into account both possibilities: 
+accessing the table by index and automatically retrieving sorted data, or sequential reading of the table and then sorting the result.
+
+The sort order
+
+The sort order can be explicitly specified when creating an index. For example, a flight range index could be created like this:
+
+demo = # create index on aircrafts (range desc);
+
+In this case, large values would appear on the left in the tree, and smaller values on the right. 
+Why would you need it if you can walk through the indexed values both in one direction and in the other?
+
+The reason is multi-column indices. Let's create a view that will show the aircraft models and the conventional division into short, 
+medium and long haul vessels:
+
+demo = # create view aircrafts_v as
+select model,
+case
+when range <4000 then 1
+when range <10000 then 2
+else 3
+end as class
+from aircrafts;
+CREATE VIEW
+
+demo = # select * from aircrafts_v;
+model                 | class
+--------------------- + -------
+Boeing 777-300        | 3
+Boeing 767-300        | 2
+Sukhoi SuperJet-100   | 1
+Airbus A320-200       | 2
+Airbus A321-200       | 2
+Airbus A319-100       | 2
+Boeing 737-300        | 2
+Cessna 208 Caravan    | 1
+Bombardier CRJ-200    | 1
+(9 rows)
+
+And create an index (using an expression):
+
+demo = # create index on aircrafts (
+(case when range <4000 then 1 when range <10000 then 2 else 3 end), model);
+CREATE INDEX
+
+We can now use this index to get the data sorted by both columns in ascending order:
+
+demo = # select class, model from aircrafts_v order by class, model;
+class   | model
+------- + ---------------------
+1       | Bombardier CRJ-200
+1       | Cessna 208 caravan
+1       | Sukhoi SuperJet-100
+2       | Airbus A319-100
+2       | Airbus A320-200
+2       | Airbus A321-200
+2       | Boeing 737-300
+2       | Boeing 767-300
+3       | Boeing 777-300
+(9 rows)
+
+demo = # explain (costs off) select class, model from aircrafts_v order by class, model;
+QUERY PLAN
+-------------------------------------------------- ------
+Index Scan using aircrafts_case_model_idx on aircrafts
+(1 row)
+
+Similarly, you can execute a query sorted in descending order:
+
+demo = # select class, model from aircrafts_v order by class desc, model desc;
+class   | model
+------- + ---------------------
+3       | Boeing 777-300
+2       | Boeing 767-300
+2       | Boeing 737-300
+2       | Airbus A321-200
+2       | Airbus A320-200
+2       | Airbus A319-100
+1       | Sukhoi SuperJet-100
+1       | Cessna 208 caravan
+1       | Bombardier CRJ-200
+(9 rows)
 
 
 
