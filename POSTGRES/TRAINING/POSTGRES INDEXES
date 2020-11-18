@@ -1748,4 +1748,73 @@ The first element is technical in nature and sets the upper bound for the key va
 and the data itself starts from the second element. You can see that the leftmost child is block 163, then block 323, and so on. Which, 
 in turn, can also be studied using these same functions.
 
+--------
+- GiST -
+--------
+
+GiST is short for generalized search tree. This is a balanced search tree, just like the b-tree discussed earlier.
+
+What's the difference? The b-tree index is tightly tied to the semantics of comparison: support for the operators "greater than", "less", "equal" 
+is all it can do (but it can do very well!). But modern databases also store such data types for which these operators simply do not make sense: geodata, 
+text documents, pictures ...
+This is where the GiST index method comes in. It allows you to specify the principle of distribution of data of an arbitrary type over a balanced tree, 
+and the method of using this representation for access by some operator. For example, in a GiST index, 
+you can "stack" an R-tree for spatial data with support for positional operators (left, right; contains, etc.), 
+or an RD-tree for sets with support for intersection or occurrence operators.
+
+Extensibility in PostgreSQL makes it possible to create a completely new access method from scratch: to do this, 
+you need to implement an interface with an indexing mechanism. But this requires thinking over not only the indexing logic, but also the page structure, 
+effective implementation of locks, support of the write-ahead log - which implies a very high developer qualifications and great laboriousness. 
+GiST simplifies the task by taking on low-level problems and providing its own interface: several functions that are not technical, but application domain. 
+In this sense, we can say that GiST is a framework for building new access methods.
+
+Device
+
+GiST is a height-balanced tree of page nodes. Nodes are composed of index records.
+Each record of a leaf node (leaf record) contains, in its most general form, a predicate (logical expression) and a reference to a table row (TID). 
+Indexed data (key) must satisfy this predicate.
+Each internal node record (internal record) also contains a predicate and a reference to a child node, 
+and all indexed data of the child subtree must satisfy this predicate. In other words, an internal record predicate includes predicates for all child records. 
+This is an important property that replaces the simple B-tree ordering of the GiST index.
+
+GiST tree search uses a special function consistent, one of the interface-defined functions that is implemented differently for each supported operator family.
+The consistency function is called on an index record and determines whether the predicate of the given record "matches" the search condition 
+(of the form "indexed-field operator expression"). For internal records, it actually determines whether to descend into the appropriate subtree, 
+and for leaf records, whether the indexed data satisfies the condition.
+
+The search, as usual in the tree, starts from the root node. The consistency function is used to find out which child nodes it makes sense to visit 
+(there may be several of them), and which - not. Then the algorithm is repeated for each of the found child nodes. If the node is leaf, 
+then the record selected by the consistency function is returned as one of the results.
+
+The search is done in depth: the algorithm first of all tries to get to some leaf node. This allows you to return the first results as quickly as possible 
+(which can be important if the user is not interested in all the results, but only a few).
+
+Note again that the consistency function should not have anything to do with the greater than, less than, or equal to operators. 
+Its semantics may be completely different, and therefore the index is not expected to return values in any particular order.
+
+We will not consider the algorithms for inserting and deleting values in GiST - several more interface functions are used for this. 
+But there is one important point. When a new value is inserted into the index, 
+a parent record is selected for it so that its predicate would have to be expanded as little as possible (ideally, not expanded at all). 
+But when the value is removed, the predicate of the parent record is no longer narrowed. This only happens in two cases: when the page is split in two 
+(when there is not enough space on the page to insert a new index record) and when the index is completely rebuilt (with reindex or vacuum full). 
+Therefore, the performance of the GiST index with frequently changing data can degrade over time.
+
+Next, we will look at a few examples of indexes for different data types and useful properties of GiST:
+
+ * points (and other geometric objects) and search for nearest neighbors;
+ * intervals and exclusion limits;
+ * full-text search.
+
+R-tree for points
+
+Let us demonstrate the above using the example of an index for points on a plane (similar indexes can be constructed for other geometric objects). 
+A regular B-tree is not suitable for this data type because no comparison operators are defined for points.
+The idea of an R-tree is that the plane is divided into rectangles, which together cover all indexed points. 
+The index record stores the rectangle, and the predicate can be formulated as: "the required point lies within the given rectangle."
+The root of the R-tree will contain some of the largest rectangles (possibly even intersecting). 
+Child nodes will contain smaller rectangles nested within the parent, collectively enclosing all underlying points.
+Leaf nodes, in theory, should contain indexed points, but the data type in all index records must be the same; therefore, 
+all the same rectangles are kept, but "collapsed" to points.
+To visualize such a structure, below are pictures of three levels of the R-tree; the points represent the coordinates of airports 
+(similar to the airports table in the demo database, but more data from openflights.org is taken here).
 
