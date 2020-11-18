@@ -1163,6 +1163,134 @@ class   | model
 1       | Bombardier CRJ-200
 (9 rows)
 
+demo = # explain (costs off)
+select class, model from aircrafts_v order by class desc, model desc;
+QUERY PLAN
+-------------------------------------------------- ---------------
+Index Scan Backward using aircrafts_case_model_idx on aircrafts
+(1 row)
+
+But it is not possible to retrieve data from this index sorted in descending order by one column and ascending by the other. 
+This requires a separate sorting:
+
+demo = # explain (costs off)
+select class, model from aircrafts_v order by class asc, model desc;
+QUERY PLAN
+-------------------------------------------------
+Sort
+Sort Key: (CASE ... END), aircrafts.model DESC
+-> Seq Scan on aircrafts
+(3 rows)
+
+(Note that out of grief, the planner chose to scan the table, even though the enable_seqscan = off setting was made earlier. 
+This is because it does not actually disable table scans, but only sets it at a prohibitive cost - see the "costs on" plan. )
+
+For such a query to be executed using an index, the index must be built with sorting in the desired order:
+
+demo = # create index aircrafts_case_asc_model_desc_idx on aircrafts (
+(case when range <4000 then 1 when range <10000 then 2 else 3 end) asc, model desc);
+CREATE INDEX
+
+demo = # explain (costs off)
+select class, model from aircrafts_v order by class asc, model desc;
+QUERY PLAN
+-------------------------------------------------- ---------------
+Index Scan using aircrafts_case_asc_model_desc_idx on aircrafts
+(1 row)
+
+Column order
+
+Another issue that arises when using multi-column indexes is the order in which the columns are listed in the index. 
+In the case of a B-tree, this order is of great importance: the data within the pages will be sorted first by the first field, then by the second, and so on.
+The index that we have built on the basis of range intervals and models can be roughly represented as follows:
+https://mega.nz/file/18kjDACJ#-XW86IeTpistZ6NpktznoL6_XZOb4BBBAnMHeuk51Ko
+
+Of course, such a small index will actually fit into one root page; in the figure, it is artificially distributed over several pages for clarity.
+
+It is clear from this diagram that search will work efficiently with, for example, 
+predicates such as "class = 3" (search only in the first field) or "class = 3 and model = 'Boeing 777-300'" (search in both fields ).
+
+But the search by the predicate "model = 'Boeing 777-300'" will be much less efficient: starting from the root, 
+we cannot determine which of the child nodes to go down to, so we will have to go down into all of them. 
+This does not mean that such an index cannot be used in principle - the only question is efficiency. 
+For example, if we had three classes of aircraft and very many models in each class, then we would have to scan about a third of the index, 
+and this might be more efficient than a full scan of the table. It might not have happened.
+
+But if you create an index like this:
+
+demo = # create index on aircrafts (
+model, (case when range <4000 then 1 when range <10000 then 2 else 3 end));
+CREATE INDEX
+
+then the order of the fields will change:
+https://mega.nz/file/t8tj0SiC#Q35bEXEb5bDPS-dhzpa_wHj2S8IwEfugAaELi4SGppw
+And with such an index, the search by the predicate "model = 'Boeing 777-300'" will be performed efficiently, but by the predicate "class = 3" it will not.
+
+Undefined values
+
+The btree accessor indexes undefined values ​​and supports is null and is not null searches.
+
+Let's take a table of flights with undefined values:
+
+demo = # create index on flights (actual_arrival);
+CREATE INDEX
+demo = # explain (costs off) select * from flights where actual_arrival is null;
+QUERY PLAN
+-------------------------------------------------- -----
+Bitmap Heap Scan on flights
+Recheck Cond: (actual_arrival IS NULL)
+-> Bitmap Index Scan on flights_actual_arrival_idx
+Index Cond: (actual_arrival IS NULL)
+(4 rows)
+
+Undefined values are positioned at one end or the other of leaf nodes, depending on how the index was created (nulls first or nulls last). 
+This is important if the query involves sorting: the order of undefined values ​​in the index and in the sort order must match for the index to be usable.
+In this example, the orders are the same, so the index can be used:
+
+demo = # explain (costs off) select * from flights order by actual_arrival nulls last;
+QUERY PLAN
+-------------------------------------------------- ------
+Index Scan using flights_actual_arrival_idx on flights
+(1 row)
+
+But here the orders are different, and the optimizer chooses to scan the table and sort:
+
+demo = # explain (costs off) select * from flights order by actual_arrival nulls first;
+QUERY PLAN
+----------------------------------------
+Sort
+Sort Key: actual_arrival NULLS FIRST
+-> Seq Scan on flights
+(3 rows)
+
+For the index to be used, you need to create it so that undefined values come at the beginning:
+
+demo = # create index flights_nulls_first_idx on flights (actual_arrival nulls first);
+CREATE INDEX
+demo = # explain (costs off) select * from flights order by actual_arrival nulls first;
+QUERY PLAN
+-------------------------------------------------- ---
+Index Scan using flights_nulls_first_idx on flights
+(1 row)
+
+The reason for such discrepancies, of course, is that undefined values are not sortable: 
+the result of comparing an undefined value with any other is undefined:
+
+demo = # \ pset null NULL
+Null display is "NULL".
+demo = # select null <42;
+? column?
+----------
+NULL
+(1 row)
+
+This goes against the essence of the B-tree and does not fit into the general scheme. 
+But undefined values play such an important role in databases that exceptions must be made for them all the time.
+
+The consequence of the fact that undefined values are indexed is the ability to use the index even if no conditions are imposed on the table at all 
+(since the index is guaranteed to contain information about all the rows of the table). 
+This can make sense if you want to order the data in your query and the index provides the desired order. 
+Then the planner may prefer index access to save on separate sorting.
 
 
 
