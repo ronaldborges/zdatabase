@@ -1,0 +1,500 @@
+####################
+# INDEXES POSTGRES #
+####################
+
+Any question can be viewed from different points of view. 
+We will talk about what an application developer using a DBMS should be interested in: what indexes exist, 
+why there are so many different indexes in PostgreSQL, and how to use them to speed up queries. 
+Perhaps, the topic could be revealed with fewer words, 
+but we secretly hope for an inquisitive developer who is also interested in the details of the internal structure, 
+especially since understanding such details allows not only listening to someone else's opinion, but also drawing our own conclusions.
+
+The questions of developing new types of indexes will remain outside the discussion. 
+This requires knowledge of the C language and belongs to the competence of a systems programmer rather than an application developer. 
+For the same reason, we will practically not consider programming interfaces, but will focus only on what matters for using ready-to-use indexes.
+
+In this part, we will talk about the division of responsibilities between the general indexing mechanism related to the database engine and the individual 
+index access methods that can be added as extensions to PostgreSQL. In the next part, 
+we will look at the accessor interface and important concepts such as classes and operator families. 
+After such a long but necessary introduction, we will take a closer look at the structure and use of various types of indexes: 
+Hash, B-tree, GiST, SP-GiST, GIN and RUM, BRIN and Bloom.
+
+-----------
+- Indexes -
+-----------
+
+Indexes in PostgreSQL are special database objects designed primarily to speed up data access. 
+These are auxiliary structures: any index can be dropped and restored from the information in the table. 
+Sometimes you hear that a DBMS can work without indexes, just slowly. However, 
+this is not the case because indexes also serve to maintain some integrity constraints.
+
+There are currently six different kinds of indexes built into PostgreSQL 9.6, and one more is available as an extension, 
+made possible by important changes in version 9.6. So we should expect other types of indexes to appear in the near future.
+
+Despite all the differences between the types of indexes (also called accessor methods), 
+ultimately any of them establishes a correspondence between a key (for example, the value of an indexed column) and the table rows in which that key occurs. 
+Lines are identified by a TID (tuple id), which consists of the file block number and the line position within the block. 
+Then, knowing the key or some information about it, you can quickly read those lines in which the information of interest to us may be located, 
+without looking through the entire table.
+
+It is important to understand that the index, while speeding up data access, instead requires certain costs for its maintenance. 
+For any operation on indexed data — whether it is inserting, deleting, or updating rows in a table — the indexes created on that table must be rebuilt, 
+and within the same transaction. Note that updating table fields that have not been indexed does not rebuild the indexes; 
+this mechanism is called HOT (Heap-Only Tuples).
+
+Extensibility has several implications. To make the new access method easy to integrate into the system, 
+PostgreSQL has a generic indexing mechanism. Its main task is to get the TID from the accessor and work with them:
+
+  * reading data from corresponding versions of table rows;
+  * sampling by a separate TID, or immediately by a set of TIDs (with building a bitmap);
+  * checking the visibility of row versions for the current transaction, taking into account the isolation level.
+
+The indexing engine is involved in the execution of queries; it is called according to the plan built during the optimization phase. 
+The optimizer, when iterating and evaluating the various paths to execute a query, 
+must understand the capabilities of all accessors that can potentially be applied. 
+Will the access method be able to send data immediately in the desired order, 
+or should we provide for sorting separately? is it possible to apply an accessor to search for null? - such questions are constantly solved by the optimizer.
+
+Accessor information isn't just needed by the optimizer. When creating an index, 
+the system needs to decide: can the index be built over multiple columns? can this index ensure uniqueness?
+
+So, each access method must provide all the necessary information about itself. 
+Before version 9.6, the pg_am table was used for this, and since 9.6 the data has moved deeper, inside special functions. 
+We will get acquainted with this interface a little later.
+
+The tasks of the accessor itself include everything else:
+
+  * implementation of the index building algorithm and data paging (so that any index is processed in the same way by the buffer cache manager);
+  * search for information in the index by the expression "indexed-field operator expression";
+  * estimating the cost of using the index;
+  * work with locks necessary for correct parallel execution of processes;
+  * creation of a write-ahead log (WAL).
+
+We'll first look at the capabilities of the general indexing mechanism, and then move on to looking at the various accessors.
+
+-------------------
+- Indexing Engine -
+-------------------
+
+The indexing mechanism allows PostgreSQL to work in the same way with a wide variety of accessors, given their capabilities.
+
+Basic scanning methods
+
+--------------
+- Index scan -
+--------------
+
+You can work differently with the TIDs supplied by the index. Let's consider an example:
+
+postgres = # create table t (a integer, b text, c boolean);
+CREATE TABLE
+postgres = # insert into t (a, b, c)
+   select s.id, chr ((32 + random () * 94) :: integer), random () <0.01
+   from generate_series (1,100000) as s (id)
+   order by random ();
+INSERT 0 100000
+postgres = # create index on t (a);
+CREATE INDEX
+postgres = # analyze t;
+ANALYZE
+
+We have created a table with three fields. The first field contains numbers from 1 to 100000, 
+and an index has been created on it (we don't care which one yet). The second field contains various ASCII characters besides non-printable ones. 
+Finally, the third field contains a Boolean value that is true for about 1% of the rows and false for the rest. Rows are inserted into the table in random order.
+
+Let's try to select a value according to the condition "a = 1". Note that the condition has the form "indexed-field operator expression", 
+where the operator is "equal" and the expression (search key) is "1". In most cases, the condition must be exactly this kind for the index to be used.
+
+postgres = # explain (costs off) select * from t where a = 1;
+          QUERY PLAN
+-------------------------------
+ Index Scan using t_a_idx on t
+   Index Cond: (a = 1)
+(2 rows)
+
+In this case, the optimizer has decided to use an Index Scan. When indexed, the accessor returns the TID values one at a time, 
+until there are no matching rows. The indexing engine takes turns looking at the pages of the table pointed to by TIDs, 
+getting the version of the row, checking its visibility in accordance with the multiversion rules, and returning the resulting data.
+
+---------------
+- Bitmap Scan -
+---------------
+
+Index scan works well when it comes to just a few values. However, as the sample grows, 
+the chances of having to go back to the same table page multiple times increase. Therefore, in this case, the optimizer switches to a bitmap scan:
+
+postgres = # explain (costs off) select * from t where a <= 100;
+             QUERY PLAN
+------------------------------------
+ Bitmap Heap Scan on t
+   Recheck Cond: (a <= 100)
+   -> Bitmap Index Scan on t_a_idx
+         Index Cond: (a <= 100)
+(4 rows)
+
+First, the accessor returns all TIDs that match the condition (the Bitmap Index Scan node), and a bitmap of row versions is built from them. 
+The row versions are then read from the table (Bitmap Heap Scan) - each page will only be read once.
+
+Note that in the second step, the condition can be rechecked (Recheck Cond). 
+The sample may be too large for the row version bitmap to fit entirely into RAM (limited by the work_mem parameter). 
+In this case, only a bitmap of pages containing at least one valid version of the string is built. Such a "rough" map takes up less space, 
+but when reading a page, you have to double-check the conditions for each line stored there. Note that even in the case of a small sample (as in our example), 
+the "Recheck Cond" step is still displayed in the plan, although it is not actually executed.
+
+If conditions are imposed on multiple table fields and those fields are indexed, ,
+a bitmap scan allows (if the optimizer deems it beneficial) multiple indexes to be used simultaneously. For each index, bitmaps of row versions are built, 
+which are then bitwise logically multiplied (if the expressions are connected with the AND condition), 
+or logically added (if the expressions are connected with the OR condition). For instance:
+
+postgres = # create index on t (b);
+CREATE INDEX
+postgres = # analyze t;
+ANALYZE
+postgres = # explain (costs off) select * from t where a <= 100 and b = 'a';
+                    QUERY PLAN
+--------------------------------------------------
+ Bitmap Heap Scan on t
+   Recheck Cond: ((a <= 100) AND (b = 'a' :: text))
+   -> BitmapAnd
+         -> Bitmap Index Scan on t_a_idx
+               Index Cond: (a <= 100)
+         -> Bitmap Index Scan on t_b_idx
+               Index Cond: (b = 'a' :: text)
+(7 rows)
+
+Here the BitmapAnd node concatenates the two bitmaps using the bitwise operation "and".
+
+Bitmap scanning avoids repeated accesses to the same data page. 
+But what if the data in the pages of the table is physically ordered in the same way as the index entries? Of course, 
+you cannot completely rely on the physical order of the data in the pages - if you want sorted data, 
+you must explicitly specify the ORDER BY clause in the query. But situations are quite possible in which, in fact, 
+"almost all" of the data is ordered: for example, if rows are added in the desired order and do not change after that, 
+or after the CLUSTER command has been executed. Then building a bitmap is an extra step, 
+a regular index scan will be no worse (if you do not take into account the possibility of combining several indices). 
+Therefore, when choosing an access method, the planner looks into special statistics that show the degree of data ordering:
+
+postgres = # select attname, correlation from pg_stats where tablename = 't';
+ attname  | correlation
+--------- + -------------
+ b        | 0.533512
+ c        | 0.942365
+ a        | -0.00768816
+(3 rows)
+
+Values close in absolute value to one indicate a high ordering (as for column c), and close to zero, on the contrary, 
+indicate a chaotic distribution (column a).
+
+-------------------
+- Sequential scan -
+-------------------
+
+For the sake of completeness, it should be said that under the non-selective condition, 
+the optimizer will prefer to use the index to scan the entire table sequentially:
+
+postgres = # explain (costs off) select * from t where a <= 40000;
+       QUERY PLAN
+------------------------
+ Seq Scan on t
+   Filter: (a <= 40000)
+(2 rows)
+
+And he will be right. The point is that indexes work better, the higher the selectivity of the condition, that is, the fewer rows that satisfy it. 
+As the sample grows, so does the overhead of reading the index pages.
+
+The situation is aggravated by the fact that sequential reading is faster than reading pages "out of order". 
+This is especially true for hard drives, where the mechanical operation of bringing the head to the track takes significantly longer than reading the data itself;
+this effect is less pronounced with SSDs. To take into account the difference in the cost of access, 
+there are two parameters seq_page_cost and random_page_cost, which can be set not only globally, but also at the table space level, 
+thus taking into account the characteristics of different disk subsystems.
+
+--------------------
+- Covering indices -
+--------------------
+
+Typically, the main purpose of an accessor is to return matching table row identifiers so that the indexing engine can read the data it needs. 
+But what if the index already contains all the data it needs to query? Such an index is called covering, 
+in which case the optimizer can use an Index Only Scan:
+
+postgres = # vacuum t;
+VACUUM
+postgres = # explain (costs off) select a from t where a <100;
+             QUERY PLAN
+------------------------------------
+ Index Only Scan using t_a_idx on t
+   Index Cond: (a <100)
+(2 rows)
+
+The name might suggest that the indexing mechanism does not access the table at all, getting all the information it needs solely from the accessor. 
+This is not entirely true, because indexes in PostgreSQL do not contain information to judge the visibility of rows. 
+Therefore, the accessor returns all the row versions that match the search condition, whether they are visible to the current transaction or not.
+
+However, if the indexing engine had to look at the table each time to determine visibility, this scan method would be no different from a regular index scan.
+
+The problem is solved by the fact that PostgreSQL maintains a so-called visibility map for tables, 
+in which the vacuum process marks pages in which data has not changed long enough for all transactions to see them, 
+regardless of the start time and isolation level. If the identifier of the row returned by the index refers to such a page, then visibility can be omitted.
+
+Therefore, regular cleaning improves the performance of the covering indexes. Moreover, 
+the optimizer takes into account the number of uncleaned rows and may opt out of using an index-only scan if it predicts large visibility overhead.
+
+The number of table accesses that were forced can be found using the explain analyze command:
+
+postgres = # explain (analyze, costs off) select a from t where a <100;
+                                  QUERY PLAN
+-------------------------------------------------- -----------------------------
+ Index Only Scan using t_a_idx on t (actual time = 0.025..0.036 rows = 99 loops = 1)
+   Index Cond: (a <100)
+   Heap Fetches: 0
+ Planning time: 0.092 ms
+ Execution time: 0.059 ms
+(5 rows)
+
+In this case, it was not necessary to access the table (Heap Fetches: 0), since cleanup has just been performed. 
+In general, the closer this number is to zero, the better.
+
+Not all indexes store the indexed values themselves along with row identifiers. If an accessor cannot return data, it cannot be used for index-only scans.
+
+--------
+- Null -
+--------
+
+Undefined values play an important role in relational databases as a convenient way to represent the fact that a value does not exist or is not known.
+
+But special importance also requires a special attitude to itself. Normal Boolean logic turns into three-valued logic; 
+it is not clear whether the undefined value should be less than normal values or more (hence the special constructions for sorting NULLS FIRST and NULLS LAST); 
+it is not obvious whether it is necessary to take into account undefined values in aggregate functions or not; special statistics required for the scheduler ...
+
+From the point of view of indexing support with undefined values, there is also ambiguity: should such values be indexed or not? If you do not index null, 
+the index can be more compact. But if you index, then it becomes possible to use the index for conditions of the form "indexed-field IS [NOT] NULL", 
+as well as as a covering index in the absence of conditions on the table (since in this case the index must return the data of all rows of the table, 
+including number and with undefined values).
+
+For each accessor, its developers make their own decision whether to index nulls or not. But, as a rule, they are still indexed.
+
+--------------------------
+- Multiple field indexes -
+--------------------------
+
+Conditions on multiple fields can be supported using multi-column indexes. For example, we could create an index on two fields of our table:
+
+postgres = # create index on t (a, b);
+CREATE INDEX
+postgres = # analyze t;
+ANALYZE
+
+The optimizer will most likely prefer this index over bitmap concatenation, since here we immediately get the desired TIDs without any additional actions:
+
+postgres = # explain (costs off) select * from t where a <= 100 and b = 'a';
+                   QUERY PLAN
+------------------------------------------------
+ Index Scan using t_a_b_idx on t
+   Index Cond: ((a <= 100) AND (b = 'a' :: text))
+(2 rows)
+
+A multi-column index can also be used to speed up selection by condition for some of the fields - starting from the first:
+
+postgres = # explain (costs off) select * from t where a <= 100;
+              QUERY PLAN
+--------------------------------------
+ Bitmap Heap Scan on t
+   Recheck Cond: (a <= 100)
+   -> Bitmap Index Scan on t_a_b_idx
+         Index Cond: (a <= 100)
+(4 rows)
+
+Typically, if no condition is imposed on the first field, the index will not be used. However, in some cases, 
+the optimizer may find it more beneficial than sequential scans. We'll cover this topic in more detail when we look at btree indexes.
+
+Not all accessors support creating indexes on multiple columns.
+
+----------------------
+- Expression indexes -
+----------------------
+
+We talked about the search condition being "indexed-field operator expression". In the example below, 
+the index will not be used because an expression with it is used instead of the field name:
+
+postgres = # explain (costs off) select * from t where lower (b) = 'a';
+                QUERY PLAN
+------------------------------------------
+ Seq Scan on t
+   Filter: (lower ((b) :: text) = 'a' :: text)
+(2 rows)
+
+This particular query can be easily rewritten so that only the field name appears to the left of the operator. 
+But if this is not possible, expression indexes (functional indexes) come to the rescue:
+
+postgres = # create index on t (lower (b));
+CREATE INDEX
+postgres = # analyze t;
+ANALYZE
+postgres = # explain (costs off) select * from t where lower (b) = 'a';
+                     QUERY PLAN
+-------------------------------------------------- -
+ Bitmap Heap Scan on t
+   Recheck Cond: (lower ((b) :: text) = 'a' :: text)
+   -> Bitmap Index Scan on t_lower_idx
+         Index Cond: (lower ((b) :: text) = 'a' :: text)
+(4 rows)
+
+A functional index is created not by a table field, but by an arbitrary expression; 
+the optimizer will take such an index into account for conditions of the form "indexed-expression operator expression". 
+If the calculation of the indexed expression is a costly operation, then updating the index will also require significant computing resources.
+
+It should also be borne in mind that separate statistics are collected for the indexed expression. It can be seen in the pg_stats view by the index name:
+
+postgres = # \ d t
+       Table "public.t"
+ Column | Type | Modifiers
+-------- + --------- + -----------
+ a | integer |
+ b | text |
+ c | boolean |
+Indexes:
+    "t_a_b_idx" btree (a, b)
+    "t_a_idx" btree (a)
+    "t_b_idx" btree (b)
+    "t_lower_idx" btree (lower (b))
+
+postgres = # select * from pg_stats where tablename = 't_lower_idx';
+...
+
+If necessary, you can control the number of histogram buckets in the same way as for regular table fields (bearing in mind that the column name 
+can be different depending on the indexed expression):
+
+postgres=# \d t_lower_idx
+ Index "public.t_lower_idx"
+ Column | Type | Definition
+--------+------+------------
+ lower  | text | lower(b)
+btree, for table "public.t"
+
+postgres=# alter index t_lower_idx alter column "lower" set statistics 69;
+ALTER INDEX
+
+-------------------
+- Partial Indexes -
+-------------------
+
+Sometimes it becomes necessary to index only part of the table rows. 
+This is usually due to a strong uneven distribution: a rare value makes sense to search by index, 
+but a frequent value is easier to find by a full scan of the table.
+
+Of course, you can build a regular index on column "c" and it will work as we expect:
+
+postgres = # create index on t (c);
+CREATE INDEX
+postgres = # analyze t;
+ANALYZE
+postgres = # explain (costs off) select * from t where c;
+          QUERY PLAN
+-------------------------------
+ Index Scan using t_c_idx on t
+   Index Cond: (c = true)
+   Filter: c
+(3 rows)
+
+postgres = # explain (costs off) select * from t where not c;
+    QUERY PLAN
+-------------------
+ Seq Scan on t
+   Filter: (NOT c)
+(2 rows)
+
+Moreover, the index is 276 pages:
+
+postgres = # select relpages from pg_class where relname = 't_c_idx';
+ relpages
+----------
+      276
+(1 row)
+
+But since column "c" is true for only one percent of the rows, 99% of the index is simply never used. In this case, a partial index can be built:
+
+postgres = # create index on t (c) where c;
+CREATE INDEX
+postgres = # analyze t;
+ANALYZE
+
+The size of such an index was reduced to 5 pages:
+
+postgres = # select relpages from pg_class where relname = 't_c_idx1';
+ relpages
+----------
+     five
+(1 row)
+
+In some cases, the difference in volume and performance can be quite significant.
+
+-----------
+- Sorting -
+-----------
+
+If the accessor returns row ids in sort order, this gives the optimizer additional options for executing the query.
+
+You can scan the table and then sort the data:
+
+postgres = # set enable_indexscan = off;
+SET
+postgres = # explain (costs off) select * from t order by a;
+     QUERY PLAN
+---------------------
+ Sort
+   Sort Key: a
+   -> Seq Scan on t
+(3 rows)
+
+And you can read the data using the index immediately in the sort order:
+
+postgres = # set enable_indexscan = on;
+SET
+postgres = # explain (costs off) select * from t order by a;
+          QUERY PLAN
+-------------------------------
+ Index Scan using t_a_idx on t
+(1 row)
+
+Of all the accessors, only btree can return sorted data, so let's postpone a more detailed discussion until we look at this type of index.
+
+-------------------------
+- Parallel construction -
+-------------------------
+
+Typically building an index requires a SHARE lock on the table. This lock allows you to read data from the table, 
+but disallows any changes while the index is being built.
+
+You can verify this if, at the time of creating the index, say, on table t, in another session, execute the query:
+
+postgres = # select mode, granted from pg_locks where relation = 't' :: regclass;
+   mode     | granted
+----------- + ---------
+ ShareLock  | t
+(1 row)
+
+If the table is large enough and is actively used in insert, update, or delete mode, 
+this may be invalid - modifying sessions will wait a long time to release the lock.
+
+In this case, you can use parallel index creation:
+
+postgres = # create index concurrently on t (a);
+CREATE INDEX
+
+Such a command sets a SHARE UPDATE EXCLUSIVE lock, which allows both reading and modifying data (only changing the structure of the table is prohibited, 
+as well as simultaneously performing cleanup, analysis, or building another index on the same table).
+
+However, there is a downside. First, the index will build more slowly than usual, since instead of one pass through the table, two are performed, 
+and you still need to wait for the completion of parallel transactions that modify the data.
+
+Second, building an index in parallel can result in a deadlock or unique constraint violation. The index is nevertheless created, 
+but in a "non-working" state; in this case, it must be deleted and recreated again. 
+Broken indexes are marked with the word INVALID in the output of the psql \ d command, and the complete list can be obtained with the query:
+
+postgres = # select indexrelid :: regclass index_name, indrelid :: regclass table_name from pg_index where not indisvalid;
+ index_name  | table_name
+------------ + ------------
+ t_a_idx     | t
+(1 row)
+
+
+
+
