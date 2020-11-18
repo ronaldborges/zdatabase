@@ -617,11 +617,11 @@ from pg_opclass opc, pg_opfamily opf
 where opf.opfname = 'integer_ops'
 and opc.opcfamily = opf.oid
 and opf.opfmethod = (select oid from pg_am where amname = 'btree');
-opfname | opcname | opcintype
+opfname       | opcname    | opcintype
 ------------- + ---------- + -----------
-integer_ops | int2_ops | smallint
-integer_ops | int4_ops | integer
-integer_ops | int8_ops | bigint
+integer_ops   | int2_ops   | smallint
+integer_ops   | int4_ops   | integer
+integer_ops   | int8_ops   | bigint
 (3 rows)
 
 Another example: the datetime_ops family includes operator classes for working with dates (both without time, and with time):
@@ -631,11 +631,11 @@ from pg_opclass opc, pg_opfamily opf
 where opf.opfname = 'datetime_ops'
 and opc.opcfamily = opf.oid
 and opf.opfmethod = (select oid from pg_am where amname = 'btree');
-opfname | opcname | opcintype
+opfname        | opcname           | opcintype
 -------------- + ----------------- + ----------------- ------------
-datetime_ops | date_ops | date
-datetime_ops | timestamptz_ops | timestamp with time zone
-datetime_ops | timestamp_ops | timestamp without time zone
+datetime_ops   | date_ops          | date
+datetime_ops   | timestamptz_ops   | timestamp with time zone
+datetime_ops   | timestamp_ops     | timestamp without time zone
 (3 rows)
 
 The family can also include additional operators for comparing values of different types. 
@@ -689,11 +689,11 @@ postgres = # select opcname, opcintype :: regtype
 from pg_opclass
 where opcmethod = (select oid from pg_am where amname = 'btree')
 order by opcintype :: regtype :: text;
-opcname | opcintype
+opcname               | opcintype
 --------------------- + ---------------------------- -
-abstime_ops | abstime
-array_ops | anyarray
-enum_ops | anyenum
+abstime_ops           | abstime
+array_ops             | anyarray
+enum_ops              | anyenum
 ...
 
 What operators are included in the class (and therefore the index can be used for conditional access that includes such an operator)?
