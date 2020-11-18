@@ -495,6 +495,223 @@ postgres = # select indexrelid :: regclass index_name, indrelid :: regclass tabl
  t_a_idx     | t
 (1 row)
 
+--------------
+- Properties -
+--------------
+
+All properties of access methods are presented in the pg_am table (am - access method). From this table, you can get the list of available methods itself:
+
+postgres = # select amname from pg_am;
+amname
+--------
+btree
+hash
+gist
+gin
+spgist
+brin
+(6 rows)
+
+Although sequential scanning can rightfully be classified as access method, historically it has not been included in this list.
+
+In PostgreSQL 9.5 and older, each property was represented by a separate field in the pg_am table. Since version 9.6, 
+properties are polled by special functions and are divided into several levels:
+
+accessor properties - pg_indexam_has_property,
+properties of a particular index - pg_index_has_property,
+properties of the individual columns of the index - pg_index_column_has_property.
+
+The division into accessor and index levels is made for the future: at present, 
+all indexes created based on the same accessor will always have the same properties.
 
 
+Accessor properties include the following four (for example, btree):
+
+postgres = # select a.amname, p.name, pg_indexam_has_property (a.oid, p.name)
+from pg_am a,
+unnest (array ['can_order', 'can_unique', 'can_multi_col', 'can_exclude']) p (name)
+where a.amname = 'btree' order by a.amname;
+amname   | name            | pg_indexam_has_property
+-------- + --------------- + -------------------------
+btree    | can_order       | t
+btree    | can_unique      | t
+btree    | can_multi_col   | t
+btree    | can_exclude     | t
+(4 rows)
+
+ * can_order 
+   The accessor allows you to specify the sort order of values when the index is created (currently only applicable for btree);
+ * can_unique
+   Support for unique constraint and primary key (only applicable for btree);
+ * can_multi_col
+   An index can be built on multiple columns;
+ * can_exclude
+   Support for limiting the EXCLUDE exception.
+
+Index related properties (let's take an existing one for example):
+
+postgres = # select p.name, pg_index_has_property ('t_a_idx' :: regclass, p.name)
+from unnest (array ['clusterable', 'index_scan', 'bitmap_scan', 'backward_scan']) p (name);
+name            | pg_index_has_property
+--------------- + -----------------------
+clusterable     | t
+index_scan      | t
+bitmap_scan     | t
+backward_scan   | t
+(4 rows)
+
+ * clusterable
+   Possibility of reordering table rows in accordance with the given index (clustering by the CLUSTER command of the same name);
+ * index_scan
+   Index scan support. This property may seem strange, but not all indexes can return TIDs one at a time - some give all results at once and only support bitmap scanning;
+ * bitmap_scan
+   Bitmap scanning support;
+ * backward_scan
+   Returns the result in the reverse order of that specified when the index was created.
+
+Finally, the column properties:
+
+postgres = # select p.name, pg_index_column_has_property ('t_a_idx' :: regclass, 1, p.name)
+from unnest (array ['asc', 'desc', 'nulls_first', 'nulls_last', 'orderable', 'distance_orderable', 'returnable', 'search_array', 'search_nulls']) p (name);
+name                 | pg_index_column_has_property
+-------------------- + ----------------------------- -
+asc                  | t
+desc                 | f
+nulls_first          | f
+nulls_last           | t
+orderable            | t
+distance_orderable   | f
+returnable           | t
+search_array         | t
+search_nulls         | t
+(9 rows)
+
+ * asc, desc, nulls_first, nulls_last, orderable
+   These properties are related to the ordering of values ​​(we'll talk about them when we get to btree indexes);
+ * distance_orderable
+   Returns the result in the sort order by operation (currently only applicable for gist and rum indexes);
+ * returnable
+   The ability to use an index without accessing the table, that is, support for only index access;
+ * search_array
+   Support for searching multiple values for the "indexed-field IN (list_constants)" or, equivalently, "indexed-field = ANY (array_constants)";
+ * search_nulls
+   The ability to search for is null and is not null conditions.
+
+We have already discussed some of the properties in detail earlier. Some of the properties are currently implemented by only one method. 
+We will consider such possibilities when we talk about this particular method.
+
+---------------------------------
+- Operator Classes and Families -
+---------------------------------
+
+In addition to the set of "skills", you also need to know what types of data and with what operators the access method works. 
+For this, PostgreSQL has the concepts of an operator class and an operator family.
+
+The operator class contains a minimal set of operators (and possibly helper functions) for working with an index on some data type.
+
+A class is always part of a family of operators. In this case, several classes can be included in one common family if they have the same semantics. 
+For example, the integer_ops family includes classes int8_ops, int4_ops, and int2_ops for different sized but identical bigint, integer, and smallint types:
+
+postgres = # select opfname, opcname, opcintype :: regtype
+from pg_opclass opc, pg_opfamily opf
+where opf.opfname = 'integer_ops'
+and opc.opcfamily = opf.oid
+and opf.opfmethod = (select oid from pg_am where amname = 'btree');
+opfname | opcname | opcintype
+------------- + ---------- + -----------
+integer_ops | int2_ops | smallint
+integer_ops | int4_ops | integer
+integer_ops | int8_ops | bigint
+(3 rows)
+
+Another example: the datetime_ops family includes operator classes for working with dates (both without time, and with time):
+
+postgres = # select opfname, opcname, opcintype :: regtype
+from pg_opclass opc, pg_opfamily opf
+where opf.opfname = 'datetime_ops'
+and opc.opcfamily = opf.oid
+and opf.opfmethod = (select oid from pg_am where amname = 'btree');
+opfname | opcname | opcintype
+-------------- + ----------------- + ----------------- ------------
+datetime_ops | date_ops | date
+datetime_ops | timestamptz_ops | timestamp with time zone
+datetime_ops | timestamp_ops | timestamp without time zone
+(3 rows)
+
+The family can also include additional operators for comparing values of different types. 
+By grouping into families, the planner can use an index for predicates with values of different types. The family may also contain other helper functions.
+
+In most cases, you don't need to know anything about operator families and classes. 
+Usually we just create an index and use some default operator class.
+
+However, you can specify the operator class explicitly. A simple example when needed: in a database with a non-C collation, 
+a normal index on a text field does not support LIKE:
+
+postgres = # show lc_collate;
+lc_collate
+-------------
+en_US.UTF-8
+(1 row)
+postgres = # explain (costs off) select * from t where b like 'A%';
+QUERY PLAN
+-----------------------------
+Seq Scan on t
+Filter: (b ~~ 'A%' :: text)
+(2 rows)
+
+You can overcome this limitation by creating an index with the operator class text_pattern_ops (note how the condition has changed in the plan):
+
+postgres = # create index on t (b text_pattern_ops);
+CREATE INDEX
+postgres = # explain (costs off) select * from t where b like 'A%';
+QUERY PLAN
+-------------------------------------------------- --------------
+Bitmap Heap Scan on t
+Filter: (b ~~ 'A%' :: text)
+-> Bitmap Index Scan on t_b_idx1
+Index Cond: ((b ~> = ~ 'A' :: text) AND (b ~ <~ 'B' :: text))
+(4 rows)
+
+--------------------
+- System directory -
+--------------------
+
+To conclude this part, we present a small diagram of the system catalog tables that directly relate to operator classes and families.
+https://mega.nz/file/xo0l1K5I#0JNL6ibUVgBLSNxvG7F0JKULOGHB6YsYlrfr1EXD-yU
+
+All these tables are, of course, detailed.
+https://www.postgresql.org/docs/13/catalogs.html
+
+Using the system catalog, you can find the answer to a number of questions without even looking at the documentation. 
+For example, what types of data can such and such an accessor work with?
+
+postgres = # select opcname, opcintype :: regtype
+from pg_opclass
+where opcmethod = (select oid from pg_am where amname = 'btree')
+order by opcintype :: regtype :: text;
+opcname | opcintype
+--------------------- + ---------------------------- -
+abstime_ops | abstime
+array_ops | anyarray
+enum_ops | anyenum
+...
+
+What operators are included in the class (and therefore the index can be used for conditional access that includes such an operator)?
+
+postgres = # select amop.amopopr :: regoperator
+from pg_opclass opc, pg_opfamily opf, pg_am am, pg_amop amop
+where opc.opcname = 'array_ops'
+and opf.oid = opc.opcfamily
+and am.oid = opf.opfmethod
+and amop.amopfamily = opc.opcfamily
+and am.amname = 'btree'
+and amop.amoplefttype = opc.opcintype;
+amopopr
+-----------------------
+<(anyarray, anyarray)
+<= (anyarray, anyarray)
+= (anyarray, anyarray)
+> = (anyarray, anyarray)
+> (anyarray, anyarray)
+(5 rows)
 
