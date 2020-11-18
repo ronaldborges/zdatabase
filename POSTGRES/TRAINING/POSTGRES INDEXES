@@ -17,7 +17,15 @@ In this part, we will talk about the division of responsibilities between the ge
 index access methods that can be added as extensions to PostgreSQL. In the next part, 
 we will look at the accessor interface and important concepts such as classes and operator families. 
 After such a long but necessary introduction, we will take a closer look at the structure and use of various types of indexes: 
-Hash, B-tree, GiST, SP-GiST, GIN and RUM, BRIN and Bloom.
+
+	- Hash
+	- B-tree
+	- GiST
+	- SP-GiST
+	- GIN
+	- RUM
+	- BRIN
+	- Bloom
 
 -----------
 - Indexes -
