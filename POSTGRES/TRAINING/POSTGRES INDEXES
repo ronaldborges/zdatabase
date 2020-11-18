@@ -1292,5 +1292,195 @@ The consequence of the fact that undefined values are indexed is the ability to 
 This can make sense if you want to order the data in your query and the index provides the desired order. 
 Then the planner may prefer index access to save on separate sorting.
 
+Properties
 
+Let's see the properties of the btree accessor (requests were given earlier).
+
+amname | name | pg_indexam_has_property
+-------- + --------------- + -------------------------
+btree | can_order | t
+btree | can_unique | t
+btree | can_multi_col | t
+btree | can_exclude | t
+
+As we have seen, the B-tree can order data and maintains uniqueness — and it is the only accessor that provides such properties. 
+Multiple column indexes are also valid; but other methods can do it too (though not all). 
+We will talk about support for exclude constraints next time, for good reason.
+
+name | pg_index_has_property
+--------------- + -----------------------
+clusterable | t
+index_scan | t
+bitmap_scan | t
+backward_scan | t
+
+The b-tree accessor supports both an index scan and a bitmap scan. And, as we have seen, 
+it is able to walk the tree both "forward" and in the opposite direction.
+
+name | pg_index_column_has_property
+-------------------- + ----------------------------- -
+asc | t
+desc | f
+nulls_first | f
+nulls_last | t
+orderable | t
+distance_orderable | f
+returnable | t
+search_array | t
+search_nulls | t
+
+The first four properties of this level tell you exactly how the values of this particular column are ordered. In this example, 
+values are sorted in ascending order (asc) and nulls are sorted to the end (nulls_last). But, as we have seen, there may be other combinations.
+
+The search_array property indicates that the index supports the following constructs:
+
+demo = # explain (costs off)
+select * from aircrafts where aircraft_code in ('733', '763', '773');
+QUERY PLAN
+-------------------------------------------------- ---------------
+Index Scan using aircrafts_pkey on aircrafts
+Index Cond: (aircraft_code = ANY ('{733,763,773}' :: bpchar []))
+(2 rows)
+
+The returnable property speaks of support for only index scanning - which is logical, 
+because indexed values themselves are stored in index records (as opposed to a hash index, for example). 
+It is appropriate to say a few words here about the peculiarities of B-tree covering indexes.
+
+Unique indexes with additional columns
+
+Kak my govorili raneye, pokryvayushchim nazyvayetsya indeks, kotoryy soderzhit vse znacheniya, neobkhodimyye v zaprose; 
+pri etom obrashcheniye k samoy tablitse uzhe ne trebuyetsya (pochti). V tom chisle pokryvayushchim mozhet byt' i unikal'nyy indeks.
+
+No dopustim, my khotim dobavit' k unikal'nomu indeksu dopolnitel'nyye stolbtsy, neobkhodimyye v zaprose. 
+No unikal'nost' takikh sostavnykh znacheniy ne garantiruyet unikal'nost' klyucha, poetomu nam potrebuyetsya imet' dva indeksa prakticheski po odnim i tem zhe stolbtsam: odin unikal'nyy dlya podderzhki ogranicheniya tselostnosti i yeshche odin v kachestve pokryvayushchego. Eto, konechno, neeffektivno.
+
+V nashey kompanii Anastasiya Lubennikova lubennikovaav dorabotala metod btree tak, 
+chtoby v unikal'nyy indeks mozhno bylo vklyuchat' dopolnitel'nyye — neunikal'nyye — stolbtsy. Nadeyemsya, 
+chto etot patch budet prinyat soobshchestvom i voydet v PostgreSQL, no eto sluchitsya uzhe ne v versii 10. 
+Poka patch dostupen v Postgres Pro Standard 9.5+, i vot kak eto vyglyadit.
+
+Voz'mem tablitsu bronirovaniy:
+
+demo=# \d bookings
+Table "bookings.bookings"
+Column        | Type                     | Modifiers
+--------------+--------------------------+-----------
+book_ref      | character(6)             | not null
+book_date     | timestamp with time zone | not null
+total_amount  | numeric(10,2)            | not null
+Indexes:
+"bookings_pkey" PRIMARY KEY, btree (book_ref)
+Referenced by:
+TABLE "tickets" CONSTRAINT "tickets_book_ref_fkey" FOREIGN KEY (book_ref) REFERENCES bookings(book_ref)
+
+V ney pervichnyy klyuch (book_ref, kod bronirovaniya) podderzhan obychnym btree-indeksom. Sozdadim novyy unikal'nyy indeks s dopolnitel'nym stolbtsom:
+
+demo=# create unique index bookings_pkey2 on bookings(book_ref) include (book_date);
+CREATE INDEX
+
+Teper' zamenim sushchestvuyushchiy indeks na novyy (v tranzaktsii, chtoby vse izmeneniya vstupili v silu odnovremenno):
+
+demo=# begin;
+BEGIN
+demo=# alter table bookings drop constraint bookings_pkey cascade;
+NOTICE: drop cascades to constraint tickets_book_ref_fkey on table tickets
+ALTER TABLE
+demo=# alter table bookings add primary key using index bookings_pkey2;
+ALTER TABLE
+demo=# alter table tickets add foreign key (book_ref) references bookings (book_ref);
+ALTER TABLE
+demo=# commit;
+COMMIT
+
+Vot chto poluchilos':
+
+demo=# \d bookings
+Table "bookings.bookings"
+Column        | Type                     | Modifiers
+--------------+--------------------------+-----------
+book_ref      | character(6)             | not null
+book_date     | timestamp with time zone | not null
+total_amount  | numeric(10,2)            | not null
+Indexes:
+"bookings_pkey2" PRIMARY KEY, btree (book_ref) INCLUDE (book_date)
+Referenced by:
+TABLE "tickets" CONSTRAINT "tickets_book_ref_fkey" FOREIGN KEY (book_ref) REFERENCES bookings(book_ref)
+
+Teper' odin i tot zhe indeks rabotayet i kak unikal'nyy, i vystupayet pokryvayushchim dlya takogo, naprimer, zaprosa:
+
+demo=# explain(costs off)
+select book_ref, book_date from bookings where book_ref = '059FC4';
+QUERY PLAN
+--------------------------------------------------
+Index Only Scan using bookings_pkey2 on bookings
+Index Cond: (book_ref = '059FC4'::bpchar)
+(2 rows)
+
+As we said earlier, a covering index is an index that contains all the values needed in a query; in this case, 
+access to the table itself is no longer required (almost). A unique index can also be covered.
+
+But let's say we want to add additional columns to the unique index that are needed in the query. 
+But the uniqueness of such composite values does not guarantee the uniqueness of the key, so we need to have two indexes on practically the same columns: 
+one unique to support the integrity constraint and one as a covering. This is, of course, ineffective.
+
+In our company, Anastasia Lubennikova lubennikovaav has improved the btree method so that additional - non-unique - columns can be included in a unique index. 
+Hopefully this patch will be accepted by the community and go into PostgreSQL, but it won't be in version 10. 
+The patch is currently available in Postgres Pro Standard 9.5+, and this is how it looks.
+
+Let's take a table of reservations:
+
+demo = # \ d bookings
+Table "bookings.bookings"
+Column         | Type                       | Modifiers
+-------------- + -------------------------- + -----------
+book_ref       | character (6)              | not null
+book_date      | timestamp with time zone   | not null
+total_amount   | numeric (10,2)             | not null
+Indexes:
+"bookings_pkey" PRIMARY KEY, btree (book_ref)
+Referenced by:
+TABLE "tickets" CONSTRAINT "tickets_book_ref_fkey" FOREIGN KEY (book_ref) REFERENCES bookings (book_ref)
+
+In it, the primary key (book_ref, reservation code) is backed by a regular btree index. Let's create a new unique index with an additional column:
+
+demo = # create unique index bookings_pkey2 on bookings (book_ref) include (book_date);
+CREATE INDEX
+
+Now let's replace the existing index with a new one (in a transaction so that all changes take effect at the same time):
+
+demo = # begin;
+BEGIN
+demo = # alter table bookings drop constraint bookings_pkey cascade;
+NOTICE: drop cascades to constraint tickets_book_ref_fkey on table tickets
+ALTER TABLE
+demo = # alter table bookings add primary key using index bookings_pkey2;
+ALTER TABLE
+demo = # alter table tickets add foreign key (book_ref) references bookings (book_ref);
+ALTER TABLE
+demo = # commit;
+COMMIT
+
+Here's what happened:
+
+demo = # \ d bookings
+Table "bookings.bookings"
+Column         | Type                       | Modifiers
+-------------- + -------------------------- + -----------
+book_ref       | character (6)              | not null
+book_date      | timestamp with time zone   | not null
+total_amount   | numeric (10,2)             | not null
+Indexes:
+"bookings_pkey2" PRIMARY KEY, btree (book_ref) INCLUDE (book_date)
+Referenced by:
+TABLE "tickets" CONSTRAINT "tickets_book_ref_fkey" FOREIGN KEY (book_ref) REFERENCES bookings (book_ref)
+
+Now the same index works as a unique one and acts as a covering for such, for example, a query:
+
+demo = # explain (costs off)
+select book_ref, book_date from bookings where book_ref = '059FC4';
+QUERY PLAN
+--------------------------------------------------
+Index Only Scan using bookings_pkey2 on bookings
+Index Cond: (book_ref = '059FC4' :: bpchar)
+(2 rows)
 
