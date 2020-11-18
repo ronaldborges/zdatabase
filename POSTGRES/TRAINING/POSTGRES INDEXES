@@ -1818,3 +1818,684 @@ all the same rectangles are kept, but "collapsed" to points.
 To visualize such a structure, below are pictures of three levels of the R-tree; the points represent the coordinates of airports 
 (similar to the airports table in the demo database, but more data from openflights.org is taken here).
 
+https://mega.nz/file/4ttxECwS#jFtAUMQs6xZqAlg4W_aNXkxqi0pQheP4Z4w2MVVgHAY
+First level; two large intersecting rectangles are visible.
+
+https://mega.nz/file/MxlhmQRB#iM0N3iJbpxuLdlesK_N63WNIaGesJZyYd7xiMU3qqVg
+Second level; large rectangles break up into smaller areas.
+
+https://mega.nz/file/BotzhYBC#Tk1vFhMPN_BxwmOqKcTmWJrNyQQOaal8n4Pr4tmVY_k
+Third level; each rectangle contains as many points as they fit on one index page.
+
+Let us now consider in more detail a very simple "single-level" example:
+https://mega.nz/file/Ew0zSSAb#VnH4ZA6CzoqsoX-W-ZIHaryPbYwiTh18sDPZVQxl-F0
+
+postgres=# create table points(p point);
+CREATE TABLE
+postgres=# insert into points(p) values
+  (point '(1,1)'), (point '(3,2)'), (point '(6,3)'),
+  (point '(5,5)'), (point '(7,8)'), (point '(8,6)');
+INSERT 0 6
+postgres=# create index on points using gist(p);
+CREATE INDEX
+
+The structure of the index with such a partition will look like this:
+https://mega.nz/file/lk0zlSDQ#-Ylkeo937-vO6KJ_62IdGk4hnj4GvGXTbAdfLT58Hjw
+
+The created index can be used to speed up, for example, such a query: "find all points included in the given rectangle." 
+This condition is formulated as follows: p <@ box '(2,1), (6,3)' (the operator <@ from the points_ops family means "is contained in"):
+
+postgres=# set enable_seqscan = off;
+SET
+postgres=# explain(costs off) select * from points where p <@ box '(2,1),(7,4)';
+                  QUERY PLAN                  
+----------------------------------------------
+ Index Only Scan using points_p_idx on points
+   Index Cond: (p <@ '(7,4),(2,1)'::box)
+(2 rows)
+
+The consistency function for such an operator ("indexed-field <@ expression" where indexed-field is a point and expression is a rectangle) is defined as follows.
+For internal notation, it returns yes if its rectangle intersects with the rectangle specified by the expression. 
+For sheet notation, the function returns yes if its point (the collapsed rectangle) is contained in the rectangle specified by the expression.
+https://mega.nz/file/w8tFDYCK#X91VkhzKHGYQ_KbfDSYX0-vwb8hO9FBv2QsJ_AW9IiE
+
+The search starts from the root node. Rectangle (2,1) - (7,4) intersects with (1,1) - (6,3), but does not intersect with (5,5) - (8,8), 
+so there is no need to descend into the second subtree.
+https://mega.nz/file/498zxYaA#DN_i3iuUyHcWxvvGnv0y7rdpRCQzPHymoKtDnSwD80U
+
+Arriving at the leaf node, we iterate over the three points contained there and return two of them as the result: (3,2) and (6,3).
+postgres=# select * from points where p <@ box '(2,1),(7,4)';
+   p  
+-------
+ (3,2)
+ (6,3)
+(2 rows)
+
+Inside
+
+Regular pageinspect, alas, does not allow you to look inside the GiST index. 
+But there is another way - the gevel extension. It is not included in the standard delivery; see installation instructions.
+
+If done correctly, you will have three functions available. First, some statistics:
+
+postgres=# select * from gist_stat('airports_coordinates_idx');
+                gist_stat                
+------------------------------------------
+ Number of levels:          4            +
+ Number of pages:           690          +
+ Number of leaf pages:      625          +
+ Number of tuples:          7873         +
+ Number of invalid tuples:  0            +
+ Number of leaf tuples:     7184         +
+ Total size of tuples:      354692 bytes +
+ Total size of leaf tuples: 323596 bytes +
+ Total size of index:       5652480 bytes+
+ 
+(1 row)
+
+Here you can see that the index for the coordinates of the airport took 690 pages and consists of four levels: 
+the root and two inner levels were shown above in the figures, and the fourth level is leaf.
+In fact, the index for eight thousand points will take up much less space: here, for clarity, it was created with a filling of 10%.
+Second, you can display the index tree:
+
+postgres=# select * from gist_tree('airports_coordinates_idx');
+                                       gist_tree                                              
+-----------------------------------------------------------------------------------------
+ 0(l:0) blk: 0 numTuple: 5 free: 7928b(2.84%) rightlink:4294967295 (InvalidBlockNumber) +
+     1(l:1) blk: 335 numTuple: 15 free: 7488b(8.24%) rightlink:220 (OK)                 +
+         1(l:2) blk: 128 numTuple: 9 free: 7752b(5.00%) rightlink:49 (OK)               +
+             1(l:3) blk: 57 numTuple: 12 free: 7620b(6.62%) rightlink:35 (OK)           +
+             2(l:3) blk: 62 numTuple: 9 free: 7752b(5.00%) rightlink:57 (OK)            +
+             3(l:3) blk: 72 numTuple: 7 free: 7840b(3.92%) rightlink:23 (OK)            +
+             4(l:3) blk: 115 numTuple: 17 free: 7400b(9.31%) rightlink:33 (OK)          +
+ ...
+ 
+ And thirdly, you can display the data itself, which is stored in index records. 
+ Subtle point: the result of the function must be converted to the desired data type. 
+ In our case, this type is box (bounding rectangle). For example, at the top level, we see five entries:
+ 
+ postgres=# select level, a from gist_print('airports_coordinates_idx')
+  as t(level int, valid bool, a box) where level = 1;
+ level |                                   a                                  
+-------+-----------------------------------------------------------------------
+     1 | (47.663586,80.803207),(-39.2938003540039,-90)
+     1 | (179.951004028,15.6700000762939),(15.2428998947144,-77.9634017944336)
+     1 | (177.740997314453,73.5178070068359),(15.0664,10.57970047)
+     1 | (-77.3191986083984,79.9946975708),(-179.876998901,-43.810001373291)
+     1 | (-39.864200592041,82.5177993774),(-81.254096984863,-64.2382965088)
+(5 rows)
+
+Actually, the figures above were prepared on the basis of this data.
+
+Search and ordering operators
+
+The operators discussed so far (such as <@ in the predicate p <@ box '(2,1), (7,4)') can be called search operators because they specify the search 
+conditions in the query.
+
+There is another type of operator - ordering. They are used to specify the order of the returned results in the order by clause, 
+where simple field specification is usually used. Here's an example of such a request:
+
+postgres = # select * from points order by p <-> point '(4,7)' limit 2;
+   p
+-------
+ (5.5)
+ (7.8)
+(2 rows)
+
+Here p <-> point '(4,7)' is an expression using the ordering operator <->, which denotes the distance from one argument to another. 
+The meaning of the request: to return two points closest to the point (4,7). This search is known as k-NN - k-nearest neighbor search.
+
+To support this kind of queries, the accessor must define an additional distance function, 
+and the ordering operator must be included in the appropriate operator class (for example, for points, the points_ops class). 
+Here is a query that shows operators and their type (s - search, o - ordering):
+
+postgres = # select amop.amopopr :: regoperator, amop.amoppurpose, amop.amopstrategy
+from pg_opclass opc, pg_opfamily opf, pg_am am, pg_amop amop
+where opc.opcname = 'point_ops'
+and opf.oid = opc.opcfamily
+and am.oid = opf.opfmethod
+and amop.amopfamily = opc.opcfamily
+and am.amname = 'gist'
+and amop.amoplefttype = opc.opcintype;
+      amopopr        | amoppurpose   | amopstrategy
+-------------------- + ------------- + --------------
+ << (point, point)   | s             | 1 strictly left
+ >> (point, point)   | s             | 5 strictly right
+ ~ = (point, point)  | s             | 6 matches
+ <^ (point, point)   | s             | 10 strictly from below
+ > ^ (point, point)  | s             | 11 strictly on top
+ <-> (point, point)  | o             | 15 distance
+ <@ (point, box)     | s             | 28 is contained in a rectangle
+ <@ (point, polygon) | s             | 48 contained in landfill
+ <@ (point, circle)  | s             | 68 contained in a circle
+(9 rows)
+
+It also shows the numbers of strategies with an explanation of their meaning. It can be seen that there are much more strategies than btree; 
+only some of them are supported for points. For other types of data, other strategies may be defined.
+
+The distance function is called on an index element and must determine the distance (based on operator semantics) 
+from the value specified by the expression ("indexed-field ordering-operator expression") to the given element. For a leaf item, 
+it is simply the distance to the indexed value. For an inner element, the function should return the minimum of the distances to leaf children. 
+Since it would be very expensive to iterate over all the child records, the function has the right to optimistically underestimate the distance, 
+but at the cost of worsening the search efficiency. However, it should not be categorically exaggerated - this will disrupt the work of the index.
+
+The distance function can return any sortable value (for ordering, PostgreSQL will use comparison semantics from the appropriate btree accessor operator family,
+as described earlier).
+
+In the case of points on a plane, the distance is understood in the most ordinary sense: the value of the expression (x1, y1) <-> (x2, y2) 
+is equal to the root of the sum of the squares of the differences between the abscissas and ordinates. 
+The distance from a point to the bounding rectangle is the minimum distance from a point to this rectangle, 
+or zero if the point is inside it. This value is easy to compute without traversing the child points, 
+and is guaranteed to be no greater than the distance to any of the child points.
+
+Let's look at the search algorithm for the above query.
+https://mega.nz/file/9wk30YTZ#yBfUBBaQ7Lmb-y0hStVCnQhrEOLqxMH3R0Qjr_gynm4
+
+The search starts from the root node. It has two bounding boxes. The distance to (1,1) - (6.3) is 4.0, and to (5.5) - (8.8) is 1.0.
+Child nodes are traversed in order of increasing distance. 
+Thus, first we go down to the nearest child node and find the distances to the points (for clarity, we will show the numbers in the figure):
+https://mega.nz/file/Y5tjmYYQ#lg55qOhZDxFsNWG0pmv0gcVMh7oZ98HGVerYfgk7wxM
+
+This information is already enough to return the first two points (5,5) and (7,8). 
+Since we know that the distance to points inside the rectangle (1,1) - (6,3) is 4.0 or more, there is no need to descend to the first child node.
+
+What if we needed to find the first three points?
+postgres=# select * from points order by p <-> point '(4,7)' limit 3;
+   p  
+-------
+ (5,5)
+ (7,8)
+ (8,6)
+(3 rows)
+
+Although these points are all contained in the second child, we cannot return (8,6) without looking at the first child, 
+as there may be closer points (since 4.0 <4.1).
+https://mega.nz/file/Vp0TEKLb#Z1DLufzrKYJ0WXc9v2M2J0bMS-NgZikMzq4yYN8cDU8
+
+This example clarifies the requirements for the distance function for internal records. 
+Choosing a smaller distance for the second record (4.0 instead of real 4.5), we worsened the efficiency 
+(the algorithm in vain began to look at the extra node), but did not violate the correct operation.
+
+Until recently, GiST was the only access method that can handle ordering operators. 
+But the situation has changed: the RUM method has already been added to this company (which we will talk about later), 
+and it is possible that the good old B-tree will join them - a patch written by our colleague Nikita Glukhov is being discussed by the community.
+
+R-tree for intervals
+
+Another example of using the gist accessor is for indexing intervals, such as time (type tsrange). 
+The only difference is that the inner nodes of the tree will not contain bounding boxes, but bounding boxes.
+
+A simple example. We will rent out a house in the village and store the booking intervals in the table:
+postgres=# create table reservations(during tsrange);
+CREATE TABLE
+postgres=# insert into reservations(during) values
+('[2016-12-30, 2017-01-09)'),
+('[2017-02-23, 2017-02-27)'),
+('[2017-04-29, 2017-05-02)');
+INSERT 0 3
+postgres=# create index on reservations using gist(during);
+CREATE INDEX
+
+The index can be used, for example, to speed up the following query:
+postgres=# select * from reservations where during && '[2017-01-01, 2017-04-01)';
+                    during                    
+-----------------------------------------------
+ ["2016-12-30 00:00:00","2017-01-08 00:00:00")
+ ["2017-02-23 00:00:00","2017-02-26 00:00:00")
+(2 rows)
+
+postgres=# explain (costs off) select * from reservations where during && '[2017-01-01, 2017-04-01)';
+                                     QUERY PLAN                                    
+------------------------------------------------------------------------------------
+ Index Only Scan using reservations_during_idx on reservations
+   Index Cond: (during && '["2017-01-01 00:00:00","2017-04-01 00:00:00")'::tsrange)
+(2 rows)
+
+The && operator for intervals denotes intersection; thus, the query should return all intervals that intersect with the given one. 
+For such an operator, the consistency function determines whether the specified interval intersects with a value in an internal or leaf record.
+
+Note that in this case, too, we are not talking about getting the intervals in a certain order, although comparison operators are defined for the intervals. 
+For them, you can use the b-tree index, but in this case you will have to do without supporting such operations as:
+
+postgres=# select amop.amopopr::regoperator, amop.amoppurpose, amop.amopstrategy
+from pg_opclass opc, pg_opfamily opf, pg_am am, pg_amop amop
+where opc.opcname = 'range_ops'
+and opf.oid = opc.opcfamily
+and am.oid = opf.opfmethod
+and amop.amopfamily = opc.opcfamily
+and am.amname = 'gist'
+and amop.amoplefttype = opc.opcintype;
+         amopopr         | amoppurpose | amopstrategy
+-------------------------+-------------+--------------
+ @>(anyrange,anyelement) | s           |           16  содержит элемент
+ <<(anyrange,anyrange)   | s           |            1  строго слева
+ &<(anyrange,anyrange)   | s           |            2  не выходит за правую границу
+ &&(anyrange,anyrange)   | s           |            3  пересекается
+ &>(anyrange,anyrange)   | s           |            4  не выходит за левую границу
+ >>(anyrange,anyrange)   | s           |            5  строго справа
+ -|-(anyrange,anyrange)  | s           |            6  прилегает
+ @>(anyrange,anyrange)   | s           |            7  содержит интервал
+ <@(anyrange,anyrange)   | s           |            8  содержится в интервале
+ =(anyrange,anyrange)    | s           |           18  равен
+(10 rows)
+
+(Except for equality, which is also part of the operator class for the btree accessor.)
+
+Inside
+
+You can look inside with the same gevel extension. You just need to remember to change the data type in the call to gist_print:
+
+postgres = # select level, a from gist_print ('reservations_during_idx')
+as t (level int, valid bool, a tsrange);
+  level | a
+------- + ------------------------------------------ -----
+      1 | ["2016-12-30 00:00:00", "2017-01-09 00:00:00")
+      1 | ["2017-02-23 00:00:00", "2017-02-27 00:00:00")
+      1 | ["2017-04-29 00:00:00", "2017-05-02 00:00:00")
+(3 rows)
+
+Limiting exclusion
+
+The GiST index can be used to support exclude constraints.
+An exclusion constraint ensures that the specified fields of any two rows in a table do not "match" each other in the sense of some operator. 
+If you choose "equal" as the operator, you get exactly the uniqueness constraint: the specified fields of any two strings are not equal to each other.
+Like the unique constraint, the exclusion constraint is supported by the index. You can choose any operator, as long as it:
+
+  1 - supported by an index method - the can_exclude property (for example, btree, gist or spgist methods, but not gin);
+  2 - was commutative, that is, the condition must be met: a operator b = b operator a.
+  
+Here is a list of suitable strategies and examples of operators (operators, as we recall, can be called differently and are not available for all data types):
+
+* for btree:
+  * "Equal" =
+
+* for gist and spgist:
+  * "Intersection" &&
+  * "Match" ~ =
+  * "Fit" - | -
+
+Note that it is possible to use the equality operator in the exclusion constraint, 
+but it has no practical meaning: the uniqueness constraint will be more efficient. 
+This is why we did not touch on exclusion constraints when we talked about B-trees.
+
+Let's give an example of using an exclusion constraint. It is logical not to allow reservations of a house for overlapping time intervals.
+
+postgres = # alter table reservations add exclude using gist (during with &&);
+ALTER TABLE
+
+After creating the integrity constraint, we can add the lines:
+
+postgres = # insert into reservations (during) values ​​('[2017-06-10, 2017-06-13)');
+INSERT 0 1
+
+But an attempt to insert an intersecting interval into the table will result in an error:
+
+postgres = # insert into reservations (during) values ​​('[2017-05-15, 2017-06-15)');
+ERROR: conflicting key value violates exclusion constraint "reservations_during_excl"
+DETAIL: Key (during) = (["2017-05-15 00:00:00", "2017-06-15 00:00:00")) 
+conflicts with existing key (during) = (["2017-06 -10 00:00:00 "," 2017-06-13 00:00:00 ")).
+
+Btree_gist extension 
+
+Let's complicate the task. Our modest business is expanding and we are going to rent out a few houses:
+
+postgres = # alter table reservations add house_no integer default 1;
+ALTER TABLE
+
+We need to change the exclusion limitation to include the house number. However, GiST does not support the equality operation for integers:
+
+postgres = # alter table reservations drop constraint reservations_during_excl;
+ALTER TABLE
+postgres = # alter table reservations add exclude using gist (during with &&, house_no with =);
+ERROR: data type integer has no default operator class for access method "gist"
+HINT: You must specify an operator class for the index or define a default operator class for the data type.
+
+In this case, the btree_gist extension will help. https://www.postgresql.org/docs/13/btree-gist.html, 
+which adds GiST support for B-tree-specific operations. After all, GiST can work with any operator, so why not teach it to work with greater, less, equal?
+
+postgres = # create extension btree_gist;
+CREATE EXTENSION
+postgres = # alter table reservations add exclude using gist (during with &&, house_no with =);
+ALTER TABLE
+
+Now we still cannot book the first house for the same dates:
+
+postgres = # insert into reservations (during, house_no) values ('[2017-05-15, 2017-06-15)', 1);
+ERROR: conflicting key value violates exclusion constraint "reservations_during_house_no_excl"
+
+But we can book a second one:
+
+postgres = # insert into reservations (during, house_no) values ('[2017-05-15, 2017-06-15)', 2);
+INSERT 0 1
+
+But you need to understand that although GiST can somehow work with the operations "greater than", "less", "equal", the B-tree still copes with them better. 
+So this technique should only be used if the GiST index is essentially needed - as in our example.
+
+RD tree for full-text search
+
+About full-text search
+
+Let's start with a minimalist introduction to PostgreSQL full-text search (if you're in the know, you can safely skip this section).
+
+The task of full-text search is to select among the set of documents those that match the search query. 
+(If there are many results, then it is important to find the best match, but we will not talk about this for now.)
+
+A document for search purposes is coerced into a special type tsvector, which contains tokens and their positions in the document. 
+Lexemes are words that have been converted to a searchable form. For example, by default, 
+words are converted to lower case and their variable endings are cut off:
+
+postgres = # set default_text_search_config = russian;
+SET
+postgres = # select to_tsvector ('And Aibolit got up, Aibolit ran. He runs through the fields, through forests, through meadows.');
+                            to_tsvector
+-------------------------------------------------- ------------------
+ 'aybol': 3.5 'beige': 13 'stood up': 2 'forest': 9 'meadow': 11 'run': 4 'floor': 7
+(1 row)
+
+It can also be seen that some words (called stop words) are omitted altogether ("and", "by"), 
+since they are presumably too common for a search to be meaningful. Of course, all these transformations are customizable, but that's not the point right now.
+
+The search query is represented by a different type - tsquery. Roughly speaking, 
+a query consists of one or more tokens connected by logical connectives: “and” &, “or” |, “not”!. 
+You can also use parentheses to qualify the priority of operations.
+
+postgres = # select to_tsquery ('Aybolit & (ran | went)');
+            to_tsquery
+----------------------------------
+ 'aybol' & ('escape' | 'go')
+(1 row)
+
+For full-text searches, a single match operator @@ is used.
+
+postgres = # select to_tsvector ('And Aibolit got up, Aibolit ran.') @@ to_tsquery ('Aibolit & (ran | went)');
+ ? column?
+----------
+ t
+(1 row)
+
+postgres = # select to_tsvector ('And Aibolit got up, Aibolit ran.') @@ to_tsquery ('Barmaley & (ran | went)');
+ ? column?
+----------
+ f
+(1 row)
+
+This information will be sufficient for now. We'll talk a little more about full-text search in one of the next sections on the GIN index.
+
+RD trees
+
+For full-text search to work quickly, you need, firstly, 
+to store a column of the tsvector type in the table (so as not to perform an expensive conversion every time you search), 
+and secondly, to build an index on this field. One of the possible accessors for this is GiST.
+
+postgres = # create table ts (doc text, doc_tsv tsvector);
+CREATE TABLE
+postgres = # create index on ts using gist (doc_tsv);
+CREATE INDEX
+postgres = # insert into ts (doc) values
+  ('A birch stood in the field'), ('A curly one stood in the field'), ('Lyuli, lyuli, stood'),
+  ('There is no one to birch a birch'), ('There is no one to curl up'), ('Lyuli, lyuli, zalomati'),
+  ('I'll go for a walk'), ('I'll break the white birch'), ('Lyuli, lyuli, I'll break it');
+INSERT 0 9
+postgres = # update ts set doc_tsv = to_tsvector (doc);
+UPDATE 9
+
+The last step (converting the document to a tsvector) is, of course, conveniently assigned to the trigger.
+
+postgres = # select * from ts;
+           doc                  | doc_tsv
+------------------------------- + -------------------------------------
+ There was a birch in the field | 'birch': 3 'floor': 2 'standing': 4
+ In the field curly stood       | 'curly': 3 'floor': 2 'standing': 4
+ Lyuli, Lyuli, stood            | 'lyul': 1.2 'standing': 3
+ No one to break a birch        | 'birch': 2 'zalomat': 3 'neck': 1
+ No one to curl up              | 'zalomat': 3 'curly': 2 'neck': 1
+ Lyuli, lyuli, zalomati         | 'zalomat': 3 'lyul': 1.2
+ I'll go for a walk             | 'walk': 3 'go': 2
+ I will break the white birch   | 'white': 1 'birches': 2 'creases': 3
+ Lyuli, Lyuli, I will break     | 'crease': 3 'lyul': 1.2
+(9 rows)
+
+How should the index be arranged? The R-tree itself is not suitable here - it is not clear what a "bounding rectangle" is for documents. 
+But you can apply some modification of this approach for sets - the so-called RD-tree (RD stands for Russian Doll, matryoshka). 
+By a set in this case, we mean a set of document lexemes, but in general, a set can be anything.
+
+The idea behind RD trees is to take a bounding set instead of a bounding box — that is, a set containing all the elements of the child sets.
+An important question is how to represent sets in index records. Probably the most straightforward way is to simply list all the elements of the set. 
+This is how it might look:
+
+An important question is how to represent sets in index records. Probably the most straightforward way is to simply list all the elements of the set. 
+This is how it might look:
+https://mega.nz/file/AokwRAIC#3Rfn09K4eTpoYNgpqzXATBsp1LqfQLAzARyrWiI6OSQ
+
+Then for example, for access by condition doc_tsv @@ to_tsquery('sit') we could descend only to those nodes that contain "sit" lexeme:
+https://mega.nz/file/QtsgWIgI#hbQW5Qdi-26AqDTme7paUeZKvyCoVKC29khCDsPrQyM
+
+This representation has evident issues. 
+The number of lexemes in a document can be pretty large, so index rows will have large size and get into TOAST, making the index far less efficient. 
+Even if each document has few unique lexemes, the union of sets may still be very large: the higher to the root the larger index rows.
+
+A representation like this is sometimes used, but for other data types. And full-text search uses another, more compact, solution — a so-called signature tree. 
+Its idea is quite familiar to all who dealt with Bloom filter.
+
+Each lexeme can be represented with its signature: a bit string of a certain length where all bits but one are zero. 
+The position of this bit is determined by the value of hash function of the lexeme (we discussed internals of hash functions earlier).
+The document signature is the bitwise OR of the signatures of all document lexemes.
+Let's assume the following signatures of lexemes:
+
+could    1000000
+ever     0001000
+good     0000010
+mani     0000100
+sheet    0000100
+sleekest 0100000
+sit      0010000
+slit     0001000
+slitter  0000001
+upon     0000010
+whoever  0010000
+
+Then signatures of the documents are like these:
+
+Can a sheet slitter slit sheets?                       0001101
+How many sheets could a sheet slitter slit?            1001101
+I slit a sheet, a sheet I slit.                        0001100
+Upon a slitted sheet I sit.                            0011110
+Whoever slit the sheets is a good sheet slitter.       0011111
+I am a sheet slitter.                                  0000101
+I slit sheets.                                         0001100
+I am the sleekest sheet slitter that ever slit sheets. 0101101
+She slits the sheet she sits on.                       0011100
+
+The index tree can be represented as follows:
+
+https://mega.nz/file/p5kCgCAY#z_Owjdm-kOVsF-vCtcjUIfdbE5Dr6v6UxSlldCeXmoo
+
+The advantages of this approach are evident: index rows have equal small sizes, and such an index is compact. 
+But a drawback is also clear: the accuracy is sacrificed to compactness.
+Let's consider the same condition doc_tsv @@ to_tsquery('sit'). 
+And let's compute the signature of the search query the same way as for the document: 0010000 in this case. 
+The consistency function must return all child nodes whose signatures contain at least one bit from the query signature:
+
+https://mega.nz/file/wg9g2QpS#E-0cEwjP_wjdrJt-cyAR9LdWnL0KdDao7PJoE4VA264
+
+Compare with the figure above: we can see that the tree turned yellow, 
+which means that false positives occur and excessive nodes are went through during the search. 
+Here we picked up "whoever" lexeme, whose signature unfortunately was the same as the signature of "sit" lexeme. 
+It's important that no false negatives can occur in the pattern, that is, we are sure not to miss needed values.
+
+Besides, it may so happen that different documents will also get the same signatures: in our example, unlucky documents are "I slit a sheet, 
+a sheet I slit" and "I slit sheets" (both have the signature of 0001100). And if a leaf index row does not store the value of "tsvector", 
+the index itself will give false positives. Of course, in this case, the method will ask the indexing engine to recheck the result with the table, 
+so the user will not see these false positives. But the search efficiency may get compromised.
+
+Actually, a signature is 124-byte large in the current implementation instead of 7-bit in the figures, 
+so the above issues are much less likely to occur than in the example. But in reality, much more documents get indexed as well. 
+To somehow reduce the number of false positives of the index method, 
+the implementation gets a little tricky: the indexed "tsvector" is stored in a leaf index row, 
+but only if its size is not large (a little less than 1/16 of a page, which is about half a kilobyte for 8-KB pages).
+
+Example
+To see how indexing works on actual data, let's take the archive of "pgsql-hackers" email. 
+The version used in the example contains 356125 messages with the send date, subject, author, and text:
+
+fts=# select * from mail_messages order by sent limit 1;
+
+-[ RECORD 1 ]------------------------------------------------------------------------
+id         | 1572389
+parent_id  | 1562808
+sent       | 1997-06-24 11:31:09
+subject    | Re: [HACKERS] Array bug is still there....
+author     | "Thomas G. Lockhart" <Thomas.Lockhart@jpl.nasa.gov>
+body_plain | Andrew Martin wrote:                                                    +
+           | > Just run the regression tests on 6.1 and as I suspected the array bug +
+           | > is still there. The regression test passes because the expected output+
+           | > has been fixed to the *wrong* output.                                 +
+           |                                                                         +
+           | OK, I think I understand the current array behavior, which is apparently+
+           | different than the behavior for v1.0x.                                  +
+             ...
+             
+Adding and filling in the column of "tsvector" type and building the index. 
+Here we will join three values in one vector (subject, author, and message text) to show that the document does not need to be one field, 
+but can consist of totally different arbitrary parts.
+
+fts=# alter table mail_messages add column tsv tsvector;
+
+fts=# update mail_messages
+set tsv = to_tsvector(subject||' '||author||' '||body_plain);
+
+NOTICE:  word is too long to be indexed
+DETAIL:  Words longer than 2047 characters are ignored.
+...
+UPDATE 356125
+
+fts=# create index on mail_messages using gist(tsv); 
+
+As we can see, a certain number of words were dropped because of too large size. But the index is eventually created and can support search queries:
+
+fts=# explain (analyze, costs off)
+select * from mail_messages where tsv @@ to_tsquery('magic & value');
+
+                        QUERY PLAN
+----------------------------------------------------------
+ Index Scan using mail_messages_tsv_idx on mail_messages
+ (actual time=0.998..416.335 rows=898 loops=1)
+   Index Cond: (tsv @@ to_tsquery('magic & value'::text))
+   Rows Removed by Index Recheck: 7859
+ Planning time: 0.203 ms
+ Execution time: 416.492 ms
+(5 rows)
+             
+We can see that together with 898 rows matching the condition, the access method returned 7859 more rows that were filtered out by rechecking with the table. This demonstrates a negative impact of the loss of accuracy on the efficiency.
+
+Internals
+To analyze the contents of the index, we will again use "gevel" extension:
+
+fts=# select level, a
+from gist_print('mail_messages_tsv_idx') as t(level int, valid bool, a gtsvector)
+where a is not null;
+
+ level |               a              
+-------+-------------------------------
+     1 | 992 true bits, 0 false bits
+     2 | 988 true bits, 4 false bits
+     3 | 573 true bits, 419 false bits
+     4 | 65 unique words
+     4 | 107 unique words
+     4 | 64 unique words
+     4 | 42 unique words
+...
+
+Values of the specialized type "gtsvector" that are stored in index rows are actually the signature plus, maybe, the source "tsvector". 
+If the vector is available, the output contains the number of lexemes (unique words), otherwise, the number of true and false bits in the signature.
+
+It is clear that in the root node, the signature degenerated to "all ones", that is, 
+one index level became absolutely useless (and one more became almost useless, with only four false bits).
+
+Properties
+Let's look at the properties of GiST access method (queries were provided earlier):
+
+
+ amname |     name      | pg_indexam_has_property
+--------+---------------+-------------------------
+ gist   | can_order     | f
+ gist   | can_unique    | f
+ gist   | can_multi_col | t
+ gist   | can_exclude   | t
+Sorting of values and unique constraint are not supported. As we've seen, the index can be built on several columns and used in exclusion constraints.
+
+The following index-layer properties are available:
+
+
+     name      | pg_index_has_property
+---------------+-----------------------
+ clusterable   | t
+ index_scan    | t
+ bitmap_scan   | t
+ backward_scan | f
+And the most interesting properties are those of the column layer. Some of the properties are independent of operator classes:
+
+
+        name        | pg_index_column_has_property
+--------------------+------------------------------
+ asc                | f
+ desc               | f
+ nulls_first        | f
+ nulls_last         | f
+ orderable          | f
+ search_array       | f
+ search_nulls       | t
+(Sorting is not supported; the index cannot be used to search an array; NULLs are supported.)
+
+But the two remaining properties, "distance_orderable" and "returnable", will depend on the operator class used. For example, for points we will get:
+
+
+        name        | pg_index_column_has_property
+--------------------+------------------------------
+ distance_orderable | t
+ returnable         | t
+The first property tells that the distance operator is available for search of nearest neighbors. 
+And the second one tells that the index can be used for index-only scan. Although leaf index rows store rectangles rather than points, 
+the access method can return what's needed.
+
+The following are the properties for intervals:
+
+
+        name        | pg_index_column_has_property
+--------------------+------------------------------
+ distance_orderable | f
+ returnable         | t
+For intervals, the distance function is not defined and therefore, search of nearest neighbors is not possible.
+
+And for full-text search, we get:
+
+
+        name        | pg_index_column_has_property
+--------------------+------------------------------
+ distance_orderable | f
+ returnable         | f
+Support of index-only scan has been lost since leaf rows can contain only the signature without the data itself. 
+However, this is a minor loss since nobody is interested in the value of type "tsvector" anyway: this value is used to select rows, 
+while it is source text that needs to be shown, but is missing from the index anyway.
+
+Other data types
+Finally, we will mention a few more types that are currently supported by GiST access method in addition to already discussed geometric types 
+(by example of points), intervals, and full-text search types.
+
+Of standard types, this is the type "inet" for IP-addresses. All the rest is added through extensions:
+
+ * cube provides "cube" data type for multi-dimensional cubes. For this type, just as for geometric types in a plane, GiST operator class is defined: R-tree, 
+   supporting search for nearest neighbors.
+ * seg provides "seg" data type for intervals with boundaries specified to a certain accuracy and adds support of GiST index for this data type (R-tree).
+ * intarray extends the functionality of integer arrays and adds GiST support for them. 
+   Two operator classes are implemented: "gist__int_ops" (RD-tree with a full representation of keys in index rows) and "gist__bigint_ops" (signature RD-tree). 
+   The first class can be used for small arrays, and the second one - for larger sizes.
+ * ltree adds "ltree" data type for tree-like structures and GiST support for this data type (RD-tree).
+ * pg_trgm adds a specialized operator class "gist_trgm_ops" for use of trigrams in full-text search. But this is to be discussed further, along with GIN index.
+
+
+
+
+
+
+
