@@ -715,3 +715,246 @@ amopopr
 > (anyarray, anyarray)
 (5 rows)
 
+---------------
+- Index Types -
+---------------
+
+--------
+- Hash -
+--------
+
+General theory
+
+Many modern programming languages include hash tables as their underlying data type. Outwardly, it looks like a regular array, but not an integer, 
+but any data type (for example, a string) is used as an index. The hash index is similar in PostgreSQL. How it works?
+
+Typically, data types have very large ranges of valid values: how many different rows can theoretically be represented in a column of type text? 
+At the same time, how many different values are actually stored in the text column of some table? Usually not much.
+
+The idea of hashing is to associate a small number with a value of any data type (from 0 to N − 1, N values in total). 
+This mapping is called a hash function. The resulting number can be used as an index of a regular array, where you can add references to table rows (TID). 
+The elements of such an array are called hash table buckets - several TIDs can be in one bucket if the same indexed value occurs in different rows.
+
+The hash function is better, the more evenly it distributes the original values across the buckets. 
+But even a good function will sometimes give the same result for different input values - this is called collision. 
+So, one bucket may contain TIDs corresponding to different keys, and therefore the TIDs obtained from the index must be rechecked.
+
+Just as an example: what hash function can you think of for strings? Let the number of baskets be 256. 
+Then the code of the first character can be taken as the basket number (for example, we have a one-byte encoding). 
+Is this a good hash function? Obviously not: if all lines start with the same character, they all end up in the same bucket; 
+there is no question of uniformity, you will have to recheck all the values ​​and the whole meaning of hashing will be lost.
+What if you sum the codes of all characters modulo 256? It will be much better, although not perfect either. 
+If you are wondering how such a hash function actually works in PostgreSQL, see the definition of hash_any () in hashfunc.c.
+
+Index device
+
+Let's go back to the hash index. Our task is to quickly find the corresponding TID by the value of some data type (indexing key).
+
+When inserting into the index, calculate the hash function for the key. Hash functions in PostgreSQL always return integer, 
+which corresponds to a range of 232 ≈ 4 billion values. The number of buckets is initially equal to two and increases dynamically, 
+adjusting to the amount of data; the bucket number can be calculated from the hash code using bit arithmetic. Let's put our TID in this basket.
+
+But this is not enough, because TIDs corresponding to different keys can get into one basket. 
+How to be? It would be possible to write the original key value along with the TID to the bucket, but this would greatly increase the size of the index. 
+So to save space, not the key itself is saved in the basket, but its hash code.
+
+When searching the index, we compute the hash function for the key and get the bucket number. 
+All that remains is to iterate through the entire contents of the basket and return only the matching TIDs with the required hash codes. 
+This is done efficiently because hash-TID pairs are stored in order.
+
+But it may so happen that two different keys will not just end up in the same bucket, 
+but will also have the same 4-byte hash codes - no one canceled collisions. Therefore, 
+the access method asks the general indexing mechanism to control each TID, 
+rechecking the condition against the table row (the mechanism can do this along with the visibility check).
+
+Page organization
+
+If you look at the index not from the point of view of scheduling and executing a query, but through the eyes of a buffer cache manager, 
+it turns out that all information, all index records must be packed into pages. 
+Such index pages are buffered and flushed out in the same way as table pages.
+
+https://mega.nz/file/V99GSa5b#imu61Yt23noh2sKw8AzJI_9KpJKLOrkFsySkLRCWXCw
+
+The hash index, as you can see in the picture, uses pages (gray rectangles) of four types:
+
+ * Meta page - zero page, contains information about what is inside the index;
+ * Bucket pages - the main pages of the index, store data in the form of pairs "hash code - TID";
+ * Overflow pages - are arranged in the same way as cart pages and are used when one page is not enough for the cart;
+ * Bitmap pages - These are the overflow pages that have been vacated and can be used for other buckets.
+ 
+Down arrows from index page items symbolize TIDs - links to table rows.
+With the next increase in the index, twice as many buckets (and, accordingly, pages) are created at one time than the last time. 
+In order not to select at once such a potentially large number of pages, in version 10 they made a smoother increase in size. Well, 
+overflow pages are just allocated as needed and tracked in bitmap pages, which are also allocated as needed.
+Note that the hash index cannot be reduced in size. If you delete some of the indexed rows, 
+the once allocated pages are no longer returned to the operating system, but only reused for new data after cleaning (VACUUM). 
+The only way to reduce the physical size of the index is to rebuild it from scratch with the REINDEX or VACUUM FULL command. 
+
+Example
+
+Let's give an example of creating a hash index. In order not to invent our own tables, 
+here and further we will use the demo database on air transportation, and this time we will take the table of flights.
+
+demo = # create index on flights using hash (flight_no);
+WARNING: hash indexes are not WAL-logged and their use is discouraged
+CREATE INDEX
+
+demo = # explain (costs off) select * from flights where flight_no = 'PG0001';
+QUERY PLAN
+-------------------------------------------------- -
+Bitmap Heap Scan on flights
+Recheck Cond: (flight_no = 'PG0001' :: bpchar)
+-> Bitmap Index Scan on flights_flight_no_idx
+Index Cond: (flight_no = 'PG0001' :: bpchar)
+(4 rows)
+
+An unpleasant feature of the current implementation of a hash index is that actions with it are not written to the write-ahead log 
+(which is what PostgreSQL warns us about when creating an index). As a consequence, 
+hash indexes cannot be recovered from a failure and do not participate in replication. In addition, 
+the hash index is significantly inferior to the B-tree in terms of versatility, and its effectiveness also raises questions. 
+That is, there is no practical sense in using such indexes now.
+
+However, the situation will change this fall with the release of the tenth version of PostgreSQL. In it, 
+the hash index was finally provided with log support and additionally optimized memory allocation and the efficiency of concurrent work.
+
+Hashing semantics
+
+Why has the hash index survived almost from the very birth of PostgreSQL to the present day in a state in which it cannot be used? 
+The fact is that the hashing algorithm is used very widely in the DBMS (in particular, for hash joins and groupings), 
+and the system needs to know which hash function to apply to which data types. But this mapping is not static, 
+it cannot be set once and for all - PostgreSQL allows you to add new types on the fly. Here in the hash access method such a match is contained, 
+and it is presented in the form of binding auxiliary functions to operator families:
+
+demo = # select opf.opfname as opfamily_name,
+amproc.amproc :: regproc AS opfamily_procedure
+from pg_am am,
+pg_opfamily opf,
+pg_amproc amproc
+where opf.opfmethod = am.oid
+and amproc.amprocfamily = opf.oid
+and am.amname = 'hash'
+order by opfamily_name,
+opfamily_procedure;
+
+opfamily_name | opfamily_procedure
+-------------------- + --------------------
+abstime_ops | hashint4
+aclitem_ops | hash_aclitem
+array_ops | hash_array
+bool_ops | hashchar
+...
+
+Although not documented, these functions can be used to compute the hash code of a value of the appropriate type. For example, 
+the hashtext function is used for the text_ops family:
+
+demo = # select hashtext ('times');
+hashtext
+-----------
+127722028
+(1 row)
+
+demo = # select hashtext ('two');
+hashtext
+-----------
+345620034
+(1 row)
+
+Properties
+
+Let's see the properties of the hash index that this accessor tells the system about itself. 
+We gave requests last time; for now we will limit ourselves only to the results:
+
+name            | pg_indexam_has_property
+--------------- + -------------------------
+can_order       | f
+can_unique      | f
+can_multi_col   | f
+can_exclude     | t
+
+name            | pg_index_has_property
+--------------- + -----------------------
+clusterable     | f
+index_scan      | t
+bitmap_scan     | t
+backward_scan   | t
+
+name                 | pg_index_column_has_property
+-------------------- + ----------------------------- -
+asc                  | f
+desc                 | f
+nulls_first          | f
+nulls_last           | f
+orderable            | f
+distance_orderable   | f
+returnable           | f
+search_array         | f
+search_nulls         | f
+
+The hash function does not preserve the ordering relation: 
+from the fact that the value of the hash function of one key is less than the value of the function of the other key, 
+no conclusions can be drawn about how the keys themselves are ordered. Therefore, a hash index, in principle, can support a single "equal" operation:
+
+demo = # select opf.opfname AS opfamily_name,
+amop.amopopr :: regoperator AS opfamily_operator
+from pg_am am,
+pg_opfamily opf,
+pg_amop amop
+where opf.opfmethod = am.oid
+and amop.amopfamily = opf.oid
+and am.amname = 'hash'
+order by opfamily_name,
+opfamily_operator;
+
+opfamily_name   | opfamily_operator
+--------------- + ----------------------
+abstime_ops     | = (abstime, abstime)
+aclitem_ops     | = (aclitem, aclitem)
+array_ops       | = (anyarray, anyarray)
+bool_ops        | = (boolean, boolean)
+...
+
+Accordingly, the hash index cannot produce ordered data (can_order, orderable). For the same reason, 
+the hash index does not work with null values: the "equal" operation does not make sense for null (search_nulls).
+Since the hash index does not store the keys (but only the hash codes of the keys), it cannot be used for index-only access (returnable).
+Multi-column indexes (can_multi_col) are not supported by this accessor.
+
+Insides
+
+Starting with version 10, it will be possible to look into the internal structure of the hash index using the pageinspect extension. This is how it will look:
+https://www.postgresql.org/docs/devel/pageinspect.html
+
+demo = # create extension pageinspect;
+CREATE EXTENSION
+
+Meta page (get the number of rows in the index and the maximum used cart number):
+
+demo = # select hash_page_type (get_raw_page ('flights_flight_no_idx', 0));
+hash_page_type
+----------------
+metapage
+(1 row)
+demo = # select ntuples, maxbucket from hash_metapage_info (get_raw_page ('flights_flight_no_idx', 0));
+ntuples   | maxbucket
+--------- + -----------
+33121     | 127
+(1 row)
+
+Cart page (get the number of actual rows and rows that can be cleared):
+
+demo = # select hash_page_type (get_raw_page ('flights_flight_no_idx', 1));
+hash_page_type
+----------------
+bucket
+(1 row)
+demo = # select live_items, dead_items from hash_page_stats (get_raw_page ('flights_flight_no_idx', 1));
+live_items   | dead_items
+------------ + ------------
+407          | 0
+(1 row)
+
+And so on. But you can hardly understand the meaning of all the available fields without studying the source code.
+
+
+
+
+
