@@ -1,0 +1,843 @@
+#############################
+# POSTGRES MVCC INSULATION  #
+#############################
+
+* Isolation as understood by the standard and PostgreSQL (this article);
+* Layers, files, pages - what's going on at the physical level;
+* Row Versions, Virtual and Nested Transactions;
+* Snapshots and row version visibility, event horizon;
+* In-page cleaning and HOT updates;
+* Routine vacuum;
+* Automatic cleaning (autovacuum);
+* Transaction counter overflow and freeze;
+
+What Is Insulation And Why It Matters
+
+Probably, everyone at least knows about the existence of transactions, met the abbreviation ACID and heard about isolation levels. 
+But we still have to meet the opinion that this is de theory, which is not necessary in practice. So I'll spend some time trying to explain why this really matters.
+You are unlikely to be happy if the application receives incorrect data from the database, or if the application writes incorrect data to the database.
+But what is “correct” data? It is known that at the database level can create integrity constraints (integrity constraints, such as NOT NULL or UNIQUE). 
+If the data always satisfies the integrity constraints (and this is so, because the DBMS guarantees it), then it is complete.
+
+Correct and holistic- same? Not really. Not all constraints can be formulated at the database level. Some of the restrictions are too complex, for example, 
+they cover several tables at once. And even if the constraint could in principle be defined in the database, but for some reason they did not do it, 
+this does not mean that it can be violated.
+
+So, correctness is stricter than integrity , but what it is, we do not know exactly. It remains to admit that the standard of correctness is an application that, 
+as we would like to believe, is written correctly and never makes mistakes. In any case, if the application does not violate the integrity, but violates the correctness, 
+the DBMS will not know about it and will not catch its hand.
+
+In what follows, we will call correctness by the termcoherence (consistency).
+Let's assume, however, that the application only executes the correct sequences of statements. What then is the role of the DBMS if the application is already correct?
+First, it turns out that the correct sequence of statements can temporarily break the data consistency, 
+and this - oddly enough - is normal. A hackneyed but understandable example is the transfer of funds from one account to another. 
+The consistency rule might sound like this: the transfer never changes the total amount of money in the accounts
+(Such a rule is rather difficult to write in SQL as an integrity constraint, so it exists at the application level and is invisible to the DBMS). 
+The transfer consists of two operations: the first decreases funds on one account, the second increases on another. The first operation breaks the data consistency, 
+the second restores.
+
+A good exercise is to implement the above rule at the integrity constraint level. Are you weak?
+What if the first operation succeeds and the second fails? After all, it's easy: during the second operation, electricity may disappear, 
+the server may fall, division by zero may occur - but you never know. It is clear that consistency will be violated, and this cannot be allowed. 
+In principle, it is possible to resolve such situations at the application level at the cost of incredible efforts, but, fortunately, it is not necessary: 
+the DBMS takes care of it. But for this she must know that the two operations make up an indivisible whole. That is, a transaction .
+It turns out to be interesting: knowing that operations constitute a transaction, the DBMS helps maintain consistency by guaranteeing the atomicity of transactions, 
+while not knowing anything about specific consistency rules.
+But there is also a second, more subtle point. As soon as several simultaneously working transactions appear in the system, which are absolutely correct one at a time, 
+together they may work incorrectly. This is due to the fact that the order of operations is mixed: 
+it cannot be assumed that all the operations of one transaction are performed first, and only then all the operations of another.
+A note about simultaneity. Indeed, transactions can work simultaneously on a system with a multi-core processor, with a disk array, etc. 
+But all the same reasoning is also true for a server that executes commands sequentially, in a time-sharing mode: one transaction is executed so many cycles, 
+another one ... The term concurrent execution is sometimes used to summarize .
+Situations where valid transactions do not work together correctly are called concurrency anomalies .
+A simple example: if an application wants to get the correct data from the database, then at least it should not see changes in other uncommitted transactions. 
+Otherwise, you can not only get inconsistent data, but also see something that has never been in the database (if the transaction is canceled). 
+This anomaly is called dirty reading .
+
+If there are other, more complex anomalies, which we will deal with a little later.
+Of course, you cannot refuse concurrent execution: otherwise, what kind of performance can we talk about? But you can’t work with incorrect data either.
+And again the DBMS comes to the rescue. You can make transactions run as if sequentially, as if one after the other. In other words, it is isolated from each other. 
+In reality, the DBMS can perform intermixing operations, 
+but at the same time guarantee that the result of the simultaneous execution will match the result of any of the possible sequential executions. 
+This removes any possible anomalies.
+
+So, we come to the definition:
+
+A transaction is a set of operations performed by an application that moves a database from one correct state to another correct state (consistency), 
+provided that the transaction is complete (atomicity) and without interference from other transactions (isolation).
+
+This definition combines the first three letters of ACID. They are so closely related to each other that there is simply no point in considering one without the other. 
+In fact, it is difficult to tear off the letter D (durability). After all, when a system crashes, changes in uncommitted transactions remain in it, 
+with which you have to do something to restore data consistency.
+
+Everything would be fine, but the implementation of complete isolation is a technically difficult task, associated with a decrease in system throughput. 
+Therefore, in practice, very often (not always, but almost always) weakened isolation is used, which prevents some, but not all, anomalies. 
+This means that part of the work to ensure the correctness of the data falls on the application. 
+That is why it is very important to understand what isolation level is used in the system, what guarantees it gives and what it does not, 
+and how to write correct code under such conditions.
+
+------------------------------------------------------
+- Isolation levels and anomalies in the SQL standard -
+------------------------------------------------------
+
+The SQL standard has long described four isolation levels. 
+These levels are determined by enumerating anomalies that are allowed or not allowed when transactions are being executed at this level at the same time. 
+Therefore, to talk about these levels, you need to get acquainted with anomalies.
+
+Let me emphasize that in this part we are talking about a standard, that is, about a certain theory on which practice relies heavily, 
+but from which at the same time it is quite at odds with. Therefore, all examples here are speculative. 
+They will use the same operations on customer accounts: this is quite obvious, although, admittedly, 
+it has nothing to do with how banking operations are arranged in reality
+
+---------------
+- Lost update -
+---------------
+
+Let's start with the lost update . This anomaly occurs when two transactions read the same row in a table, then one transaction updates that row, 
+and then the second transaction also updates the same row, ignoring the changes made by the first transaction.
+
+For example, two transactions are going to increase the amount on the same account by 100 ₽. The first transaction reads the current value (1000 ₽), 
+then the second transaction reads the same value. The first transaction increases the amount (it turns out 1100 ₽) and writes this value. 
+The second transaction does the same - it receives the same 1100 ₽ and writes them down. As a result, the client lost 100 ₽.
+
+A lost update is not allowed by the standard at any isolation level.
+
+-----------------------------------
+- Dirty Read and Read Uncommitted -
+-----------------------------------
+
+We already got acquainted with dirty reading above. This anomaly occurs when a transaction reads uncommitted changes made by another transaction.
+For example, the first transaction transfers all the money from the customer's account to another account, but does not commit the change. 
+Another transaction reads the account balance, receives $ 0, 
+and refuses to withdraw cash from the client - even though the first transaction is aborted and reverses its changes, so the value 0 never existed in the database.
+Dirty reads are allowed by the standard at the Read Uncommitted level.
+
+------------------------------------------
+- Non-repetitive Read and Read Committed -
+------------------------------------------
+
+A nonrepeatable read anomaly occurs when a transaction reads the same row twice, and between reads, a second transaction modifies (or deletes) that row and commits the changes. Then the first transaction will get different results.
+For example, suppose a consistency rule prohibits negative amounts in customer accounts. 
+The first transaction is going to reduce the amount on the account by 100 ₽. She checks the current value, gets 1000 ₽ and decides that a decrease is possible. 
+At this time, the second transaction reduces the amount on the account to zero and commits the changes. If now the first transaction re-checked the amount, 
+it would receive 0 ₽ (but it has already decided to decrease the value, and the account “goes into negative territory”).
+Non-repetitive reads are allowed by the standard at the Read Uncommitted and Read Committed levels. But Read Committed does not allow dirty reading.
+
+------------------------------------
+- Phantom Read and Repeatable Read -
+------------------------------------
+
+A phantom read occurs when a transaction reads a set of rows twice for the same condition, and between reads, 
+the second transaction adds rows that satisfy this condition (and commits the changes). Then the first transaction will receive different sets of rows.
+For example, suppose a consistency rule prohibits a customer from having more than 3 accounts . The first transaction is about to open a new account, 
+checks their current number (say 2) and decides that opening is possible. At this time, the second transaction also opens a new account for the client and fixes the changes. 
+If now the first transaction rechecked the quantity, it would receive 3 (but it is already opening another account and the client has 4).
+Phantom reading is allowed by the standard at the Read Uncommitted, Read Committed and Repeatable Read levels. But at the Repeatable Read level, 
+non-repeated reads are not allowed.
+
+--------------------------------------
+- Lack of anomalies and Serializable -
+--------------------------------------
+
+The standard also defines another level - Serializable - at which no anomalies are allowed. This is not at all the same as prohibiting lost updates and dirty, 
+non-repetitive and phantom reading.
+The fact is that there are significantly more known anomalies than are listed in the standard, and an unknown number are still unknown.
+The Serializable layer should prevent all anomalies in general . This means that at this level, the application developer does not need to think about concurrency. 
+If the transactions execute the correct sequence of statements, working alone, the data will be consistent even when these transactions are running simultaneously.
+
+-----------------
+- Summary plate -
+-----------------
+
+Now you can give a well-known table. But here, for the sake of clarity, the last column is added to it, which is not in the standard.
+
+------------------+-----------------+-------------------+-----------------------------+---------------------+-------------------+
+	                |   lost changes  |   dirty reading   |   non-repetitive reading    | 	phantom reading	  |   other anomalies |
+------------------+-----------------+-------------------+-----------------------------+---------------------+-------------------+                  
+Read Uncommitted	|     -           |     yes           |     yes                     |     yes             |     yes           |
+Read Committed    |     -           |       -           |     yes                     |     yes             |     yes           |
+Repeatable Read   |     -           |       -           |       -                     |     yes             |     yes           |
+Serializable	    |     -           |       -           |       -                     |     -               |     yes           |
+------------------+-----------------+-------------------+-----------------------------+---------------------+-------------------+
+
+---------------------------------
+- Why exactly these anomalies?  -
+---------------------------------
+
+Why, of the many possible anomalies in the standard, only a few are listed and why exactly such?
+Probably, nobody knows for certain. But practice here definitely outstripped theory, 
+so it is possible that other anomalies were not thought of at that time (talking about the SQL: 92 standard).
+In addition, it was assumed that the isolation should be built on locks. 
+The idea behind a widely used two-phase blocking protocol(2PL) is that during execution the transaction locks the rows it is working with, 
+and upon completion it releases the locks. To simplify a lot, the more locks a transaction acquires, the better it is isolated from other transactions. 
+But the performance of the system suffers the more, because instead of working together, transactions begin to line up in a queue for the same lines.
+It seems to me that the difference between the isolation levels of the standard is due precisely to the number of required locks.
+If the transaction locks the modified rows from being modified, but not from being read, we get the Read Uncommitted level: no lost changes are allowed, 
+but uncommitted data can be read.
+If a transaction locks mutable rows from both read and change, we get the Read Committed level: uncommitted data cannot be read, but when the row is re-accessed, 
+a different value can be obtained (non-repeated read).
+If a transaction locks both readable and modified rows from both reading and modification, we get the Repeatable Read level: rereading the row will return the same value.
+But there is a problem with Serializable: it is impossible to lock a row that does not exist yet. Because of this, 
+the possibility of a phantom reading remains: another transaction can add (but not delete) a row that matches the conditions of a previously executed query, 
+and this row will be resampled.
+
+Therefore, to implement the Serializable level, ordinary locks are not enough - you need to lock not rows, but conditions (predicates). 
+These locks were called predicate locks . They were proposed back in 1976, 
+but their practical applicability is limited to rather simple conditions for which it is clear how to combine two different predicates. As far as I know, 
+it did not come to the implementation of such locks in any system.
+
+-----------------------------------
+- Isolation levels in PostgreSQL  -
+-----------------------------------
+
+Over time, replace the locking transaction management protocols came isolation protocol based on images (Snapshot Isolation). 
+Its idea is that each transaction operates with a consistent snapshot of data at a specific point in time, 
+which includes only those changes that were committed before the moment the snapshot was taken.
+
+This isolation automatically prevents dirty reads. Formally, in PostgreSQL you can specify the Read Uncommitted level, 
+but it will work exactly the same as Read Committed. Therefore, we will not talk about the Read Uncommitted level further.
+
+PostgreSQL implements multiversiona variant of such a protocol. The idea of multiversion is that several versions of the same row can coexist in a DBMS. 
+This allows you to build a snapshot of the data using the existing versions and get by with a minimum of blocking. In fact, 
+only repeated changes to the same row are blocked. All other operations are performed concurrently: writers never block read transactions, and readers never block anyone.
+
+Due to the use of snapshots of data, isolation in PostgreSQL is stricter than required by the standard: the Repeatable Read level does not allow not only non-repeatable, 
+but also phantom reads (although it does not provide complete isolation). And this is achieved without loss of efficiency.
+
+------------------+-----------------+-------------------+-----------------------------+---------------------+-------------------+
+	                |   lost changes  |   dirty reading   |   non-repetitive reading    | 	phantom reading	  |   other anomalies |
+------------------+-----------------+-------------------+-----------------------------+---------------------+-------------------+
+Read Uncommitted	|     -           |       -           |     yes                     |     yes             |     yes           |
+Read Committed    |     -           |       -           |     yes                     |     yes             |     yes           |
+Repeatable Read   |     -           |       -           |       -                     |     -               |     yes           |
+Serializable	    |     -           |       -           |       -                     |     -               |     -             |
+------------------+-----------------+-------------------+-----------------------------+---------------------+-------------------+
+
+We will talk about how multiversion is implemented “under the hood” in the following articles, 
+and now we will take a closer look at each of the three levels through the eyes of the user (as you understand, the most interesting is hidden behind “other anomalies”). 
+To do this, we will create a table of accounts. Alice and Bob have 1,000 rubles each, but Bob has two accounts:
+
+=> CREATE TABLE accounts(
+  id integer PRIMARY KEY GENERATED BY DEFAULT AS IDENTITY,
+  number text UNIQUE,
+  client text,
+  amount numeric
+);
+=> INSERT INTO accounts VALUES
+  (1, '1001', 'alice', 1000.00),
+  (2, '2001', 'bob', 100.00),
+  (3, '2002', 'bob', 900.00);
+
+-------------------
+- Read Committed  -
+-------------------
+
+No dirty reading
+
+It is easy to verify that dirty data cannot be read. Let's start a transaction. By default, it will use the Read Committed isolation level:
+
+=> BEGIN;
+=> SHOW transaction_isolation;
+ transaction_isolation 
+-----------------------
+ read committed
+(1 row)
+
+More precisely, the default level is set by a parameter, it can be changed if necessary:
+
+=> SHOW default_transaction_isolation;
+ default_transaction_isolation 
+-------------------------------
+ read committed
+(1 row)
+
+So, in an open transaction, we withdraw funds from the account, but we do not commit the changes. The transaction sees its own changes:
+
+=> UPDATE accounts SET amount = amount - 200 WHERE id = 1;
+=> SELECT * FROM accounts WHERE client = 'alice';
+ id | number | client | amount 
+----+--------+--------+--------
+  1 | 1001   | alice  | 800.00
+(1 row)
+
+In the second session, let's start another transaction with the same Read Committed level. To distinguish between different transactions, 
+the commands for the second transaction will be shown indented and strikethrough.
+
+In order to repeat the above commands (which is useful), you need to open two terminals and run psql in each. In the first one, 
+you can enter commands from one transaction, and in the second, commands from another.
+
+|  => BEGIN;
+|  => SELECT * FROM accounts WHERE client = 'alice';
+|   id | number | client | amount  
+|  ----+--------+--------+---------
+|    1 | 1001   | alice  | 1000.00
+|  (1 row)
+
+As expected, the other transaction does not see uncommitted changes — dirty reads are not allowed.
+
+---------------------------
+- Non-repetitive reading  -
+---------------------------
+
+Now let the first transaction commit the changes, and the second will re-execute the same query.
+
+=> COMMIT;
+
+|  => SELECT * FROM accounts WHERE client = 'alice';
+|   id | number | client | amount 
+|  ----+--------+--------+--------
+|    1 | 1001   | alice  | 800.00
+|  (1 row)
+|  => COMMIT;
+
+The request already receives new data - this is the non-repeatable read anomaly , which is allowed at the Read Committed level.
+Practical conclusion : in a transaction, 
+you cannot make decisions based on the data read by the previous operator - because everything can change during the time between the execution of the operators. 
+Here's an example, the variations of which are so common in application code that it is a classic anti-pattern:
+
+IF (SELECT amount FROM accounts WHERE id = 1) >= 1000 THEN
+        UPDATE accounts SET amount = amount - 1000 WHERE id = 1;
+      END IF;
+      
+During the time that elapses between the check and the update, other transactions can change the state of the account in any way, 
+so that such a "check" does not save you from anything. 
+It is convenient to imagine that between operators of one transaction any other operators of other transactions can "wedge in", for example, like this:      
+
+IF (SELECT amount FROM accounts WHERE id = 1) >= 1000 THEN
+       -----
+      |   UPDATE accounts SET amount = amount - 200 WHERE id = 1;
+      |   COMMIT;
+       -----
+        UPDATE accounts SET amount = amount - 1000 WHERE id = 1;
+      END IF;
+
+If, by rearranging the operators, you can spoil everything, then the code is written incorrectly. 
+And do not deceive yourself that such a combination of circumstances will not happen - it will definitely happen.
+
+How to write the code correctly? The possibilities usually boil down to the following:
+
+  * Don't write code.
+    It is not joke. For example, in this case, the check easily turns into an integrity constraint:
+    ALTER TABLE accounts ADD CHECK amount >= 0;
+    Now no checks are needed: you just need to perform an action and, if necessary, handle the exception that will be thrown in the event of an attempt to violate integrity.
+
+  * Use one SQL statement.
+    Consistency issues arise because in between statements another transaction can complete and the visible data changes. 
+    And if there is only one operator, then there are no gaps.
+    PostgreSQL has enough tools to solve complex problems with a single SQL statement. Note the general table expressions (CTE), in which, 
+    among other things, you can use the INSERT / UPDATE / DELETE statements, as well as the INSERT ON CONFLICT statement, which implements the "insert, 
+    and if the row already exists, update" logic in one statement.
+
+  * Custom locks.
+    The last resort is to manually set an exclusive lock either on all required rows (SELECT FOR UPDATE), or on the entire table (LOCK TABLE). 
+    This always works, but negates the advantages of multi-versioning: instead of being executed simultaneously, some of the operations will be performed sequentially.
+
+---------------------
+- Inconsistent read -
+---------------------
+
+Before moving on to the next level of isolation, you have to admit that it is not so simple. PostgreSQL's implementation is such that it allows for other, 
+lesser known anomalies that are not specified in the standard.
+
+Let's say the first transaction starts transferring funds from one of Bob's accounts to another:
+
+=> BEGIN;
+=> UPDATE accounts SET amount = amount - 100 WHERE id = 2;
+
+At this time, another transaction calculates Bob's balance, and the calculation is performed in a loop through all of Bob's accounts. 
+In fact, the transaction starts from the first account (and obviously sees the previous state):
+
+|  => BEGIN;
+|  => SELECT amount FROM accounts WHERE id = 2;
+|   amount 
+|  --------
+|   100.00
+|  (1 row)
+
+At this point, the first transaction completes successfully:
+
+=> UPDATE accounts SET amount = amount + 100 WHERE id = 3;
+=> COMMIT;
+
+And the other reads the state of the second account (and already sees the new value):
+
+|  => SELECT amount FROM accounts WHERE id = 3;
+|   amount  
+|  ---------
+|   1000.00
+|  (1 row)
+|  => COMMIT;
+
+Thus, the second transaction received a total of 1100 ₽, that is, incorrect data. This is the inconsistent read anomaly .
+
+How to avoid such an anomaly while staying at the Read Committed level? Of course, use one operator. For example like this:
+
+      SELECT sum(amount) FROM accounts WHERE client = 'bob';
+
+So far I have argued that data visibility can only change between operators, but is that obvious? And if the request takes a long time, 
+can it see some of the data in one state, and some in another?
+
+Let's check. A convenient way to do this is to insert an artificial delay into the statement by calling the pg_sleep function. 
+Its parameter sets the delay time in seconds.
+
+=> SELECT amount, pg_sleep(2) FROM accounts WHERE client = 'bob';
+
+While this construction is being executed, in another transaction we transfer funds back:
+
+|  => BEGIN;
+|  => UPDATE accounts SET amount = amount + 100 WHERE id = 2;
+|  => UPDATE accounts SET amount = amount - 100 WHERE id = 3;
+|  => COMMIT;
+
+The result shows that the operator sees the data in the same state in which it was at the time of the start of its execution. This is definitely correct.
+
+ amount  | pg_sleep 
+---------+----------
+    0.00 | 
+ 1000.00 | 
+(2 rows)
+
+But even here it is not so simple. PostgreSQL allows you to define functions, and functions have the concept of a mutability category. 
+If a volatile function is called in a request (with the VOLATILE category), and another request is executed in this function, 
+then this request inside the function will see data that is not consistent with the data of the main request.
+
+=> CREATE FUNCTION get_amount(id integer) RETURNS numeric AS $$
+  SELECT amount FROM accounts a WHERE a.id = get_amount.id;
+$$ VOLATILE LANGUAGE sql;
+
+=> SELECT get_amount(id), pg_sleep(2)
+FROM accounts WHERE client = 'bob';
+
+|  => BEGIN;
+|  => UPDATE accounts SET amount = amount + 100 WHERE id = 2;
+|  => UPDATE accounts SET amount = amount - 100 WHERE id = 3;
+|  => COMMIT;
+
+In this case, we will receive incorrect data - 100 ₽ lost:
+
+ get_amount | pg_sleep 
+------------+----------
+     100.00 | 
+     800.00 | 
+(2 rows)
+
+Let me emphasize that this effect is possible only at the Read Committed isolation level, and only with the VOLATILE volatility category. 
+The trouble is that this is the isolation level and this particular category of variability is used by default, so I must admit that the rake is very good. Don't step on!
+
+---------------------------------------------------
+- Inconsistent read in exchange for lost changes  -
+---------------------------------------------------
+
+Inconsistent reads within a single statement can — in a somewhat unexpected way — also occur during an update.
+Let's see what happens when two transactions try to update the same row. Now Bob has 1,000 rubles on two accounts:
+
+=> SELECT * FROM accounts WHERE client = 'bob';
+ id | number | client | amount 
+----+--------+--------+--------
+  2 | 2001   | bob    | 200.00
+  3 | 2002   | bob    | 800.00
+(2 rows)
+
+Beginning a transaction that reduces Bob's balance:
+
+=> BEGIN;
+=> UPDATE accounts SET amount = amount - 100 WHERE id = 3;
+
+At the same time, another transaction charges interest on all customer accounts with a total balance equal to or greater than RUB 1,000:
+
+|  => UPDATE accounts SET amount = amount * 1.01
+|  WHERE client IN (
+|    SELECT client
+|    FROM accounts
+|    GROUP BY client
+|    HAVING sum(amount) >= 1000
+|  );
+
+There are two parts to executing an UPDATE statement. First, a SELECT is actually executed, which selects the rows that match the condition for updating. 
+Since the change in the first transaction is not committed, 
+the second transaction cannot see it and it does not in any way affect the selection of rows for interest calculation. 
+So, Bob's accounts fall under the condition and after the update is completed, his balance should increase by 10 ₽.
+
+The second stage of execution - the selected rows are updated one after another. 
+Here the second transaction is forced to "hang" because the id = 3 row is already locked by the first transaction.
+
+Meanwhile, the first transaction commits the changes:
+
+=> COMMIT;
+
+What will be the result?
+
+=> SELECT * FROM accounts WHERE client = 'bob';
+ id | number | client |  amount  
+----+--------+--------+----------
+  2 | 2001   | bob    | 202.0000
+  3 | 2002   | bob    | 707.0000
+(2 rows)
+
+Yes, on the one hand, the UPDATE command should not see the changes in the second transaction. 
+But on the other hand, it should not lose the changes committed in the second transaction.
+
+After the lock is released, UPDATE rereads the row it is trying to update (but only one!). As a result, it turns out that Bob was credited with 9 ₽, 
+based on the amount of 900 ₽. But if Bob had 900 rubles, his accounts should not have been included in the sample at all.
+
+So, the transaction receives incorrect data: some of the rows are visible at one point in time, some - at another. In return for the lost update, 
+we again get an inconsistent read anomaly .
+
+Astute readers will note that with some help from the application at the Read Committed level, it is possible to get a lost update. For example like this:
+
+      x := (SELECT amount FROM accounts WHERE id = 1);
+      UPDATE accounts SET amount = x + 100 WHERE id = 1;
+
+The database is not at fault: it receives two SQL statements and does not know anything about the fact that the value x + 100 has something to do with accounts.amount. 
+Don't write your code this way.
+
+-------------------
+- Repeatable Read -
+-------------------
+
+No non-repetitive and phantom readings
+
+The very name of the isolation level indicates that the read is repeatable. 
+Let's check this, and at the same time make sure that there are no phantom readings. 
+To do this, in the first transaction, return Bob's accounts to their previous state and create a new account for Charlie:
+
+=> BEGIN;
+=> UPDATE accounts SET amount = 200.00 WHERE id = 2;
+=> UPDATE accounts SET amount = 800.00 WHERE id = 3;
+=> INSERT INTO accounts VALUES
+  (4, '3001', 'charlie', 100.00);
+=> SELECT * FROM accounts ORDER BY id;
+ id | number | client  | amount 
+----+--------+---------+--------
+  1 | 1001   | alice   | 800.00
+  2 | 2001   | bob     | 200.00
+  3 | 2002   | bob     | 800.00
+  4 | 3001   | charlie | 100.00
+(4 rows)
+
+In the second session, start a transaction with the Repeatable Read level, specifying it in the BEGIN command (the level of the first transaction is not important).
+
+|  => BEGIN ISOLATION LEVEL REPEATABLE READ;
+|  => SELECT * FROM accounts ORDER BY id;
+|   id | number | client |  amount  
+|  ----+--------+--------+----------
+|    1 | 1001   | alice  |   800.00
+|    2 | 2001   | bob    | 202.0000
+|    3 | 2002   | bob    | 707.0000
+|  (3 rows)
+
+Now the first transaction commits the changes, and the second reruns the same request.
+
+=> COMMIT;
+
+|  => SELECT * FROM accounts ORDER BY id;
+|   id | number | client |  amount  
+|  ----+--------+--------+----------
+|    1 | 1001   | alice  |   800.00
+|    2 | 2001   | bob    | 202.0000
+|    3 | 2002   | bob    | 707.0000
+|  (3 rows)
+|  => COMMIT;
+
+The second transaction continues to see exactly the same data as at the beginning: neither changes in existing rows nor new rows are visible.
+At this level, you don't have to worry about changing something between the two operators.
+
+----------------------------------------------------
+- Serialization error in exchange for lost changes -
+----------------------------------------------------
+
+Above, we talked about the fact that when two transactions update the same row at the Read Committed level, an inconsistent read anomaly may occur. 
+This is because a pending transaction reads a locked row and thus sees it at a different point in time than the rest of the rows.
+
+At the Repeatable Read level, such an anomaly is not allowed, but if it does occur, nothing can be done - so the transaction is aborted with a serialization error. 
+Let's check by repeating the same scenario with percentages:
+
+=> SELECT * FROM accounts WHERE client = 'bob';
+ id | number | client | amount 
+----+--------+--------+--------
+  2 | 2001   | bob    | 200.00
+  3 | 2002   | bob    | 800.00
+(2 rows)
+=> BEGIN;
+=> UPDATE accounts SET amount = amount - 100.00 WHERE id = 3;
+
+|  => BEGIN ISOLATION LEVEL REPEATABLE READ;
+|  => UPDATE accounts SET amount = amount * 1.01
+|  WHERE client IN (
+|    SELECT client
+|    FROM accounts
+|    GROUP BY client
+|    HAVING sum(amount) >= 1000
+|  );
+
+=> COMMIT;
+
+|  ERROR:  could not serialize access due to concurrent update
+|  => ROLLBACK;
+
+The data remained consistent:
+
+=> SELECT * FROM accounts WHERE client = 'bob';
+ id | number | client | amount 
+----+--------+--------+--------
+  2 | 2001   | bob    | 200.00
+  3 | 2002   | bob    | 700.00
+(2 rows)
+
+The same error will occur in the case of any other concurrent row change, even if the columns of interest to us have not actually changed.
+
+The practical takeaway is that if an application uses the Repeatable Read isolation level for writing transactions, 
+it must be prepared to repeat transactions that failed serialization. This is not possible for read-only transactions.
+
+-----------------------
+- Inconsistent record -
+-----------------------
+
+So, PostgreSQL prevents all anomalies described in the standard at the Repeatable Read isolation level. 
+But not all at all. It turns out there are exactly two anomalies that remain possible.
+(This is true not only of PostgreSQL, but also of other snapshot-based isolation implementations.)
+
+The first of these anomalies is an inconsistent write .
+
+Let the following rule of consistency apply: negative amounts on the accounts of a client are allowed if the total amount on all accounts of this client remains non-negative .
+
+The first transaction receives the amount on Bob's accounts: 900 ₽.
+
+=> BEGIN ISOLATION LEVEL REPEATABLE READ;
+=> SELECT sum(amount) FROM accounts WHERE client = 'bob';
+  sum   
+--------
+ 900.00
+(1 row)
+
+The second transaction receives the same amount.
+
+|  => BEGIN ISOLATION LEVEL REPEATABLE READ;
+|  => SELECT sum(amount) FROM accounts WHERE client = 'bob';
+|    sum   
+|  --------
+|   900.00
+|  (1 row)
+
+The first transaction rightly believes that the amount of one of the accounts can be reduced by 600 ₽.
+
+=> UPDATE accounts SET amount = amount - 600.00 WHERE id = 2;
+
+And the second transaction comes to the same conclusion. But reduces another score:
+
+|  => UPDATE accounts SET amount = amount - 600.00 WHERE id = 3;
+|  => COMMIT;
+
+=> COMMIT;
+=> SELECT * FROM accounts WHERE client = 'bob';
+ id | number | client | amount  
+----+--------+--------+---------
+  2 | 2001   | bob    | -400.00
+  3 | 2002   | bob    |  100.00
+(2 rows)
+
+We managed to take Bob's balance into the negative, although each of the transactions works correctly one by one.
+
+---------------------------------
+- Read-only transaction anomaly -
+---------------------------------
+
+This is the second and final anomaly possible at the Repeatable Read level. To demonstrate it, three transactions are required, two of which will modify data and the third will only read.
+
+But first, let's restore Bob's account state:
+
+=> UPDATE accounts SET amount = 900.00 WHERE id = 2;
+=> SELECT * FROM accounts WHERE client = 'bob';
+ id | number | client | amount
+----+--------+--------+--------
+  3 | 2002   | bob    | 100.00
+  2 | 2001   | bob    | 900.00
+(2 rows)
+
+The first transaction charges Bob interest on the amount of funds in all accounts. Interest is credited to one of his accounts:
+
+=> BEGIN ISOLATION LEVEL REPEATABLE READ; -- 1
+=> UPDATE accounts SET amount = amount + (
+  SELECT sum(amount) FROM accounts WHERE client = 'bob'
+) * 0.01
+WHERE id = 2;
+
+Then another transaction withdraws money from Bob's other account and commits its changes:
+
+|  => BEGIN ISOLATION LEVEL REPEATABLE READ; -- 2
+|  => UPDATE accounts SET amount = amount - 100.00 WHERE id = 3;
+|  => COMMIT;
+
+If at this moment the first transaction is committed, no anomaly will arise: we could assume that the first transaction was performed first, 
+and then the second (but not vice versa, because the first transaction saw the state of the account id = 3 before this account was changed by the second transaction).
+
+But let's imagine that at this moment the third (read-only) transaction begins, which reads the state of some account not affected by the first two transactions:
+
+|  => BEGIN ISOLATION LEVEL REPEATABLE READ; -- 3
+|  => SELECT * FROM accounts WHERE client = 'alice';
+|   id | number | client | amount 
+|  ----+--------+--------+--------
+|    1 | 1001   | alice  | 800.00
+|  (1 row)
+
+And only after that, the first transaction is completed:
+
+=> COMMIT;
+
+What state should the third transaction see now?
+
+|    SELECT * FROM accounts WHERE client = ‘bob’;
+
+Once started, the third transaction could see changes to the second transaction (which had already been committed), 
+but not the first (which had not yet been committed). On the other hand, 
+we have already established above that the second transaction should be considered to have started after the first. 
+Whatever state the third transaction sees will be inconsistent - this is a read-only transaction anomaly. But at the Repeatable Read level, it is allowed:
+
+|    id | number | client | amount
+|   ----+--------+--------+--------
+|     2 | 2001   | bob    | 900.00
+|     3 | 2002   | bob    |   0.00
+|   (2 rows)
+|   => COMMIT;
+
+-----------------
+- Serializable  -
+-----------------
+
+All possible anomalies are prevented at the Serializable level. In fact, Serializable is implemented as an add-on over snapshot-based isolation. 
+Anomalies that do not occur with Repeatable Read (such as dirty, non-repeatable, phantom reads) do not occur at the Serializable level either. 
+And those anomalies that arise (inconsistent write and anomaly of only a read transaction) 
+are detected and the transaction is aborted - the already familiar could not serialize access serialization error occurs.
+
+Inconsistent record
+
+To illustrate, let's repeat the scenario with the inconsistent write anomaly:
+
+=> BEGIN ISOLATION LEVEL SERIALIZABLE;
+=> SELECT sum(amount) FROM accounts WHERE client = 'bob';
+   sum    
+----------
+ 910.0000
+(1 row)
+
+|   => BEGIN ISOLATION LEVEL SERIALIZABLE;
+|   => SELECT sum(amount) FROM accounts WHERE client = 'bob';
+|      sum    
+|   ----------
+|    910.0000
+|   (1 row)
+
+=> UPDATE accounts SET amount = amount - 600.00 WHERE id = 2;
+
+|   => UPDATE accounts SET amount = amount - 600.00 WHERE id = 3;
+|   => COMMIT;
+
+=> COMMIT;
+ERROR:  could not serialize access due to read/write dependencies among transactions
+DETAIL:  Reason code: Canceled on identification as a pivot, during commit attempt.
+HINT:  The transaction might succeed if retried.
+
+As with the Repeatable Read level, an application using the Serializable isolation level must repeat transactions that failed serialization, 
+which is also indicated by the hint in the error message.
+
+We gain programming simplicity, but the price for it is the forced termination of a certain proportion of transactions and the need to repeat them. 
+The whole question, of course, is how large this share is. If only those transactions were terminated, which really incompatible data intersect with other transactions, 
+everything would be fine. But such an implementation would inevitably turn out to be resource-intensive and inefficient, 
+since it would have to keep track of operations with each row.
+
+In reality, PostgreSQL's implementation is such that it allows false negatives: some perfectly normal transactions that are simply "out of luck" will also be aborted. 
+As we will see later, this depends on many reasons, such as the availability of suitable indexes or the amount of RAM available. In addition, 
+there are some other (rather serious) implementation restrictions, for example, queries at the Serializable level will not work on replicas, 
+and parallel execution plans will not be used for them. And while work continues to improve the implementation, 
+the existing limitations make this isolation level less attractive.
+Parallel plans will appear in PostgreSQL 12 ( patch ). And queries on replicas can work in PostgreSQL 13 ( another patch ).
+
+---------------------------------
+- Read-only transaction anomaly -
+---------------------------------
+
+To prevent a read-only transaction from causing an anomaly and not being harmed by it, 
+PostgreSQL offers an interesting mechanism: such a transaction can be blocked until it is safe to execute. 
+This is the only case where a SELECT statement might be blocked by row updates. This is how it looks:
+
+=> UPDATE accounts SET amount = 900.00 WHERE id = 2;
+=> UPDATE accounts SET amount = 100.00 WHERE id = 3;
+=> SELECT * FROM accounts WHERE client = 'bob' ORDER BY id;
+ id | number | client | amount 
+----+--------+--------+--------
+  2 | 2001   | bob    | 900.00
+  3 | 2002   | bob    | 100.00
+(2 rows)
+
+=> BEGIN ISOLATION LEVEL SERIALIZABLE; -- 1
+=> UPDATE accounts SET amount = amount + (
+  SELECT sum(amount) FROM accounts WHERE client = 'bob'
+) * 0.01
+WHERE id = 2;
+
+|  => BEGIN ISOLATION LEVEL SERIALIZABLE; -- 2
+|  => UPDATE accounts SET amount = amount - 100.00 WHERE id = 3;
+|  => COMMIT;
+
+We explicitly declare the third transaction to be read only (READ ONLY) and deferred (DEFERRABLE):
+
+|   => BEGIN ISOLATION LEVEL SERIALIZABLE READ ONLY DEFERRABLE; -- 3
+|   => SELECT * FROM accounts WHERE client = 'alice';
+
+When you try to execute the request, the transaction is blocked, because otherwise its execution will lead to an anomaly.
+
+=> COMMIT;
+
+And only after the first transaction is committed, the third continues execution:
+
+|    id | number | client | amount
+|   ----+--------+--------+--------
+|     1 | 1001   | alice  | 800.00
+|   (1 row)
+|   => SELECT * FROM accounts WHERE client = 'bob';
+|    id | number | client |  amount  
+|   ----+--------+--------+----------
+|     2 | 2001   | bob    | 910.0000
+|     3 | 2002   | bob    |     0.00
+|   (2 rows)
+|   => COMMIT;
+
+Another important note: if Serializable isolation is used, then all transactions in the application must use this layer. 
+You cannot mix Read Committed (or Repeatable Read) transactions with Serializable. That is, 
+you can mix something, but then Serializable will behave like a Repeatable Read without any warnings. 
+Why this happens will be discussed later when we talk about implementation.
+
+So if you decide to use Serializble, it is best to globally set the default level (although this, of course, 
+does not prevent you from specifying the wrong level explicitly):
+
+      ALTER SYSTEM SET default_transaction_isolation = 'serializable';
+
+You will find a more rigorous presentation of issues related to transactions, 
+consistency and anomalies in the book and lecture course by Boris Asenovich Novikov "Fundamentals of Database Technologies".
+
+---------------------------------------
+- What isolation level should I use?  -
+---------------------------------------
+
+The Read Committed isolation level is used by default in PostgreSQL and, apparently, this level is used in the vast majority of applications. 
+It is convenient in that a transaction can be broken on it only in case of a failure, but not to prevent inconsistency. In other words, a serialization error cannot occur.
+
+The flip side of the coin is a large number of possible anomalies, which were discussed in detail above. 
+The developer has to constantly keep them in mind and write code so as not to allow them to appear. 
+If you cannot formulate the necessary actions in a single SQL statement, you have to resort to explicitly setting locks. 
+The most annoying thing is that the code is difficult to test for errors associated with receiving inconsistent data, 
+and the errors themselves can occur in an unpredictable and non-reproducible way and therefore are difficult to fix.
+
+The Repeatable Read isolation level removes some inconsistency problems, but, alas, not all. Therefore, you have to not only remember about the remaining anomalies,
+but also modify the application so that it correctly handles serialization errors. This is, of course, inconvenient. But for read-only transactions, 
+this level perfectly complements Read Committed and is very convenient, for example, for building reports that use several SQL queries.
+
+Finally, the Serializable layer allows you not to worry about inconsistencies at all, which greatly simplifies writing code. 
+The only thing that is required of the application is to be able to repeat any transaction when it receives a serialization error. 
+But the proportion of interrupted transactions, additional overhead, and the inability to parallelize queries can significantly reduce system throughput. 
+It should also be borne in mind that the Serializable level is not applicable on replicas, and that it cannot be mixed with other isolation levels.
+
+
+
+
+
