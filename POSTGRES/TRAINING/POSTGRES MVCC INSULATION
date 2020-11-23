@@ -1180,6 +1180,580 @@ In addition, the toast table maintains its own versioning: if the data update do
 the new version of the row will refer to the same value in the TOAST table - this saves space.
 Note that TOAST only works for tables, not indexes. This imposes a limit on the size of the indexed keys.
 
+-----------
+- Heading -
+-----------
+
+As we said, each row can be present in the database in several versions at the same time. One version from another must be somehow distinguished. 
+For this purpose, each version has two marks that determine the "time" of the given version (xmin and xmax). 
+In quotes - because not time is used as such, but a special incremental counter. And this counter is the transaction number.
+
+(As usual, in fact, everything is more complicated: the number of transactions cannot increase all the time due to the limited capacity of the counter. 
+But we will consider these details in detail when we get to freezing.)
+
+When the row is created, xmin is set to the transaction number that issued the INSERT command, and xmax is not populated.
+
+When a row is deleted, the xmax value of the current version is marked with the transaction number that performed the DELETE.
+
+When a row is modified with an UPDATE command, two operations are actually performed: DELETE and INSERT. 
+The current version of the line sets xmax to the number of the transaction that performed the UPDATE. Then a new version of the same string is created; 
+its xmin value is the same as the xmax value of the previous version.
+
+The xmin and xmax fields are included in the row version header. In addition to these fields, the header contains others, for example:
+
+infomask is a set of bits that define the properties of this version. There are quite a few of them; we will gradually consider the main ones.
+ctid is a link to the next, newer, version of the same line. For the most recent, current version of the line, the ctid refers to that version itself. 
+The number has the form (x, y), where x is the page number, y is the ordinal number of the pointer in the array.
+Nulls bitmap - marks those columns of this version that contain NULL. NULL is not one of the usual values of data types, so the attribute has to be stored separately.
+
+As a result, the header is quite large - at least 23 bytes per row version, and usually more due to the NULL bitmap. 
+If the table is "narrow" (that is, contains few columns), the overhead can take up more than useful information.
+
+----------
+- Insert -
+----------
+
+Let's take a closer look at how low-level row operations are performed and start with insertion.
+To experiment, let's create a new table with two columns and an index on one of them:
+
+=> CREATE TABLE t(
+  id serial,
+  s text
+);
+=> CREATE INDEX ON t(s);
+
+Let's insert one row after starting the transaction.
+
+=> BEGIN;
+=> INSERT INTO t(s) VALUES ('FOO');
+
+Here is our current transaction number:
+
+=> SELECT txid_current();
+ txid_current 
+--------------
+         3664
+(1 row)
+
+Let's take a look at the page content. The heap_page_items function of the pageinspect extension allows you to get information about pointers and row versions:
+
+=> SELECT * FROM heap_page_items(get_raw_page('t',0)) \gx
+-[ RECORD 1 ]-------------------
+lp          | 1
+lp_off      | 8160
+lp_flags    | 1
+lp_len      | 32
+t_xmin      | 3664
+t_xmax      | 0
+t_field3    | 0
+t_ctid      | (0,1)
+t_infomask2 | 2
+t_infomask  | 2050
+t_hoff      | 24
+t_bits      | 
+t_oid       | 
+t_data      | \x0100000009464f4f
+
+Note that heap in PostgreSQL refers to tables. This is another strange use of the term - the heap is a well - known data structure that has nothing to do with a table. 
+Here the word is used in the sense of "heaped everything", in contrast to ordered indices.
+The function shows the data “as is”, in a format that is difficult to understand. To understand, we will leave only part of the information and decipher it:
+
+=> SELECT '(0,'||lp||')' AS ctid,
+       CASE lp_flags
+         WHEN 0 THEN 'unused'
+         WHEN 1 THEN 'normal'
+         WHEN 2 THEN 'redirect to '||lp_off
+         WHEN 3 THEN 'dead'
+       END AS state,
+       t_xmin as xmin,
+       t_xmax as xmax,
+       (t_infomask & 256) > 0  AS xmin_commited,
+       (t_infomask & 512) > 0  AS xmin_aborted,
+       (t_infomask & 1024) > 0 AS xmax_commited,
+       (t_infomask & 2048) > 0 AS xmax_aborted,
+       t_ctid
+FROM heap_page_items(get_raw_page('t',0)) \gx
+-[ RECORD 1 ]-+-------
+ctid          | (0,1)
+state         | normal
+xmin          | 3664
+xmax          | 0
+xmin_commited | f
+xmin_aborted  | f
+xmax_commited | f
+xmax_aborted  | t
+t_ctid        | (0,1)
+
+Here's what we did:
+
+ * Added a zero to the pointer number to make it look the same as t_ctid: (page number, pointer number).
+ * Decrypted the state of the lp_flags pointer. Here it is “normal”, which means that the pointer is actually referring to the line version. 
+   We will consider other values later.
+ * Of all the information bits, only two pairs have been allocated so far. 
+   The xmin_committed and xmin_aborted bits indicate whether transaction number xmin is committed (canceled). 
+   Two similar bits refer to transaction numbered xmax.
+
+What do we see? When you insert a row, an index number 1 appears in the table page, referencing the first and only version of the row.
+In the row version, the xmin field is filled with the current transaction number. The transaction is still active, so both xmin_committed and xmin_aborted are not set.
+The row version ctid field refers to the same row. This means that there is no newer version.
+The xmax field is filled with a dummy number 0, since this version of the line has not been deleted and is current. 
+Transactions will ignore this number because the xmax_aborted bit is set.
+Let's take another step towards improving readability by adding information bits to the transaction numbers. And let's create a function, 
+since we will need the request more than once:
+
+=> CREATE FUNCTION heap_page(relname text, pageno integer)
+RETURNS TABLE(ctid tid, state text, xmin text, xmax text, t_ctid tid)
+AS $$
+SELECT (pageno,lp)::text::tid AS ctid,
+       CASE lp_flags
+         WHEN 0 THEN 'unused'
+         WHEN 1 THEN 'normal'
+         WHEN 2 THEN 'redirect to '||lp_off
+         WHEN 3 THEN 'dead'
+       END AS state,
+       t_xmin || CASE
+         WHEN (t_infomask & 256) > 0 THEN ' (c)'
+         WHEN (t_infomask & 512) > 0 THEN ' (a)'
+         ELSE ''
+       END AS xmin,
+       t_xmax || CASE
+         WHEN (t_infomask & 1024) > 0 THEN ' (c)'
+         WHEN (t_infomask & 2048) > 0 THEN ' (a)'
+         ELSE ''
+       END AS xmax,
+       t_ctid
+FROM heap_page_items(get_raw_page(relname,pageno))
+ORDER BY lp;
+$$ LANGUAGE SQL;
+
+In this form, it is much clearer what is going on in the header of the line version:
+
+=> SELECT * FROM heap_page('t',0);
+ ctid  | state  | xmin | xmax  | t_ctid 
+-------+--------+------+-------+--------
+ (0,1) | normal | 3664 | 0 (a) | (0,1)
+(1 row)
+
+Similar, but much less detailed, information can be obtained from the table itself using the pseudo-columns xmin and xmax:
+
+=> SELECT xmin, xmax, * FROM t;
+ xmin | xmax | id |  s  
+------+------+----+-----
+ 3664 |    0 |  1 | FOO
+(1 row)
+
+------------
+- Fixation -
+------------
+
+Upon successful completion of the transaction, you need to remember its status - note that it is committed. 
+For this, a structure called XACT is used (and before version 10 it was called CLOG (commit log) and this name can still be found in different places).
+
+XACT is not a system catalog table; these are the files in the PGDATA / pg_xact directory. 
+They have two bits allocated for each transaction: committed and aborted - just like in the row version header. 
+This information is split into several files solely for convenience, we will come back to this issue when we consider freezing. 
+And work with these files is carried out page by page, as with all others.
+
+So, when a transaction is committed, the committed bit is set in XACT for this transaction. 
+And that's all that happens on commit (although we're not talking about the write-ahead log yet).
+
+When any other transaction accesses the tabular page we just looked at, it will have to answer a few questions.
+
+Has transaction xmin been completed? If not, then the generated row version should not be visible.
+This check is done by looking at another structure that resides in the shared memory of the instance and is called ProcArray. 
+It contains a list of all active processes, and for each the number of its current (active) transaction is indicated.
+If it ended, how - by committing or canceling? If canceled, then the line version should not be visible either.
+That's what XACT is for. But, although the last XACT pages are stored in buffers in RAM, it is still expensive to check XACT every time. 
+Therefore, once the status of a transaction is clarified, it is written into the xmin_committed and xmin_aborted bits of the row version. 
+If one of these bits is set, then the state of the transaction xmin is considered known and the next transaction will no longer need to contact XACT.
+
+Why aren't these bits set by the insert transaction itself? When an insert occurs, the transaction does not yet know if it will succeed. 
+And at the moment of committing, it is no longer clear which lines in which pages were changed. There may be many such pages, 
+and it is not profitable to memorize them. In addition, some pages can be flushed out of the buffer cache to disk; 
+reading them again to change the bits would slow down the commit significantly.
+
+The downside to saving is that after changes, any transaction (even performing a simple read - SELECT) can start changing the data pages in the buffer cache.
+
+So let's commit the change.
+
+=> COMMIT;
+
+Nothing has changed on the page (but we know that the status of the transaction has already been recorded in XACT):
+
+=> SELECT * FROM heap_page('t',0);
+ ctid  | state  | xmin | xmax  | t_ctid 
+-------+--------+------+-------+--------
+ (0,1) | normal | 3664 | 0 (a) | (0,1)
+(1 row)
+
+Now the transaction that first accesses the page will have to determine the status of the transaction xmin and write it to the information bits:
+
+=> SELECT * FROM t;
+ id |  s  
+----+-----
+  1 | FOO
+(1 row)
+
+=> SELECT * FROM heap_page('t',0);
+ ctid  | state  |   xmin   | xmax  | t_ctid 
+-------+--------+----------+-------+--------
+ (0,1) | normal | 3664 (c) | 0 (a) | (0,1)
+(1 row)
+
+------------
+- Deleting -
+------------
+
+When a row is deleted, the number of the current deleting transaction is written in the xmax field of the current version, and the xmax_aborted bit is cleared.
+
+Note that the set xmax value corresponding to an active transaction acts as a row lock. If another transaction is about to update or delete this row, 
+it will have to wait for the xmax transaction to complete. We will talk more about blocking later. For now, let's just note that the number of row locks is unlimited. 
+They do not take up space in RAM and system performance does not suffer from their number. True, “long” transactions have other disadvantages, but more on that later.
+
+Let's delete the line.
+
+=> BEGIN;
+=> DELETE FROM t;
+=> SELECT txid_current();
+ txid_current 
+--------------
+         3665
+(1 row)
+
+We see that the transaction number was written in the xmax field, but the information bits are not set:
+
+=> SELECT * FROM heap_page('t',0);
+ ctid  | state  |   xmin   | xmax | t_ctid 
+-------+--------+----------+------+--------
+ (0,1) | normal | 3664 (c) | 3665 | (0,1)
+(1 row)
+
+----------------
+- Cancellation -
+----------------
+
+Undoing works in the same way as committing, except that the aborted bit is set for the transaction in XACT. The undo is as fast as the commit. 
+Although the command is called ROLLBACK, changes are not rolled back: everything that the transaction has changed in the data pages remains unchanged.
+
+=> ROLLBACK;
+=> SELECT * FROM heap_page('t',0);
+ ctid  | state  |   xmin   | xmax | t_ctid 
+-------+--------+----------+------+--------
+ (0,1) | normal | 3664 (c) | 3665 | (0,1)
+(1 row)
+
+When the page is accessed, the status will be checked and the hint bit xmax_aborted will be set in the string version. 
+The number xmax itself remains in the page, but no one will look at it anymore.
+
+=> SELECT * FROM t;
+ id |  s  
+----+-----
+  1 | FOO
+(1 row)
+
+=> SELECT * FROM heap_page('t',0);
+ ctid  | state  |   xmin   |   xmax   | t_ctid 
+-------+--------+----------+----------+--------
+ (0,1) | normal | 3664 (c) | 3665 (a) | (0,1)
+(1 row)
+
+----------
+- Update -
+----------
+
+Updating works as if first deleting the current version of the row and then inserting a new one.
+
+=> BEGIN;
+=> UPDATE t SET s = 'BAR';
+=> SELECT txid_current();
+ txid_current 
+--------------
+         3666
+(1 row)
+
+The query throws out one line (new version):
+
+=> SELECT * FROM t;
+ id |  s  
+----+-----
+  1 | BAR
+(1 row)
+
+But in the page we see both versions:
+
+=> SELECT * FROM heap_page('t',0);
+ ctid  | state  |   xmin   | xmax  | t_ctid 
+-------+--------+----------+-------+--------
+ (0,1) | normal | 3664 (c) | 3666  | (0,2)
+ (0,2) | normal | 3666     | 0 (a) | (0,2)
+(2 rows)
+
+The deleted version is marked with the current transaction number in the xmax field. Moreover, this value is written over the old one, 
+since the previous transaction was canceled. And the xmax_aborted bit is cleared because the status of the current transaction is still unknown.
+
+The first version of the line now refers to the second (t_ctid field) as newer.
+A second index appears in the index page, and a second row references the second version in the table page.
+As with the deletion, the xmax value in the first version of the row indicates that the row is locked.
+Well, let's complete the transaction.
+
+=> COMMIT;
+
+-----------
+- Indexes -
+-----------
+
+So far, we've only talked about table pages. What happens inside the indexes?
+
+The information in index pages is highly dependent on the specific type of index. And even one type of index has different types of pages. 
+For example, a B-tree has a metadata page and "regular" pages.
+
+However, usually a page has an array of pointers to strings and the strings themselves (just like a table page). In addition, 
+there is space at the end of the page for special data.
+
+Rows in indexes can also have very different structures depending on the type of index. For example, for a B-tree, 
+the leaf page rows contain the index key value and a reference (ctid) to the corresponding table row. In general, the index can be arranged in a completely different way.
+The most important point is that there are no row versions in any type of index. Or, 
+you can assume that each line is represented by exactly one version. In other words, there are no xmin and xmax fields in the index line header. 
+You can assume that links from the index lead to all table row versions - so you can figure out which version a transaction will see only by looking at the table. 
+(As usual, this is not the whole truth. In some cases, the visibility map allows you to optimize the process, but we will consider this in more detail later.)
+At the same time, in the index page, we find pointers to both versions, both the current and the old:
+
+=> SELECT itemoffset, ctid FROM bt_page_items('t_s_idx',1);
+ itemoffset | ctid  
+------------+-------
+          1 | (0,2)
+          2 | (0,1)
+(2 rows)
+
+------------------------
+- Virtual transactions -
+------------------------
+
+In practice, PostgreSQL uses optimizations to "save" transaction numbers.
+
+If a transaction only reads data, then it has no effect on the visibility of row versions. 
+Therefore, at the beginning, the service process issues a virtual xid to the transaction. The number consists of a process ID and a sequential number.
+
+The issue of this number does not require synchronization between all processes and is therefore very fast. 
+We'll get to know another reason for using virtual numbers when we talk about freezing.
+
+Virtual numbers are not counted in any way in data snapshots.
+
+At different points in time, the system may well contain virtual transactions with numbers that have already been used, and this is normal. 
+But such a number cannot be written into data pages, because the next time the page is accessed, it can lose all meaning.
+
+=> BEGIN;
+=> SELECT txid_current_if_assigned();
+ txid_current_if_assigned 
+--------------------------
+                         
+(1 row)
+
+If a transaction starts changing data, it is given a real, unique transaction number.
+
+=> UPDATE accounts SET amount = amount - 1.00;
+=> SELECT txid_current_if_assigned();
+ txid_current_if_assigned 
+--------------------------
+                     3667
+(1 row)
+
+=> COMMIT;
+
+-----------------------
+- Nested transactions -
+-----------------------
+
+---------------
+- Save points -
+---------------
+
+In SQL are defined in terms of conservation (savepoint), that allow you to cancel the operation of the transaction, without interrupting it completely. 
+But this does not fit into the above scheme, since the status of a transaction is one for all its changes, and physically no data is rolled back.
+
+To implement such functionality, a transaction with the point of saving is divided into several separate nested transactions (subtransaction), 
+the status of which can be controlled separately.
+
+Nested transactions have their own number (greater than the number of the main transaction). The status of nested transactions is recorded in the usual way in XACT, 
+but the final status depends on the status of the main transaction: if it is canceled, then all nested transactions are canceled as well.
+
+Transaction nesting information is stored in files in the PGDATA / pg_subtrans directory. The files are accessed through buffers in the instance's shared memory, 
+organized in the same way as XACT buffers.
+
+Don't confuse nested transactions and autonomous transactions. Autonomous transactions are independent of each other, while nested transactions are. 
+There are no autonomous transactions in regular PostgreSQL, and perhaps for the best: they are very, 
+very rarely needed for business, and their presence in other DBMSs provokes abuse, from which everyone then suffers.
+
+Let's clear the table, start a transaction and insert a row:
+
+=> TRUNCATE TABLE t;
+=> BEGIN;
+=> INSERT INTO t(s) VALUES ('FOO');
+=> SELECT txid_current();
+ txid_current 
+--------------
+         3669
+(1 row)
+
+=> SELECT xmin, xmax, * FROM t;
+ xmin | xmax | id |  s  
+------+------+----+-----
+ 3669 |    0 |  2 | FOO
+(1 row)
+
+=> SELECT * FROM heap_page('t',0);
+ ctid  | state  | xmin | xmax  | t_ctid 
+-------+--------+------+-------+--------
+ (0,1) | normal | 3669 | 0 (a) | (0,1)
+(1 row)
+
+Now let's put a savepoint and insert another line.
+
+=> SAVEPOINT sp;
+=> INSERT INTO t(s) VALUES ('XYZ');
+=> SELECT txid_current();
+ txid_current 
+--------------
+         3669
+(1 row)
+
+Note that the txid_current () function returns the number of the main, not the nested, transaction.
+
+=> SELECT xmin, xmax, * FROM t;
+ xmin | xmax | id |  s  
+------+------+----+-----
+ 3669 |    0 |  2 | FOO
+ 3670 |    0 |  3 | XYZ
+(2 rows)
+
+=> SELECT * FROM heap_page('t',0);
+ ctid  | state  | xmin | xmax  | t_ctid 
+-------+--------+------+-------+--------
+ (0,1) | normal | 3669 | 0 (a) | (0,1)
+ (0,2) | normal | 3670 | 0 (a) | (0,2)
+(2 rows)
+
+Let's roll back to the savepoint and insert the third line.
+
+=> ROLLBACK TO sp;
+=> INSERT INTO t(s) VALUES ('BAR');
+=> SELECT xmin, xmax, * FROM t;
+ xmin | xmax | id |  s  
+------+------+----+-----
+ 3669 |    0 |  2 | FOO
+ 3671 |    0 |  4 | BAR
+(2 rows)
+
+=> SELECT * FROM heap_page('t',0);
+ ctid  | state  |   xmin   | xmax  | t_ctid 
+-------+--------+----------+-------+--------
+ (0,1) | normal | 3669     | 0 (a) | (0,1)
+ (0,2) | normal | 3670 (a) | 0 (a) | (0,2)
+ (0,3) | normal | 3671     | 0 (a) | (0,3)
+(3 rows)
+
+In the page, we continue to see the row added by the canceled nested transaction.
+
+We commit the changes.
+
+=> COMMIT;
+=> SELECT xmin, xmax, * FROM t;
+ xmin | xmax | id |  s  
+------+------+----+-----
+ 3669 |    0 |  2 | FOO
+ 3671 |    0 |  4 | BAR
+(2 rows)
+
+=> SELECT * FROM heap_page('t',0);
+ ctid  | state  |   xmin   | xmax  | t_ctid 
+-------+--------+----------+-------+--------
+ (0,1) | normal | 3669 (c) | 0 (a) | (0,1)
+ (0,2) | normal | 3670 (a) | 0 (a) | (0,2)
+ (0,3) | normal | 3671 (c) | 0 (a) | (0,3)
+(3 rows)
+
+Now you can clearly see that each nested transaction has its own status.
+
+Note that nested transactions cannot be used explicitly in SQL, that is, you cannot start a new transaction without completing the current one. 
+This mechanism is used implicitly when using savepoints, as well as when handling PL / pgSQL exceptions and in a number of other, more exotic cases.
+
+=> BEGIN;
+BEGIN
+=> BEGIN;
+WARNING:  there is already a transaction in progress
+BEGIN
+=> COMMIT;
+COMMIT
+=> COMMIT;
+WARNING:  there is no transaction in progress
+COMMIT
+
+--------------------------------------
+- Errors and atomicity of operations -
+--------------------------------------
+
+What happens if an error occurs during the operation? For example, like this:
+
+=> BEGIN;
+=> SELECT * FROM t;
+ id |  s  
+----+-----
+  2 | FOO
+  4 | BAR
+(2 rows)
+
+=> UPDATE t SET s = repeat('X', 1/(id-4));
+ERROR:  division by zero
+
+An error has occurred. Now the transaction is considered interrupted and no operation is allowed in it:
+
+=> SELECT * FROM t;
+ERROR:  current transaction is aborted, commands ignored until end of transaction block
+
+And even if you try to commit the changes, PostgreSQL will report the cancellation:
+
+=> COMMIT;
+ROLLBACK
+
+Why can't the transaction continue after a crash? 
+The fact is that an error could arise in such a way that we would get access to some of the changes - the atomicity of not even a transaction, 
+but an operator would be violated. As in our example, where the operator managed to update one line before the error:
+
+=> SELECT * FROM heap_page('t',0);
+ ctid  | state  |   xmin   | xmax  | t_ctid 
+-------+--------+----------+-------+--------
+ (0,1) | normal | 3669 (c) | 3672  | (0,4)
+ (0,2) | normal | 3670 (a) | 0 (a) | (0,2)
+ (0,3) | normal | 3671 (c) | 0 (a) | (0,3)
+ (0,4) | normal | 3672     | 0 (a) | (0,4)
+(4 rows)
+
+I must say that psql has a mode that nevertheless allows the transaction to continue working after a failure, 
+as if the actions of the erroneous statement are being rolled back.
+
+=> \set ON_ERROR_ROLLBACK on
+=> BEGIN;
+=> SELECT * FROM t;
+ id |  s  
+----+-----
+  2 | FOO
+  4 | BAR
+(2 rows)
+
+=> UPDATE t SET s = repeat('X', 1/(id-4));
+ERROR:  division by zero
+
+=> SELECT * FROM t;
+ id |  s  
+----+-----
+  2 | FOO
+  4 | BAR
+(2 rows)
+
+=> COMMIT;
+
+It is easy to guess that in this mode psql actually puts an implicit savepoint before each command, and in case of failure initiates a rollback to it. 
+This mode is not used by default, since setting safepoints (even without rolling back to them) incurs significant overhead costs.
 
 
 
