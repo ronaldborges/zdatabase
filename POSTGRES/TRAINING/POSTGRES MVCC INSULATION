@@ -837,6 +837,350 @@ The only thing that is required of the application is to be able to repeat any t
 But the proportion of interrupted transactions, additional overhead, and the inability to parallelize queries can significantly reduce system throughput. 
 It should also be borne in mind that the Serializable level is not applicable on replicas, and that it cannot be mixed with other isolation levels.
 
+-------------
+- Relations -
+-------------
+
+If you look inside tables and indexes, you will find that they are arranged in a similar way. Both are base objects that contain some data consisting of strings.
+
+There is no doubt that the table consists of rows; this is less obvious for the index. However, 
+imagine a B-tree: it consists of nodes that contain indexed values and references to other nodes or table rows. These nodes can be considered index lines - in fact, they are.
+
+In fact, there are still a number of objects that are arranged in a similar way: sequences (in fact, single-row tables), 
+materialized views (in fact, tables that remember a query). And then there are ordinary views, which by themselves do not store data, 
+but in all other respects are similar to tables.
+
+All these objects in PostgreSQL are called the general word relation (in English relation ). The word is extremely unfortunate, because it is a term from relational theory. 
+You can draw a parallel between a relation and a table (view), but certainly not between a relation and an index. 
+But it just so happened: PostgreSQL's academic roots are making themselves felt. I think that at first it was tables and views that were called that, 
+and the rest has grown over time.
+
+Further, for simplicity, we will only talk about tables and indexes, but the rest of the relationships are arranged in the same way.
+
+Layers (forks) and files
+Usually several layers (forks) correspond to each relation. 
+There are several types of layers, and each of them contains a certain kind of data.
+
+If there is a layer, then it is initially represented by a single file . The file name consists of a numeric identifier, 
+to which an ending can be appended to match the layer name.
+
+The file gradually grows and when its size reaches 1 GB, the next file of the same layer is created (such files are sometimes called segments ). 
+The segment sequence number is appended to the end of the file name.
+
+The 1 GB file size limitation has arisen historically to support various file systems, some of which cannot handle large files. 
+The limitation can be changed when building PostgreSQL ( ./configure --with-segsize).
+
+Thus, several files can correspond to one relation on the disk. For example, for a small table there will be 3 of them.
+All object files belonging to one table space and one database will be placed in one directory. This must be considered because filesystems usually 
+do not work well with a large number of files in a directory.
+Let's notice right away that the files, in turn, are divided into pages (or blocks ), usually 8 KB each. Let's talk about the internal structure of pages below.
+https://mega.nz/file/xwcQzTpZ#oTJ8XGpycrLbX8OL8WfczAjgapfb9LXmhFqa4TNOQyA
+
+Now let's look at the types of layers.
+The main layer is the data itself: those same table or index rows. The base layer exists for any relationship (except for views that do not contain data).
+The file names of the main layer consist only of a numeric identifier. For example, here is the path to the file of the table that we created last time:
+
+=> SELECT pg_relation_filepath('accounts');
+ pg_relation_filepath 
+----------------------
+ base/41493/41496
+(1 row)
+
+Where do these identifiers come from? The base directory corresponds to the pg_default tablespace, the next subdirectory corresponds to the database, 
+and the file we are interested in is already in it:
+
+=> SELECT oid FROM pg_database WHERE datname = 'test';
+  oid  
+-------
+ 41493
+(1 row)
+
+=> SELECT relfilenode FROM pg_class WHERE relname = 'accounts';
+ relfilenode 
+-------------
+       41496
+(1 row)
+
+The path is relative, it is counted from the data directory (PGDATA). Moreover, almost all paths in PostgreSQL are PGDATA-based. 
+Thanks to this, you can painlessly transfer PGDATA to another place - nothing holds it (unless you may need to configure the path to the libraries in LD_LIBRARY_PATH).
+
+Then we look in the file system:
+
+postgres$ ls -l --time-style=+ /var/lib/postgresql/11/main/base/41493/41496
+-rw------- 1 postgres postgres 8192  /var/lib/postgresql/11/main/base/41493/41496
+
+An initialization layer exists only for unlogged tables (created with UNLOGGED) and their indexes. Such objects are no different from ordinary objects, 
+except that actions with them are not recorded in the write-ahead log. Due to this, work with them is faster, but in the event of a failure, 
+it is impossible to restore the data to a consistent state. Therefore, when restoring, 
+PostgreSQL simply deletes all layers of such objects and writes the initialization layer in place of the main layer. The result is a "dummy". 
+We will talk about logging in detail, but in a different cycle.
+
+The accounts table is journaled, so there is no initialization layer for it. But for the experiment, you can turn off logging:
+
+=> ALTER TABLE accounts SET UNLOGGED;
+=> SELECT pg_relation_filepath('accounts');
+ pg_relation_filepath 
+----------------------
+ base/41493/41507
+(1 row)
+
+The ability to turn on and off logging on the fly, as you can see from the example, is associated with overwriting data into files with different names.
+
+The initialization layer has the same name as the main layer, but with the "_init" suffix:
+
+postgres$ ls -l --time-style=+ /var/lib/postgresql/11/main/base/41493/41507_init
+-rw------- 1 postgres postgres 0  /var/lib/postgresql/11/main/base/41493/41507_init
+
+Map free space (free space map) - layer in which noted the presence of empty space within the pages. 
+This place is constantly changing: when new versions of lines are added, it decreases, when cleaned, it increases. 
+The free space map is used when inserting new versions of rows to quickly find a suitable page to accommodate the added data.
+
+Free space map is suffixed with "_fsm". But the file does not appear immediately, but only when necessary. 
+The easiest way to achieve this is to clean up the table (we'll talk about why in due time):
+
+=> VACUUM accounts;
+
+postgres$ ls -l --time-style=+ /var/lib/postgresql/11/main/base/41493/41507_fsm
+-rw------- 1 postgres postgres 24576  /var/lib/postgresql/11/main/base/41493/41507_fsm
+
+A visibility map is a layer in which pages are marked with one bit, which contain only the current version of the lines. 
+Roughly speaking, this means that when a transaction tries to read a row from such a page, the row can be displayed without checking its visibility. 
+We will look in detail at how this happens in future articles.
+
+postgres$ ls -l --time-style=+ /var/lib/postgresql/11/main/base/41493/41507_vm
+-rw------- 1 postgres postgres 8192  /var/lib/postgresql/11/main/base/41493/41507_vm
+
+---------
+- Pages -
+---------
+
+As we said, the files are logically divided into pages.
+
+Typically the page is 8KB in size. The size can be changed within some limits (16 KB or 32 KB), but only during assembly ( ./configure --with-blocksize). 
+The assembled and launched instance can only work with pages of one size.
+
+Regardless of which layer the files belong to, they are used by the server in about the same way. Pages are first read into the buffer cache, 
+where they can be read and modified by processes; then the pages are preempted back to disk as needed.
+
+Each page has internal markup and generally contains the following sections:
+
+       0 + ----------------------------------- +
+          | heading |
+      24 + ----------------------------------- +
+          | array of pointers to string versions |
+   lower + ----------------------------------- +
+          | free space |
+   upper + ----------------------------------- +
+          | row versions |
+ special + ----------------------------------- +
+          | special area |
+pagesize + ----------------------------------- +
+
+The size of these sections is easy to find out with the pageinspect "exploratory" extension:
+
+=> CREATE EXTENSION pageinspect;
+=> SELECT lower, upper, special, pagesize FROM page_header(get_raw_page('accounts',0));
+ lower | upper | special | pagesize 
+-------+-------+---------+----------
+    40 |  8016 |    8192 |     8192
+(1 row)
+
+Here we are looking at the title of the very first (zero) page of the table. In addition to the size of the other areas, 
+the header contains other information about the page, but we are not interested in it yet.
+
+There is a special area at the bottom of the page , in our case it is empty. It is used only for indexes, and even then not for all. 
+"Below" here corresponds to the picture; perhaps it would be more correct to say "in senior addresses".
+
+Following the special area are the row versions - the very data that we store in the table, plus some service information.
+At the top of the page, right after the heading, is the table of contents: an array of pointers to the line versions available on the page.
+Free space can remain between line versions and pointers (which is marked in the free space map). Note that there is no fragmentation inside the page, 
+all free space is always represented by one fragment.
+
+------------
+- Pointers -
+------------
+
+Why are pointers to row versions needed? The point is that index rows must somehow refer to the row versions in the table. 
+It is clear that the link must contain the file number, the page number in the file, and some indication of the line version. 
+An offset relative to the beginning of the page could be used as such an indication, but this is inconvenient. 
+We would not be able to move the version of the line within the page because that would break existing links. 
+This would lead to fragmentation of space within pages and other unpleasant consequences. 
+Therefore, the index refers to the pointer number, and the pointer refers to the current position of the row version in the page. Indirect addressing turns out.
+
+Each pointer takes exactly 4 bytes and contains:
+
+link to the line version;
+the length of this version of the string;
+several bits defining the status of the row version.
+
+---------------
+- Data format -
+---------------
+
+The format of the data on the disk completely coincides with the representation of data in the RAM. 
+The page is read into the buffer cache "as is", without any conversion. Therefore, data files from one platform are not compatible with other platforms.
+For example, the x86 architecture uses little-endian byte ordering, z / Architecture uses big-endian ordering, and ARM uses switchable ordering.
+Many architectures provide for data alignment on word boundaries. For example, on a 32-bit x86 system, integers (integer, occupies 4 bytes) 
+will be aligned on 4-byte word boundaries, just like double precision floating point numbers (double precision, 8 bytes). On a 64-bit system, 
+double values will be aligned on the boundary of 8-byte words. This is another reason for incompatibility.
+Due to alignment, the size of the table row depends on the order of the fields. Usually this effect is not very noticeable, 
+but in some cases it can lead to a significant increase in size. For example, if you mix char (1) and integer fields, there will usually be 3 bytes wasted between them. 
+More details can be found in the presentation of Nikolai Shaplov " What's inside him".
+
+--------------------------
+- Row Versions and TOAST -
+--------------------------
+
+We will talk in detail about how the string versions work from the inside next time. For now, 
+the only important thing for us is that each version should fit entirely on one page: PostgreSQL does not provide a way to "continue" a line on the next page. 
+Instead, a technology called TOAST (The Oversized Attributes Storage Technique) is used. The name itself suggests that the string can be sliced into toast.
+Seriously speaking, TOAST involves several strategies. "Long" attribute values can be sent to a separate service table, having previously cut them into small toast fragments. 
+Another option is to shrink the value so that the row version still fits on a regular table page. And you can do both: first squeeze, and only then cut and send.
+For each main table, if necessary, a separate, but one for all attributes, TOAST table (and a special index to it) is created. 
+The need is determined by the presence of potentially long attributes in the table. For example, if the table has a column of type numeric or text, 
+the TOAST table will be created immediately, even if long values are not used.
+
+Since a TOAST table is essentially a regular table, it still has the same set of layers. And this doubles the number of files that "serve" the table.
+Strategies are initially determined by the data types of the columns. You can view them with a command \d+in psql, but since it displays 
+a lot of other information at the same time, we will use a query to the system catalog:
+
+=> SELECT attname, atttypid::regtype, CASE attstorage
+  WHEN 'p' THEN 'plain'
+  WHEN 'e' THEN 'external'
+  WHEN 'm' THEN 'main'
+  WHEN 'x' THEN 'extended'
+END AS storage
+FROM pg_attribute
+WHERE attrelid = 'accounts'::regclass AND attnum > 0;
+ attname | atttypid | storage  
+---------+----------+----------
+ id      | integer  | plain
+ number  | text     | extended
+ client  | text     | extended
+ amount  | numeric  | main
+(4 rows)
+
+Strategy names have the following meanings:
+
+plain - TOAST is not used (it is used for obviously “short” data types, like integer);
+extended - both compression and storage in a separate TOAST table are allowed;
+external - long values are stored uncompressed in the TOAST table;
+main - long values are first compressed, and only get into the TOAST table if compression did not help.
+
+In general terms, the algorithm looks like this. PostgreSQL strives to have at least 4 lines per page. Therefore, if the line size exceeds a fourth of the page, 
+taking into account the header (for a normal 8K page, this is 2040 bytes), you must apply TOAST to some of the values. 
+We proceed in the order described below and stop as soon as the line stops exceeding the threshold:
+
+First, we iterate over the attributes with the external and extended strategies, moving from the longest to the shortest. 
+Extended attributes are compressed (if it has an effect) and if the value itself exceeds a quarter of a page, it is immediately sent to the TOAST table. 
+External attributes are handled the same way, but not compressed.
+If after the first pass the row version still does not fit, we send the remaining attributes with the external and extended strategies to the TOAST table.
+If this does not help, we try to compress the attributes with the main strategy, while leaving them in the table page.
+And only if after that the string is still not short enough, the main attributes are sent to the TOAST table.
+
+Sometimes it can be helpful to change the strategy for some columns. For example, if you know in advance that the data in a column is not compressed, 
+you can set the external strategy for it - this will save you on unnecessary compression attempts. This is done as follows:
+
+=> ALTER TABLE accounts ALTER COLUMN number SET STORAGE external;
+
+Repeating the request, we get:
+
+ attname | atttypid | storage  
+---------+----------+----------
+ id      | integer  | plain
+ number  | text     | external
+ client  | text     | extended
+ amount  | numeric  | main
+
+TOAST tables and indexes are located in a separate pg_toast schema and are therefore usually not visible. For temporary tables used pg_toast_temp_ 
+circuit N is similar to a conventional pg_temp_ N .
+Of course, if you wish, no one bothers to spy on the internal mechanics of the process. Let's say there are three potentially long attributes in the accounts table, 
+so there must be a TOAST table. Here she is:
+
+=> SELECT relnamespace::regnamespace, relname
+FROM pg_class WHERE oid = (
+  SELECT reltoastrelid FROM pg_class WHERE relname = 'accounts'
+);
+ relnamespace |    relname     
+--------------+----------------
+ pg_toast     | pg_toast_33953
+(1 row)
+
+=> \d+ pg_toast.pg_toast_33953
+TOAST table "pg_toast.pg_toast_33953"
+   Column   |  Type   | Storage 
+------------+---------+---------
+ chunk_id   | oid     | plain
+ chunk_seq  | integer | plain
+ chunk_data | bytea   | plain
+
+It is logical that for "toasts", into which a string is cut, the plain strategy is used: there is no second level TOAST.
+PostgreSQL hides the index more carefully, but it is not difficult to find it either:
+
+=> SELECT indexrelid::regclass FROM pg_index
+WHERE indrelid = (
+  SELECT oid FROM pg_class WHERE relname = 'pg_toast_33953'
+);
+          indexrelid           
+-------------------------------
+ pg_toast.pg_toast_33953_index
+(1 row)
+
+=> \d pg_toast.pg_toast_33953_index
+Unlogged index "pg_toast.pg_toast_33953_index"
+  Column   |  Type   | Key? | Definition 
+-----------+---------+------+------------
+ chunk_id  | oid     | yes  | chunk_id
+ chunk_seq | integer | yes  | chunk_seq
+primary key, btree, for table "pg_toast.pg_toast_33953"
+
+The client column uses the extended strategy: the values ​​in it will be compressed. Let's check:
+
+=> UPDATE accounts SET client = repeat('A',3000) WHERE id = 1;
+=> SELECT * FROM pg_toast.pg_toast_33953;
+ chunk_id | chunk_seq | chunk_data 
+----------+-----------+------------
+(0 rows)
+
+There is nothing in the TOAST table: duplicate characters are perfectly compressed and after that the value fits into a regular table page.
+Now let's say the customer's name consists of random characters:
+
+=> UPDATE accounts SET client = (
+  SELECT string_agg( chr(trunc(65+random()*26)::integer), '') FROM generate_series(1,3000)
+)
+WHERE id = 1
+RETURNING left(client,10) || '...' || right(client,10);
+        ?column?         
+-------------------------
+ TCKGKZZSLI...RHQIOLWRRX
+(1 row)
+
+This sequence cannot be compressed, and it ends up in the TOAST table:
+
+=> SELECT chunk_id,
+  chunk_seq,
+  length(chunk_data),
+  left(encode(chunk_data,'escape')::text, 10) ||
+  '...' ||
+  right(encode(chunk_data,'escape')::text, 10) 
+FROM pg_toast.pg_toast_33953;
+ chunk_id | chunk_seq | length |        ?column?         
+----------+-----------+--------+-------------------------
+    34000 |         0 |   2000 | TCKGKZZSLI...ZIPFLOXDIW
+    34000 |         1 |   1000 | DDXNNBQQYH...RHQIOLWRRX
+(2 rows)
+
+As you can see, the data is cut into fragments of 2000 bytes.
+When accessing a "long" value, PostgreSQL automatically, transparently to the application, restores the original value and returns it to the client.
+Of course, both sliced compression and subsequent recovery are a lot of resources. Therefore, storing bulk data in PostgreSQL is not a good idea, 
+especially if it is actively used and does not require transactional logic (for example: scanned originals of accounting documents). 
+A more profitable alternative may be storing such data on the file system, and in the DBMS - the names of the corresponding files.
+The TOAST table is used only when accessing a "long" value. 
+In addition, the toast table maintains its own versioning: if the data update does not affect the "long" value, 
+the new version of the row will refer to the same value in the TOAST table - this saves space.
+Note that TOAST only works for tables, not indexes. This imposes a limit on the size of the indexed keys.
+
+
 
 
 
