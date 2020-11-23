@@ -1755,6 +1755,12 @@ ERROR:  division by zero
 It is easy to guess that in this mode psql actually puts an implicit savepoint before each command, and in case of failure initiates a rollback to it. 
 This mode is not used by default, since setting safepoints (even without rolling back to them) incurs significant overhead costs.
 
+.
+https://habr.com/ru/company/postgrespro/blog/446652/
+https://habr.com/ru/company/postgrespro/blog/449704/
+https://habr.com/ru/company/postgrespro/blog/452320/
+https://habr.com/ru/company/postgrespro/blog/452762/
+https://habr.com/ru/company/postgrespro/blog/455590/
 
 
 
