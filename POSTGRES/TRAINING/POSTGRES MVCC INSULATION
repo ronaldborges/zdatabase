@@ -3225,12 +3225,415 @@ Recall that often you should not increase the memory size, but rather reduce the
 It might also make sense to monitor the length of the list of tables to clean using the views above. 
 An increase in the length of the list will indicate that autovacuum does not have time to do its job and a change in settings is required.
 
+--------------------------------
+- Transaction counter overflow -
+--------------------------------
 
-https://habr.com/ru/company/postgrespro/blog/452320/
-https://habr.com/ru/company/postgrespro/blog/452762/
-https://habr.com/ru/company/postgrespro/blog/455590/
+PostgreSQL has 32 bits allocated for the transaction number. This is a fairly large number (about 4 billion), but with active server operation, 
+it may well be exhausted. For example, with a load of 1000 transactions per second, this will happen after just a month and a half of continuous work.
+But we said that the multi-version mechanism relies on the numbering sequence - then, 
+out of two transactions, a transaction with a lower number can be considered to have started earlier. Therefore, 
+it is clear that you cannot just reset the counter and continue the numbering again.
+https://mega.nz/file/gtsjUAIC#MWd6pUKuzFRm-LBczbPKjRLtNL3F33DNKebYyUE8ONk
 
+Why is not 64 bits allocated for the transaction number - this would completely eliminate the problem? The fact is that (as discussed earlier) 
+in the header of each line version, two transaction numbers are stored - xmin and xmax. The header is already quite large, at least 23 bytes, 
+and an increase in the bit width would lead to its increase by another 8 bytes. This is no gate at all.
+64-bit transaction numbers are implemented in our company's product - Postgres Pro Enterprise - but even there they are not entirely honest: 
+xmin and xmax remain 32-bit, and the page header contains the "beginning of an era" common to the entire page.
+What to do? Instead of a linear scheme, all transaction numbers are looped back. For any transaction, half of the numbers "counterclockwise" 
+is considered to belong to the past, and half "clockwise" to the future.
+The age of a transaction is the number of transactions that have passed since it appeared in the system (regardless of whether the counter crossed zero or not). 
+When we want to understand whether one transaction is older than another or not, we compare their ages, not numbers. 
+(Therefore, by the way, there are no "greater than" or "less" operations defined for the xid data type.)
+https://mega.nz/file/FpkVCCLa#4I6fqlc6rvU6cto2LZsiCzRBxiDntIKPnSfzJ623yqY
 
+But in such a loopback scheme, an unpleasant situation arises. A transaction that was in the distant past (transaction 1 in the figure), 
+after a while will be in that half of the circle that belongs to the future. 
+This, of course, violates the rules of visibility and would lead to problems - the changes made by transaction 1 would simply disappear from view.
+https://mega.nz/file/M11HxYKL#Tx7h6h_KZmA8946a9Ty_P2jQego7AzAegQqqS4s_iVM
 
+------------------------------------------
+- Freezing versions and visibility rules -
+------------------------------------------
 
+To prevent such "travel" from the past to the future, the cleaning process (in addition to freeing up space in the pages) performs another task. 
+It finds rather old and “cold” versions of strings (which are visible in all images and which are unlikely to change) 
+and marks them in a special way - “freezes” them. The frozen version of the row is considered older than any regular 
+data and is always visible in all data snapshots. In this case, you no longer need to look at the transaction number xmin, 
+and this number can be safely reused. Thus, frozen row versions are always a thing of the past.
+https://mega.nz/file/4ssg3LqI#jGiWbbfqmrucXDoAUbmW-6I_8JFKt0wp5ItXEoIhdDU
+
+In order to mark the transaction number xmin as frozen, both hint bits are set simultaneously - the commit bit and the cancel bit.
+Note that transaction xmax does not need to be frozen. Its presence means that this version of the line is no longer up to date. 
+After it is no longer visible in snapshots, this version of the row will be cleared.
+Let's create a table for experimentation. 
+Let's set the minimum fillfactor for it so that only two lines fit on each page - this will make it easier for us to observe what is happening. 
+And turn off the automation to control the cleaning time yourself.
+
+=> CREATE TABLE tfreeze(
+  id integer,
+  s char(300)
+) WITH (fillfactor = 10, autovacuum_enabled = off);
+
+We have already created several variants of a function that, using the pageinspect extension, showed the versions of the lines on the page. 
+Now we will create another version of the same function: now it will display several pages at once and show the age of the transaction xmin 
+(for this, the age system function is used):
+
+=> CREATE FUNCTION heap_page(relname text, pageno_from integer, pageno_to integer)
+RETURNS TABLE(ctid tid, state text, xmin text, xmin_age integer, xmax text, t_ctid tid)
+AS $$
+SELECT (pageno,lp)::text::tid AS ctid,
+       CASE lp_flags
+         WHEN 0 THEN 'unused'
+         WHEN 1 THEN 'normal'
+         WHEN 2 THEN 'redirect to '||lp_off
+         WHEN 3 THEN 'dead'
+       END AS state,
+       t_xmin || CASE
+         WHEN (t_infomask & 256+512) = 256+512 THEN ' (f)'
+         WHEN (t_infomask & 256) > 0 THEN ' (c)'
+         WHEN (t_infomask & 512) > 0 THEN ' (a)'
+         ELSE ''
+       END AS xmin,
+      age(t_xmin) xmin_age,
+       t_xmax || CASE
+         WHEN (t_infomask & 1024) > 0 THEN ' (c)'
+         WHEN (t_infomask & 2048) > 0 THEN ' (a)'
+         ELSE ''
+       END AS xmax,
+       t_ctid
+FROM generate_series(pageno_from, pageno_to) p(pageno),
+     heap_page_items(get_raw_page(relname, pageno))
+ORDER BY pageno, lp;
+$$ LANGUAGE SQL;
+
+Please note that the freeze flag (which we show with the letter f in parentheses) 
+is determined by the simultaneous setting of the committed and aborted hint bits. Many sources (including documentation) 
+mention the special number FrozenTransactionId = 2, which is used to mark frozen transactions. 
+This system was in effect until version 9.4, 
+but now it has been replaced with hint bits - this allows you to keep the original transaction number in the row version, 
+which is convenient for support and debugging purposes. However, transactions with number 2 can still be found in older systems, 
+even those updated to the latest versions.
+
+We also need the pg_visibility extension, which allows us to look into the visibility map:
+
+=> CREATE EXTENSION pg_visibility;
+
+Prior to PostgreSQL 9.6, the visibility map contained one bit per page; it marked pages containing only "fairly old" 
+versions of lines that are already guaranteed to be visible in all images. The idea here is that if a page is marked in the visibility map, 
+then there is no need to check visibility rules for its line versions.
+
+Since version 9.6, a freeze map has been added to the same layer - one more bit per page. 
+A freeze map marks pages where all versions of the lines are frozen.
+
+We insert several rows into the table and immediately clean up to create a visibility map:
+
+=> INSERT INTO tfreeze(id, s)
+  SELECT g.id, 'FOO' FROM generate_series(1,100) g(id);
+=> VACUUM tfreeze;
+
+And we can see that both pages are now marked in the visibility map (all_visible), but not frozen (all_frozen):
+
+=> SELECT * FROM generate_series(0,1) g(blkno), pg_visibility_map('tfreeze',g.blkno)
+ORDER BY g.blkno;
+ blkno | all_visible | all_frozen 
+-------+-------------+------------
+     0 | t           | f
+     1 | t           | f
+(2 rows)
+
+The age of the transaction that created the rows (xmin_age) is 1 - this is the last transaction that was executed on the system:
+
+=> SELECT * FROM heap_page('tfreeze',0,1);
+ ctid  | state  |  xmin   | xmin_age | xmax  | t_ctid 
+-------+--------+---------+----------+-------+--------
+ (0,1) | normal | 697 (c) |        1 | 0 (a) | (0,1)
+ (0,2) | normal | 697 (c) |        1 | 0 (a) | (0,2)
+ (1,1) | normal | 697 (c) |        1 | 0 (a) | (1,1)
+ (1,2) | normal | 697 (c) |        1 | 0 (a) | (1,2)
+(4 rows)
+
+----------------------------
+- Minimum age for freezing -
+----------------------------
+
+Freezing is controlled by three main parameters, and we will look at them in turn.
+We start with vacuum_freeze_min_age , which defines the minimum transaction age xmin at which a row version can be frozen. 
+The lower this value, the more unnecessary overhead costs may be: if we are dealing with "hot", actively changing data, 
+then the freezing of more and more new versions will disappear without benefit. In this case, it is better to wait.
+The default value for this parameter specifies that transactions begin to freeze after 50 million other transactions have passed since their inception:
+
+=> SHOW vacuum_freeze_min_age;
+ vacuum_freeze_min_age 
+-----------------------
+ 50000000
+(1 row)
+
+In order to see how the freezing takes place, let's decrease the value of this parameter to one.
+
+=> ALTER SYSTEM SET vacuum_freeze_min_age = 1;
+=> SELECT pg_reload_conf();
+
+And let's update one more line on page zero. The new version will land on the same page due to the small fillfactor.
+
+=> UPDATE tfreeze SET s = 'BAR' WHERE id = 1;
+
+This is what we see now in the data pages:
+
+=> SELECT * FROM heap_page('tfreeze',0,1);
+ ctid  | state  |  xmin   | xmin_age | xmax  | t_ctid 
+-------+--------+---------+----------+-------+--------
+ (0,1) | normal | 697 (c) |        2 | 698   | (0,3)
+ (0,2) | normal | 697 (c) |        2 | 0 (a) | (0,2)
+ (0,3) | normal | 698     |        1 | 0 (a) | (0,3)
+ (1,1) | normal | 697 (c) |        2 | 0 (a) | (1,1)
+ (1,2) | normal | 697 (c) |        2 | 0 (a) | (1,2)
+(5 rows)
+
+Rows older than vacuum_freeze_min_age = 1 should now be frozen. But note that line zero is not marked in the visibility map 
+(the bit was cleared by the UPDATE command that changed the page), and the first one remains marked:
+
+=> SELECT * FROM generate_series(0,1) g(blkno), pg_visibility_map('tfreeze',g.blkno)
+ORDER BY g.blkno;
+ blkno | all_visible | all_frozen 
+-------+-------------+------------
+     0 | f           | f
+     1 | t           | f
+(2 rows)
+
+We have already mentioned that scavenging only looks at pages not marked in the visibility map. And so it turns out:
+
+=> VACUUM tfreeze;
+=> SELECT * FROM heap_page('tfreeze',0,1);
+ ctid  |     state     |  xmin   | xmin_age | xmax  | t_ctid 
+-------+---------------+---------+----------+-------+--------
+ (0,1) | redirect to 3 |         |          |       | 
+ (0,2) | normal        | 697 (f) |        2 | 0 (a) | (0,2)
+ (0,3) | normal        | 698 (c) |        1 | 0 (a) | (0,3)
+ (1,1) | normal        | 697 (c) |        2 | 0 (a) | (1,1)
+ (1,2) | normal        | 697 (c) |        2 | 0 (a) | (1,2)
+(5 rows)
+
+On page zero, one version is frozen, but the cleanup did not consider the first page at all. 
+Thus, if only the current versions remain on the page, then the cleaning will not come to such a page and will not freeze them.
+
+=> SELECT * FROM generate_series(0,1) g(blkno), pg_visibility_map('tfreeze',g.blkno)
+ORDER BY g.blkno;
+ blkno | all_visible | all_frozen 
+-------+-------------+------------
+     0 | t           | f
+     1 | t           | f
+(2 rows)
+
+----------------------------------
+- Age to freeze the entire table -
+----------------------------------
+
+To still freeze the row versions remaining in the pages that the cleaning doesn't just look at, a second parameter is provided: vacuum_freeze_table_age. 
+It determines the age of the transaction at which the cleanup ignores the visibility map and traverses all the pages of the table to freeze.
+
+Each table stores a transaction number for which all older transactions are known to be frozen (pg_class.relfrozenxid). 
+The vacuum_freeze_table_age parameter is compared with the age of this memorized transaction .
+
+=> SELECT relfrozenxid, age(relfrozenxid) FROM pg_class WHERE relname = 'tfreeze';
+ relfrozenxid | age 
+--------------+-----
+          694 |   5
+(1 row)
+
+Prior to PostgreSQL 9.6, cleanup performed a full table scan to ensure that all pages were crawled. 
+For large tables, this operation took a long time and was frustrating. 
+This was compounded by the fact that if the cleanup could not reach the end (for example, an impatient administrator interrupted the execution of the command), 
+you had to start from the beginning.
+Since version 9.6, thanks to the freeze map (which we see in the all_frozen column in the pg_visibility_map output), 
+the flush only crawls pages that are not yet marked in the map. This is not only significantly less work, 
+but also resilience to interruptions: if the cleaning process is stopped and started again, 
+he does not have to look again the pages that he already marked in the freeze map last time.
+Anyway, all pages in a table are frozen once per ( vacuum_freeze_table_age - vacuum_freeze_min_age ) transactions. 
+With default values, this happens once every million transactions:
+
+=> SHOW vacuum_freeze_table_age;
+ vacuum_freeze_table_age 
+-------------------------
+ 150000000
+(1 row)
+
+Thus, you can see that too high a value for vacuum_freeze_min_age should also not be set, because instead of reducing the overhead, 
+this will start to increase them.
+Let's see how the entire table is frozen, and for this we reduce vacuum_freeze_table_age to 5 - so that the freeze condition is met.
+
+=> ALTER SYSTEM SET vacuum_freeze_table_age = 5;
+=> SELECT pg_reload_conf();
+
+Let's clean up:
+
+=> VACUUM tfreeze;
+
+Now, since the entire table was guaranteed to be checked, 
+the frozen transaction number can be increased - we are sure that there is no older unfrozen transaction left in the pages.
+
+=> SELECT relfrozenxid, age(relfrozenxid) FROM pg_class WHERE relname = 'tfreeze';
+ relfrozenxid | age 
+--------------+-----
+          698 |   1
+(1 row)
+
+Now all versions of the lines on the first page are frozen:
+
+=> SELECT * FROM heap_page('tfreeze',0,1);
+ ctid  |     state     |  xmin   | xmin_age | xmax  | t_ctid 
+-------+---------------+---------+----------+-------+--------
+ (0,1) | redirect to 3 |         |          |       | 
+ (0,2) | normal        | 697 (f) |        2 | 0 (a) | (0,2)
+ (0,3) | normal        | 698 (c) |        1 | 0 (a) | (0,3)
+ (1,1) | normal        | 697 (f) |        2 | 0 (a) | (1,1)
+ (1,2) | normal        | 697 (f) |        2 | 0 (a) | (1,2)
+(5 rows)
+
+In addition, the first page is marked in the freeze map:
+
+=> SELECT * FROM generate_series(0,1) g(blkno), pg_visibility_map('tfreeze',g.blkno)
+ORDER BY g.blkno;
+ blkno | all_visible | all_frozen 
+-------+-------------+------------
+     0 | t           | f
+     1 | t           | t
+(2 rows)
+
+-----------------------------------
+- Age for "aggressive" triggering -
+-----------------------------------
+
+It is important that the row versions are frozen in time. 
+If a situation arises in which a transaction that has not yet been frozen risks falling into the future, 
+PostgreSQL will abruptly stop to prevent possible problems.
+
+What can cause this to happen? There are various reasons.
+
+Autovacuum may be turned off and normal cleanup will not start either. We have already said that this is not necessary, but technically it is possible.
+Even autovacuum enabled does not come to databases that are not in use (remember the track_counts parameter and the template0 database).
+As we saw last time , flushing skips tables where data is only added, but not deleted or modified.
+For such cases, "aggressive" triggering of autovacuum is provided, and it is regulated by the autovacuum_freeze_max_age parameter. 
+If in any table of any database there may be an unfrozen transaction older than the age specified in the parameter, 
+autovacuum is forced (even if it is disabled) and sooner or later it will reach the problem table (regardless of the usual criteria).
+
+The default is pretty conservative:
+
+=> SHOW autovacuum_freeze_max_age;
+ autovacuum_freeze_max_age 
+---------------------------
+ 200000000
+(1 row)
+
+The limit for autovacuum_freeze_max_age is 2 billion transactions, and a value 10 times less is used. This makes sense: by increasing the value, 
+we also increase the risk that during the remaining time autovacuum will simply not have time to freeze all the required row versions.
+In addition, the value of this parameter determines the size of the XACT structure: 
+since there should be no older transactions in the system for which you might need to know the status, autovacuum removes unnecessary XACT segment files, 
+freeing up space.
+Let's see how cleanup deals with append-only tables, using tfreeze as an example. 
+For this table, autovacuum is generally disabled, but this will not be a hindrance either.
+Changing the autovacuum_freeze_max_age parameterrequires a server restart. 
+But all the parameters discussed above can also be set at the level of individual tables using storage parameters. 
+Usually it only makes sense to do this in special cases when the table really requires special handling.
+So, we'll set autovacuum_freeze_max_age at the table level (and return the normal fillfactor as well). 
+Unfortunately, the minimum possible value is 100,000:
+
+=> ALTER TABLE tfreeze SET (autovacuum_freeze_max_age = 100000, fillfactor = 100);
+
+Unfortunately - because 100,000 transactions will have to be performed to reproduce the situation we are interested in. 
+But, of course, for practical purposes this is a very, very low value.
+
+Since we are going to add data, we will insert 100,000 rows into the table, each in its own transaction. 
+And again I have to make a reservation that in practice this should not be done. But now we are just exploring, we can.
+
+=> CREATE PROCEDURE foo(id integer) AS $$
+BEGIN
+  INSERT INTO tfreeze VALUES (id, 'FOO');
+  COMMIT;
+END;
+$$ LANGUAGE plpgsql;
+
+=> DO $$
+BEGIN
+  FOR i IN 101 .. 100100 LOOP
+    CALL foo(i);
+  END LOOP;
+END;
+$$;
+
+As we can see, the age of the last frozen transaction in the table has passed the threshold value:
+
+=> SELECT relfrozenxid, age(relfrozenxid) FROM pg_class WHERE relname = 'tfreeze';
+ relfrozenxid |  age   
+--------------+--------
+          698 | 100006
+(1 row)
+
+But if you wait a little now, an entry will appear in the server message log about the automatic aggressive vacuum of table "test.public.tfreeze", 
+the number of the frozen transaction will change, and its age will return to the limits of decency:
+
+=> SELECT relfrozenxid, age(relfrozenxid) FROM pg_class WHERE relname = 'tfreeze';
+ relfrozenxid | age 
+--------------+-----
+       100703 |   3
+(1 row)
+
+There is also such a phenomenon as the freezing of multitransactions, 
+but we will not talk about that yet - we will postpone it until we talk about locks so as not to get ahead of ourselves.
+
+--------------------
+- Freezing by hand -
+--------------------
+
+Sometimes it is convenient to control the freeze manually, rather than waiting for the auto-cleaning to arrive.
+
+Freezing can be called manually with the VACUUM FREEZE command - this will freeze all row versions, 
+regardless of the age of the transactions (as if the autovacuum_freeze_min_age parameter = 0). 
+When a table is rebuilt with the VACUUM FULL or CLUSTER commands, all rows are also frozen.
+
+To freeze all databases, you can use the utility:
+
+vacuumdb --all --freeze
+
+Data can also be frozen on boot using the COPY command by specifying the FREEZE parameter. 
+To do this, the table must be created (or emptied with the TRUNCATE command) in the same
+transaction as COPY.
+
+Because frozen rows have separate visibility rules, frozen rows will be visible in snapshots of other transactions, 
+in violation of normal isolation rules (for transactions with the Repeatable Read or Serializable level).
+
+To verify this, in another session, start a transaction with the Repeatable Read isolation level:
+
+|  => BEGIN ISOLATION LEVEL REPEATABLE READ;
+|  => SELECT txid_current();
+
+Note that this transaction took a snapshot of the data, but did not access the tfreeze table. 
+Now we will empty the tfreeze table and load new rows into it in one transaction. 
+If a concurrent transaction read the contents of tfreeze, the TRUNCATE command would block until the end of that transaction.
+
+=> BEGIN;
+=> TRUNCATE tfreeze;
+=> COPY tfreeze FROM stdin WITH FREEZE;
+1	FOO
+2	BAR
+3	BAZ
+\.
+=> COMMIT;
+
+Now the concurrent transaction sees new data, although this breaks the isolation:
+
+|  => SELECT count(*) FROM tfreeze;
+|   count 
+|  -------
+|       3
+|  (1 row)
+|  => COMMIT;
+
+However, since this data loading is unlikely to occur regularly, this is usually not a problem.
+
+Much worse is that COPY WITH FREEZE does not work with the visibility map - loaded pages are not marked as containing only visible versions of the lines. 
+Therefore, when the table is accessed for the first time, the cleanup is forced to re-process it and create a visibility map. 
+To make matters worse, the data pages are fully visible in their own header, so cleanup not only reads the entire table, but also completely rewrites it, 
+setting the desired bit. Unfortunately, the solution to this problem does not have to wait until version 13 ( discussion ).
 
