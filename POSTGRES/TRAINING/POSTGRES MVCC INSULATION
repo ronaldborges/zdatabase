@@ -1755,12 +1755,1481 @@ ERROR:  division by zero
 It is easy to guess that in this mode psql actually puts an implicit savepoint before each command, and in case of failure initiates a rollback to it. 
 This mode is not used by default, since setting safepoints (even without rolling back to them) incurs significant overhead costs.
 
-.
-https://habr.com/ru/company/postgrespro/blog/446652/
-https://habr.com/ru/company/postgrespro/blog/449704/
+------------
+- snapshot -
+------------
+
+Physically, data pages can contain multiple versions of the same row. 
+Moreover, each transaction should see only one (or none) version of each row so that together they make up an ACID-consistent picture of the data 
+at a certain point in time.
+Isolation in PostgreSQL is based on snapshots: each transaction operates with its own snapshot, which "contains" the data that was committed before 
+the snapshot was taken, and does not "contain" the data that has not yet been captured. We have already seen that the isolation is stricter than 
+required by the standard, but not devoid of anomalies.
+At the Read Committed isolation level, a snapshot is taken at the start of each statement in a transaction. 
+This snapshot is active while the statement is being executed. In the figure, the moment of snapshot creation 
+(which, as we remember, is determined by the transaction number) is shown in blue.
+https://mega.nz/file/Uk9RVQRI#M264RUhBfARxNiMx_BS44WjBrhaqK-D6FQvcMJh5Gj0
+
+At the Repeatable Read and Serializable levels, the snapshot is taken once at the beginning of the first statement in the transaction. 
+This snapshot remains active until the very end of the transaction.
+https://mega.nz/file/dpkh1K6a#h7Az74L9hPuAOI9GwwXQsP6pqmmG8cMADVkaTPcjg4E
+
+---------------------------------------
+- Row Versions Visibility in Snapshot -
+---------------------------------------
+
+--------------------
+- Visibility rules -
+--------------------
+
+Of course, the snapshot is not a physical copy of all the required row versions. 
+In fact, the snapshot is specified by several numbers, and the visibility of the row versions in the snapshot is determined by the rules.
+Whether or not this version of the row is visible in the snapshot depends on two fields of its header - xmin and xmax - that is, 
+on the numbers of the transactions that created and deleted them. Such intervals do not overlap, therefore, 
+one line is represented in any picture by at most one version of it.
+The exact rules for visibility are quite complex and account for many different situations and edge cases.
+
+You can easily verify this by looking at src/backend/utils/time/tqual.c (in version 12, the check moved to src/backend/access/heap/heapam_visibility.c).
+To simplify, we can say that the row version is visible when the changes made by the xmin transaction are visible in the snapshot, 
+and the changes made by the xmax transaction are not visible (in other words, it is already visible that the row version has appeared, 
+but it is not yet visible that it was deleted).
+
+In turn, changes to the transaction are visible in the snapshot if either it is the same transaction that created the snapshot (it sees its own changes), 
+or the transaction was committed before the snapshot was taken.
+You can represent transactions graphically in the form of segments (from the moment of beginning to the moment of committing):
+https://mega.nz/file/051xiCBL#XhCEkaaKQh2aOnFW8UZqrzFGzErzgsZJ01VsG7tzwD4
+
+Here:
+
+ * changes to transaction 2 will be visible because it completed before the snapshot was taken,
+ * changes to transaction 1 will not be visible because it was active at the time the snapshot was taken,
+ * changes to transaction 3 will not be visible, because it started later than the snapshot was taken (it does not matter if it ended or not).
+
+Unfortunately, the moment of committing transactions is unknown to the system. Only the moment of its beginning is known 
+(it is determined by the transaction number and is marked in the figures above with a dashed line), but the fact of completion is not recorded anywhere.
+All we can do is find out the current status of transactions when the snapshot is taken. 
+This information is stored in the server's shared memory in the ProcArray structure, which contains a list of all active sessions and their transactions.
+And after the fact, we will no longer be able to understand whether any transaction was active at the time of the snapshot creation or not. 
+Therefore, a list of all currently active transactions must be stored in a snapshot.
+It follows from the above that in PostgreSQL you cannot create a snapshot showing consistent data as of an arbitrary time ago, 
+even ifall the row versions required for this exist in the table pages. 
+One often hears the question why there are no flashback (or temporal; in Oracle, this is called flashback query)
+queries in PostgreSQL - this is one of the reasons.
+
+It's funny that initially there was such functionality, but later it was removed from the DBMS. You can read about this in the article by Joseph Hellerstein .
+
+So, a snapshot of data is determined by several parameters:
+the moment of the snapshot creation, namely, the number of the next transaction that does not yet exist in the system ( snapshot.xmax );
+the list of active transactions at the moment of snapshot creation ( snapshot.xip ).
+For convenience and optimization, the number of the earliest active transaction ( snapshot.xmin ) is also saved separately . 
+This value has an important meaning, which we will discuss below.
+Also, a few more parameters are saved in the snapshot, but they are not important for us.
+https://mega.nz/file/Zlk1XQrJ#IBJwaDfOGLrz9QXHIn45oUqJPuBh1NHlW_JcT8zWv6g
+
+-----------
+- Example -
+-----------
+
+To see how visibility is determined by a snapshot, let's reproduce the three-transaction situation discussed above. The table will have three lines, and:
+
+the first one was added by a transaction that started before the snapshot was taken but ended later,
+the second is added by a transaction that started and ended before the snapshot was taken,
+the third was added after the snapshot was taken.
+
+=> TRUNCATE TABLE accounts;
+
+First transaction (not completed yet):
+
+=> BEGIN;
+=> INSERT INTO accounts VALUES (1, '1001', 'alice', 1000.00);
+=> SELECT txid_current();
+=> SELECT txid_current();
+ txid_current 
+--------------
+         3695
+(1 row)
+
+Second transaction (completed before snapshot was taken):
+
+|  => BEGIN;
+|  => INSERT INTO accounts VALUES (2, '2001', 'bob', 100.00);
+|  => SELECT txid_current();
+|   txid_current 
+|  --------------
+|           3696
+|  (1 row)
+|  => COMMIT;
+
+Create a snapshot in a transaction in another session.
+
+||    => BEGIN ISOLATION LEVEL REPEATABLE READ;
+||    => SELECT xmin, xmax, * FROM accounts;
+||     xmin | xmax | id | number | client | amount 
+||    ------+------+----+--------+--------+--------
+||     3696 |    0 |  2 | 2001   | bob    | 100.00
+||    (1 row)
+
+We complete the first transaction after the snapshot is created:
+
+=> COMMIT;
+
+And the third transaction (appeared after the snapshot was taken):
+
+|  => BEGIN;
+|  => INSERT INTO accounts VALUES (3, '2002', 'bob', 900.00);
+|  => SELECT txid_current();
+|   txid_current 
+|  --------------
+|           3697
+|  (1 row)
+|  => COMMIT;
+
+Obviously, one line is still visible in our snapshot:
+
+||    => SELECT xmin, xmax, * FROM accounts;
+||     xmin | xmax | id | number | client | amount 
+||    ------+------+----+--------+--------+--------
+||     3696 |    0 |  2 | 2001   | bob    | 100.00
+||    (1 row)
+
+The question is how PostgreSQL understands this.
+
+Everything is determined by the snapshot. Let's look at it:
+
+||    => SELECT txid_current_snapshot();
+||     txid_current_snapshot 
+||    -----------------------
+||     3695:3697:3695
+||    (1 row)
+
+Here snapshot.xmin, snapshot.xmax and snapshot.xip are listed separated by colons (in this case, one number, but generally a list).
+
+According to the rules formulated above, 
+the snapshot should show the changes made by transactions with numbers snapshot.xmin <= xid <snapshot.xmax, 
+except for those included in the snapshot.xip list. Let's look at all the rows of the table (in a new snapshot):
+
+=> SELECT xmin, xmax, * FROM accounts ORDER BY id;
+ xmin | xmax | id | number | client | amount  
+------+------+----+--------+--------+---------
+ 3695 |    0 |  1 | 1001   | alice  | 1000.00
+ 3696 |    0 |  2 | 2001   | bob    |  100.00
+ 3697 |    0 |  3 | 2002   | bob    |  900.00
+(3 rows)
+
+ * The first line is not visible - it was created by a transaction that is in the active list (xip).
+ * The second line is visible - it was created by a transaction that falls within the snapshot range.
+ * The third row is not visible - it was created by a transaction that is not in the snapshot range.
+
+||    => COMMIT;
+
+---------------
+- Own changes -
+---------------
+
+The case of determining the visibility of the transaction's own changes somewhat complicates the picture. 
+You may want to see only a subset of these changes here. For example, 
+a cursor that is open at a certain point in any isolation level should not see changes made after that point.
+To do this, there is a special field in the header of the row version (which is displayed in the cmin and cmax pseudo-columns) 
+that shows the ordinal number of the operation within the transaction. Cmin represents the number to insert, cmax represents the number to delete, 
+but to save space in the header of the line, this is actually one field, not two different ones. 
+It is believed that inserts and deletions of the same row in the same transaction are rare.
+If this does happen, then a special "combo" -number is inserted into the same field, about which the service process remembers the real cmin and cmax. 
+But this is already quite exotic.
+
+A simple example. Let's start a transaction and add a row to the table:
+
+=> BEGIN;
+=> SELECT txid_current();
+ txid_current 
+--------------
+         3698
+(1 row)
+INSERT INTO accounts(id, number, client, amount) VALUES (4, 3001, 'charlie', 100.00);
+
+Let's display the contents of the table along with the cmin field (but only for rows added by our transaction - for others it doesn't make sense):
+
+=> SELECT xmin, CASE WHEN xmin = 3698 THEN cmin END cmin, * FROM accounts;
+ xmin | cmin | id | number | client  | amount  
+------+------+----+--------+---------+---------
+ 3695 |      |  1 | 1001   | alice   | 1000.00
+ 3696 |      |  2 | 2001   | bob     |  100.00
+ 3697 |      |  3 | 2002   | bob     |  900.00
+ 3698 |    0 |  4 | 3001   | charlie |  100.00
+(4 rows)
+
+Now let's open a cursor for a query that returns the number of rows in a table.
+
+=> DECLARE c CURSOR FOR SELECT count(*) FROM accounts;
+
+And after that add another line:
+
+=> INSERT INTO accounts(id, number, client, amount) VALUES (5, 3002, 'charlie', 200.00);
+
+The request will return 4 - the row added after opening the cursor will not be included in the data snapshot:
+
+=> FETCH c;
+ count 
+-------
+     4
+(1 row)
+
+Why? Because the snapshot only takes into account row versions with cmin <1.
+
+=> SELECT xmin, CASE WHEN xmin = 3698 THEN cmin END cmin, * FROM accounts;
+ xmin | cmin | id | number | client  | amount  
+------+------+----+--------+---------+---------
+ 3695 |      |  1 | 1001   | alice   | 1000.00
+ 3696 |      |  2 | 2001   | bob     |  100.00
+ 3697 |      |  3 | 2002   | bob     |  900.00
+ 3698 |    0 |  4 | 3001   | charlie |  100.00
+ 3698 |    1 |  5 | 3002   | charlie |  200.00
+(5 rows)
+=> ROLLBACK;
+
+Event horizon
+
+The number of the earliest active transaction (snapshot.xmin) has an important meaning - it defines the "event horizon" of the transaction. 
+Namely, beyond its horizon, a transaction always sees only the latest row versions.
+Indeed, an irrelevant version is required to be seen only if the current one was created by an uncompleted transaction, and therefore is not visible yet. 
+But beyond the horizon, all transactions are guaranteed to be completed.
+https://mega.nz/file/Zt9DFCZZ#AqMY2xUjc16gX_sWlQFxCE2UtwhMfYr76rF39Yd1XLA
+
+The "event horizon" of a transaction can be seen in the system catalog:
+
+=> BEGIN;
+=> SELECT backend_xmin FROM pg_stat_activity WHERE pid = pg_backend_pid();
+ backend_xmin 
+--------------
+         3699
+(1 row)
+
+You can also define an "event horizon" at the database level. To do this, take all active snapshots and find the oldest xmin among them. 
+It will determine the horizon beyond which irrelevant versions of rows in this database will never be seen by any transaction. 
+Such line versions can be cleaned up - which is why the concept of the horizon is so important from a practical point of view.
+If any transaction will hold a snapshot for a long time, it will also hold the event horizon of the database. 
+Moreover, an unfinished transaction will hold the horizon by its very existence, even if it does not hold a snapshot.
+This means that irrelevant versions of rows in this database cannot be cleared. In this case, 
+a "long-running" transaction may not overlap with other transactions in any way - this is absolutely not important, the database horizon is the same for all.
+Now, if a segment does not represent a transaction, and pictures (from snapshot.xmin to snapshot.xmax), then the situation can be represented as follows:
+https://mega.nz/file/oh0XzYbY#7w_DoiS0vRxN-WbGgGFydjA5DsGDpQnfA03l7DT3NFk
+
+In the figure, the lowest picture refers to the incomplete transaction and the remaining images can not be snapshot.xmin more than her number.
+In our example, a transaction with the Read Committed isolation level was started. Even though it doesn't have any active snapshot of data, 
+it continues to hold the horizon:
+
+|  => BEGIN;
+|  => UPDATE accounts SET amount = amount + 1.00;
+|  => COMMIT;
+=> SELECT backend_xmin FROM pg_stat_activity WHERE pid = pg_backend_pid();
+ backend_xmin 
+--------------
+         3699
+(1 row)
+
+And only after the transaction is completed, the horizon moves forward, allowing you to clear outdated row versions:
+
+=> COMMIT;
+=> SELECT backend_xmin FROM pg_stat_activity WHERE pid = pg_backend_pid();
+ backend_xmin 
+--------------
+         3700
+(1 row)
+
+If the situation described does create problems and there is no way to avoid it at the application level, then, starting with version 9.6, 
+two parameters are available:
+old_snapshot_threshold defines the maximum snapshot lifetime. After this time, the server gets the right to delete outdated row versions, 
+and if they are needed by a "long-running" transaction, it will receive a snapshot too old error.
+idle_in_transaction_session_timeout defines the maximum idle transaction lifetime. After this time, the transaction is aborted.
+
+------------------------
+- Exporting a snapshot -
+------------------------
+
+There are situations where multiple concurrent transactions must be guaranteed to see the same picture of the data. An example is the pg_dump utility, 
+which can work in parallel: all worker processes must see the database in the same state for the backup to be consistent.
+Of course, you cannot rely on data patterns to match simply because transactions are running "simultaneously." 
+There is a mechanism for exporting and importing a snapshot for this.
+The pg_export_snapshot function returns the snapshot identifier that can be transferred (by means external to the DBMS) to another transaction.
+
+=> BEGIN ISOLATION LEVEL REPEATABLE READ;
+=> SELECT count(*) FROM accounts; -- любой запрос
+ count 
+-------
+     3
+(1 row)
+=> SELECT pg_export_snapshot();
+ pg_export_snapshot  
+---------------------
+ 00000004-00000E7B-1
+(1 row)
+
+Another transaction can import a snapshot using the SET TRANSACTION SNAPSHOT command before executing the first query in it. 
+The isolation level must also be set to Repeatable Read or Serializable, because at the Read Committed level, statements will use their own snapshots.
+
+|  => DELETE FROM accounts;
+|  => BEGIN ISOLATION LEVEL REPEATABLE READ;
+|  => SET TRANSACTION SNAPSHOT '00000004-00000E7B-1';
+
+Now the second transaction will work with a snapshot of the first and, accordingly, will see three rows (and not zero):
+
+|  => SELECT count(*) FROM accounts;
+|   count 
+|  -------
+|       3
+|  (1 row)
+
+The exported snapshot has the same lifetime as the exporting transaction.
+
+|    => COMMIT;
+=> COMMIT;
+
+-------------------------------------
+- In-page cleanup on normal updates -
+-------------------------------------
+
+When a page is accessed, whether it is refreshed or read, a quick in-page flush can occur if PostgreSQL realizes that the page is running out of space. 
+This happens in two cases.
+
+An UPDATE previously performed on this page did not find enough space to accommodate the new version of the row on the same page. 
+This situation is remembered in the page header and the next time the page is cleared.
+The page is more full than fillfactor. In this case, cleaning occurs immediately, without postponing the next time.
+Fillfactor is a storage parameter that can be defined for a table (and for an index). 
+PostgreSQL inserts a new row (INSERT) into a page only if that page is less than fillfactor percent full. 
+The rest of the space is reserved for new versions of rows that result from updates (UPDATE). 
+The default value for tables is 100, which means no space is reserved (and the value for indexes is 90).
+In-page cleanup removes row versions that are not visible in any snapshot (located beyond the "event horizon" of the database, we talked about this last time), 
+but works strictly within one tabular page. Pointers to cleaned-up row versions are not freed because they can be referenced from the indexes, 
+and the index is another page. In-page flushing never goes beyond a single table page, but it is very fast.
+For the same reasons, the free space map is not updated; it also saves the freed space for updates rather than inserts. 
+The visibility map is not updated either.
+The fact that a page can be cleared while reading means that a read request (SELECT) can cause the pages to change. 
+This is another such case, in addition to the previously discussed delayed hint bit change.
+Let's see how it works with an example. Let's create a table and indexes on both columns.
+
+=> CREATE TABLE hot(id integer, s char(2000)) WITH (fillfactor = 75);
+=> CREATE INDEX hot_id ON hot(id);
+=> CREATE INDEX hot_s ON hot(s);
+
+If only Latin letters are stored in column s, then each line version will take 2004 bytes plus 24 bytes of the header. 
+Set the fillfactor storage parameter to 75% - there will be enough space for three lines.
+
+For convenience, let's recreate the already familiar function, adding two fields to the output:
+
+=> CREATE FUNCTION heap_page(relname text, pageno integer)
+RETURNS TABLE(ctid tid, state text, xmin text, xmax text, hhu text, hot text, t_ctid tid)
+AS $$
+SELECT (pageno,lp)::text::tid AS ctid,
+       CASE lp_flags
+         WHEN 0 THEN 'unused'
+         WHEN 1 THEN 'normal'
+         WHEN 2 THEN 'redirect to '||lp_off
+         WHEN 3 THEN 'dead'
+       END AS state,
+       t_xmin || CASE
+         WHEN (t_infomask & 256) > 0 THEN ' (c)'
+         WHEN (t_infomask & 512) > 0 THEN ' (a)'
+         ELSE ''
+       END AS xmin,
+       t_xmax || CASE
+         WHEN (t_infomask & 1024) > 0 THEN ' (c)'
+         WHEN (t_infomask & 2048) > 0 THEN ' (a)'
+         ELSE ''
+       END AS xmax,
+       CASE WHEN (t_infomask2 & 16384) > 0 THEN 't' END AS hhu,
+       CASE WHEN (t_infomask2 & 32768) > 0 THEN 't' END AS hot,
+       t_ctid
+FROM heap_page_items(get_raw_page(relname,pageno))
+ORDER BY lp;
+$$ LANGUAGE SQL;
+
+And let's also create a function to look inside the index page:
+
+=> CREATE FUNCTION index_page(relname text, pageno integer)
+RETURNS TABLE(itemoffset smallint, ctid tid)
+AS $$
+SELECT itemoffset,
+       ctid
+FROM bt_page_items(relname,pageno);
+$$ LANGUAGE SQL;
+
+Let's see how in-page cleanup works. To do this, insert one line and change it several times:
+
+=> INSERT INTO hot VALUES (1, 'A');
+=> UPDATE hot SET s = 'B';
+=> UPDATE hot SET s = 'C';
+=> UPDATE hot SET s = 'D';
+
+The page currently has four line versions:
+
+=> SELECT * FROM heap_page('hot',0);
+ ctid  | state  |   xmin   |   xmax   | hhu | hot | t_ctid 
+-------+--------+----------+----------+-----+-----+--------
+ (0,1) | normal | 3979 (c) | 3980 (c) |     |     | (0,2)
+ (0,2) | normal | 3980 (c) | 3981 (c) |     |     | (0,3)
+ (0,3) | normal | 3981 (c) | 3982     |     |     | (0,4)
+ (0,4) | normal | 3982     | 0 (a)    |     |     | (0,4)
+(4 rows)
+
+As expected, we have just exceeded the fillfactor threshold. 
+This is indicated by the difference between the pagesize and upper values: it exceeds the threshold of 75% of the page size, which is 6144 bytes.
+
+=> SELECT lower, upper, pagesize FROM page_header(get_raw_page('hot',0));
+ lower | upper | pagesize 
+-------+-------+----------
+    40 |    64 |     8192
+(1 row)
+
+So, the next time the page is accessed, an in-page cleanup should occur. Let's check it out.
+
+=> UPDATE hot SET s = 'E';
+=> SELECT * FROM heap_page('hot',0);
+ ctid  | state  |   xmin   | xmax  | hhu | hot | t_ctid 
+-------+--------+----------+-------+-----+-----+--------
+ (0,1) | dead   |          |       |     |     | 
+ (0,2) | dead   |          |       |     |     | 
+ (0,3) | dead   |          |       |     |     | 
+ (0,4) | normal | 3982 (c) | 3983  |     |     | (0,5)
+ (0,5) | normal | 3983     | 0 (a) |     |     | (0,5)
+(5 rows)
+
+All out-of-date versions of lines (0,1), (0,2) and (0,3) are cleared; after that, a new version of the line (0.5) is added to the vacant space.
+The line versions remaining after clearing are physically shifted towards higher page addresses so that all free space is represented by one contiguous fragment.
+The values of the pointers are changed accordingly. Thanks to this, there are no problems with fragmentation of free space on the page.
+Pointers to deleted row versions cannot be freed because they are referenced from the index page. 
+Let's look at the first page of the hot_s index (because the zero is occupied by meta information):
+
+=> SELECT * FROM index_page('hot_s',1);
+ itemoffset | ctid  
+------------+-------
+          1 | (0,1)
+          2 | (0,2)
+          3 | (0,3)
+          4 | (0,4)
+          5 | (0,5)
+(5 rows)
+
+We will see the same picture in another index:
+
+=> SELECT * FROM index_page('hot_id',1);
+ itemoffset | ctid  
+------------+-------
+          1 | (0,5)
+          2 | (0,4)
+          3 | (0,3)
+          4 | (0,2)
+          5 | (0,1)
+(5 rows)
+
+You can note that pointers to table rows go backwards here, but this does not matter, since all versions of rows contain the same id = 1. 
+But in the previous index the pointers are ordered by the values of s, and this essential.
+On index access, PostgreSQL can get (0,1), (0,2) or (0,3) as the row version identifier. Then he will try to get the corresponding row from the table page, 
+but due to the dead status of the pointer, he will find that such a version no longer exists and will ignore it. 
+(In fact, the first time it detects that a table row version is missing, 
+PostgreSQL will also change the status of the pointer in the index page to avoid re-accessing the table page.)
+
+---------------
+- HOT updates -
+---------------
+
+Why is it bad to keep references to all versions of a row in the index?
+First, whenever a row changes, all the indexes created for the table have to be updated: once a new version has appeared, you must have references to it. 
+And this must be done in any case, even if the fields that are not included in the index change. Obviously, this is not very effective.
+Secondly, the indexes accumulate links to the historical versions of the row, 
+which then have to be cleared along with the versions themselves (we will look at how this is done a little later).
+Moreover, there is a peculiarity of the B-tree implementation in PostgreSQL. If there is not enough space on the index page to insert a new row, 
+the page is split into two and all data is redistributed between them. This is called splitting the page. However, 
+when rows are deleted, the two index pages are no longer "glued" into one. Because of this, 
+the size of the index may not decrease even if a significant portion of the data is deleted.
+Naturally, the more indexes are created on a table, the more difficulties you have to face.
+However, if the value of a column that is not included in any index changes, 
+then there is no point in creating an additional record in the B-tree containing the same key value. 
+This is how an optimization called a HOT update - Heap-Only Tuple Update works.
+With this update, there is only one record in the index page that refers to the very first version of the row in the table page. 
+And already inside this table page, a chain of versions is organized:
+lines that are changed and enter the chain are marked with the Heap Hot Updated bit;
+rows that are not referenced from the index are marked with the Heap Only Tuple bit (that is, “table version of the row only”);
+the usual linking of row versions through the ctid field is maintained.
+If, during an index scan, PostgreSQL hits a table page and finds a version marked as Heap Hot Updated, 
+it understands that it does not need to stop and goes further along the entire chain of updates. Of course, 
+all row versions obtained this way are checked for visibility before being returned to the client.
+
+To see how the HOT update works, let's drop one index and clear the table.
+
+=> DROP INDEX hot_s;
+=> TRUNCATE TABLE hot;
+
+Let's repeat the insertion and update of the row.
+
+=> INSERT INTO hot VALUES (1, 'A');
+=> UPDATE hot SET s = 'B';
+
+This is what we see in the tabular page:
+
+=> SELECT * FROM heap_page('hot',0);
+ ctid  | state  |   xmin   | xmax  | hhu | hot | t_ctid 
+-------+--------+----------+-------+-----+-----+--------
+ (0,1) | normal | 3986 (c) | 3987  | t   |     | (0,2)
+ (0,2) | normal | 3987     | 0 (a) |     | t   | (0,2)
+(2 rows)
+
+The page contains a chain of changes:
+
+the Heap Hot Updated flag indicates that you need to follow the ctid chain,
+the Heap Only Tuple flag indicates that there are no index references to this version of the row.
+
+With further changes, the chain will grow (within the page):
+
+=> UPDATE hot SET s = 'C';
+=> UPDATE hot SET s = 'D';
+=> SELECT * FROM heap_page('hot',0);
+ ctid  | state  |   xmin   |   xmax   | hhu | hot | t_ctid 
+-------+--------+----------+----------+-----+-----+--------
+ (0,1) | normal | 3986 (c) | 3987 (c) | t   |     | (0,2)
+ (0,2) | normal | 3987 (c) | 3988 (c) | t   | t   | (0,3)
+ (0,3) | normal | 3988 (c) | 3989     | t   | t   | (0,4)
+ (0,4) | normal | 3989     | 0 (a)    |     | t   | (0,4)
+(4 rows)
+
+In this case, the index contains only one reference to the "head" of the chain:
+
+=> SELECT * FROM index_page('hot_id',1);
+ itemoffset | ctid  
+------------+-------
+          1 | (0,1)
+(1 row)
+
+We emphasize that HOT updates work if the fields being updated are not included in any index. 
+Otherwise, in some index there would be a link directly to the new version of the row, which contradicts the idea of this optimization.
+Optimization works only within one page, so additional traversal of the chain does not require access to other pages and does not degrade performance.
+Fundamentally, in-page flushing works only within one table page and does not flush index pages.
+
+----------------------------------
+- In-page cleanup on HOT updates -
+----------------------------------
+
+A particular but important case of in-page scrubbing is the scrubbing of HOT updates.
+
+As last time, we have already exceeded the fillfactor threshold, so the next update should result in an in-page flush. But this time, the page contains a chain of updates. The "head" of this HOT chain must always remain in its place, since the index refers to it, and the rest of the pointers can be freed: it is known that there are no external references to them.
+
+In order not to touch the "head", double addressing is used: the pointer to which the index refers - in this case (0,1) - receives the "redirect" status, redirecting to the correct version of the string.
+
+=> UPDATE hot SET s = 'E';
+=> SELECT * FROM heap_page('hot',0);
+ ctid  |     state     |   xmin   | xmax  | hhu | hot | t_ctid 
+-------+---------------+----------+-------+-----+-----+--------
+ (0,1) | redirect to 4 |          |       |     |     | 
+ (0,2) | normal        | 3990     | 0 (a) |     | t   | (0,2)
+ (0,3) | unused        |          |       |     |     | 
+ (0,4) | normal        | 3989 (c) | 3990  | t   | t   | (0,2)
+(4 rows)
+
+Note that:
+
+versions (0.1), (0.2) and (0.3) have been cleared,
+The "head" pointer (0,1) remained, but received the redirect status,
+the new version of the string is written in place (0,2), 
+since this version was guaranteed to be unreferenced from the indices and the pointer was freed (unused).
+
+Let's update a few more times:
+
+=> UPDATE hot SET s = 'F';
+=> UPDATE hot SET s = 'G';
+=> SELECT * FROM heap_page('hot',0);
+ ctid  |     state     |   xmin   |   xmax   | hhu | hot | t_ctid 
+-------+---------------+----------+----------+-----+-----+--------
+ (0,1) | redirect to 4 |          |          |     |     | 
+ (0,2) | normal        | 3990 (c) | 3991 (c) | t   | t   | (0,3)
+ (0,3) | normal        | 3991 (c) | 3992     | t   | t   | (0,5)
+ (0,4) | normal        | 3989 (c) | 3990 (c) | t   | t   | (0,2)
+ (0,5) | normal        | 3992     | 0 (a)    |     | t   | (0,5)
+(5 rows)
+
+The next update triggers in-page cleanup again:
+
+=> UPDATE hot SET s = 'H';
+=> SELECT * FROM heap_page('hot',0);
+ ctid  |     state     |   xmin   | xmax  | hhu | hot | t_ctid 
+-------+---------------+----------+-------+-----+-----+--------
+ (0,1) | redirect to 5 |          |       |     |     | 
+ (0,2) | normal        | 3993     | 0 (a) |     | t   | (0,2)
+ (0,3) | unused        |          |       |     |     | 
+ (0,4) | unused        |          |       |     |     | 
+ (0,5) | normal        | 3992 (c) | 3993  | t   | t   | (0,2)
+(5 rows)
+
+Again, some of the versions are cleared, and the pointer to the "head" is shifted accordingly.
+
+Takeaway: If there are frequent updates to non-index columns, 
+it might make sense to decrease the fillfactor parameter to reserve some space on the page for updates. 
+Of course, it should be borne in mind that the lower the fillfactor, the more unallocated space remains on the page and, accordingly, 
+the physical size of the table increases.
+
+--------------------------
+- Breaking the HOT chain -
+--------------------------
+
+If there is not enough free space on the page to accommodate the new version of the row, the chain will break. 
+The version of the row hosted on another page will have to be linked separately from the index.
+
+To get this situation, let's start a parallel transaction and build a snapshot of the data in it.
+
+|  => BEGIN ISOLATION LEVEL REPEATABLE READ;
+|  => SELECT count(*) FROM hot;
+|   count 
+|  -------
+|       1
+|  (1 row)
+
+The snapshot will prevent you from clearing the row versions on the page. Now we update in the first session:
+
+=> UPDATE hot SET s = 'I';
+=> UPDATE hot SET s = 'J';
+=> UPDATE hot SET s = 'K';
+=> SELECT * FROM heap_page('hot',0);
+ ctid  |     state     |   xmin   |   xmax   | hhu | hot | t_ctid 
+-------+---------------+----------+----------+-----+-----+--------
+ (0,1) | redirect to 2 |          |          |     |     | 
+ (0,2) | normal        | 3993 (c) | 3994 (c) | t   | t   | (0,3)
+ (0,3) | normal        | 3994 (c) | 3995 (c) | t   | t   | (0,4)
+ (0,4) | normal        | 3995 (c) | 3996     | t   | t   | (0,5)
+ (0,5) | normal        | 3996     | 0 (a)    |     | t   | (0,5)
+(5 rows)
+
+The next time you refresh the page, there won't be enough space, but in-page cleanup won't be able to free up anything:
+
+=> UPDATE hot SET s = 'L';
+
+|  => COMMIT; -- снимок больше не нужен
+
+=> SELECT * FROM heap_page('hot',0);
+ ctid  |     state     |   xmin   |   xmax   | hhu | hot | t_ctid 
+-------+---------------+----------+----------+-----+-----+--------
+ (0,1) | redirect to 2 |          |          |     |     | 
+ (0,2) | normal        | 3993 (c) | 3994 (c) | t   | t   | (0,3)
+ (0,3) | normal        | 3994 (c) | 3995 (c) | t   | t   | (0,4)
+ (0,4) | normal        | 3995 (c) | 3996 (c) | t   | t   | (0,5)
+ (0,5) | normal        | 3996 (c) | 3997     |     | t   | (1,1)
+(5 rows)
+
+In version (0.5), we see a link to (1,1) leading to page 1.
+
+=> SELECT * FROM heap_page('hot',1);
+ ctid  | state  | xmin | xmax  | hhu | hot | t_ctid 
+-------+--------+------+-------+-----+-----+--------
+ (1,1) | normal | 3997 | 0 (a) |     |     | (1,1)
+(1 row)
+
+Now the index contains two lines, each of which points to the beginning of its HOT chain:
+
+=> SELECT * FROM index_page('hot_id',1);
+ itemoffset | ctid  
+------------+-------
+          1 | (1,1)
+          2 | (0,1)
+(2 rows)
+
+Unfortunately, information about in-page cleanups and HOT updates is practically absent in the documentation, 
+and the truth must be looked for in the source code. I recommend starting with README.HOT .
+
+------------------
+- Routine vacuum -
+------------------
+
+----------------------
+- What cleaning does -
+----------------------
+
+In-page cleanup is quick, but only frees up some space. It works within a single table page and does not affect indexes.
+The main, "normal" cleaning is performed by the VACUUM command and we will call it simply cleaning (and we will talk about autovacuum separately).
+So, cleanup processes the table completely. It cleans out not only unnecessary row versions, but also references to them from all indexes.
+Processing occurs in parallel with other activity in the system. In this case, the table and indexes can be used in the usual way for 
+both reading and modification (however, the simultaneous execution of commands such as CREATE INDEX, ALTER TABLE and some others will not be possible).
+In the table, only those pages are viewed in which some activity took place. For this, a visibility map is used (let me remind you 
+that it marks pages that contain only fairly old versions of strings that are guaranteed to be visible in all data snapshots). 
+Only pages not marked in the map are processed, and the map itself is updated.
+In the process, the free space map is also updated to reflect the appeared free space in the pages.
+As usual, let's create a table:
+
+=> CREATE TABLE vac(
+  id serial,
+  s char(100)
+) WITH (autovacuum_enabled = off);
+=> CREATE INDEX vac_s ON vac(s);
+=> INSERT INTO vac(s) VALUES ('A');
+=> UPDATE vac SET s = 'B';
+=> UPDATE vac SET s = 'C';
+
+With the autovacuum_enabled parameter , we disable automatic cleaning. 
+We will talk about it next time, but for now - for experiments - it is important for us to manage the cleaning manually.
+
+Now the table has three versions of the row, and each is referenced from the index:
+
+=> SELECT * FROM heap_page('vac',0);
+ ctid  | state  |   xmin   |   xmax   | hhu | hot | t_ctid 
+-------+--------+----------+----------+-----+-----+--------
+ (0,1) | normal | 4000 (c) | 4001 (c) |     |     | (0,2)
+ (0,2) | normal | 4001 (c) | 4002     |     |     | (0,3)
+ (0,3) | normal | 4002     | 0 (a)    |     |     | (0,3)
+(3 rows)
+
+=> SELECT * FROM index_page('vac_s',1);
+ itemoffset | ctid  
+------------+-------
+          1 | (0,1)
+          2 | (0,2)
+          3 | (0,3)
+(3 rows)
+
+After cleaning, the “dead” versions disappear and only one, actual, remains. And one link remains in the index too:
+
+=> VACUUM vac;
+=> SELECT * FROM heap_page('vac',0);
+ ctid  | state  |   xmin   | xmax  | hhu | hot | t_ctid 
+-------+--------+----------+-------+-----+-----+--------
+ (0,1) | unused |          |       |     |     | 
+ (0,2) | unused |          |       |     |     | 
+ (0,3) | normal | 4002 (c) | 0 (a) |     |     | (0,3)
+(3 rows)
+=> SELECT * FROM index_page('vac_s',1);
+ itemoffset | ctid  
+------------+-------
+          1 | (0,3)
+(1 row)
+
+Note that the first two pointers are unused, not dead, as would be the case with in-page clearing.
+
+------------------------------------------------
+- And once again about the transaction horizon -
+------------------------------------------------
+
+How does PostgreSQL determine which row versions are dead? We already covered the concept of a transaction horizon when we talked about snapshots, 
+but this is such an important topic that it is not a sin to repeat it.
+
+Let's start the previous experiment again.
+
+=> TRUNCATE vac;
+=> INSERT INTO vac(s) VALUES ('A');
+=> UPDATE vac SET s = 'B';
+
+But before updating the row again, let's start (but not end) another transaction. In our example, it will work at the Read Committed level, 
+but should receive a real (not virtual) transaction number. For example, it can change or even just lock some rows in any table, not necessarily in vac:
+
+|  => BEGIN;
+|  => SELECT s FROM t FOR UPDATE;
+|    s  
+|  -----
+|   FOO
+|   BAR
+|  (2 rows)
+
+=> UPDATE vac SET s = 'C';
+
+The table now has three rows and the index has three links. What happens after cleaning?
+
+=> VACUUM vac;
+=> SELECT * FROM heap_page('vac',0);
+ ctid  | state  |   xmin   |   xmax   | hhu | hot | t_ctid 
+-------+--------+----------+----------+-----+-----+--------
+ (0,1) | unused |          |          |     |     | 
+ (0,2) | normal | 4005 (c) | 4007 (c) |     |     | (0,3)
+ (0,3) | normal | 4007 (c) | 0 (a)    |     |     | (0,3)
+(3 rows)
+=> SELECT * FROM index_page('vac_s',1);
+ itemoffset | ctid  
+------------+-------
+          1 | (0,2)
+          2 | (0,3)
+(2 rows)
+
+There are two versions of the row left in the table: cleanup decided that version (0,2) could not be deleted yet. The reason is, of course, 
+in the database transaction horizon, which in our example is defined by an uncommitted transaction:
+
+|  => SELECT backend_xmin FROM pg_stat_activity WHERE pid = pg_backend_pid();
+|   backend_xmin 
+|  --------------
+|           4006
+|  (1 row)
+
+You can ask the cleanup to tell you what is happening:
+
+=> VACUUM VERBOSE vac;
+INFO:  vacuuming "public.vac"
+INFO:  index "vac_s" now contains 2 row versions in 2 pages
+DETAIL:  0 index row versions were removed.
+0 index pages have been deleted, 0 are currently reusable.
+CPU: user: 0.00 s, system: 0.00 s, elapsed: 0.00 s.
+INFO:  "vac": found 0 removable, 2 nonremovable row versions in 1 out of 1 pages
+DETAIL:  1 dead row versions cannot be removed yet, oldest xmin: 4006
+There were 1 unused item pointers.
+Skipped 0 pages due to buffer pins, 0 frozen pages.
+0 pages are entirely empty.
+CPU: user: 0.00 s, system: 0.00 s, elapsed: 0.00 s.
+VACUUM
+
+Note:
+
+2 nonremovable row versions - 2 versions found in the table that cannot be deleted,
+1 dead row versions cannot be removed yet - of which 1 is "dead",
+oldest xmin shows the current horizon.
+
+To reiterate the conclusion: the presence of long-lived transactions in the database (incomplete or really long running) can lead to growth (bloat) tables, 
+no matter how often the cleanup is performed. Therefore, PostgreSQL does not mix well OLTP and OLAP loads in one database: 
+reports that run for hours will prevent frequently updated tables from being cleaned up in time. 
+A possible solution would be to create a separate "reporting" replica.
+
+After the completion of an open transaction, the horizon shifts and the situation is corrected:
+
+|  => COMMIT;
+
+=> VACUUM VERBOSE vac;
+INFO:  vacuuming "public.vac"
+INFO:  scanned index "vac_s" to remove 1 row versions
+DETAIL:  CPU: user: 0.00 s, system: 0.00 s, elapsed: 0.00 s
+INFO:  "vac": removed 1 row versions in 1 pages
+DETAIL:  CPU: user: 0.00 s, system: 0.00 s, elapsed: 0.00 s
+INFO:  index "vac_s" now contains 1 row versions in 2 pages
+DETAIL:  1 index row versions were removed.
+0 index pages have been deleted, 0 are currently reusable.
+CPU: user: 0.00 s, system: 0.00 s, elapsed: 0.00 s.
+INFO:  "vac": found 1 removable, 1 nonremovable row versions in 1 out of 1 pages
+DETAIL:  0 dead row versions cannot be removed yet, oldest xmin: 4008
+There were 1 unused item pointers.
+Skipped 0 pages due to buffer pins, 0 frozen pages.
+0 pages are entirely empty.
+CPU: user: 0.00 s, system: 0.00 s, elapsed: 0.00 s.
+VACUUM
+
+Now only the last actual version of the line remains in the page:
+
+=> SELECT * FROM heap_page('vac',0);
+ ctid  | state  |   xmin   | xmax  | hhu | hot | t_ctid 
+-------+--------+----------+-------+-----+-----+--------
+ (0,1) | unused |          |       |     |     | 
+ (0,2) | unused |          |       |     |     | 
+ (0,3) | normal | 4007 (c) | 0 (a) |     |     | (0,3)
+(3 rows)
+
+There is also only one entry in the index:
+
+=> SELECT * FROM index_page('vac_s',1);
+ itemoffset | ctid  
+------------+-------
+          1 | (0,3)
+(1 row)
+
+--------------------------
+- What's going on inside -
+--------------------------
+
+The cleanup must process both the table and the indexes at the same time, and do so in a way that does not block other processes. How does she do it?
+It all starts with scanning the table (taking into account the visibility map, as already noted). In the read pages, unnecessary versions of strings are determined and their identifiers (tid) are written to a special array. The array resides in the local memory of the cleanup process; a fragment with the size of maintenance_work_mem is allocated for it . The default value for this parameter is 64 MB. Note that this memory is allocated immediately in full, and not as needed. True, if the table is small, then the fragment is allocated less.
+Then one of two things: either we reach the end of the table, or the memory allocated for the array will end. In either case, the index cleanup phase begins . To do this, each of the indexes created on the table is completely scanned for records that reference the stored versions of the rows. Found records are cleared from the index pages.
+At this point, we get the following picture: in the indexes there are no longer references to unnecessary row versions, but in the table they still exist. This does not contradict anything: when executing the query, we either will not end up on dead row versions (with index access), or we will mark them when checking the visibility (when scanning the table).
+After that, the phase of cleaning the table begins.... The table is scanned again to read the desired pages, flush the stored version of the rows from them, and free the pointers. We can do this because the links from the indexes are gone.
+If on the first pass the table was not read completely, then the array is cleared and everything is repeated from the point where we left off.
+
+In this way:
+
+ * the table is always scanned twice;
+ * if the cleanup removes so many row versions that they all do not fit in maintenance_work_mem memory, 
+ then all indexes will be fully scanned as many times as necessary.
+
+On large tables, this can take a significant amount of time and create a significant load on the system. Of course, requests will not block, 
+but "extra" I / O is also unpleasant.
+To speed up the process, it makes sense to either call the flush more often (so that not very many row versions are flushed each time), 
+or allocate more memory.
+Note in parentheses that starting with version 11, PostgreSQL can skip index scans unless absolutely necessary. 
+This should make life easier for the owners of large tables to which rows are only added (but not changed).
+
+--------------
+- Monitoring -
+--------------
+
+How do you know if cleaning isn't doing the job in one pass?
+We have already seen the first method: you can call the VACUUM command with the VERBOSE indication. 
+Then information about the phases of work execution will be displayed on the console.
+Second, since version 9.6 there is a pg_stat_progress_vacuum view, which also contains all the necessary information.
+(There is also a third way - to output information to the message log, but this only works for autovacuum, which will be discussed next time.)
+
+Let's insert more rows into the table so that the cleanup takes a noticeable amount of time, 
+and we update all of them so that cleanup has something to do ...
+
+=> TRUNCATE vac;
+=> INSERT INTO vac(s) SELECT 'A' FROM generate_series(1,500000);
+=> UPDATE vac SET s  = 'B';
+
+Let's reduce the size of the memory allocated for the array of identifiers:
+
+=> ALTER SYSTEM SET maintenance_work_mem = '1MB';
+=> SELECT pg_reload_conf();
+
+We start the cleanup and, while it is running, we turn to the pg_stat_progress_vacuum view several times:
+
+=> VACUUM VERBOSE vac;
+
+|  => SELECT * FROM pg_stat_progress_vacuum \gx
+|  -[ RECORD 1 ]------+------------------
+|  pid                | 6715
+|  datid              | 41493
+|  datname            | test
+|  relid              | 57383
+|  phase              | vacuuming indexes
+|  heap_blks_total    | 16667
+|  heap_blks_scanned  | 2908
+|  heap_blks_vacuumed | 0
+|  index_vacuum_count | 0
+|  max_dead_tuples    | 174762
+|  num_dead_tuples    | 174480
+
+|  => SELECT * FROM pg_stat_progress_vacuum \gx
+|  -[ RECORD 1 ]------+------------------
+|  pid                | 6715
+|  datid              | 41493
+|  datname            | test
+|  relid              | 57383
+|  phase              | vacuuming indexes
+|  heap_blks_total    | 16667
+|  heap_blks_scanned  | 5816
+|  heap_blks_vacuumed | 2907
+|  index_vacuum_count | 1
+|  max_dead_tuples    | 174762
+|  num_dead_tuples    | 174480
+
+Here, in particular, we see:
+
+the name of the current phase (phase) - we talked about three main phases, but in general there are more of them ;
+total number of table pages (heap_blks_total);
+number of scanned pages (heap_blks_scanned);
+number of already flushed pages (heap_blks_vacuumed);
+number of index passes (index_vacuum_count).
+
+The overall progress is determined by the ratio of heap_blks_vacuumed to heap_blks_total, 
+but it should be borne in mind that this value does not change smoothly, but in “jerks” due to index scans. However, 
+the main attention should be paid to the number of cleaning cycles - a value greater than 1 means that the allocated memory was not enough to complete 
+the cleaning in one pass.
+
+The output of the VACUUM VERBOSE command that has completed by this time will show the general picture:
+
+INFO:  vacuuming "public.vac"
+INFO:  scanned index "vac_s" to remove 174480 row versions
+DETAIL:  CPU: user: 0.50 s, system: 0.07 s, elapsed: 1.36 s
+INFO:  "vac": removed 174480 row versions in 2908 pages
+DETAIL:  CPU: user: 0.02 s, system: 0.02 s, elapsed: 0.13 s
+INFO:  scanned index "vac_s" to remove 174480 row versions
+DETAIL:  CPU: user: 0.26 s, system: 0.07 s, elapsed: 0.81 s
+INFO:  "vac": removed 174480 row versions in 2908 pages
+DETAIL:  CPU: user: 0.01 s, system: 0.02 s, elapsed: 0.10 s
+INFO:  scanned index "vac_s" to remove 151040 row versions
+DETAIL:  CPU: user: 0.13 s, system: 0.04 s, elapsed: 0.47 s
+INFO:  "vac": removed 151040 row versions in 2518 pages
+DETAIL:  CPU: user: 0.01 s, system: 0.02 s, elapsed: 0.08 s
+INFO:  index "vac_s" now contains 500000 row versions in 17821 pages
+DETAIL:  500000 index row versions were removed.
+8778 index pages have been deleted, 0 are currently reusable.
+CPU: user: 0.00 s, system: 0.00 s, elapsed: 0.00 s.
+INFO:  "vac": found 500000 removable, 500000 nonremovable row versions in 16667 out of 16667 pages
+DETAIL:  0 dead row versions cannot be removed yet, oldest xmin: 4011
+There were 0 unused item pointers.
+0 pages are entirely empty.
+CPU: user: 1.10 s, system: 0.37 s, elapsed: 3.71 s.
+VACUUM
+
+Here you can see that a total of three index passes were performed, each of which cleared 174480 pointers to dead string versions. 
+Where does this number come from? One link (tid) takes 6 bytes, and 1024 * 1024/6 = 174762 is the number that we see in pg_stat_progress_vacuum.max_dead_tuples. 
+In reality, it can be used a little less: this is how it is guaranteed that when reading the next page, all pointers to the "dead" versions will fit exactly into memory.
+
+------------
+- Analysis -
+------------
+
+Analysis, or, in other words, the collection of statistical information for the query planner, formally has nothing to do with cleaning. 
+Nevertheless, we can perform analysis not only with the ANALYZE command, 
+but also combine cleaning with analysis: VACUUM ANALYZE. This involves cleaning first and then analyzing - no savings.
+But, as we will see later, automatic cleanup and automatic analysis are performed by the same process and are managed in a similar way.
+
+---------------
+- Vacuum full -
+---------------
+
+As we have seen, a simple cleanup frees up more space than an in-page cleanup, but it doesn't always solve the problem completely.
+If the table or index for some reason has grown a lot in size, 
+then the usual cleanup will free up space inside the existing pages: "holes" will appear in them, which will then be used to insert new versions of rows. 
+But the number of pages will not change, and therefore, from the point of view of the operating system, 
+the files will take up exactly the same amount of space as they did before cleaning. And this is bad because:
+full table (or index) scan slows down;
+a larger buffer cache may be required (after all, pages are stored, and the density of useful information decreases);
+an “extra” level may appear in the index tree, which will slow down index access;
+files take up extra disk space and in backups.
+
+(The only exception is completely cleaned pages at the end of the file - such pages are “bite off” from the file and returned to the operating system.)
+If the share of useful information in the files falls below a reasonable limit, the administrator can perform a complete cleanup of the table. 
+In this case, the table and all its indexes are rebuilt completely from scratch, and the data is packed as compactly as possible 
+(of course, taking into account the fillfactor parameter). During a rebuild, PostgreSQL rebuilds sequentially, first the table and then each of its indexes. 
+New files are created for each object, and at the end of the rebuild, the old files are deleted. 
+It should be borne in mind that additional space is required on the disk during operation.
+
+To illustrate, let's again insert a number of rows into the table:
+
+=> TRUNCATE vac;
+=> INSERT INTO vac(s) SELECT 'A' FROM generate_series(1,500000);
+
+How to evaluate the density of information? To do this, it is convenient to use a special extension:
+
+=> CREATE EXTENSION pgstattuple;
+=> SELECT * FROM pgstattuple('vac') \gx
+-[ RECORD 1 ]------+---------
+table_len          | 68272128
+tuple_count        | 500000
+tuple_len          | 64500000
+tuple_percent      | 94.47
+dead_tuple_count   | 0
+dead_tuple_len     | 0
+dead_tuple_percent | 0
+free_space         | 38776
+free_percent       | 0.06
+
+The function reads the entire table and shows statistics on how much space is occupied by what data in the files. 
+The main information that we are interested in now is the tuple_percent field: the percentage occupied by the payload. 
+It is less than 100 because of the inevitable overhead for internal information within the page, but still quite high.
+
+Different information is displayed for the index, but the avg_leaf_density field has the same meaning: the percentage of useful information (in leaf pages).
+
+=> SELECT * FROM pgstatindex('vac_s') \gx
+-[ RECORD 1 ]------+---------
+version            | 3
+tree_level         | 3
+index_size         | 72802304
+root_block_no      | 2722
+internal_pages     | 241
+leaf_pages         | 8645
+empty_pages        | 0
+deleted_pages      | 0
+avg_leaf_density   | 83.77
+leaf_fragmentation | 64.25
+
+And here is the size of the table and index:
+
+=> SELECT pg_size_pretty(pg_table_size('vac')) table_size,
+  pg_size_pretty(pg_indexes_size('vac')) index_size;
+ table_size | index_size 
+------------+------------
+ 65 MB      | 69 MB
+(1 row)
+
+Now let's delete 90% of all lines. We select the lines for deletion at random so that in each page with a high probability at least one line remains:
+
+=> DELETE FROM vac WHERE random() < 0.9;
+DELETE 450189
+
+What size will the objects be after normal cleaning?
+
+=> VACUUM vac;
+=> SELECT pg_size_pretty(pg_table_size('vac')) table_size,
+  pg_size_pretty(pg_indexes_size('vac')) index_size;
+ table_size | index_size 
+------------+------------
+ 65 MB      | 69 MB
+(1 row)
+
+We can see that the size has not changed: regular cleaning cannot reduce the size of the files in any way. 
+Although the density of information has obviously decreased by about 10 times:
+
+=> SELECT vac.tuple_percent, vac_s.avg_leaf_density
+FROM pgstattuple('vac') vac, pgstatindex('vac_s') vac_s;
+ tuple_percent | avg_leaf_density 
+---------------+------------------
+          9.41 |             9.73
+(1 row)
+
+Now let's check what happens after a complete cleaning. The files are currently used by the table and indexes:
+
+=> SELECT pg_relation_filepath('vac'), pg_relation_filepath('vac_s');
+ pg_relation_filepath | pg_relation_filepath 
+----------------------+----------------------
+ base/41493/57392     | base/41493/57393
+(1 row)
+
+=> VACUUM FULL vac;
+=> SELECT pg_relation_filepath('vac'), pg_relation_filepath('vac_s');
+ pg_relation_filepath | pg_relation_filepath 
+----------------------+----------------------
+ base/41493/57404     | base/41493/57407
+(1 row)
+
+The files are now replaced with new ones. The size of the table and index has decreased significantly, and the information density has increased accordingly:
+
+=> SELECT pg_size_pretty(pg_table_size('vac')) table_size,
+  pg_size_pretty(pg_indexes_size('vac')) index_size;
+ table_size | index_size 
+------------+------------
+ 6648 kB    | 6480 kB
+(1 row)
+=> SELECT vac.tuple_percent, vac_s.avg_leaf_density
+FROM pgstattuple('vac') vac, pgstatindex('vac_s') vac_s;
+ tuple_percent | avg_leaf_density 
+---------------+------------------
+         94.39 |            91.08
+(1 row)
+
+Note that the information density in the index has even increased from the original one. 
+Rebuilding the index (B-tree) on the existing data is more advantageous than inserting the data into the existing index line by line.
+The pgstattuple extension functions that we have used read the entire table. If the table is large, then this is inconvenient, 
+and therefore there is also a pgstattuple_approx function there, which skips the pages marked in the visibility map and shows approximate numbers.
+An even faster, but even less accurate way is to estimate the ratio of data volume to file size in the system directory. 
+You can find options for such queries on the wiki .
+Full cleaning does not imply regular use, since it completely blocks all work with the table (including the execution of queries to it) 
+for the entire duration of its work. It is clear that on a heavily used system this may not be acceptable. Locks will be discussed separately, 
+but for now we will limit ourselves to mentioning the pg_repack extension , which locks the table only for a short time at the end of the work.
+
+--------------------
+- Similar commands -
+--------------------
+
+There are several commands that also rebuild tables and indexes completely, and are similar to a complete cleanup. 
+All of them completely block work with the table, they all delete old data files and create new ones.
+CLUSTER is similar in every way to VACUUM FULL, but additionally physically orders the row versions according to one of the available indices. 
+This gives the planner the ability to use index access more efficiently in some cases. However, 
+you must understand that clustering is not supported: with subsequent changes to the table, the physical order of the row versions will be violated.
+The REINDEX command rebuilds a single index on a table. In fact, VACUUM FULL and CLUSTER use this command to rebuild indexes.
+The TRUNCATE command works logically in the same way as DELETE - it deletes all table rows. But DELETE, as already discussed, 
+only marks the row versions as deleted, which requires further cleanup. TRUNCATE just creates a new, clean file. As a rule, this works faster, 
+but keep in mind that TRUNCATE will completely block work with the table for the entire time until the end of the transaction.
+
+--------------
+- Autovacuum -
+--------------
+
+We have already said that a normal cleanup under normal conditions (when no one holds the transaction horizon for a long time) should do its job. 
+The question is how often to call it.
+If you flush the changing table too rarely, it will grow larger than you would like. In addition, 
+the next cleanup may require several index passes if there are too many changes.
+If you flush the table too often, then instead of doing useful work, the server will constantly be doing maintenance - also bad.
+Note that running a regular cleanup on a schedule does not solve the problem in any way, because the load can change over time. 
+If the table is being updated more actively, then it should be cleared more often.
+Automatic cleanup is the very mechanism that allows you to trigger cleanup depending on the activity of changes in the tables.
+When autovacuum is enabled (configuration parameter autovacuum ), there is always an autovacuum launcher process in the system, which schedules work, 
+and the autovacuum worker worker processes are engaged in real cleaning, several instances of which can work in parallel.
+The autovacuum launcher process compiles a list of databases that have any activity. Activity is determined by statistics, 
+and in order for it to be collected, the track_counts parameter must be set . Never turn off autovacuum and track_counts, 
+otherwise autovacuum won't work.
+
+Once at autovacuum_naptimethe autovacuum launcher process launches (via the postmaster process) a worker process for each database in the list. 
+In other words, if there is some activity in the database, then worker processes will come to it with the autovacuum_naptime interval. 
+For this, if there are several active databases (N pieces), then worker processes are launched N times more often than autovacuum_naptime. 
+However, the total number of simultaneously working worker processes is limited by the autovacuum_max_workers parameter .
+
+Once launched, the workflow connects to the database specified to it and begins by building a list:
+all tables, materialized views and toast tables that need to be cleaned up,
+all tables and materialized views that require analysis (toast tables are not parsed, because they are always accessed by index).
+Further, the workflow cleans and / or analyzes the selected objects in turn and ends when cleaning is complete.
+
+If the process does not have time to complete all the intended work in autovacuum_naptime, 
+the autovacuum launcher process will send another worker process to the same database, and they will work together. 
+Together simply means that the second process will build its list of tables and walk through it. 
+Thus, different tables will be processed in parallel, 
+but there is no parallelism at the level of one table - if one of the worker processes is already working on the table, 
+the other will skip it and move on.
+
+The discussion about the need for parallel processing has been going on for a long time, but the patch has not yet been adopted.
+Now let's take a closer look at what “requires cleaning” and “requires analysis” mean.
+
+------------------------------
+- Which tables need cleaning -
+------------------------------
+
+It is considered that flushing is necessary if the number of “dead”, that is, irrelevant, row versions exceeds a specified threshold. 
+The number of dead versions is continuously collected by the statistics collector and stored in the pg_stat_all_tables table. 
+And the threshold is set by two parameters:
+
+autovacuum_vacuum_threshold defines the absolute value (in pieces),
+autovacuum_vacuum_scale_factor defines the proportion of rows in the table.
+
+The final formula is: cleaning is required if pg_stat_all_tables.n_dead_tup> = autovacuum_vacuum_threshold + autovacuum_vacuum_scale_factor * pg_class.reltupes.
+
+The default settings are autovacuum_vacuum_threshold = 50 and
+autovacuum_vacuum_scale_factor = 0.2. The main parameter here, of course, 
+is autovacuum_vacuum_scale_factor - it is it that is important for large tables (and it is with them that possible problems are associated). 
+The value of 20% seems to be highly overestimated, most likely it will need to be significantly reduced.
+
+The optimal parameter values may differ for different tables, depending on their size and the nature of the changes. 
+It makes sense to set generally adequate values, 
+and - if necessary - customize parameters at the level of some tables in a special way using storage parameters:
+
+autovacuum_vacuum_threshold and toast.autovacuum_vacuum_threshold ,
+autovacuum_vacuum_scale_factor and toast.autovacuum_vacuum_scale_factor .
+
+In order not to get confused, this should be done only for a small number of tables, which stand out among others by the volume or intensity of changes, 
+and only when the globally set values are not suitable.
+
+In addition, autovacuum can be disabled at the table level (although it's hard to think of a reason why this would be necessary):
+
+autovacuum_enabled and toast.autovacuum_enabled .
+
+For example, last time we created the vac table with autovacuum disabled so that - for demonstration purposes - we could manually control the vacancy. 
+The storage parameter can be changed as follows:
+
+=> ALTER TABLE vac SET (autovacuum_enabled = off);
+
+To formalize all of the above, let's create a view showing which tables are currently in need of cleaning. 
+It will use a function that returns the current value of the parameter, considering that it can be overridden at the table level:
+
+=> CREATE FUNCTION get_value(param text, reloptions text[], relkind "char")
+RETURNS float
+AS $$
+  SELECT coalesce(
+    -- if the storage parameter is given, then we take it
+    (SELECT option_value
+     FROM   pg_options_to_table(reloptions)
+     WHERE  option_name = CASE
+              - for toast tables the parameter name is different
+              WHEN relkind = 't' THEN 'toast.' ELSE ''
+            END || param
+    ),
+    -- otherwise we take the value of the configuration parameter
+    current_setting(param)
+  )::float;
+$$ LANGUAGE sql;
+
+And here is the view:
+
+=> CREATE VIEW need_vacuum AS
+  SELECT st.schemaname || '.' || st.relname tablename,
+         st.n_dead_tup dead_tup,
+         get_value('autovacuum_vacuum_threshold', c.reloptions, c.relkind) +
+         get_value('autovacuum_vacuum_scale_factor', c.reloptions, c.relkind) * c.reltuples
+         max_dead_tup,
+         st.last_autovacuum
+  FROM   pg_stat_all_tables st,
+         pg_class c
+  WHERE  c.oid = st.relid
+  AND    c.relkind IN ('r','m','t');
+
+---------------------------------
+- Which tables require analysis -
+---------------------------------
+
+With autoanalysis, the situation is about the same. 
+It is considered that the analysis is required for those tables for which the number of modified (since the last analysis) 
+row versions exceeds the threshold value set by two similar parameters: 
+pg_stat_all_tables.n_mod_since_analyze> = autovacuum_analyze_threshold + autovacuum_analyze_scale_factor * pg_class.reltupes.
+
+The default autoanalyze settings are slightly different: autovacuum_analyze_threshold = 50 and autovacuum_analyze_scale_factor = 0.1. 
+They can also be defined at the level of storage parameters for individual tables:
+
+autovacuum_analyze_threshold ,
+autovacuum_analyze_scale_factor
+
+Since toast tables are not analyzed, there are no corresponding parameters for them.
+
+Let's create a view for analysis:
+
+=> CREATE VIEW need_analyze AS
+  SELECT st.schemaname || '.' || st.relname tablename,
+         st.n_mod_since_analyze mod_tup,
+         get_value('autovacuum_analyze_threshold', c.reloptions, c.relkind) +
+         get_value('autovacuum_analyze_scale_factor', c.reloptions, c.relkind) * c.reltuples
+         max_mod_tup,
+         st.last_autoanalyze
+  FROM   pg_stat_all_tables st,
+         pg_class c
+  WHERE  c.oid = st.relid
+  AND    c.relkind IN ('r','m');
+  
+  -----------
+  - Example -
+  -----------
+  
+  For experiments, set the following parameter values:
+
+=> ALTER SYSTEM SET autovacuum_naptime = ‘1s’; -- чтобы долго не ждать
+=> ALTER SYSTEM SET autovacuum_vacuum_scale_factor = 0.03;  -- 3%
+=> ALTER SYSTEM SET autovacuum_vacuum_threshold = 0;
+=> ALTER SYSTEM SET autovacuum_analyze_scale_factor = 0.02; -- 2%
+=> ALTER SYSTEM SET autovacuum_analyze_threshold = 0;
+=> SELECT pg_reload_conf();
+ pg_reload_conf
+----------------
+ t
+(1 row)
+
+Now let's create a table similar to the one we used last time and insert a thousand rows into it. 
+Autovacuum is disabled at the table level, and we'll enable it ourselves. If this is not done, then the examples will not be reproducible, 
+since the autovacuum may be triggered at the wrong time.
+
+=> CREATE TABLE autovac(
+  id serial,
+  s char(100)
+) WITH (autovacuum_enabled = off);
+=> INSERT INTO autovac SELECT g.id,'A' FROM generate_series(1,1000) g(id);
+
+Here's what our cleanup view will show:
+
+=> SELECT * FROM need_vacuum WHERE tablename = 'public.autovac';
+   tablename    | dead_tup | max_dead_tup | last_autovacuum 
+----------------+----------+--------------+-----------------
+ public.autovac |        0 |            0 | 
+(1 row)
+
+There are two points to note here. First, max_dead_tup = 0, even though 3% of 1000 rows is 30 rows. 
+The point is that we do not yet have statistics on the table, since INSERT does not update it by itself. 
+Until our table is analyzed, the zeros will remain, since pg_class.reltuples = 0. However, let's take a look at the second view for analysis:
+
+=> SELECT * FROM need_analyze WHERE tablename = 'public.autovac';
+   tablename    | mod_tup | max_mod_tup | last_autoanalyze 
+----------------+---------+-------------+------------------
+ public.autovac |    1000 |           0 | 
+(1 row)
+
+Since 1000 rows have changed (added) in the table, and this is greater than zero, autoanalysis should work. Let's check this:
+
+=> ALTER TABLE autovac SET (autovacuum_enabled = on);
+
+After a short pause, we see that the table has been analyzed and instead of zeros in max_mod_tup we see correct 20 lines:
+
+=> SELECT * FROM need_analyze WHERE tablename = 'public.autovac';
+   tablename    | mod_tup | max_mod_tup |       last_autoanalyze        
+----------------+---------+-------------+-------------------------------
+ public.autovac |       0 |          20 | 2019-05-21 11:59:48.465987+03
+(1 row)
+
+=> SELECT reltuples, relpages FROM pg_class WHERE relname = 'autovac';
+ reltuples | relpages 
+-----------+----------
+      1000 |       17
+(1 row)
+
+Let's go back to autovacuum:
+
+=> SELECT * FROM need_vacuum WHERE tablename = 'public.autovac';
+   tablename    | dead_tup | max_dead_tup | last_autovacuum
+----------------+----------+--------------+-----------------
+ public.autovac |        0 |           30 |
+(1 row)
+
+Max_dead_tup, as we can see, has already been fixed. The second point to pay attention to is dead_tup = 0. 
+Statistics show that there are no dead row versions in the table ... and this is true. There is nothing to clear in our table yet. 
+So any table used only in the append-only mode will not be cleared and, therefore, the visibility map will not be updated for it. 
+This makes it impossible to use only index-only scan.
+
+(Next time we will see that the cleanup will come to the append-only table sooner or later, but this will happen very rarely.) The
+
+practical takeaway: if it is important to use only index scans, you may need to invoke cleanup manually.
+
+Now, turn off autovacuum again and update 31 rows - one more than the threshold.
+
+=> ALTER TABLE autovac SET (autovacuum_enabled = off);
+=> UPDATE autovac SET s = 'B' WHERE id <= 31;
+=> SELECT * FROM need_vacuum WHERE tablename = 'public.autovac';
+   tablename    | dead_tup | max_dead_tup | last_autovacuum 
+----------------+----------+--------------+-----------------
+ public.autovac |       31 |           30 | 
+(1 row)
+
+Now the autovacuum trigger condition is met. Turn on autovacuum and after a short pause we will see that the table has been processed:
+
+=> ALTER TABLE autovac SET (autovacuum_enabled = on);
+=> SELECT * FROM need_vacuum WHERE tablename = 'public.autovac';
+   tablename    | dead_tup | max_dead_tup |        last_autovacuum        
+----------------+----------+--------------+-------------------------------
+ public.autovac |        0 |           30 | 2019-05-21 11:59:52.554571+03
+(1 row)
+
+----------------
+- Load control -
+----------------
+
+Cleaning does not block other processes because it works page by page, 
+but it nevertheless creates a load on the system and can have a noticeable effect on performance.
+
+----------------------------------
+- Regulation for normal cleaning -
+----------------------------------
+
+In order to be able to control the intensity of cleaning and therefore its effect on the system, the process alternates between working and waiting. 
+The cleanup performs approximately vacuum_cost_limit conditional units of work and then sleeps for vacuum_cost_delay  ms.
+
+The default settings are vacuum_cost_limit = 200, vacuum_cost_delay = 0. The last zero effectively means that (normal) vacuuming does not sleep, 
+so the specific vacuum_cost_limit value does not matter. This is done with the understanding that if the administrator had to start VACUUM manually, 
+then he probably wants to clean up as quickly as possible.
+
+Nevertheless, if you still set the sleep time, 
+then the specified invacuum_cost_limit The amount of work will be the sum of the costs of working with pages in the buffer cache. 
+Each page hit is rated as follows:
+
+ * if the page was found in the buffer cache, then vacuum_cost_page_hit = 1;
+ * if not found, then vacuum_cost_page_miss = 10;
+ * if not found, and even had to evict a dirty page from the buffer, then vacuum_cost_page_dirty = 20.
+
+That is, with the default vacuum_cost_limit settings, 200 pages from the cache, or 20 pages from disk, or 10 pages with preemption can be processed in one go. 
+It is clear that these are rather arbitrary numbers, but there is no point in choosing them more precisely.
+
+--------------------------------
+- Regulation for auto-cleaning -
+--------------------------------
+
+Load control for automatic cleaning works in the same way as for normal cleaning. 
+But so that a manual cleanup and autovacuum can work with different intensities, 
+we have made our own parameters for autovacuum : autovacuum_vacuum_cost_limit and autovacuum_vacuum_cost_delay. 
+If these parameters are set to -1, then the value from vacuum_cost_limit and / or vacuum_cost_delay is used .
+
+By default autovacuum_vacuum_cost_limit = -1 (i.e. vacuum_cost_limit = 200 is used ) and autovacuum_vacuum_cost_delay = 20ms. 
+On modern equipment with these numbers, auto-cleaning will work very, very slowly.
+
+In version 12, the autovacuum_vacuum_cost_delay value will be reduced to 2ms, which can be considered a more suitable first approximation.
+In addition, it should be borne in mind that the limit set by these parameters is common to all work processes. 
+In other words, as the number of simultaneous worker processes changes, the total load will remain constant. Therefore, if the task is to increase the performance of autovacuum, then when adding worker processes it is worth increasing autovacuum_vacuum_cost_limit .
+
+-------------------------------
+- Memory usage and monitoring -
+-------------------------------
+
+The last time we looked, like cleaning uses memory size maintenance_work_mem storage identifiers row versions to be cleaned.
+Autocleaning does exactly the same. But there can be many concurrent processes if you set autovacuum_max_workers to a high value. 
+In addition, all memory is allocated immediately and completely, and not out of necessity. 
+Therefore, you can set your own limit for the autovacuum workflow using the autovacuum_work_mem parameter. 
+By default, this parameter is -1, which means it is not used.
+
+As mentioned, cleanup can work with minimal memory. But if indexes are created on the table, 
+then a small valuemaintenance_work_mem can lead to repeated index scans. The same is true for autovacuum. Ideally, 
+you should choose such a minimum autovacuum_work_mem value , at which repeated scans do not occur.
+
+We have seen that the VERBOSE parameter can be used to monitor purge (but cannot be specified for autovacuum) or the pg_stat_progress_vacuum view 
+(but it only shows current information). Therefore, the main method for monitoring autovacuum is the log_autovacuum_min_duration parameter, 
+which outputs information to the server message log. It is off by default (set to -1). 
+There is a reason to enable this parameter (with a value of 0, information about all autovacuum starts will be displayed) and watch the numbers.
+
+This is what the output looks like:
+
+=> ALTER SYSTEM SET log_autovacuum_min_duration = 0;
+=> SELECT pg_reload_conf();
+ pg_reload_conf 
+----------------
+ t
+(1 row)
+
+=> UPDATE autovac SET s = 'C' WHERE id <= 31;
+
+student$ tail -n 7 /var/log/postgresql/postgresql-11-main.log
+2019-05-21 11:59:55.675 MSK [9737] LOG:  automatic vacuum of table "test.public.autovac": index scans: 0
+	pages: 0 removed, 18 remain, 0 skipped due to pins, 0 skipped frozen
+	tuples: 31 removed, 1000 remain, 0 are dead but not yet removable, oldest xmin: 4040
+	buffer usage: 78 hits, 0 misses, 0 dirtied
+	avg read rate: 0.000 MB/s, avg write rate: 0.000 MB/s
+	system usage: CPU: user: 0.00 s, system: 0.00 s, elapsed: 0.00 s
+2019-05-21 11:59:55.676 MSK [9737] LOG:  automatic analyze of table "test.public.autovac" system usage: CPU: user: 0.00 s, system: 0.00 s, elapsed: 0.00 s
+
+All the necessary information is here.
+
+Recall that often you should not increase the memory size, but rather reduce the flushing threshold so that less data is processed at a time.
+
+It might also make sense to monitor the length of the list of tables to clean using the views above. 
+An increase in the length of the list will indicate that autovacuum does not have time to do its job and a change in settings is required.
+
+
 https://habr.com/ru/company/postgrespro/blog/452320/
 https://habr.com/ru/company/postgrespro/blog/452762/
 https://habr.com/ru/company/postgrespro/blog/455590/
+
 
 
 
