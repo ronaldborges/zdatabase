@@ -19,40 +19,40 @@ contract Token {
   event Transfer(address indexed from, address indexed to, unit256 value);
   event Approval(address indexed _owner, address indexed _spender, unit256 _value);
   
-  contructor(string memory name, string memory symbol) {
-    _name = name;
-    _symbol = symbol;
-    _decimals = 2;
-    _dono = msg.sender; //0xa2a45C7aC4190eAE5d443eE5b07C7cFc1cDC9BD0
+    contructor(string memory name, string memory symbol) {
+      _name = name;
+      _symbol = symbol;
+      _decimals = 2;
+      _dono = msg.sender; //0xa2a45C7aC4190eAE5d443eE5b07C7cFc1cDC9BD0
   
-  }
+    }
   
-  modifier apenasDono() {
-    require( msg.sender == _dono, "Esse endereco nao e o dono");
-    _;
-  }
+    modifier apenasDono() {
+      require( msg.sender == _dono, "Esse endereco nao e o dono");
+      _;
+    }
   
-  function name() public view returns (string memory) {
-    return _name;
-  }
+    function name() public view returns (string memory) {
+      return _name;
+    }
   
     function symbol() public view returns (string memory) {
-    return _symbol;
-  }
+      return _symbol;
+    }
   
     function decimals() public view returns (unit8) {
-    return _decimals;
-  }
+      return _decimals;
+    }
   
     function totalSupply() public view returns (unit256) {
-    return _totalSupply;
-  }
+      return _totalSupply;
+    }
   
     function balanceOf() public view returns (unit256) {
-    return _balances[account];
-  }
+      return _balances[account];
+    }
 
-    function transferfrom(addresss sender, address recipient, unit256 amount) public returns (bool success) {
+    function transferFrom(addresss sender, address recipient, unit256 amount) public returns (bool success) {
       require(sender != address(0), "ERC20: transferencia do endereco zero nao e permitida");
       require(recipient != address(0), "ERC20: transferencia do endereco zero nao e permitida");
    
@@ -62,17 +62,19 @@ contract Token {
       emit Transfer(sender, recipient, amount);
       return true;
       
-   }
-
-
-
-
-
-
-
-
-
-
+     }
+   
+     function transfer(address recipient, unit256 amount) public virtual returns(boll) {
+        transferFrom(msg.sender, recipient, amount);
+        return true;
+     }
+     
+     function mint(address account, unit256 amount) public apenasDono {
+        require( account =! address(0), "ERC20: cunhagem para endereco zero");
+        _totalSupply = _totalSupply.add(amount);
+        _balances[account] = _balances[account].add(amount);
+        emit Transfer(address(0), account, amount);
+     }
 
 }
 
