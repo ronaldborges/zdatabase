@@ -1,0 +1,21 @@
+#NOTE
+Make data encryption using crypto-js
+Input many values and return the hash these values
+.
+  const data1 = "Blockchain Rock!";
+  const dataObject = {
+	  id: 1,
+  	  body: "With Object Works too",
+  	  time: new Date().getTime().toString().slice(0,-3)
+};
+
+  function generateHash(obj) {
+	  var SHA256 = require("crypto-js/sha256");
+  	  var encripted = SHA256(JSON.stringify(obj));
+   	  return encripted;
+  	
+}
+
+  console.log(`SHA256 Hash: ${generateHash(data1)}`);
+  console.log("************************************");
+  console.log(`SHA256 Hash: ${generateHash(dataObject)}`);
