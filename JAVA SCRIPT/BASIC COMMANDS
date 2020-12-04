@@ -1,1 +1,24 @@
+#NOTE YOU NEED GOOGLE CHROME, VISUAL STUDIO CODE, NODEJS
 
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>My First Program</title>
+    <style>
+        body {background-color: cornflowerblue;
+        color: cornsilk;
+        font: normal 16pt Arial;
+        }
+    </style>
+</head>
+<body>
+<h1>Hello World!</h1>
+<script>
+    window.alert('My first message!')
+    window.confirm('are you enjoying java script?')
+    window.prompt('write your name!')
+</script>
+</body>
+</html>
