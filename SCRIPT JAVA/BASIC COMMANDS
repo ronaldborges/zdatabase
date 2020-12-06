@@ -12,6 +12,9 @@ try to choose coherent names for the variables
 #NOTE DATA TYPES (TYPEOF)
 number, infinity, nan, string, boolean, null, undefined, object, array, function
 
+#NOTE OPERATORS
+arithmetic (+, -, *,%, /, **)
+
 <!DOCTYPE html>
 <html lang="pt-br">
 <head>
