@@ -14,6 +14,7 @@ number, infinity, nan, string, boolean, null, undefined, object, array, function
 
 #NOTE OPERATORS
 arithmetic (+, -, *,%, /, **)
+assignment (=)
 
 <!DOCTYPE html>
 <html lang="pt-br">
