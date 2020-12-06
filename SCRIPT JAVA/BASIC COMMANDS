@@ -9,6 +9,8 @@ there can be no reserved words
 upper and lower case make a difference
 try to choose coherent names for the variables
 
+#NOTE DATA TYPES
+number, infinity, nan, string, boolean
 
 <!DOCTYPE html>
 <html lang="pt-br">
