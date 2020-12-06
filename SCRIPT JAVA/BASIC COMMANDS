@@ -6,6 +6,9 @@ You can use letters or numbers
 you can use symbols and accents
 there can be no spaces
 there can be no reserved words
+upper and lower case make a difference
+try to choose coherent names for the variables
+
 
 <!DOCTYPE html>
 <html lang="pt-br">
