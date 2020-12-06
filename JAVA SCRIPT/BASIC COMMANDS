@@ -1,4 +1,11 @@
 #NOTE YOU NEED GOOGLE CHROME, VISUAL STUDIO CODE, NODEJS
+#NOTE VARIABLES
+can start with a letter or $ or _
+can't start with numbers
+You can use letters or numbers
+you can use symbols and accents
+there can be no spaces
+there can be no reserved words
 
 <!DOCTYPE html>
 <html lang="pt-br">
