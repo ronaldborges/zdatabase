@@ -18,8 +18,7 @@ assignment (=)
 increment/decrement (n++, n--)
 relational (<,>,==,===)
 logic (!,&&,||)
-ternary ()
-
+ternary (?,:)
 
 <!DOCTYPE html>
 <html lang="pt-br">
