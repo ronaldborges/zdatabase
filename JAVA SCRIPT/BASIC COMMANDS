@@ -15,7 +15,11 @@ number, infinity, nan, string, boolean, null, undefined, object, array, function
 #NOTE OPERATORS
 arithmetic (+, -, *,%, /, **)
 assignment (=)
-increment (n++, n--)
+increment/decrement (n++, n--)
+relational (<,>,==,===)
+logic (!,&&,||)
+ternary ()
+
 
 <!DOCTYPE html>
 <html lang="pt-br">
