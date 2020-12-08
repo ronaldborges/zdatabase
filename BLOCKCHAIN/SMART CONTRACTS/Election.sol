@@ -26,7 +26,9 @@ snap install sublime-text --classic
 subl .
 */
 
-
+//*CREATE FILE
+cd election
+touch contracts/Election.sol
 
 
 
