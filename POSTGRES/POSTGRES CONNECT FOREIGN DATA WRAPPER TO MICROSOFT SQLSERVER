@@ -1,0 +1,41 @@
+################################################################
+# POSTGRES CONNECT FOREIGN DATA WRAPPER TO MICROSOFT SQLSERVER #
+################################################################
+
+The objective of this procedure is to establish a database environment distributed between postgres database and sqlserver database,follow the steps
+
+#DOWNLOAD EXTENSION FILES FROM GITHUB
+wget https://codeload.github.com/tds-fdw/tds_fdw/zip/master
+mv master tds_fdw.zip
+
+#UNPACK FILE
+unzip tds_fdw.zip
+
+#NAVIGATE AND COMPILE EXTENSION
+cd tds_fdw
+vi Makefile
+PG_CONFIG    = /usr/local/pgsql-9.6.14/bin/pg_config
+make; make install
+
+#CREATE EXTENSION ON DATABASE
+/usr/local/pgsql-9.6.14/bin/psql -U postgres -p 5432
+postgres=# CREATE EXTENSION tds_fdw;
+
+#CREATE USER MAPPING AND EXTERNAL SERVER
+postgres=# DROP USER MAPPING FOR postgres SERVER SQLSERVER;
+postgres=# DROP SERVER SQLSERVER;
+postgres=# CREATE SERVER SQLSERVER FOREIGN DATA WRAPPER tds_fdw OPTIONS (servername '192.168.1.2', port '1433', database 'TARGER_DATABASE', tds_version '7.1');
+postgres=# CREATE USER MAPPING FOR postgres SERVER SQLSERVER OPTIONS (username 'USER_LOGIN', password 'PASSWORD');
+postgres=# CREATE SCHEMA SQLSERVER;
+
+#CREATE FOREIGN TABLE
+postgres=# DROP FOREIGN TABLE SQLSERVER.t_Persons;
+postgres=# CREATE TABLE Persons (
+    PersonID int,
+    LastName varchar(255),
+    FirstName varchar(255),
+    Address varchar(255),
+    City varchar(255))
+SERVER SQLSERVER	
+OPTIONS (schema_name 'SQLSERVER', table_name 'Persons', row_estimate_method 'showplan_all');
+
