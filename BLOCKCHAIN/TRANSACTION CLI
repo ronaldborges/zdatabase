@@ -216,6 +216,13 @@ decoderawtransaction "0200000001081bb8dd162a56ba28e40fc594e54e0be812cf7eab8fa7d1
 
 ################################################################################################################################################################
 
+#Stores the wallet decryption key in memory for 'timeout' seconds.
+#This is needed prior to performing transactions related to private keys such as sending bitcoins
+
+walletpassphrase "<my wallet password>" 600
+
+################################################################################################################################################################
+
 #Sign inputs for raw transaction (serialized, hex-encoded).
 #The second optional argument (may be null) is an array of previous transaction outputs that
 #this transaction depends on but may not yet be in the block chain.
