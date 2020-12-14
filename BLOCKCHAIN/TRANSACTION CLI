@@ -1,0 +1,282 @@
+STEPS TO PERFORM TRANSACTION ON CONSOLE BITCOIN (TESTNET) NETWORK
+#REFERENCE
+https://chainquery.com/bitcoin-cli#wallet
+
+################################################################################################################################################################
+
+#Returns array of unspent transaction outputs with between minconf and maxconf (inclusive) confirmations. 
+#Optionally filter to only include txouts paid to specified addresses.
+
+listunspent
+￼
+[
+  {
+    "txid": "2ba362c15de22dc1d1a78fab7ecf12e80b4ee594c50fe428ba562a16ddb81b08",
+    "vout": 0,
+    "address": "tb1qmnewd0quamvdmddq2xrf7v44x9zrjvgycmsqs0",
+    "label": "",
+    "scriptPubKey": "0014dcf2e6bc1ceed8ddb5a051869f32b53144393104",
+    "amount": 0.00100000,
+    "confirmations": 7,
+    "spendable": true,
+    "solvable": true,
+    "desc": "wpkh([3d909daa/0'/0'/0']038a60c2135c9fbb002e2f5620de619a6bf790e2eac05e61fe868fd8eb4d09bf0f)#rk7dj3nx",
+    "safe": true
+  },
+  {
+    "txid": "85abd4070db6783affa0b6d94e22a9c7b1955848f6d7e5179403d0c0def11f2a",
+    "vout": 1,
+    "address": "tb1qmnewd0quamvdmddq2xrf7v44x9zrjvgycmsqs0",
+    "label": "",
+    "scriptPubKey": "0014dcf2e6bc1ceed8ddb5a051869f32b53144393104",
+    "amount": 0.00011071,
+    "confirmations": 3,
+    "spendable": true,
+    "solvable": true,
+    "desc": "wpkh([3d909daa/0'/0'/0']038a60c2135c9fbb002e2f5620de619a6bf790e2eac05e61fe868fd8eb4d09bf0f)#rk7dj3nx",
+    "safe": true
+  },
+  {
+    "txid": "609107361241d4e07216c23dcdc975efb22aaa09859daa351bd72601cc4ddf42",
+    "vout": 0,
+    "address": "tb1qmnewd0quamvdmddq2xrf7v44x9zrjvgycmsqs0",
+    "label": "",
+    "scriptPubKey": "0014dcf2e6bc1ceed8ddb5a051869f32b53144393104",
+    "amount": 0.01593270,
+    "confirmations": 7,
+    "spendable": true,
+    "solvable": true,
+    "desc": "wpkh([3d909daa/0'/0'/0']038a60c2135c9fbb002e2f5620de619a6bf790e2eac05e61fe868fd8eb4d09bf0f)#rk7dj3nx",
+    "safe": true
+  },
+  {
+    "txid": "179ab50697787dfd22705a480cb05c39d7acd5b0296b51fbc93e8e6805af4b5a",
+    "vout": 0,
+    "address": "tb1qmnewd0quamvdmddq2xrf7v44x9zrjvgycmsqs0",
+    "label": "",
+    "scriptPubKey": "0014dcf2e6bc1ceed8ddb5a051869f32b53144393104",
+    "amount": 0.00100000,
+    "confirmations": 7,
+    "spendable": true,
+    "solvable": true,
+    "desc": "wpkh([3d909daa/0'/0'/0']038a60c2135c9fbb002e2f5620de619a6bf790e2eac05e61fe868fd8eb4d09bf0f)#rk7dj3nx",
+    "safe": true
+  },
+  {
+    "txid": "3ff87fbb14424451fb82179b06f11d264a215db9c406fe92c2c55d101b4f9189",
+    "vout": 0,
+    "address": "tb1qmnewd0quamvdmddq2xrf7v44x9zrjvgycmsqs0",
+    "label": "",
+    "scriptPubKey": "0014dcf2e6bc1ceed8ddb5a051869f32b53144393104",
+    "amount": 0.00100000,
+    "confirmations": 2,
+    "spendable": true,
+    "solvable": true,
+    "desc": "wpkh([3d909daa/0'/0'/0']038a60c2135c9fbb002e2f5620de619a6bf790e2eac05e61fe868fd8eb4d09bf0f)#rk7dj3nx",
+    "safe": true
+  },
+  {
+    "txid": "cfe5ea877855197331ef3b9f678f8b3476ac7d4ef5d12a1744974b75170acfc3",
+    "vout": 1,
+    "address": "tb1qmnewd0quamvdmddq2xrf7v44x9zrjvgycmsqs0",
+    "label": "",
+    "scriptPubKey": "0014dcf2e6bc1ceed8ddb5a051869f32b53144393104",
+    "amount": 0.00020000,
+    "confirmations": 3,
+    "spendable": true,
+    "solvable": true,
+    "desc": "wpkh([3d909daa/0'/0'/0']038a60c2135c9fbb002e2f5620de619a6bf790e2eac05e61fe868fd8eb4d09bf0f)#rk7dj3nx",
+    "safe": true
+  },
+  {
+    "txid": "c90a38f55dd173b44a6ab5baafb56da9cd022409a2b6e811abdebedeb99823c9",
+    "vout": 0,
+    "address": "tb1qmnewd0quamvdmddq2xrf7v44x9zrjvgycmsqs0",
+    "label": "",
+    "scriptPubKey": "0014dcf2e6bc1ceed8ddb5a051869f32b53144393104",
+    "amount": 0.00100000,
+    "confirmations": 7,
+    "spendable": true,
+    "solvable": true,
+    "desc": "wpkh([3d909daa/0'/0'/0']038a60c2135c9fbb002e2f5620de619a6bf790e2eac05e61fe868fd8eb4d09bf0f)#rk7dj3nx",
+    "safe": true
+  },
+  {
+    "txid": "b1cbf5094d18862fc8474e9aca0bc816712e7e806b24378b3427126f96af9bcc",
+    "vout": 0,
+    "address": "tb1qmnewd0quamvdmddq2xrf7v44x9zrjvgycmsqs0",
+    "label": "",
+    "scriptPubKey": "0014dcf2e6bc1ceed8ddb5a051869f32b53144393104",
+    "amount": 0.00020000,
+    "confirmations": 3,
+    "spendable": true,
+    "solvable": true,
+    "desc": "wpkh([3d909daa/0'/0'/0']038a60c2135c9fbb002e2f5620de619a6bf790e2eac05e61fe868fd8eb4d09bf0f)#rk7dj3nx",
+    "safe": true
+  },
+  {
+    "txid": "e2792e470bfefee1ed77f4959f73912f2d168f9644dc2b6ab7bb980faa9258d5",
+    "vout": 1,
+    "address": "tb1qmnewd0quamvdmddq2xrf7v44x9zrjvgycmsqs0",
+    "label": "",
+    "scriptPubKey": "0014dcf2e6bc1ceed8ddb5a051869f32b53144393104",
+    "amount": 0.00020000,
+    "confirmations": 3,
+    "spendable": true,
+    "solvable": true,
+    "desc": "wpkh([3d909daa/0'/0'/0']038a60c2135c9fbb002e2f5620de619a6bf790e2eac05e61fe868fd8eb4d09bf0f)#rk7dj3nx",
+    "safe": true
+  },
+  {
+    "txid": "8870db90a5c5c24c306916949999f30fa7960d5db006df03616e6fead4f401f4",
+    "vout": 1,
+    "address": "tb1qmnewd0quamvdmddq2xrf7v44x9zrjvgycmsqs0",
+    "label": "",
+    "scriptPubKey": "0014dcf2e6bc1ceed8ddb5a051869f32b53144393104",
+    "amount": 0.00100000,
+    "confirmations": 7,
+    "spendable": true,
+    "solvable": true,
+    "desc": "wpkh([3d909daa/0'/0'/0']038a60c2135c9fbb002e2f5620de619a6bf790e2eac05e61fe868fd8eb4d09bf0f)#rk7dj3nx",
+    "safe": true
+  },
+  {
+    "txid": "171eb0f0c5a3d61adf0f650a2aba28f1bdd720c4cfb73c9ecf67c176fddedbf4",
+    "vout": 0,
+    "address": "tb1qmnewd0quamvdmddq2xrf7v44x9zrjvgycmsqs0",
+    "label": "",
+    "scriptPubKey": "0014dcf2e6bc1ceed8ddb5a051869f32b53144393104",
+    "amount": 0.00020000,
+    "confirmations": 3,
+    "spendable": true,
+    "solvable": true,
+    "desc": "wpkh([3d909daa/0'/0'/0']038a60c2135c9fbb002e2f5620de619a6bf790e2eac05e61fe868fd8eb4d09bf0f)#rk7dj3nx",
+    "safe": true
+  }
+]
+
+################################################################################################################################################################
+
+#Returns details about an unspent transaction output.
+
+gettxout "2ba362c15de22dc1d1a78fab7ecf12e80b4ee594c50fe428ba562a16ddb81b08" 0
+
+################################################################################################################################################################
+
+#Create a transaction spending the given inputs and creating new outputs.
+#Outputs can be addresses or data.
+#Returns hex-encoded raw transaction.
+#Note that the transaction's inputs are not signed, and it is not stored in the wallet or transmitted to the network.
+
+createrawtransaction '[{"txid": "2ba362c15de22dc1d1a78fab7ecf12e80b4ee594c50fe428ba562a16ddb81b08", "vout":0}]' '{"tb1q477mluzqd4jfkhk2t4hmgnxuntckcyn9uj92n0":0.00010000}'
+
+0200000001081bb8dd162a56ba28e40fc594e54e0be812cf7eab8fa7d1c12de25dc162a32b0000000000ffffffff011027000000000000160014afbdbff0406d649b5eca5d6fb44cdc9af16c126500000000
+
+################################################################################################################################################################
+
+#Return a JSON object representing the serialized, hex-encoded transaction.
+
+decoderawtransaction "0200000001081bb8dd162a56ba28e40fc594e54e0be812cf7eab8fa7d1c12de25dc162a32b0000000000ffffffff011027000000000000160014afbdbff0406d649b5eca5d6fb44cdc9af16c126500000000"
+
+{
+  "txid": "3043ec5b9930e2249979145b42dc13c774cac3bd50ec936c37e867cbd6315eae",
+  "hash": "3043ec5b9930e2249979145b42dc13c774cac3bd50ec936c37e867cbd6315eae",
+  "version": 2,
+  "size": 82,
+  "vsize": 82,
+  "weight": 328,
+  "locktime": 0,
+  "vin": [
+    {
+      "txid": "2ba362c15de22dc1d1a78fab7ecf12e80b4ee594c50fe428ba562a16ddb81b08",
+      "vout": 0,
+      "scriptSig": {
+        "asm": "",
+        "hex": ""
+      },
+      "sequence": 4294967295
+    }
+  ],
+  "vout": [
+    {
+      "value": 0.00010000,
+      "n": 0,
+      "scriptPubKey": {
+        "asm": "0 afbdbff0406d649b5eca5d6fb44cdc9af16c1265",
+        "hex": "0014afbdbff0406d649b5eca5d6fb44cdc9af16c1265",
+        "reqSigs": 1,
+        "type": "witness_v0_keyhash",
+        "addresses": [
+          "tb1q477mluzqd4jfkhk2t4hmgnxuntckcyn9uj92n0"
+        ]
+      }
+    }
+  ]
+}
+
+################################################################################################################################################################
+
+#Sign inputs for raw transaction (serialized, hex-encoded).
+#The second optional argument (may be null) is an array of previous transaction outputs that
+#this transaction depends on but may not yet be in the block chain.
+
+signrawtransactionwithwallet "0200000001081bb8dd162a56ba28e40fc594e54e0be812cf7eab8fa7d1c12de25dc162a32b0000000000ffffffff011027000000000000160014afbdbff0406d649b5eca5d6fb44cdc9af16c126500000000"
+
+{
+  "hex": "02000000000101081bb8dd162a56ba28e40fc594e54e0be812cf7eab8fa7d1c12de25dc162a32b0000000000ffffffff011027000000000000160014afbdbff0406d649b5eca5d6fb44cdc9af16c1265024730440220117fd8f67bd5a3ea50d60f0594a4927662dfa56a67e142dbdb0fe650ffc8fe5d02205c809ca49bb21a5867fc878fae134aaaea47908fe572197f7dd25954d4d899640121038a60c2135c9fbb002e2f5620de619a6bf790e2eac05e61fe868fd8eb4d09bf0f00000000",
+  "complete": true
+}
+
+################################################################################################################################################################
+
+#Return a JSON object representing the serialized, hex-encoded transaction.
+
+decoderawtransaction 02000000000101081bb8dd162a56ba28e40fc594e54e0be812cf7eab8fa7d1c12de25dc162a32b0000000000ffffffff011027000000000000160014afbdbff0406d649b5eca5d6fb44cdc9af16c1265024730440220117fd8f67bd5a3ea50d60f0594a4927662dfa56a67e142dbdb0fe650ffc8fe5d02205c809ca49bb21a5867fc878fae134aaaea47908fe572197f7dd25954d4d899640121038a60c2135c9fbb002e2f5620de619a6bf790e2eac05e61fe868fd8eb4d09bf0f00000000
+
+{
+  "txid": "3043ec5b9930e2249979145b42dc13c774cac3bd50ec936c37e867cbd6315eae",
+  "hash": "c1cc001fc95559bff27305c5a25176a237aac8f480a0d9bba4e7f009103a5e01",
+  "version": 2,
+  "size": 191,
+  "vsize": 110,
+  "weight": 437,
+  "locktime": 0,
+  "vin": [
+    {
+      "txid": "2ba362c15de22dc1d1a78fab7ecf12e80b4ee594c50fe428ba562a16ddb81b08",
+      "vout": 0,
+      "scriptSig": {
+        "asm": "",
+        "hex": ""
+      },
+      "txinwitness": [
+        "30440220117fd8f67bd5a3ea50d60f0594a4927662dfa56a67e142dbdb0fe650ffc8fe5d02205c809ca49bb21a5867fc878fae134aaaea47908fe572197f7dd25954d4d8996401",
+        "038a60c2135c9fbb002e2f5620de619a6bf790e2eac05e61fe868fd8eb4d09bf0f"
+      ],
+      "sequence": 4294967295
+    }
+  ],
+  "vout": [
+    {
+      "value": 0.00010000,
+      "n": 0,
+      "scriptPubKey": {
+        "asm": "0 afbdbff0406d649b5eca5d6fb44cdc9af16c1265",
+        "hex": "0014afbdbff0406d649b5eca5d6fb44cdc9af16c1265",
+        "reqSigs": 1,
+        "type": "witness_v0_keyhash",
+        "addresses": [
+          "tb1q477mluzqd4jfkhk2t4hmgnxuntckcyn9uj92n0"
+        ]
+      }
+    }
+  ]
+}
+
+################################################################################################################################################################
+
+#Submits raw transaction (serialized, hex-encoded) to local node and network.
+#Also see createrawtransaction and signrawtransaction calls.
+
+sendrawtransaction 02000000000101081bb8dd162a56ba28e40fc594e54e0be812cf7eab8fa7d1c12de25dc162a32b0000000000ffffffff011027000000000000160014afbdbff0406d649b5eca5d6fb44cdc9af16c1265024730440220117fd8f67bd5a3ea50d60f0594a4927662dfa56a67e142dbdb0fe650ffc8fe5d02205c809ca49bb21a5867fc878fae134aaaea47908fe572197f7dd25954d4d899640121038a60c2135c9fbb002e2f5620de619a6bf790e2eac05e61fe868fd8eb4d09bf0f00000000
+
