@@ -128,6 +128,10 @@ useradd -m -s /bin/bash -d /home/hadoop hadoop -g hadoop
 passwd hadoop
 id hadoop
 uid=1001(hadoop) gid=1001(hadoop) groups=1001(hadoop)
+
+visudo
+hadoop  ALL=(ALL) ALL
+
 su - hadoop
 
 #GERENATE SSH KEY
