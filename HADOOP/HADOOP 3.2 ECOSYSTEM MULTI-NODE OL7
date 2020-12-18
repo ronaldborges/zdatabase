@@ -123,7 +123,8 @@ PATH="/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/local/ha
 JAVA_HOME="/usr/lib/jvm/java-1.8.0-openjdk-1.8.0.242.b08-0.el7_7.x86_64/jre"
 
 #ADD USER HADOOPUSER
-useradd hadoop
+groupadd hadoop
+useradd -m -s /bin/bash -d /home/hadoop hadoop -g hadoop
 passwd hadoop
 id hadoop
 uid=1001(hadoop) gid=1001(hadoop) groups=1001(hadoop)
