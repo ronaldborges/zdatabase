@@ -1174,14 +1174,21 @@ hdfs dfs -chmod g+w /tmp
 hdfs dfs -ls /
 
 #CREATE DIRECTORY HDFS FOR WHAREHOUSE HIVE
-hdfs dfs -mkdir -p /user/hive/warehouse
-hdfs dfs -chmod g+w /user/hive/warehouse
-hdfs dfs -ls /user/hive
+hdfs dfs -mkdir -p hive/warehouse
+hdfs dfs -chmod g+w hive/warehouse
+hdfs dfs -ls hive
 
 #CONFIGURE HIVE-SITE.XML
 cp hive/conf/hive-default.xml.template hive/conf/hive-site.xml
 vi hive/conf/hive-site.xml
+  <property>
+    <name>hive.metastore.warehouse.dir</name>
+    <value>/hive/warehouse</value>
+    <description>location of default database for the warehouse</description>
+  </property>
 
+#INITIATE DERBY DATABASE
+$HIVE_HOME/bin/schematool –initSchema –dbType derby
 
 
 
