@@ -1190,6 +1190,16 @@ vi hive/conf/hive-site.xml
 #INITIATE DERBY DATABASE
 $HIVE_HOME/bin/schematool –initSchema –dbType derby
 
+#DOWNLOAD OOZIE ALL NODES
+wget https://downloads.apache.org/oozie/5.1.0/oozie-5.1.0.tar.gz
+
+#UNCOMPRESS OOZIE ON ALL NODES
+tar -xzvf oozie-5.1.0.tar.gz
+
+#RENAME OOZIE
+mv oozie-5.1.0 oozie
+
+
 
 
 
