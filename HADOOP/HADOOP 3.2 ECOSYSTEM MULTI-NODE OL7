@@ -1199,7 +1199,114 @@ tar -xzvf oozie-5.1.0.tar.gz
 #RENAME OOZIE
 mv oozie-5.1.0 oozie
 
+#CONFIGURE ENVIRONMENTS VARIABLES FOR OOZIE
+vi .bashrc
+#JAVA
+export JAVA_HOME=/usr/lib/jvm/java-1.8.0-openjdk-1.8.0.262.b10-0.el7_8.x86_64/jre
 
+#ZOOKEEPER
+export ZOOKEEPER_HOME=/home/hadoop/zookeeper
+export PATH=$PATH:$ZOOKEEPER_HOME/sbin:$ZOOKEEPER_HOME/bin
+
+#HBASE
+export HBASE_HOME=/home/hadoop/hbase
+export PATH=$PATH:$HBASE_HOME/sbin:$HBASE_HOME/bin
+
+#SPARK
+export SPARK_HOME=/home/hadoop/spark
+export PATH=$PATH:$SPARK_HOME/sbin:$SPARK_HOME/bin
+PYSPARK_PYTHON=python3
+
+#FLUME
+export FLUME_HOME=/home/hadoop/flume
+export PATH=$PATH:$FLUME_HOME/sbin:$FLUME_HOME/bin
+
+#HIVE
+export HIVE_HOME=/home/hadoop/hive
+export PATH=$PATH:$HIVE_HOME/sbin:$HIVE_HOME/bin
+
+#OOZIE
+export OOZIE_HOME=/home/hadoop/hive
+export PATH=$PATH:$OOZIE_HOME/sbin:$OOZIE_HOME/bin
+
+#HADOOP
+export HADOOP_HOME=/home/hadoop/hadoop
+export HADOOP_INSTALL=$HADOOP_HOME
+export HADOOP_MAPRED_HOME=$HADOOP_HOME
+export HADOOP_COMMON_HOME=$HADOOP_HOME
+export HADOOP_HDFS_HOME=$HADOOP_HOME
+export YARN_HOME=$HADOOP_HOME
+export HADOOP_COMMON_LIB_NATIVE_DIR=$HADOOP_HOME/lib/native
+export PATH=$PATH:$HADOOP_HOME/sbin:$HADOOP_HOME/bin
+
+source .bashrc
+
+#DOWNLOAD PIG ALL NODES
+wget https://downloads.apache.org/pig/pig-0.17.0/pig-0.17.0.tar.gz
+
+#UNCOMPRESS PIG ON ALL NODES
+tar -xzvf pig-0.17.0.tar.gz
+
+#RENAME PIG
+mv pig-0.17.0 pig
+
+#CONFIGURE ENVIRONMENTS VARIABLES FOR PIG
+vi .bashrc
+#JAVA
+export JAVA_HOME=/usr/lib/jvm/java-1.8.0-openjdk-1.8.0.262.b10-0.el7_8.x86_64/jre
+
+#ZOOKEEPER
+export ZOOKEEPER_HOME=/home/hadoop/zookeeper
+export PATH=$PATH:$ZOOKEEPER_HOME/sbin:$ZOOKEEPER_HOME/bin
+
+#HBASE
+export HBASE_HOME=/home/hadoop/hbase
+export PATH=$PATH:$HBASE_HOME/sbin:$HBASE_HOME/bin
+
+#SPARK
+export SPARK_HOME=/home/hadoop/spark
+export PATH=$PATH:$SPARK_HOME/sbin:$SPARK_HOME/bin
+PYSPARK_PYTHON=python3
+
+#FLUME
+export FLUME_HOME=/home/hadoop/flume
+export PATH=$PATH:$FLUME_HOME/sbin:$FLUME_HOME/bin
+
+#HIVE
+export HIVE_HOME=/home/hadoop/hive
+export PATH=$PATH:$HIVE_HOME/sbin:$HIVE_HOME/bin
+
+#OOZIE
+export OOZIE_HOME=/home/hadoop/hive
+export PATH=$PATH:$OOZIE_HOME/sbin:$OOZIE_HOME/bin
+
+#PIG
+export PIG_HOME=/home/hadoop/pig
+export PATH=$PATH:$PIG_HOME/sbin:$PIG_HOME/bin
+export PIG_CLASSPATH=$HADOOP_HOME/conf
+
+#HADOOP
+export HADOOP_HOME=/home/hadoop/hadoop
+export HADOOP_INSTALL=$HADOOP_HOME
+export HADOOP_MAPRED_HOME=$HADOOP_HOME
+export HADOOP_COMMON_HOME=$HADOOP_HOME
+export HADOOP_HDFS_HOME=$HADOOP_HOME
+export YARN_HOME=$HADOOP_HOME
+export HADOOP_COMMON_LIB_NATIVE_DIR=$HADOOP_HOME/lib/native
+export PATH=$PATH:$HADOOP_HOME/sbin:$HADOOP_HOME/bin
+
+source .bashrc
+
+#TEST PIG
+pig –version 
+2020-12-21 13:45:58,321 INFO pig.ExecTypeProvider: Trying ExecType : LOCAL
+2020-12-21 13:45:58,323 INFO pig.ExecTypeProvider: Trying ExecType : MAPREDUCE
+2020-12-21 13:45:58,323 INFO pig.ExecTypeProvider: Picked MAPREDUCE as the ExecType
+2020-12-21 13:45:58,590 [main] INFO  org.apache.pig.Main - Apache Pig version 0.17.0 (r1797386) compiled Jun 02 2017, 15:41:58
+2020-12-21 13:45:58,590 [main] INFO  org.apache.pig.Main - Logging error messages to: /home/hadoop/pig_1608558358548.log
+2020-12-21 13:46:00,106 [main] ERROR org.apache.pig.Main - ERROR 2997: Encountered IOException. File –version does not exist
+Details at logfile: /home/hadoop/pig_1608558358548.log
+2020-12-21 13:46:00,135 [main] INFO  org.apache.pig.Main - Pig script completed in 1 second and 946 milliseconds (1946 ms)
 
 
 
