@@ -1052,6 +1052,137 @@ Type :help for more information.
 
 scala> :quit
 
+#DOWNLOAD FLUME ON ALL NODES
+wget https://downloads.apache.org/flume/1.9.0/apache-flume-1.9.0-bin.tar.gz
+
+#UNCOMPRESS FLUME ON ALL NODES
+tar -xzvf apache-flume-1.9.0-bin.tar.gz
+
+#RENAME FLUME
+mv apache-flume-1.9.0-bin flume
+
+#CONFIGURE ENVIRONMENTS VARIABLES FOR FLUME
+vi .bashrc
+#JAVA
+export JAVA_HOME=/usr/lib/jvm/java-1.8.0-openjdk-1.8.0.262.b10-0.el7_8.x86_64/jre
+
+#ZOOKEEPER
+export ZOOKEEPER_HOME=/home/hadoop/zookeeper
+export PATH=$PATH:$ZOOKEEPER_HOME/sbin:$ZOOKEEPER_HOME/bin
+
+#HBASE
+export HBASE_HOME=/home/hadoop/hbase
+export PATH=$PATH:$HBASE_HOME/sbin:$HBASE_HOME/bin
+
+#SPARK
+export SPARK_HOME=/home/hadoop/spark
+export PATH=$PATH:$SPARK_HOME/sbin:$SPARK_HOME/bin
+PYSPARK_PYTHON=python3
+
+#FLUME
+export FLUME_HOME=/home/hadoop/flume
+export PATH=$PATH:$FLUME_HOME/sbin:$FLUME_HOME/bin
+
+#HADOOP
+export HADOOP_HOME=/home/hadoop/hadoop
+export HADOOP_INSTALL=$HADOOP_HOME
+export HADOOP_MAPRED_HOME=$HADOOP_HOME
+export HADOOP_COMMON_HOME=$HADOOP_HOME
+export HADOOP_HDFS_HOME=$HADOOP_HOME
+export YARN_HOME=$HADOOP_HOME
+export HADOOP_COMMON_LIB_NATIVE_DIR=$HADOOP_HOME/lib/native
+export PATH=$PATH:$HADOOP_HOME/sbin:$HADOOP_HOME/bin
+
+source .bashrc
+
+#TEST FLUME
+flume-ng version
+/home/hadoop/hadoop/libexec/hadoop-functions.sh: line 2366: HADOOP_ORG.APACHE.FLUME.TOOLS.GETJAVAPROPERTY_USER: invalid variable name
+/home/hadoop/hadoop/libexec/hadoop-functions.sh: line 2461: HADOOP_ORG.APACHE.FLUME.TOOLS.GETJAVAPROPERTY_OPTS: invalid variable name
+/home/hadoop/hadoop/libexec/hadoop-functions.sh: line 2366: HADOOP_ORG.APACHE.HADOOP.HBASE.UTIL.GETJAVAPROPERTY_USER: invalid variable name
+/home/hadoop/hadoop/libexec/hadoop-functions.sh: line 2461: HADOOP_ORG.APACHE.HADOOP.HBASE.UTIL.GETJAVAPROPERTY_OPTS: invalid variable name
+/home/hadoop/hadoop/libexec/hadoop-functions.sh: line 2366: HADOOP_ORG.APACHE.HADOOP.HBASE.UTIL.GETJAVAPROPERTY_USER: invalid variable name
+/home/hadoop/hadoop/libexec/hadoop-functions.sh: line 2461: HADOOP_ORG.APACHE.HADOOP.HBASE.UTIL.GETJAVAPROPERTY_OPTS: invalid variable name
+Flume 1.9.0
+Source code repository: https://git-wip-us.apache.org/repos/asf/flume.git
+Revision: d4fcab4f501d41597bc616921329a4339f73585e
+Compiled by fszabo on Mon Dec 17 20:45:25 CET 2018
+From source with checksum 35db629a3bda49d23e9b3690c80737f9
+
+#CREATE FLUME FILE CONFIGURATION
+cp flume/conf/flume-conf.properties.template flume/conf/flume.conf
+cp flume/conf/flume-env.sh.template flume/conf/flume-env.sh
+
+#START FLUME SERVICE
+service flume-agent start
+
+#DOWNLOAD HIVE ALL NODES
+wget https://downloads.apache.org/hive/hive-3.1.2/apache-hive-3.1.2-bin.tar.gz
+
+#UNCOMPRESS HIVE ON ALL NODES
+tar -xzvf apache-hive-3.1.2-bin.tar.gz
+
+#RENAME HIVE
+mv apache-hive-3.1.2-bin hive
+
+#CONFIGURE ENVIRONMENTS VARIABLES FOR FLUME
+vi .bashrc
+#JAVA
+export JAVA_HOME=/usr/lib/jvm/java-1.8.0-openjdk-1.8.0.262.b10-0.el7_8.x86_64/jre
+
+#ZOOKEEPER
+export ZOOKEEPER_HOME=/home/hadoop/zookeeper
+export PATH=$PATH:$ZOOKEEPER_HOME/sbin:$ZOOKEEPER_HOME/bin
+
+#HBASE
+export HBASE_HOME=/home/hadoop/hbase
+export PATH=$PATH:$HBASE_HOME/sbin:$HBASE_HOME/bin
+
+#SPARK
+export SPARK_HOME=/home/hadoop/spark
+export PATH=$PATH:$SPARK_HOME/sbin:$SPARK_HOME/bin
+PYSPARK_PYTHON=python3
+
+#FLUME
+export FLUME_HOME=/home/hadoop/flume
+export PATH=$PATH:$FLUME_HOME/sbin:$FLUME_HOME/bin
+
+#HIVE
+export HIVE_HOME=/home/hadoop/hive
+export PATH=$PATH:$HIVE_HOME/sbin:$HIVE_HOME/bin
+
+#HADOOP
+export HADOOP_HOME=/home/hadoop/hadoop
+export HADOOP_INSTALL=$HADOOP_HOME
+export HADOOP_MAPRED_HOME=$HADOOP_HOME
+export HADOOP_COMMON_HOME=$HADOOP_HOME
+export HADOOP_HDFS_HOME=$HADOOP_HOME
+export YARN_HOME=$HADOOP_HOME
+export HADOOP_COMMON_LIB_NATIVE_DIR=$HADOOP_HOME/lib/native
+export PATH=$PATH:$HADOOP_HOME/sbin:$HADOOP_HOME/bin
+
+source .bashrc
+
+#SET UP HIVE FILE CONFIGURATION
+vi hive/bin/hive-config.sh
+# HADOOP HOME environment
+export HADOOP_HOME=/home/hadoop/hadoop
+
+#CREATE DIRECTORY HDFS FOR HIVE
+hdfs dfs -mkdir /tmp
+hdfs dfs -chmod g+w /tmp
+hdfs dfs -ls /
+
+#CREATE DIRECTORY HDFS FOR WHAREHOUSE HIVE
+hdfs dfs -mkdir -p /user/hive/warehouse
+hdfs dfs -chmod g+w /user/hive/warehouse
+hdfs dfs -ls /user/hive
+
+#CONFIGURE HIVE-SITE.XML
+cp hive/conf/hive-default.xml.template hive/conf/hive-site.xml
+vi hive/conf/hive-site.xml
+
+
 
 
 
