@@ -1309,4 +1309,62 @@ Details at logfile: /home/hadoop/pig_1608558358548.log
 2020-12-21 13:46:00,135 [main] INFO  org.apache.pig.Main - Pig script completed in 1 second and 946 milliseconds (1946 ms)
 
 
+#DOWNLOAD OOZIE ALL NODES
+wget https://downloads.apache.org/sqoop/1.4.7/sqoop-1.4.7.tar.gz
 
+#UNCOMPRESS OOZIE ON ALL NODES
+tar -xzvf sqoop-1.4.7.tar.gz
+
+#RENAME OOZIE
+mv sqoop-1.4.7 sqoop
+
+#CONFIGURE ENVIRONMENTS VARIABLES FOR OOZIE
+vi .bashrc
+#JAVA
+export JAVA_HOME=/usr/lib/jvm/java-1.8.0-openjdk-1.8.0.262.b10-0.el7_8.x86_64/jre
+
+#ZOOKEEPER
+export ZOOKEEPER_HOME=/home/hadoop/zookeeper
+export PATH=$PATH:$ZOOKEEPER_HOME/sbin:$ZOOKEEPER_HOME/bin
+
+#HBASE
+export HBASE_HOME=/home/hadoop/hbase
+export PATH=$PATH:$HBASE_HOME/sbin:$HBASE_HOME/bin
+
+#SPARK
+export SPARK_HOME=/home/hadoop/spark
+export PATH=$PATH:$SPARK_HOME/sbin:$SPARK_HOME/bin
+PYSPARK_PYTHON=python3
+
+#FLUME
+export FLUME_HOME=/home/hadoop/flume
+export PATH=$PATH:$FLUME_HOME/sbin:$FLUME_HOME/bin
+
+#HIVE
+export HIVE_HOME=/home/hadoop/hive
+export PATH=$PATH:$HIVE_HOME/sbin:$HIVE_HOME/bin
+
+#OOZIE
+export OOZIE_HOME=/home/hadoop/hive
+export PATH=$PATH:$OOZIE_HOME/sbin:$OOZIE_HOME/bin
+
+#PIG
+export PIG_HOME=/home/hadoop/pig
+export PATH=$PATH:$PIG_HOME/sbin:$PIG_HOME/bin
+export PIG_CLASSPATH=$HADOOP_HOME/conf
+
+#SQOOP
+export SQOOP_HOME=/home/hadoop/sqoop
+export PATH=$PATH:$SQOOP_HOME/sbin:$SQOOP_HOME/bin
+
+#HADOOP
+export HADOOP_HOME=/home/hadoop/hadoop
+export HADOOP_INSTALL=$HADOOP_HOME
+export HADOOP_MAPRED_HOME=$HADOOP_HOME
+export HADOOP_COMMON_HOME=$HADOOP_HOME
+export HADOOP_HDFS_HOME=$HADOOP_HOME
+export YARN_HOME=$HADOOP_HOME
+export HADOOP_COMMON_LIB_NATIVE_DIR=$HADOOP_HOME/lib/native
+export PATH=$PATH:$HADOOP_HOME/sbin:$HADOOP_HOME/bin
+
+source .bashrc
