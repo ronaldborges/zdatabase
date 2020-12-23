@@ -150,6 +150,9 @@ ssh hadoop@hadoopslave1
 ssh hadoop@hadoopslave2
 ssh hadoop@localhost
 
+#CONFIGURE /etc/pdsh/rcmd_default FILE
+echo "ssh" > /etc/pdsh/rcmd_default
+
 #DOWNLOAD HADOOP 3.2
 wget https://mirrors.sonic.net/apache/hadoop/common/hadoop-3.2.1/hadoop-3.2.1.tar.gz
 
