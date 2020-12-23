@@ -215,7 +215,6 @@ vi ~/hadoop/etc/hadoop/hdfs-site.xml
 <name>dfs.permissions.enabled</name>
 <value>false</value>
 </property>
-
 </configuration>
 
 #SET YARN AS JOB SCHEDULER
