@@ -1,0 +1,181 @@
++++++++++++++++++++++++++++++++++++++++++++
++    ENABLE STANDBY DATABASE POSTGRES 12  +
++++++++++++++++++++++++++++++++++++++++++++
+
+# Adjust parameters in postgresql.conf and pg_hba.conf files on master database 
+
+##create directory to keep wals files
+mkdir -p /$path/wals/
+chown postgres:postgres -R /$path/wals/
+
+##modify the parameter in postgresql.conf :
+listen_addresses = '*'
+
+##enable postgres logging
+log_directory = 'pg_log'
+log_filename = 'postgresql-%Y-%m-%d_%H%M%S.log'
+
+## enable wals and backup via pg_basebackup
+wal_level = hot_standby or wal_level = logical          #static, and depending on version can be replication
+max_wal_senders = 5                                     #static
+wal_keep_segments = 32                                  #dynamic
+archive_mode = on                                       #static
+archive_command = 'gzip -c %p > /$path/wals/%f.gz'      #static
+archive_timeout = 600
+
+## enable lines in pg_hab.conf
+host    replication     postgres        127.0.0.1/32            trust
+host    replication     postgres        ::1/128                 trust
+host    replication     postgres        $IP_SLAVE/24            md5
+host    replication     replication     $IP_SLAVE/24            md5
+
+#CRONTAB MASTER DATABASE MACHINE
+*/5 * * * * $path/wal_sync.sh > $path/wal_sync.log 2>&1
+* */2 * * * $path/wal_purge.sh > $path/wal_purge.log 2>&1
+
+#COPY WALS TO STANDBY DATABASE MACHINE
+##exchange ssh keys between master and slave
+Perform steps on primary and slave servers
+su - postgres
+ssh-keygen -t rsa
+chmod 600 ~/.ssh/authorized_keys
+
+## copy content from file ~/.ssh/id_rsa.pub and paste into slave's ~ / .ssh / authorized_keys file, repeat for master
+## edit /etc/ssh/sshd_config file and uncomment the following line, perform step on primary and slave
+RSAAuthentication yes
+PubkeyAuthentication yes
+AuthorizedKeysFile      .ssh/authorized_keys
+##restart sshd service, perform step on primary and slave
+/bin/systemctl restart sshd.service or service sshd restart
+
+vi $path/wal_sync.sh
+#!/bin/sh
+RESULT=`ps aux | grep rsync | wc -l`
+if [ $RESULT -le 1 ];then
+    echo "rsync copy attempt"
+    rsync -av -e 'ssh -p 22' $path/wals/ postgres@#########:/backup/wall-replication/STDBHGF/
+    exit
+fi
+    echo "still copying!"
+    exit
+ 
+ #PURGE WAL FILES MASTER DATABASE
+ vi $path/wal_purge.sh
+ #!/bin/sh
+ find $path/wals/ -name "*.gz" -mmin +1440 -exec rm -vf {} \;
+ 
+# CREATE ROLE MASTER
+
+##connect to primary database
+$path/psql -U postgres -p 5432
+CREATE ROLE replication WITH REPLICATION PASSWORD '*********' LOGIN;
+##list if the role was created successfully!
+\du
+ 
+#GENERATE BACKUP AND COPY DATABASE FILES TO SLAVE DATABASE MACHINE 
+$path/pg_basebackup -h $IP_MASTER -D /dados/data -U replication -P -v  -R -X stream -C -S newstandby
+Password: 
+pg_basebackup: initiating base backup, waiting for checkpoint to complete
+pg_basebackup: checkpoint completed
+pg_basebackup: write-ahead log start point: 72/FD000028 on timeline 1
+pg_basebackup: starting background WAL receiver
+pg_basebackup: created replication slot "segstandby"
+522345/522345 kB (100%), 1/1 tablespace                                         
+pg_basebackup: write-ahead log end point: 72/FD000100
+pg_basebackup: waiting for background process to finish streaming ...
+pg_basebackup: syncing data to disk ...
+pg_basebackup: base backup completed
+
+#START SLAVE DATABASE!
+$path/pg_ctl -D /dados/data -p 5432 start -l logstart
+
+#CHECK REPLICATION STATUS ON MASTER
+$path/psql -U postgres
+psql (12.3)
+Type "help" for help.
+
+postgres=# SELECT * FROM pg_replication_slots;
+ slot_name  | plugin | slot_type | datoid | database | temporary | active | active_pid | xmin | catalog_xmin | restart_lsn | confirmed_flush_lsn 
+------------+--------+-----------+--------+----------+-----------+--------+------------+------+--------------+-------------+---------------------
+ newstandby |        | physical  |        |          | f         | t      |       2589 |      |              | 72/FE000060 | 
+(1 row)
+
+#CHECK REPLICATION STATUS ON SLAVE
+
+$path/psql -U postgres
+psql (12.3)
+Type "help" for help.
+
+postgres=# SELECT * FROM pg_stat_wal_receiver;
+ pid  |  status   | receive_start_lsn | receive_start_tli | received_lsn | received_tli |      last_msg_send_time       |     last_msg_receipt_time     | latest_end_lsn |        latest_end_time        | slot_name  | sender_host  | sender_port |                                                                         
+                                conninfo                                                                                                         
+------+-----------+-------------------+-------------------+--------------+--------------+-------------------------------+-------------------------------+----------------+-------------------------------+------------+--------------+-------------+-------------------------------------------------------------------------
+-------------------------------------------------------------------------------------------------------------------------------------------------
+ 3292 | streaming | 72/FE000000       |                 1 | 72/FF000000  |            1 | 2021-01-04 12:50:09.733666-03 | 2021-01-04 12:50:08.942663-03 | 72/FF000000    | 2021-01-04 12:36:08.047852-03 | newstandby | 10.5.150.187 |        5432 | user=replication password=******** dbname=replication host=$IP_MASTER 
+port=5432 fallback_application_name=walreceiver sslmode=disable sslcompression=0 gssencmode=disable krbsrvname=postgres target_session_attrs=any
+(1 row)
+
+#CRONTAB SLAVE DATABASE MACHINE
+* 01 * * * $path/wal_purge.sh > $path/wal_purge.log 2>&1
+
+#PURGE WAL FILES MASTER DATABASE
+vi $path/wal_purge.sh
+#!/bin/sh
+find $path/wals/ -name "*.gz" -mmin +1440 -exec rm -vf {} \;
+
+#MONITORING STANDBY DELAY
+0 * * * * $path/check_delay_HBASE.sh >  $path/check_delay_HBASE.log 2>&1
+
+cat $path/check_delay_HBASE.sh
+/usr/local/pgsql-$version/bin/psql -U postgres -p $port -c 'SELECT EXTRACT(EPOCH FROM (now() - pg_last_xact_replay_timestamp()))::INT;' > /home/postgres/scripts/result_HBASE.log
+export DIFERENCA=`cat /home/postgres/scripts/result_HBASE.log | awk -F '-----------' '{print $1}' | awk -F 'date_part' '{print $1}' | awk -F '(1 row)' '{print $1}' | awk -F '(' '{print $1}
+' | awk -F 'SELECT' '{print $1}'`
+echo $DELAY
+if [ -z $DELAY ] ;then
+        echo "Updated Environment OK!!"
+        echo "The delay is 0 seconds" >> /home/postgres/scripts/result_HBASE.log
+        export HBASETIMEOK0=`echo "STDB HBASE Updated OK"`
+#        curl -s -X POST https://api.telegram.org/<$id>/sendMessage -d chat_id=<$chat_id> -d text="$HBASETIMEOK0"
+elif [ $DIFERENCA -lt 0 ] || [ $DIFERENCA -eq 0 ] ;then
+        echo "Updated Environment OK!!"
+        echo "The delay is " $DELAY " seconds" >> /home/postgres/scripts/result_HBASE.log
+        export HBASETIMEOK0=`echo "STDB HBASE Updated OK :" $DELAY " seg"`
+#        curl -s -X POST https://api.telegram.org/<$id>/sendMessage -d chat_id=<$chat_id> -d text="$HBASETIMEOK0"
+elif [ $DELAY -ge 0 ] && [ $DELAY -le 3600 ];then
+        echo "Updated Environment OK!!"
+        echo "The delay is " $DELAY " seconds" >> /home/postgres/scripts/result_HBASE.log
+        export HBASETIMEOK1=`echo "STDB HBASE Updated OK :" $DELAY " seg"`
+#        curl -s -X POST https://api.telegram.org/<$id>/sendMessage -d chat_id=<$chat_id> -d text="$HBASETIMEOK1"
+elif [ $DELAY -ge 3600 ] && [ $DELAY -le 7200 ];then
+        echo "Outdated Environment WARNING!!"
+        echo "The delay is " $DELAY " seconds" >> /home/postgres/scripts/result_HBASE.log
+        export HBASETIMEW=`echo "STDB HBASE Outdated WARNING :" $DELAY " seg"`
+        curl -s -X POST https://api.telegram.org/<$id>/sendMessage -d chat_id=<$chat_id> -d text="$HBASETIMEW"
+elif [ $DELAY -gt 7200 ];then
+        echo "Outdated Environment CRITICAL!!"
+        echo "The delay is " $DELAY " seconds" >> /home/postgres/scripts/result_HBASE.log
+        export HBASETIMEC=`echo "STDB HBASE Outdated CRITICAL :" $DELAY " seg"`
+        curl -s -X POST https://api.telegram.org/<$id>/sendMessage -d chat_id=<$chat_id> -d text="$HBASETIMEC"
+fi
+
+#MONITORING STANDBY IS UP
+*/30 * * * * $path/check_isready_HBASE.sh >  $path/check_isready_HBASE.log 2>&1
+
+cat $path/check_isready_HBASE.sh
+export ISREADY=`/usr/local/pgsql-$version/bin/pg_isready -h 127.0.0.1 -p $port`
+echo $ISREADY
+if [ "$ISREADY" = "127.0.0.1:$port - accepting connections" ] ;then
+        echo "Database Accepting connections OK!!"
+        export HBASETIMEOK0=`echo "STDB HBASE $port ACCEPTING CONNECTIONS OK"`
+#        curl -s -X POST https://api.telegram.org/<$id>/sendMessage -d chat_id=<$chat_id> -d text="$HBASETIMEOK0"
+elif [ "$ISREADY" = "127.0.0.1:$port - rejecting connections" ] ;then
+        echo "Database Not Accepting connections WARNING!!"
+        export HBASETIMEW=`echo "STDB HBASE $port NOT ACCEPTING CONNECTIONS WARNING"`
+        curl -s -X POST https://api.telegram.org/<$id>/sendMessage -d chat_id=<$chat_id> -d text="$HBASETIMEW"
+elif [ "$ISREADY" = "127.0.0.1:$port - no response" ] ;then
+        echo "Database off-line CRITICAL!!"
+        export HBASETIMEC=`echo "STDB HBASE $port OFF-LINE CRITICAL"`
+        curl -s -X POST https://api.telegram.org/<$id>/sendMessage -d chat_id=<$chat_id> -d text="$HBASETIMEC"
+fi
+
+#END    
