@@ -1,6 +1,6 @@
-+++++++++++++++++++++++++++++++++++++++++
-+    ENABLE STANDBY DATABASE POSTGRES   +
-+++++++++++++++++++++++++++++++++++++++++
+++++++++++++++++++++++++++++++++++++++++++
++    ENABLE STANDBY DATABASE POSTGRES 9  +
+++++++++++++++++++++++++++++++++++++++++++
 
 # Adjust parameters in postgresql.conf and pg_hba.conf files on master database 
 
