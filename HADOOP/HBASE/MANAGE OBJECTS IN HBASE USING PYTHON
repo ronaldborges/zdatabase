@@ -40,5 +40,12 @@ connection.open()
 connection.disable_table(b'testeTable')
 connection.delete_table(b'mytable')
 
+#INSERT ROWS TABLE
+python3
+import happybase
+connection = happybase.Connection('hadoopmaster1', 9090)
+table = connection.table('testeTable')
+table.put(b'1', {b'cf:nome': b'danilo',b'cf:idade': b'28'})
+
 
 
