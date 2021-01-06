@@ -1,6 +1,6 @@
-########################################
-#   SCAN TABLE IN HBASE USING PYTHON   #
-########################################
+############################################
+#   MANAGE OBJECTS IN HBASE USING PYTHON   #
+############################################
 
 #Run thrift on HADDOP CLUSTER
 nohup hbase thrift start &
