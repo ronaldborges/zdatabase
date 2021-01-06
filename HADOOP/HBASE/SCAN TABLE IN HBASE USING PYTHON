@@ -1,0 +1,16 @@
+########################################
+#   SCAN TABLE IN HBASE USING PYTHON   #
+########################################
+
+
+sudo apt-get install python3-pip
+pip3 install happybase
+
+python3
+import happybase
+connection = happybase.Connection('hadoopmaster1', 2181)
+table = connection.table('integrasus:saude_digital')
+for row in table.scan():
+  print(row)
+
+GET BOOK: https://bunker4.zlibcdn.com/dtoken/959e351072d5b9b9cd3a0a3d09cbf27f
