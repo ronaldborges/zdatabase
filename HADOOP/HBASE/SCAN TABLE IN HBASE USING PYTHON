@@ -2,10 +2,29 @@
 #   SCAN TABLE IN HBASE USING PYTHON   #
 ########################################
 
+#Run thrift on HADDOP CLUSTER
+nohup hbase thrift start &
 
+#INSTALL PYTHON DEPENDENCES
 sudo apt-get install python3-pip
 pip3 install happybase
 
+#LIST EXISTENT TABLES
+python3
+import happybase
+connection = happybase.Connection('hadoopmaster1', 9090)
+connection.open()
+print(connection.tables())
+
+#CREATE TABLE 
+python3
+import happybase
+connection = happybase.Connection('hadoopmaster1', 9090)
+connection.open()
+print(connection.tables())
+connection.create_table('testeTable',{'cf': dict(),})
+
+#SCAN TABLE 
 python3
 import happybase
 connection = happybase.Connection('hadoopmaster1', 9090)
@@ -13,6 +32,13 @@ table = connection.table('testeTable')
 for row in table.scan():
   print(row)
 
-GET BOOK: https://bunker4.zlibcdn.com/dtoken/959e351072d5b9b9cd3a0a3d09cbf27f
+#DELETE TABLE 
+python3
+import happybase
+connection = happybase.Connection('hadoopmaster1', 9090)
+connection.open()
+connection.disable_table(b'testeTable')
+connection.delete_table(b'mytable')
+
 
 
