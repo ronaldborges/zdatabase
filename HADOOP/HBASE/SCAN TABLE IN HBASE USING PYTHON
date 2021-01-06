@@ -8,9 +8,11 @@ pip3 install happybase
 
 python3
 import happybase
-connection = happybase.Connection('hadoopmaster1', 2181)
-table = connection.table('integrasus:saude_digital')
+connection = happybase.Connection('hadoopmaster1', 9090)
+table = connection.table('testeTable')
 for row in table.scan():
   print(row)
 
 GET BOOK: https://bunker4.zlibcdn.com/dtoken/959e351072d5b9b9cd3a0a3d09cbf27f
+
+
