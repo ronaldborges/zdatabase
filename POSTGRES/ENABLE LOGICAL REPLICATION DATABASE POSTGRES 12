@@ -77,6 +77,13 @@ SELECT * FROM pg_publication;
  89054 | $PUBLICATION_NAME  |       10 | f            | t         | t         | t         | f
 (1 row)
 
+SELECT  *  FROM pg_publication_tables; 
+      pubname       | schemaname |        tablename         
+--------------------+------------+--------------------------
+ $PUBLICATION_NAME  | $SCHEMA    | TABLE1
+ $PUBLICATION_NAME  | $SCHEMA    | TABLE2
+(2 rows)
+
 #CONNECT SUBSCRIPTION DATABASE
 /usr/local/pgsql-12.3/bin/psql -U postgres -d $PUBLICATION_DATABASE -h $IP_LOGICAL_SUBSCRIPTION -p $PORT
 
@@ -104,6 +111,8 @@ select * from pg_subscription;
  134787 |   16401 | $SUBSCRIPTION_NAME |       10 | t          | host=$IP_LOGICAL_PUBLICATION port=$PORT_LOGICAL_PUBLICATION user=$LOGICAL_REPLICATION_USER dbname=$PUBLICATION_DATABASE password=$PASSWORD | $SUBSCRIPTION_NAME | off           | {$PUBLICATION_NAME}
 (1 row)
 
+-------------------------------------------------------------------------------------------
+
 #CHANGE AN OBJECT ON PUBLICATION AND APPLY THAT CHANGE TO THE SUBSCRIPTION
 #DISABLE ALL SUBSCRIPTION
 ALTER SUBSCRIPTION $SUBSCRIPTION_NAME DISABLE;
@@ -120,7 +129,43 @@ ALTER SUBSCRIPTION $SUBSCRIPTION_NAME ENABLE;
 #REFRESH THE SUBSCRIPTION AND PUBLICATION
 ALTER SUBSCRIPTION $SUBSCRIPTION_NAME REFRESH PUBLICATION;
 
+-------------------------------------------------------------------------------------------
 
+#ADD NEW TABLE TO THE PUBLICATION
+#CONNECT ON PUBLICATION DATABASE 
+/usr/local/pgsql-12.3/bin/psql -U postgres -d $PUBLICATION_DATABASE
+
+#CREATE NEW TABLE ON $PUBLICATION_DATABASE
+CREATE TABLE $SCHEMA.TABLE3(
+	id_TABLE3 numeric(22) NOT NULL,
+	dat_upd timestamp NOT NULL DEFAULT now(),
+	CONSTRAINT pk_TABLE3 PRIMARY KEY (id_TABLE3)
+);
+
+#DISABLE ALL SUBSCRIPTION
+ALTER SUBSCRIPTION $SUBSCRIPTION_NAME DISABLE;
+
+#CREATE NEW TABLE ON SUBSCRIPTION
+CREATE TABLE $SCHEMA.TABLE3(
+	id_TABLE3 numeric(22) NOT NULL,
+	dat_upd timestamp NOT NULL DEFAULT now(),
+	CONSTRAINT pk_TABLE3 PRIMARY KEY (id_TABLE3)
+);
+
+#ADD TABLE TO THE PUBLICATION
+ALTER PUBLICATION $PUBLICATION_NAME ADD TABLE $SCHEMA.TABLE3;
+
+#ENABLE ALL SUBSCRIPTION
+ALTER SUBSCRIPTION $SUBSCRIPTION_NAME ENABLE;
+
+#REFRESH THE SUBSCRIPTION AND PUBLICATION
+ALTER SUBSCRIPTION $SUBSCRIPTION_NAME REFRESH PUBLICATION;
+
+#CHECK POSTGRES LOGS
+< 2021-01-12 10:34:04.804 -03 >LOG:  logical replication apply worker for subscription "$SUBSCRIPTION_NAME" will stop because the subscription was disabled
+< 2021-01-12 10:40:07.663 -03 >LOG:  logical replication apply worker for subscription "$SUBSCRIPTION_NAME" has started
+< 2021-01-12 10:40:28.750 -03 >LOG:  logical replication table synchronization worker for subscription "$SUBSCRIPTION_NAME", table "TABLE3" has started
+< 2021-01-12 10:40:28.789 -03 >LOG:  logical replication table synchronization worker for subscription "$SUBSCRIPTION_NAME", table "TABLE3" has finished
 
 
 
