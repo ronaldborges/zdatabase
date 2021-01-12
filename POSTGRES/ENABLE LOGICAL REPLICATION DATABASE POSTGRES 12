@@ -161,7 +161,7 @@ ALTER SUBSCRIPTION $SUBSCRIPTION_NAME ENABLE;
 #REFRESH THE SUBSCRIPTION AND PUBLICATION
 ALTER SUBSCRIPTION $SUBSCRIPTION_NAME REFRESH PUBLICATION;
 
-#CHECK POSTGRES LOGS
+#CHECK POSTGRES LOGS ON SUBSCRIPTION
 < 2021-01-12 10:34:04.804 -03 >LOG:  logical replication apply worker for subscription "$SUBSCRIPTION_NAME" will stop because the subscription was disabled
 < 2021-01-12 10:40:07.663 -03 >LOG:  logical replication apply worker for subscription "$SUBSCRIPTION_NAME" has started
 < 2021-01-12 10:40:28.750 -03 >LOG:  logical replication table synchronization worker for subscription "$SUBSCRIPTION_NAME", table "TABLE3" has started
