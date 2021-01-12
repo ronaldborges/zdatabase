@@ -17,6 +17,9 @@ Replicating between PostgreSQL instances on different platforms (for example Lin
 Giving access to replicated data to different groups of users.
 Sharing a subset of the database between multiple databases.
 
+#NOTE
+Best practices recommend that for each publication there is a subscription
+
 #INSTALL AND CONFIGURE NTP
 yum -y install ntp
 
