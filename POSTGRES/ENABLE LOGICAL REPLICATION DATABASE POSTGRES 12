@@ -1,0 +1,127 @@
++++++++++++++++++++++++++++++++++++++++++++++++++++++++
++    ENABLE LOGICAL REPLICATION DATABASE POSTGRES 12  +
++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+
+#NOTE
+Logical replication is based on logical analysis. 
+The core principle is that the main logic library parses the WAL log of the table in the Publication into a certain format 
+and sends it to the logical standby database. 
+The logical standby database Subscription receives the parsed WAL log and redo it to achieve Table data synchronization.
+Supported Versions: Current (13)/12/11/10
+The typical use-cases for logical replication are:
+Sending incremental changes in a single database or a subset of a database to subscribers as they occur.
+Firing triggers for individual changes as they arrive on the subscriber.
+Consolidating multiple databases into a single one (for example for analytical purposes).
+Replicating between different major versions of PostgreSQL.
+Replicating between PostgreSQL instances on different platforms (for example Linux to Windows)
+Giving access to replicated data to different groups of users.
+Sharing a subset of the database between multiple databases.
+
+#INSTALL AND CONFIGURE NTP
+yum -y install ntp
+
+systemctl enable ntpd
+
+ntpdate a.ntp.br
+ 3 Feb 11:42:15 ntpdate[3249]: step time server 200.160.0.8 offset 74.420798 sec
+
+vi /etc/ntp.conf 
+server a.ntp.br
+server b.ntp.br
+server c.ntp.br
+
+systemctl start ntpd
+
+systemctl status ntpd
+● ntpd.service - Network Time Service
+   Loaded: loaded (/usr/lib/systemd/system/ntpd.service; enabled; vendor preset: disabled)
+   Active: active (running) since Mon 2020-02-03 11:47:35 -03; 4s ago
+
+#CONFIGURE POSTGRESQL.CONF AND PG_HBA.CONF
+vim /dados/data/postgresql.conf
+wal_level = logical
+wal_buffers = 64MB
+max_wal_size = 1GB
+min_wal_size = 80MB
+checkpoint_completion_target = 0.9    
+archive_mode = on
+archive_command = 'gzip -c %p > /postgres/wals/%f.gz'
+archive_timeout = 600
+max_wal_senders = 10       
+wal_keep_segments = 32     
+wal_sender_timeout = 1800s 
+max_replication_slots = 10 
+track_commit_timestamp = on
+max_sync_workers_per_subscription = 5
+
+vim /dados/data/pg_hba.conf
+host    replication     postgres        $IP_PHYSICAL_REPLICATION/32         md5
+host    replication     replication     $IP_PHYSICAL_REPLICATION6/32        md5
+host    $PUBLICATION_DATABASE       $LOGICAL_REPLICATION_USER        $IP_LOGICAL_SUBSCRIPTION/32         md5
+
+systemctl restart postgresql.service
+
+#CONNECT ON PUBLICATION DATABASE 
+/usr/local/pgsql-12.3/bin/psql -U postgres -d $PUBLICATION_DATABASE
+
+#CREATE LOGICAL REPLICATION ROLE
+CREATE ROLE $LOGICAL_REPLICATION_USER WITH REPLICATION ENCRYPTED PASSWORD '*********' LOGIN;
+
+#CREATE PUBLICATION 
+create publication $PUBLICATION_NAME for table $SCHEMA.TABLE1, $SCHEMA.TABLE2 WITH (publish = 'insert,update,delete');
+
+#CHECK PUBLICATION
+SELECT * FROM pg_publication; 
+  oid  |      pubname       | pubowner | puballtables | pubinsert | pubupdate | pubdelete | pubtruncate 
+-------+--------------------+----------+--------------+-----------+-----------+-----------+-------------
+ 89054 | $PUBLICATION_NAME  |       10 | f            | t         | t         | t         | f
+(1 row)
+
+#CONNECT SUBSCRIPTION DATABASE
+/usr/local/pgsql-12.3/bin/psql -U postgres -d $PUBLICATION_DATABASE -h $IP_LOGICAL_SUBSCRIPTION -p $PORT
+
+#CREATE METADATA OF TABLES ON SUBSCRIPTION DATABASE
+drop table $SCHEMA.TABLE1;
+drop table $SCHEMA.TABLE2;
+create table $SCHEMA.TABLE1 (id int primary key, addr varchar(100)); 
+create table $SCHEMA.TABLE2 (id int primary key, timestamp NOT NULL DEFAULT now()); 
+
+#CREATE SUBSCRIPTION ON $SUBSCRIPTION_DATABASE
+CREATE SUBSCRIPTION paciente_seguranca CONNECTION 'host=$IP_LOGICAL_PUBLICATION port=$PORT_LOGICAL_PUBLICATION user=$LOGICAL_REPLICATION_USER dbname=$PUBLICATION_DATABASE password=$PASSWORD' PUBLICATION $PUBLICATION_NAME;
+
+#CHECK PUBLICATION SLOTS ON $PUBLICATION_DATABASE
+SELECT * FROM pg_replication_slots;
+     slot_name      |  plugin  | slot_type | datoid | database              | temporary | active | active_pid | xmin | catalog_xmin | restart_lsn | confirmed_flush_lsn 
+--------------------+----------+-----------+--------+-----------------------+-----------+--------+------------+------+--------------+-------------+---------------------
+ $SUBSCRIPTION_NAME | pgoutput | logical   |  16402 | $PUBLICATION_DATABASE | f         | t      |      18381 |      |    155235225 | 73/1F000028 | 73/20000000
+ segstandby         |          | physical  |        |                       | f         | t      |       4604 |      |              | 73/20000000 | 
+(2 rows)
+
+#CHECK SUBSCRIPTION STATUS
+select * from pg_subscription;
+  oid   | subdbid |      subname       | subowner | subenabled |                                      subconninfo                                                                                           |    subslotname     | subsynccommit |   subpublications    
+--------+---------+--------------------+----------+------------+--------------------------------------------------------------------------------------------------------------------------------------------+--------------------+---------------+----------------------
+ 134787 |   16401 | $SUBSCRIPTION_NAME |       10 | t          | host=$IP_LOGICAL_PUBLICATION port=$PORT_LOGICAL_PUBLICATION user=$LOGICAL_REPLICATION_USER dbname=$PUBLICATION_DATABASE password=$PASSWORD | $SUBSCRIPTION_NAME | off           | {$PUBLICATION_NAME}
+(1 row)
+
+#CHANGE AN OBJECT ON PUBLICATION AND APPLY THAT CHANGE TO THE SUBSCRIPTION
+#DISABLE ALL SUBSCRIPTION
+ALTER SUBSCRIPTION $SUBSCRIPTION_NAME DISABLE;
+
+#ADD AN NEW COLUMN TO THE TABLE ON PUBLICATION
+alter table $SCHEMA.TABLE1 add column dat_test timestamp NOT NULL DEFAULT now();
+
+#ADD AN NEW COLUMN TO THE TABLE ON SUBSCRIPTION
+alter table $SCHEMA.TABLE1 add column dat_test timestamp NOT NULL DEFAULT now();
+
+#ENABLE ALL SUBSCRIPTION
+ALTER SUBSCRIPTION $SUBSCRIPTION_NAME ENABLE;
+
+#REFRESH THE SUBSCRIPTION AND PUBLICATION
+ALTER SUBSCRIPTION paciente_seguranca REFRESH PUBLICATION;
+
+
+
+
+
+
