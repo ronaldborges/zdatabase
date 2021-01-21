@@ -1,0 +1,103 @@
++++++++++++++++++++++++++++++
++  INSTANCE READ-ONLY LOCK  +
++++++++++++++++++++++++++++++
+
+#NOTE
+In some scenarios, you may want to set the database to read-only mode. 
+For example, when the database needs to be migrated, when preparing for cutover, 
+the main database must first be switched to read-only (locked) to ensure that no new transactions will be written, resulting in data inconsistency.
+
+PostgreSQL provides 2 read-only locking methods:
+
+Hard lock : directly switch the database to Recovery Mode, and write operations are not allowed.
+Soft lock : Set system config default_transaction_read_only = on to enable read-only transactions and allow them to be cracked.
+
+#Hard lock
+
+1 - Configure recovery.conf
+
+cd $PGDATA
+vim recovery.conf
+recovery_target_timeline = 'latest'  
+standby_mode = on  
+
+1.1 - Restart the database
+
+pg_ctl restart -m fast  
+
+1.2 - Hard locks cannot be cracked
+
+postgres=# select pg_is_in_recovery();  
+ pg_is_in_recovery   
+-------------------  
+ t  
+(1 row)  
+  
+postgres=# insert into t1 values (1);  
+ERROR:  cannot execute INSERT in a read-only transaction  
+  
+postgres=# begin transaction read write;  
+ERROR:  cannot set transaction read-write mode during recovery  
+
+#Hard unlock
+
+1 - Rename recovery.conf to recovery.done
+
+cd $PGDATA  
+mv recovery.conf recovery.done  
+
+1.1 - Restart the database
+
+pg_ctl restart -m fast  
+
+--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+# Soft lock
+
+1 - Set default_transaction_read_only
+
+postgres=# alter system set default_transaction_read_only=on;  
+
+Overload configuration
+postgres=# select pg_reload_conf();  
+ pg_reload_conf   
+----------------  
+ t  
+(1 row)  
+
+postgres=# show default_transaction_read_only ;  
+ default_transaction_read_only   
+-------------------------------  
+ on  
+(1 row)  
+
+1.1 - All sessions automatically enter the read-only default transaction mode
+
+postgres=# insert into t1 values (1);  
+ERROR:  cannot execute INSERT in a read-only transaction  
+
+#Soft unlock
+
+1 - Set default_transaction_read_only
+postgres=# alter system set default_transaction_read_only=off;  
+
+1.1 - Overload configuration
+postgres=# select pg_reload_conf();  
+ pg_reload_conf   
+----------------  
+ t  
+(1 row)  
+
+postgres=# show default_transaction_read_only ;  
+ default_transaction_read_only   
+-------------------------------  
+ off  
+(1 row)  
+
+#Note
+The soft lock can be cracked, without reconfiguration, execute the command:
+
+postgres=# begin transaction read write;  
+BEGIN  
+
+
