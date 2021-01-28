@@ -82,6 +82,9 @@ yum install java-1.8.0-openjdk-devel.x86_64
 yum install python3 -y
 yum install -y ntp 
 
+#ADD DEFAULT METHOD CONNECTION
+echo "ssh" > /etc/pdsh/rcmd_default
+
 #CONFIGURE NTPD SERVICE ON ALL NODES
 vi /etc/ntp.conf 
 server a.ntp.br
@@ -278,7 +281,7 @@ vi ~/hadoop/etc/hadoop/mapred-site.xml
 </configuration>
 
 #ON ALL NODES, OPEN THE FILE YARN-SITE.XML TO CONFIGURE MEMORY OF YARN.
-vi ~hadoop/etc/hadoop/yarn-site.xml
+vi ~/hadoop/etc/hadoop/yarn-site.xml
 <configuration>
 <name>yarn.scheduler.minimum-allocation-mb</name> 
 <value>3072</value>
