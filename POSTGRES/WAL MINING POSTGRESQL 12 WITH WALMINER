@@ -1,0 +1,58 @@
+++++++++++++++++++++++++++++++++++++++++++++
++  WAL MINING POSTGRESQL 12 WITH WALMINER  +
+++++++++++++++++++++++++++++++++++++++++++++
+
+#SIMULATING WALS MINING IN EXECUTION TIME
+
+[postgres@localhost ~]$ /usr/local/pgsql-12.3/bin/psql -U postgres
+psql (12.3)
+Type "help" for help.
+
+postgres=# select pg_current_wal_lsn();
+ pg_current_wal_lsn 
+--------------------
+ 9E/3D00B6E8
+(1 row)
+
+postgres=# create table t200(i int);
+CREATE TABLE
+postgres=# insert into public.t200 values(10);
+INSERT 0 1
+postgres=# update public.t200 set i=20 where i=10;
+UPDATE 1
+postgres=# insert into public.t200 values(10);
+INSERT 0 1
+postgres=# insert into public.t200 values(30);
+INSERT 0 1
+postgres=# delete from public.t200 where i=20;
+DELETE 1
+postgres=# select pg_current_wal_lsn();
+ pg_current_wal_lsn 
+--------------------
+ 9E/3D018E50
+(1 row)
+
+postgres=# select wal2sql('/dados/data/pg_wal/'::text,'9E/3D00B6E8'::pg_lsn,'9E/3D018E50'::pg_lsn);
+NOTICE:  Get data dictionary from current database.
+NOTICE:  Change Wal Segment To:/dados/data/pg_wal/000000010000009E0000003B
+NOTICE:  wal record after time 2021-01-29 16:10:39-03 or 9e/3b034e30 will be analyse completely
+NOTICE:  Change Wal Segment To:/dados/data/pg_wal/000000010000009E0000003C
+NOTICE:  Change Wal Segment To:/dados/data/pg_wal/000000010000009E0000003D
+                                                                                                                  wal2sql                                                                                                                   
+--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+ (114412324,1,"2021-01-29 16:27:59.151136-03",postgres,postgres,pg_default,public,INSERT,"INSERT INTO ""public"".""t200""(""i"") VALUES(10);","DELETE FROM ""public"".""t200"" WHERE ""i""=10 AND ctid = '(0,1)';",9E/3D018BE8,9E/3D018C58)
+ (114412325,1,"2021-01-29 16:28:04.655594-03",postgres,postgres,pg_default,public,UPDATE,"UPDATE ""public"".""t200"" SET VALUES(20);",NULL,9E/3D018C58,9E/3D018CD0)
+ (114412326,1,"2021-01-29 16:28:10.100797-03",postgres,postgres,pg_default,public,INSERT,"INSERT INTO ""public"".""t200""(""i"") VALUES(10);","DELETE FROM ""public"".""t200"" WHERE ""i""=10 AND ctid = '(0,3)';",9E/3D018CD0,9E/3D018D40)
+ (114412327,1,"2021-01-29 16:28:17.412447-03",postgres,postgres,pg_default,public,INSERT,"INSERT INTO ""public"".""t200""(""i"") VALUES(30);","DELETE FROM ""public"".""t200"" WHERE ""i""=30 AND ctid = '(0,4)';",9E/3D018D40,9E/3D018DB0)
+ (114412328,1,"2021-01-29 16:28:25.574717-03",postgres,postgres,pg_default,public,DELETE,"DELETE FROM ""public"".""t200"" WHERE VALUES(NULL) (NOTICE:wal is not enough.);",NULL,9E/3D018DE8,9E/3D018E50)
+(5 rows)
+
+#NOTE
+DDL COMMANDS NOT MINED BY EXTENSION, LIKE CREATE, ALTER AND TRUNCATE
+
+
+
+
+
+
+
