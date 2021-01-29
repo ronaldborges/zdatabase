@@ -57,6 +57,175 @@ If wal_level is not logical or there is no primary key on the table, you can als
 Therefore, in principle, it is completely feasible to parse SQL from WAL. And there are already open source tools that can support this work.
 
 3. Tools
+https://gitee.com/skykiker/XLogMiner
 
 Use the revised walminer tool to parse WAL files.
 
+walminer is a very good tool that can parse raw SQL and undo SQL from WAL files.
+But the current native walminer still has some problems to support this scene, and the speed of parsing WAL files is very slow.
+
+The revised walminer branch adds a parsing function based on the location of the LSN, while fixing some bugs, 
+and the speed of parsing WAL files is also increased by about 10 times.
+I hope that some of the changes will be merged into the main branch of Walminer.
+
+3.1 Precondition
+  1 - WAL log files after the fork point are not cleared
+    Normal is enough. You can also set reasonable wal_keep_segments parameters to keep more WAL in the pg_wal directory. such as:
+    wal_keep_segments=100
+    If WAL archiving is configured, you can also use WAL in the archive directory.
+  2 - WAL log level is set to logical
+    wal_level=logical
+  3- The table has a primary key or replica identity key/replica identity full is set
+  4- The table definition has not changed after the bifurcation point
+    Note: If the above conditions 2 and 3 are not met, it can actually be supported, 
+    but all WALs after the previous checkpint of the fork point need to be retained and analyzed.
+
+4 - Use demo
+
+4.1 Environmental preparation
+Build an HA cluster with one master and one backup asynchronous replication
+
+  machine:
+
+  node1 (main)
+  node2 (standby)
+  
+  software:
+
+  PostgreSQL 12
+  parameter:
+
+  wal_level=logical
+
+4.2 Install walminer plugin
+  wget https://gitee.com/skykiker/XLogMiner/repository/archive/master.zip
+  mv master.zip skykiker-XLogMiner-master.zip
+  unzip skykiker-XLogMiner-master.zip
+  cd XLogMiner/walminer
+  vim Makefile
+
+  # contrib/walminer/Makefile
+
+  MODULE_big      = walminer
+  OBJS            = pg_logminer.o logminer.o organizsql.o xlogreader_logminer.o datadictionary.o xlogminer_contents.o
+
+  EXTENSION = walminer
+  DATA = walminer--1.0.sql
+
+  TESTS        = $(wildcard sql/*.sql)
+  REGRESS      = $(patsubst sql/%.sql,%,$(TESTS))
+
+  #ifdef USE_PGXS
+  PG_CONFIG = /usr/local/pgsql-12.3/bin/pg_config
+  PGXS := $(shell $(PG_CONFIG) --pgxs)
+  PG_VERSION := $(shell $(PG_CONFIG) --version)
+
+  ifeq ($(findstring PostgreSQL 12,$(PG_VERSION)), PostgreSQL 12)
+        PG_CPPFLAGS = -DPG_VERSION_12
+  endif
+
+  ifeq ($(findstring PostgreSQL 11,$(PG_VERSION)), PostgreSQL 11)
+        PG_CPPFLAGS = -DPG_VERSION_11
+  endif
+
+  include $(PGXS)
+  #else
+  #subdir = contrib/walminer
+  #top_builddir = ../..
+  #include $(top_builddir)/src/Makefile.global
+  #include $(top_srcdir)/contrib/contrib-global.mk
+  #endif
+
+  make
+  make install
+
+  Create walminer extension in the main library
+
+  /usr/local/pgsql-12.3/bin/psql -U postgres -c "create extension walminer;"
+
+4.3 Create test table
+  create table tb1(id int primary key, c1 text);
+  insert into tb1 select id,'xxx' from generate_series(1,10000) id;
+
+4.4 Simulate business load
+  Prepare test script
+  test.sql
+
+    \set id1 random(1,10000)
+    \set id2 random(1,10000)
+    insert into tb1 values(:id1,'yyy') on conflict (id) do update set c1=excluded.c1;
+    delete from tb1 where id=:id2;
+
+  Execute test scripts in the main library to simulate business load
+
+  pgbench -c 8 -j 8 -T 1000 -f test.sql
+
+4.5 Simulate main library downtime
+
+Kill the PG process in the main library
+  killall -9 postgres
+
+4.6 Promote the standby database to the new master
+
+Perform upgrade operations in the standby database
+  pg_ctl promote
+
+View the timeline bifurcation point when switching
+
+[postgres@stdb ~]$ tail -1 /pgsql/data10/pg_wal/00000002.history
+1 0/EF76440 no recovery target specified
+4.7 Retrieve lost data in the old main database
+After starting the old main library, call the wal2sql() function to retrieve all SQL executed by the committed transaction on the old main library after the fork.
+
+  postgres=# select xid,timestamptz,op_text from wal2sql(NULL,'0/EF76440') ;
+  NOTICE:  Get data dictionary from current database.
+  NOTICE:  Wal file "/pgsql/data10/pg_wal/00000001000000000000000F" is not match with datadictionary.
+  NOTICE:  Change Wal Segment To:/pgsql/data10/pg_wal/00000001000000000000000C
+  NOTICE:  Change Wal Segment To:/pgsql/data10/pg_wal/00000001000000000000000D
+  NOTICE:  Change Wal Segment To:/pgsql/data10/pg_wal/00000001000000000000000E
+    xid   |          timestamptz          |                           op_text                           
+  --------+-------------------------------+-------------------------------------------------------------
+   938883 | 2020-03-31 17:12:10.331487+08 | DELETE FROM "public"."tb1" WHERE "id"=7630;
+   938884 | 2020-03-31 17:12:10.33149+08  | INSERT INTO "public"."tb1"("id", "c1") VALUES(5783, 'yyy');
+   938885 | 2020-03-31 17:12:10.331521+08 | DELETE FROM "public"."tb1" WHERE "id"=3559;
+   938886 | 2020-03-31 17:12:10.331586+08 | UPDATE "public"."tb1" SET "c1" = 'yyy' WHERE "id"=7585;
+   938887 | 2020-03-31 17:12:10.331615+08 | UPDATE "public"."tb1" SET "c1" = 'yyy' WHERE "id"=973;
+   938888 | 2020-03-31 17:12:10.331718+08 | INSERT INTO "public"."tb1"("id", "c1") VALUES(7930, 'yyy');
+   938889 | 2020-03-31 17:12:10.33173+08  | UPDATE "public"."tb1" SET "c1" = 'yyy' WHERE "id"=1065;
+   938890 | 2020-03-31 17:12:10.331741+08 | INSERT INTO "public"."tb1"("id", "c1") VALUES(2627, 'yyy');
+   938891 | 2020-03-31 17:12:10.331766+08 | UPDATE "public"."tb1" SET "c1" = 'yyy' WHERE "id"=1012;
+   938892 | 2020-03-31 17:12:10.33178+08  | INSERT INTO "public"."tb1"("id", "c1") VALUES(4740, 'yyy');
+   938893 | 2020-03-31 17:12:10.331814+08 | DELETE FROM "public"."tb1" WHERE "id"=4275;
+   938894 | 2020-03-31 17:12:10.331892+08 | UPDATE "public"."tb1" SET "c1" = 'yyy' WHERE "id"=8651;
+   938895 | 2020-03-31 17:12:10.33194+08  | UPDATE "public"."tb1" SET "c1" = 'yyy' WHERE "id"=9313;
+   938896 | 2020-03-31 17:12:10.331967+08 | DELETE FROM "public"."tb1" WHERE "id"=3251;
+   938897 | 2020-03-31 17:12:10.332001+08 | DELETE FROM "public"."tb1" WHERE "id"=2968;
+   938898 | 2020-03-31 17:12:10.332025+08 | INSERT INTO "public"."tb1"("id", "c1") VALUES(5331, 'yyy');
+   938899 | 2020-03-31 17:12:10.332042+08 | UPDATE "public"."tb1" SET "c1" = 'yyy' WHERE "id"=3772;
+   938900 | 2020-03-31 17:12:10.332048+08 | INSERT INTO "public"."tb1"("id", "c1") VALUES(94, 'yyy');
+  (18 rows)
+
+  Time: 2043.380 ms (00:02.043)
+  
+  The output of wal2sql() above is sorted according to the order in which the transactions were submitted in the WAL. 
+  These SQL can be imported into a file and provided to the business repair order.
+
+4.8 Restore old master
+
+You can quickly roll back the excess data of the old master through pg_rewind, and then rebuild the replication relationship as the standby database of the new master to restore HA.
+
+5. Summary
+
+With the help of the revised walminer, you can easily and quickly retrieve lost data after a PostgreSQL failover.
+
+In addition to generating forward SQL, walminer can also generate reverse undo SQL, which is known as the flashback function.
+For the generation method and usage restrictions of undo SQL, please refer to the open source project documentation.
+
+However, when used as a flashback function, Walminer still needs further improvement, 
+the most obvious is the resolution speed.
+Because the complete analysis of undo SQL from WAL records requires replica identity full to be turned on, 
+and many systems may not turn on the replica identity full setting for each table.
+Without replica identity full, generating undo SQL must rely on historical FPI.
+
+Although the revised version of walminer has improved the parsing speed many times, 
+if faced with dozens of GB of WAL files, parsing and collecting all historical FPIs, resource and time consumption is still a big problem.
