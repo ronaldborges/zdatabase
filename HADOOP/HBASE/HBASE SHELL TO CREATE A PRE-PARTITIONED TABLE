@@ -1,0 +1,113 @@
++++++++++++++++++++++++++++++++++++++++++++++++++++++
++   HBASE SHELL TO CREATE A PRE-PARTITIONED TABLE   +
++++++++++++++++++++++++++++++++++++++++++++++++++++++
+
+#NOTE
+When creating a table using the HBase Shell create command, you can use a variety of options to pre-partition the table. 
+The easiest way is to specify a matrix of split points when creating the table.
+
+When specifying string text as split points, these split points will be created based on the underlying byte representation of the string.
+Therefore, when specifying a split point as '10', it is actually dividing '\ x31 \ 30' by the specified byte.
+The split point will define n + 1 regions, where n is the number of split points. The smallest region will contain all keys, 
+from the smallest possible key to the first split point key (not including the first key). 
+The next region will contain the keys from the first split point to the next split point, but not the keys from the next split point. 
+And so on until the division is completed. The last region will be defined from the last division point to the highest possible tone.
+
+hadoop@hadoopmaster1:~$ hbase shell
+HBase Shell
+Use "help" to get list of supported commands.
+Use "exit" to quit this interactive shell.
+For Reference, please visit: http://hbase.apache.org/2.0/book.html#shell
+Version 2.2.6, r88c9a386176e2c2b5fd9915d0e9d3ce17d0e456e, Tue Sep 15 17:36:14 CST 2020
+hbase> create 't1','f',SPLITS => ['10','20','30']
+
+In the following example, a table t1 from the column f cluster is created, 
+pre-divided into 4 regions, and the first region contains all the keys from '\ x00' - '\ x30' ('\ x31' is in ASCII code 1) .
+You can use SPLITS_FILE to specify a text file and write split points to the file. 
+In this example, the partition is read from the file corresponding to the local path on the local file system. 
+Each line in the file specifies a split point switch.
+
+hadoop@hadoopmaster1:~$ hbase shell
+HBase Shell
+Use "help" to get list of supported commands.
+Use "exit" to quit this interactive shell.
+For Reference, please visit: http://hbase.apache.org/2.0/book.html#shell
+Version 2.2.6, r88c9a386176e2c2b5fd9915d0e9d3ce17d0e456e, Tue Sep 15 17:36:14 CST 2020
+hbase> create 't14','f',SPLITS_FILE=>'splits.txt'
+
+The other option is to automatically calculate segmentation based on the number of regions required and the segmentation algorithm. 
+HBase provides algorithms for dividing the range of keys based on uniform division or hexadecimal keys, 
+or it can provide its own division algorithm for subdividing the range of keys.
+
+# Create a table with 4 default partitions based on a random algorithm
+hadoop@hadoopmaster1:~$ hbase shell
+HBase Shell
+Use "help" to get list of supported commands.
+Use "exit" to quit this interactive shell.
+For Reference, please visit: http://hbase.apache.org/2.0/book.html#shell
+Version 2.2.6, r88c9a386176e2c2b5fd9915d0e9d3ce17d0e456e, Tue Sep 15 17:36:14 CST 2020
+hbase> create't2','f1', {NUMREGIONS => 4, SPLITALGO =>'UniformSplit'}
+ 
+# Create a table with 5 default partitions based on hex keys
+hadoop@hadoopmaster1:~$ hbase shell
+HBase Shell
+Use "help" to get list of supported commands.
+Use "exit" to quit this interactive shell.
+For Reference, please visit: http://hbase.apache.org/2.0/book.html#shell
+Version 2.2.6, r88c9a386176e2c2b5fd9915d0e9d3ce17d0e456e, Tue Sep 15 17:36:14 CST 2020
+hbase> create'app_second_card_trmnl_info_m_hbase_new_fenqu2','f1', {NUMREGIONS => 500, SPLITALGO =>'HexStringSplit'}
+
+#NUMREGIONS description:
+
+The default size of the Hbase file is 10G (hbase.hregion.max.filesize = 10737418240 = 10G)
+The source data is Hive: recommended partition number ≈ size HDFS / 10G * 10 * 1.2
+
+  Description of HexStringSplit, UniformSplit, DecimalStringSplit:
+
+    º UniformSplit (occupies a small space, the prefix rowkey is completely random): an aggregate that divides the space of possible keys equally. 
+      It is recommended to use this when the key has approximately consistent random bytes (such as a hash). 
+      The lines are raw byte values in the range 00 => FF, padded to the right with 0 to maintain the same memcmp () order. 
+      For the byte [] environment, this is a natural algorithm that can save space, but it is not necessarily the easiest for readability.
+    º HexStringSplit (occupying a large space, rowkey hexadecimal string as prefix): HexStringSplit is a RegionSplitter.SplitAlgorithm - typical selection border region. 
+      The format of the HexStringSplit region boundary is the ASCII representation of the MD5 checksum or any other evenly distributed hexadecimal value. 
+      Line is a long value in hexadecimal encoding and its range is "00000000" => "FFFFFFFF", 
+      and the left is filled with 0 to keep it in the same order as the binary in the dictionary. 
+      Since this segmentation algorithm uses hexadecimal strings as keys, it is convenient to read and write in the shell, 
+      but it takes up more space and may not be intuitive.
+    º DecimalStringSplit: rowkey is a string of decimal digits as a prefix
+
+HBase Shell is actually a Ruby environment, you can use simple Ruby scripts to calculate the segmentation algorithm.
+
+hadoop@hadoopmaster1:~$ hbase shell
+HBase Shell
+Use "help" to get list of supported commands.
+Use "exit" to quit this interactive shell.
+For Reference, please visit: http://hbase.apache.org/2.0/book.html#shell
+Version 2.2.6, r88c9a386176e2c2b5fd9915d0e9d3ce17d0e456e, Tue Sep 15 17:36:14 CST 2020
+Took 0.0044 seconds                                                                                                                                                                                                                                                                                                  
+hbase(main):001:0> def gen_splits(start_key,end_key,num_regions)
+hbase(main):002:1> results=[]
+hbase(main):003:1> range=end_key-start_key
+hbase(main):004:1> incr=(range/num_regions).floor
+hbase(main):005:1> for i in 1 .. num_regions-1
+hbase(main):006:2> results.push([i*incr+start_key].pack("N"))
+hbase(main):007:2> end
+hbase(main):008:1> return results
+hbase(main):009:1> end
+=> :gen_splits
+hbase(main):010:0> splits=gen_splits(1,2000000,10)
+=> ["\x00\x03\r@", "\x00\x06\x1A\x7F", "\x00\t'\xBE", "\x00\f4\xFD", "\x00\x0FB<", "\x00\x12O{", "\x00\x15\\\xBA", "\x00\x18i\xF9", "\x00\ew8"]
+hbase(main):011:0> create 'test_splits','f',SPLITS=>splits
+Created table test_splits
+Took 5.0716 seconds                                                                                                                                                                                                                                                                                                  
+=> Hbase::Table - test_splits
+hbase(main):012:0> 
+
+#NOTE
+The HBase Shell truncate command deletes and recreates the table with the default options. 
+The default options will discard any pre-division. If you need to redefine the pre-partitioned table, 
+you must explicitly delete and recreate the table to re-specify custom partitioning options.
+
+When building a table, pre-partitioning the table can prevent a single partition from writing very large data at a time. 
+The hbase cluster itself did not have time to split automatically, causing the region's downtime problem.
+
