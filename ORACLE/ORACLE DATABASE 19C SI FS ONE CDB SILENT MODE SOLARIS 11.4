@@ -527,6 +527,25 @@ APPSPDB                                                                         
 
 SQL> exit
 
+#PLUGGABLE DATABASE (PDB) AUTOMATIC STARTUP
+sqlplus / as sysdba
+
+SQL*Plus: Release 19.0.0.0.0 - Production on Tue Feb 2 18:16:16 2021
+Version 19.3.0.0.0
+
+Copyright (c) 1982, 2019, Oracle.  All rights reserved.
+
+
+Connected to:
+Oracle Database 19c Enterprise Edition Release 19.0.0.0.0 - Production
+Version 19.3.0.0.0
+
+SQL> CREATE OR REPLACE TRIGGER open_pdbs 
+  AFTER STARTUP ON DATABASE 
+BEGIN 
+   EXECUTE IMMEDIATE 'ALTER PLUGGABLE DATABASE ALL OPEN'; 
+END open_pdbs;
+/
 
 
 
