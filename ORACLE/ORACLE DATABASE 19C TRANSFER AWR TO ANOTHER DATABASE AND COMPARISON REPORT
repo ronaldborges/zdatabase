@@ -1,0 +1,465 @@
+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
++  ORACLE DATABASE 19C TRANSFER AWR TO ANOTHER DATABASE AND COMPARISON REPORT  +
+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+
+#EXTRACT FROM SOURCE DB
+
+¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨
+[oracle@ol7db1]$ sqlplus / as sysdba
+
+SQL*Plus: Release 19.0.0.0.0 - Production on Sat Sep 26 09:58:19 2020
+Version 19.8.0.0.0
+
+Copyright (c) 1982, 2020, Oracle.  All rights reserved.
+
+
+Connected to:
+Oracle Database 19c Enterprise Edition Release 19.0.0.0.0 - Production
+Version 19.8.0.0.0
+
+SQL> @?/rdbms/admin/awrextr.sql
+~~~~~~~~~~~~~
+AWR EXTRACT
+~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+~  This script will extract the AWR data for a range of snapshots  ~
+~  into a dump file.  The script will prompt users for the         ~
+~  following information:                                          ~
+~     (1) database id                                              ~
+~     (2) snapshot range to extract                                ~
+~     (3) name of directory object                                 ~
+~     (4) name of dump file                                        ~
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+
+Databases in this Workload Repository schema
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+   DB Id     DB Name      Host
+------------ ------------ ------------
+* 3670937227 appscdb1     ol7db1
+
+The default database id is the local one: '3670937227'.  To use this
+database id, press <return> to continue, otherwise enter an alternative.
+
+Enter value for dbid: 3670937227
+
+Using 3670937227 for Database ID
+
+
+Specify the number of days of snapshots to choose from
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Entering the number of days (n) will result in the most recent
+(n) days of snapshots being listed.  Pressing <return> without
+specifying a number lists all completed snapshots.
+
+
+Enter value for num_days: 2
+
+Listing the last 2 days of Completed Snapshots
+
+DB Name        Snap Id    Snap Started
+------------ --------- ------------------
+appscdb1           952 25 Sep 2020 00:00
+                   953 25 Sep 2020 01:00
+                   954 25 Sep 2020 02:00
+                   955 25 Sep 2020 03:00
+                   956 25 Sep 2020 04:00
+                   957 25 Sep 2020 05:00
+                   958 25 Sep 2020 06:00
+                   959 25 Sep 2020 07:00
+                   960 25 Sep 2020 08:00
+                   961 25 Sep 2020 09:00
+                   962 25 Sep 2020 10:00
+
+DB Name        Snap Id    Snap Started
+------------ --------- ------------------
+appscdb1           963 25 Sep 2020 11:00
+                   964 25 Sep 2020 12:00
+                   965 25 Sep 2020 13:00
+                   966 25 Sep 2020 14:00
+                   967 25 Sep 2020 15:00
+                   968 25 Sep 2020 16:00
+                   969 25 Sep 2020 17:00
+                   970 25 Sep 2020 18:00
+                   971 25 Sep 2020 19:00
+                   972 25 Sep 2020 20:00
+                   973 25 Sep 2020 21:00
+
+DB Name        Snap Id    Snap Started
+------------ --------- ------------------
+appscdb1           974 25 Sep 2020 22:00
+                   975 25 Sep 2020 23:00
+                   976 26 Sep 2020 00:00
+                   977 26 Sep 2020 01:00
+                   978 26 Sep 2020 02:00
+                   979 26 Sep 2020 03:00
+                   980 26 Sep 2020 04:00
+                   981 26 Sep 2020 05:00
+                   982 26 Sep 2020 06:00
+                   983 26 Sep 2020 07:00
+                   984 26 Sep 2020 08:00
+
+DB Name        Snap Id    Snap Started
+------------ --------- ------------------
+appscdb1           985 26 Sep 2020 09:00
+
+
+Specify the Begin and End Snapshot Ids
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Enter value for begin_snap: 970
+Begin Snapshot Id specified: 970
+
+Enter value for end_snap: 982
+End   Snapshot Id specified: 982
+
+
+Specify the Directory Name
+~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Directory Name                 Directory Path
+------------------------------ -------------------------------------------------
+DATA_PUMP_DIR                  /u01/app/oracle/admin/omsrepo/dpdump/
+DBMS_OPTIM_ADMINDIR            /u01/db/rdbms/admin
+DBMS_OPTIM_LOGDIR              /u01/db/cfgtoollogs
+JAVA$JOX$CUJS$DIRECTORY$       /u01/db/javavm/admin/
+OPATCH_INST_DIR                /u01/db/OPatch
+OPATCH_LOG_DIR                 /u01/db/rdbms/log
+OPATCH_SCRIPT_DIR              /u01/db/QOpatch
+ORACLE_BASE                    /u01/app/oracle
+ORACLE_HOME                    /u01/db
+ORACLE_OCM_CONFIG_DIR          /u01/db/ccr/state
+ORACLE_OCM_CONFIG_DIR2         /u01/db/ccr/state
+
+Directory Name                 Directory Path
+------------------------------ -------------------------------------------------
+SDO_DIR_ADMIN                  /u01/db/md/admin
+SDO_DIR_WORK
+XMLDIR                         /u01/db/rdbms/xml
+XSDDIR                         /u01/db/rdbms/xml/schema
+
+Choose a Directory Name from the above list (case-sensitive).
+
+Enter value for directory_name: DATA_PUMP_DIR
+
+Using the dump directory: DATA_PUMP_DIR
+
+Specify the Name of the Extract Dump File
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+The prefix for the default dump file name is awrdat_970_982.
+To use this name, press <return> to continue, otherwise enter
+an alternative.
+
+Enter value for file_name: omsrepo_awrdat_970_982
+
+Using the dump file prefix: omsrepo_awrdat_970_982
+|
+| ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+|  The AWR extract dump file will be located
+|  in the following directory/file:
+|   /u01/app/oracle/admin/appscdb1/dpdump/appscdb1_awrdat_970_982.dmp
+| ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+|
+|  *** AWR Extract Started ...
+|
+|  This operation will take a few moments. The
+|  progress of the AWR extract operation can be
+|  monitored in the following directory/file:
+|   /u01/app/oracle/admin/appscdb1/dpdump/appscdb1_awrdat_970_982.log
+|
+
+End of AWR Extract
+SQL> exit
+Disconnected from Oracle Database 19c Enterprise Edition Release 19.0.0.0.0 - Production
+Version 19.8.0.0.0
+
+¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨
+
+#COPY TO TARGET DB
+Copy /u01/app/oracle/admin/appscdb1/dpdump/appscdb1_awrdat_970_982.dmp to target datapump directory.
+
+#LOAD TO TARGET DB
+
+¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨
+[oracle@ol7db2]$ sqlplus / as sysdba
+
+SQL*Plus: Release 19.0.0.0.0 - Production on Sat Sep 26 10:24:37 2020
+Version 19.8.0.0.0
+
+Copyright (c) 1982, 2020, Oracle.  All rights reserved.
+
+
+Connected to:
+Oracle Database 19c Enterprise Edition Release 19.0.0.0.0 - Production
+Version 19.8.0.0.0
+
+SQL> @?/rdbms/admin/awrload.sql
+~~~~~~~~~~
+AWR LOAD
+~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+~  This script will load the AWR data from a dump file. The   ~
+~  script will prompt users for the following information:    ~
+~     (1) name of directory object                            ~
+~     (2) name of dump file                                   ~
+~     (3) staging schema name to load AWR data into           ~
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Specify the Directory Name
+~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Directory Name                 Directory Path
+------------------------------ -------------------------------------------------
+DATA_PUMP_DIR                  /u01/app/oracle/admin/ORCL/dpdump/
+DBMS_OPTIM_ADMINDIR            /u01/db/rdbms/admin
+DBMS_OPTIM_LOGDIR              /u01/db/cfgtoollogs
+JAVA$JOX$CUJS$DIRECTORY$       /u01/db/javavm/admin/
+OPATCH_INST_DIR                /u01/db/OPatch
+OPATCH_LOG_DIR                 /u01/db/rdbms/log
+OPATCH_SCRIPT_DIR              /u01/db/QOpatch
+ORACLE_BASE                    /u01/app/oracle
+ORACLE_HOME                    /u01/db
+ORACLE_OCM_CONFIG_DIR          /u01/db/ccr/state
+ORACLE_OCM_CONFIG_DIR2         /u01/db/ccr/state
+
+Directory Name                 Directory Path
+------------------------------ -------------------------------------------------
+SDO_DIR_ADMIN                  /u01/db/md/admin
+SDO_DIR_WORK
+XMLDIR                         /u01/db/rdbms/xml
+XSDDIR                         /u01/db/rdbms/xml/schema
+
+Choose a Directory Name from the list above (case-sensitive).
+
+Enter value for directory_name: DATA_PUMP_DIR
+
+Using the dump directory: DATA_PUMP_DIR
+
+Specify the Name of the Dump File to Load
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Please specify the prefix of the dump file (.dmp) to load:
+
+Enter value for file_name: appscdb1_awrdat_970_982
+
+Loading from the file name: appscdb1_awrdat_970_982.dmp
+
+Staging Schema to Load AWR Snapshot Data
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+The next step is to create the staging schema
+where the AWR snapshot data will be loaded.
+After loading the data into the staging schema,
+the data will be transferred into the AWR tables
+in the SYS schema.
+
+
+The default staging schema name is C##AWR_STAGE.
+To use this name, press <return> to continue, otherwise enter
+an alternative.
+
+Enter value for schema_name:
+
+Using the staging schema name: C##AWR_STAGE
+
+Choose the Default tablespace for the C##AWR_STAGE user
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Choose the C##AWR_STAGE users's default tablespace.  This is the
+tablespace in which the AWR data will be staged.
+
+TABLESPACE_NAME                CONTENTS              DEFAULT TABLESPACE
+------------------------------ --------------------- ------------------
+SYSAUX                         PERMANENT             *
+USERS                          PERMANENT
+
+Pressing <return> will result in the recommended default
+tablespace (identified by *) being used.
+
+Enter value for default_tablespace:
+
+Using tablespace SYSAUX as the default tablespace for the C##AWR_STAGE
+
+
+Choose the Temporary tablespace for the C##AWR_STAGE user
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Choose the C##AWR_STAGE user's temporary tablespace.
+
+TABLESPACE_NAME                CONTENTS              DEFAULT TEMP TABLESPACE
+------------------------------ --------------------- -----------------------
+TEMP                           TEMPORARY             *
+
+Pressing <return> will result in the database's default temporary
+tablespace (identified by *) being used.
+
+Enter value for temporary_tablespace:
+
+Using tablespace TEMP as the temporary tablespace for C##AWR_STAGE
+
+
+
+
+... Creating C##AWR_STAGE user
+
+|
+| ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+|  Loading the AWR data from the following
+|  directory/file:
+|   /u01/app/oracle/admin/appscdb2/dpdump/appscdb1_awrdat_970_982.dmp
+| ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+|
+|  *** AWR Load Started ...
+|
+|  This operation will take a few moments. The
+|  progress of the AWR load operation can be
+|  monitored in the following directory/file:
+|   /u01/app/oracle/admin/appscdb2/dpdump/appscdb1_awrdat_970_982.log
+|
+... Dropping C##AWR_STAGE user
+
+End of AWR Load
+SQL> exit
+Disconnected from Oracle Database 19c Enterprise Edition Release 19.0.0.0.0 - Production
+Version 19.8.0.0.0
+
+¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨
+
+#RUN AWR COMPARISON REPORT
+
+¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨
+[oracle@ol7db2]$ sqlplus / as sysdba
+
+SQL*Plus: Release 19.0.0.0.0 - Production on Sat Sep 26 10:31:08 2020
+Version 19.8.0.0.0
+
+Copyright (c) 1982, 2020, Oracle.  All rights reserved.
+
+
+Connected to:
+Oracle Database 19c Enterprise Edition Release 19.0.0.0.0 - Production
+Version 19.8.0.0.0
+
+SQL> @?/rdbms/admin/awrddrpi.sql
+
+ Specify the Report Type
+ ~~~~~~~~~~~~~~~~~~~~~~~
+ Would you like an HTML report, or a plain text report?
+ Enter 'html' for an HTML report, or 'text' for plain text
+  Defaults to 'html'
+Enter value for report_type:
+
+
+
+Type Specified: html
+
+
+
+
+
+Instances in this Workload Repository schema
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  DB Id      Inst Num   DB Name      Instance     Host
+------------ ---------- ---------    ----------   ------
+  3670937227     1      appscdb1      appscdb1    ol7db1
+* 1571399556     1      appscdb2      appscdb2    ol7db2
+
+Database Id and Instance Number for the First Pair of Snapshots
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Enter value for dbid: 1571399556
+Using 1571399556 for Database Id for the first pair of snapshots
+Enter value for inst_num: 1
+Using 1 for Instance Number for the first pair of snapshots
+
+
+Specify the number of days of snapshots to choose from
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Entering the number of days (n) will result in the most recent
+(n) days of snapshots being listed.  Pressing <return> without
+specifying a number lists all completed snapshots.
+
+
+Enter value for num_days: 1
+
+Listing the last day's Completed Snapshots
+Instance     DB Name      Snap Id       Snap Started    Snap Level
+------------ ------------ ---------- ------------------ ----------
+
+ORCL         ORCL                27  26 Sep 2020 00:00    1
+                                 28  26 Sep 2020 01:00    1
+                                 29  26 Sep 2020 02:00    1
+                                 30  26 Sep 2020 03:00    1
+                                 31  26 Sep 2020 04:00    1
+                                 32  26 Sep 2020 05:00    1
+                                 33  26 Sep 2020 06:00    1
+                                 34  26 Sep 2020 07:00    1
+                                 35  26 Sep 2020 08:00    1
+                                 36  26 Sep 2020 09:00    1
+                                 37  26 Sep 2020 10:00    1
+
+
+Specify the First Pair of Begin and End Snapshot Ids
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Enter value for begin_snap: 28
+First Begin Snapshot Id specified: 28
+
+Enter value for end_snap: 29
+First End   Snapshot Id specified: 29
+
+
+
+
+Instances in this Workload Repository schema
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  DB Id      Inst Num   DB Name      Instance     Host
+------------ ---------- ---------    ----------   ------
+  3670937227     1      appscdb1      appscdb1    ol7db1
+* 1571399556     1      appscdb2      appscdb2    ol7db2
+
+
+
+
+Database Id and Instance Number for the Second Pair of Snapshots
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Enter value for dbid2: 3670937227
+Using 3670937227 for Database Id for the second pair of snapshots
+Enter value for inst_num2: 1
+Using 1 for Instance Number for the second pair of snapshots
+
+
+Specify the number of days of snapshots to choose from
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Entering the number of days (n) will result in the most recent
+(n) days of snapshots being listed.  Pressing <return> without
+specifying a number lists all completed snapshots.
+
+
+Enter value for num_days2: 1
+
+Listing the last day's Completed Snapshots
+                                976  26 Sep 2020 00:00    1
+                                977  26 Sep 2020 01:00    1
+                                978  26 Sep 2020 02:00    1
+                                979  26 Sep 2020 03:00    1
+                                980  26 Sep 2020 04:00    1
+                                981  26 Sep 2020 05:00    1
+                                982  26 Sep 2020 06:00    1
+
+
+Specify the Second Pair of Begin and End Snapshot Ids
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Enter value for begin_snap2: 977
+Second Begin Snapshot Id specified: 977
+
+Enter value for end_snap2: 978
+Second End   Snapshot Id specified: 978
+
+
+
+Specify the Report Name
+~~~~~~~~~~~~~~~~~~~~~~~
+The default report file name is awrdiff_1_28_1_977.html  To use this name,
+press <return> to continue, otherwise enter an alternative.
+
+Enter value for report_name: awrdiff_appscdb1_1_28_appscdb2_1_977.html
+
+Using the report name awrdiff_appscdb1_1_28_appscdb2_1_977.html
+<omit outout...>
+
