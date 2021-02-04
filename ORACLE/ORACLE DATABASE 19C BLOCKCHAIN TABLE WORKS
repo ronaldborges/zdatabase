@@ -1,0 +1,89 @@
++++++++++++++++++++++++++++++++++++++++++++++++++++++++
++   	ORACLE DATABASE 19C BLOCKCHAIN TABLE WORKS    	+
++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+
+The blockchain tables are now generally available as mentioned in the 
+Introducing Oracle Database 21c post announcing availability of the latest release in the Oracle Cloud Database Service Virtual Machine 
+(for RAC and single instance) and Bare Metal Service (single instance). 
+It's also available in the Autonomous Database Free Tier Service in Ashburn (IAD), Phoenix (PHX), Frankfurt (FRA) and London (LHR) regions. 
+General availability of Oracle Database 21c for on-prem platforms (including Exadata, Linux and Windows) will follow along in 2021, 
+and the Blockchain Tables will also become available in 19c database when 19.10 Release Update (RU) is available in early 2021. 
+
+#NOTE
+with patch 32431413 and compatible 19.10.0
+
+#CHECK INVENTORY
+$ORACLE_HOME/OPatch/opatch lsinventory -bugs_fixed |grep 32431413
+32431413   32431413  Thu Fev 04 10:05:02 SGT 2021   19.10 RU FOR ORACLE IS MISSING QCPLK.O WHICH GETS
+
+#TEST CREATE BLOCKCHAIN TABLE 
+sqlplus / as sysdba
+
+SQL*Plus: Release 19.0.0.0.0 - Production on Sat Jan 30 12:19:49 2021
+Version 19.10.0.0.0
+
+Copyright (c) 1982, 2020, Oracle.  All rights reserved.
+
+Connected to:
+Oracle Database 19c Enterprise Edition Release 19.0.0.0.0 - Production
+Version 19.10.0.0.0
+
+SQL> CREATE BLOCKCHAIN TABLE bctab_part (trans_id number primary key, sender varchar2(50), recipient varchar2(50), trans_date DATE, amount number) 
+     NO DROP UNTIL 16 DAYS IDLE
+     NO DELETE UNTIL 25 DAYS AFTER INSERT
+     HASHING USING "SHA2_512" VERSION "v1"
+     PARTITION BY RANGE(trans_date)
+      (PARTITION p1 VALUES LESS THAN (TO_DATE('30-09-2019','dd-mm-yyyy')),
+       PARTITION p2 VALUES LESS THAN (TO_DATE('31-12-2019','dd-mm-yyyy')),
+       PARTITION p3 VALUES LESS THAN (TO_DATE('31-03-2020','dd-mm-yyyy')),
+       PARTITION p4 VALUES LESS THAN (TO_DATE('30-06-2020','dd-mm-yyyy'))
+      );
+CREATE BLOCKCHAIN TABLE bctab_part (trans_id number primary key, sender varchar2(50)
+*
+ERROR at line 1:
+ORA-05728: COMPATIBLE needs to be 19.10.0.0.0 or higher to use blockchain table
+ORA-00722: Feature "Blockchain table"
+
+SQL> show parameter compatible
+
+NAME                                 TYPE        VALUE
+------------------------------------ ----------- ------------------------------
+compatible                           string      19.0.0
+noncdb_compatible                    boolean     FALSE
+
+SQL> alter system set compatible='19.10.0' scope=spfile;
+
+System altered.
+
+SQL> shutdown immediate
+Database closed.
+Database dismounted.
+ORACLE instance shut down.
+SQL> startup
+ORACLE instance started.
+
+Total System Global Area 5368705904 bytes
+Fixed Size                  9192304 bytes
+Variable Size            3036676096 bytes
+Database Buffers          167772160 bytes
+Redo Buffers                7581696 bytes
+In-Memory Area           2147483648 bytes
+Database mounted.
+Database opened.
+
+SQL> alter session set container=APPSPDB
+Enter password:
+Connected.
+SQL> CREATE BLOCKCHAIN TABLE bctab_part (trans_id number primary key, sender varchar2(50), recipient varchar2(50), trans_date DATE, amount number) 
+     NO DROP UNTIL 16 DAYS IDLE
+     NO DELETE UNTIL 25 DAYS AFTER INSERT
+     HASHING USING "SHA2_512" VERSION "v1"
+     PARTITION BY RANGE(trans_date)
+      (PARTITION p1 VALUES LESS THAN (TO_DATE('30-09-2019','dd-mm-yyyy')),
+       PARTITION p2 VALUES LESS THAN (TO_DATE('31-12-2019','dd-mm-yyyy')),
+       PARTITION p3 VALUES LESS THAN (TO_DATE('31-03-2020','dd-mm-yyyy')),
+       PARTITION p4 VALUES LESS THAN (TO_DATE('30-06-2020','dd-mm-yyyy'))
+      );
+
+Table created.
+
