@@ -4,6 +4,9 @@
 
 The objective of this procedure is to establish a database environment distributed between postgres database and sqlserver database,follow the steps
 
+#INSTALL ODBC
+yum install freetds*
+
 #DOWNLOAD EXTENSION FILES FROM GITHUB
 wget https://codeload.github.com/tds-fdw/tds_fdw/zip/master
 mv master tds_fdw.zip
