@@ -20,6 +20,28 @@ vi Makefile
 PG_CONFIG    = /usr/local/pgsql-9.6.14/bin/pg_config
 make; make install
 
+#CONFIGURE FREETDS FILE
+vim /etc/freetds.conf
+[targerserver]
+        host = 192.168.1.2
+        instance = MSSQLSERVER2019
+        port = 1433
+        client charset = UTF-8
+        tds version = 7.0
+        database = TARGER_DATABASE
+        text size = 20971520
+
+vim /etc/odbcinst.ini
+[FreeTDS]
+Driver = /usr/lib64/libtdsodbc.so.0
+FileUsage = 1
+
+#RELOAD LIBRARIES
+ldconfig
+
+#RELOAD POSTGRESQL
+/usr/local/pgsql-9.6.14/bin/pg_ctl reload -D /dados/data
+
 #CREATE EXTENSION ON DATABASE
 /usr/local/pgsql-9.6.14/bin/psql -U postgres -p 5432
 postgres=# CREATE EXTENSION tds_fdw;
@@ -27,7 +49,7 @@ postgres=# CREATE EXTENSION tds_fdw;
 #CREATE USER MAPPING AND EXTERNAL SERVER
 postgres=# DROP USER MAPPING FOR postgres SERVER SQLSERVER;
 postgres=# DROP SERVER SQLSERVER;
-postgres=# CREATE SERVER SQLSERVER FOREIGN DATA WRAPPER tds_fdw OPTIONS (servername '192.168.1.2', port '1433', database 'TARGER_DATABASE', tds_version '7.1');
+postgres=# CREATE SERVER SQLSERVER FOREIGN DATA WRAPPER tds_fdw OPTIONS (servername 'targerserver', , language 'us_english', character_set 'UTF-8');
 postgres=# CREATE USER MAPPING FOR postgres SERVER SQLSERVER OPTIONS (username 'USER_LOGIN', password 'PASSWORD');
 postgres=# CREATE SCHEMA SQLSERVER;
 
