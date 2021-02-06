@@ -269,4 +269,24 @@ Versão do WebLogic Server: 14.1.1.0.0
 Copyright (c) 1996,2020, Oracle e/ou suas empresas afiliadas. Todos os direitos reservados.
 Oracle é uma marca comercial da Oracle Corporation e/ou de suas empresas afiliadas. 
 Outros nomes podem ser marcas comerciais de seus respectivos proprietários.
-	
+
+
+#THE FOLLOWING SCRIPTS ARE USEFUL
+$ # Start NodeManager (if you configured one-per-domain)
+$ nohup $DOMAIN_HOME/bin/startNodeManager.sh > /dev/null 2>&1 &
+
+$ # Start WebLogic
+$ nohup /u01/app/oracle/Middleware/14.1.1/user_projects/domains/wl_server/bin/startWebLogic.sh > /dev/null 2>&1 &
+
+$ # Stop WebLogic
+$ /u01/app/oracle/Middleware/14.1.1/user_projects/domains/wl_server/bin/stopWebLogic.sh
+
+$ # Start Managed Server
+$ nohup /u01/app/oracle/Middleware/14.1.1/user_projects/domains/wl_server/bin/startManagedWebLogic.sh AdminServer > /dev/null 2>&1 &
+
+$ # Stop Managed Server
+$ /u01/app/oracle/Middleware/14.1.1/user_projects/domains/wl_server/bin/stopManagedWebLogic.sh AdminServer
+
+$ # Start the configuration wizard
+$ /u01/app/oracle/Middleware/14.1.1/wlserver/common/bin/config.sh
+
