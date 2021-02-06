@@ -72,17 +72,15 @@ mkdir /home/oracle/scripts
 cat > /home/oracle/scripts/setEnv.sh <<EOF
 # Oracle Settings
 export TMP=/tmp
-export TMPDIR=\$TMP
+export TMPDIR=$TMP
 
 export ORACLE_BASE=/u01/app/oracle
-export ORACLE_HOME=\$ORACLE_BASE/Middleware/14.1.1
-export MW_HOME=\$ORACLE_HOME
-export WLS_HOME=\$MW_HOME/wlserver
-export WL_HOME=\$WLS_HOME
-export DOMAIN_BASE=\$ORACLE_BASE/config/domains
-export DOMAIN_HOME=\$DOMAIN_BASE/mydomain
+export ORACLE_HOME=$ORACLE_BASE/Middleware/14.1.1/
+export MW_HOME=$ORACLE_HOME
+export WLS_HOME=$MW_HOME/wlserver
+export WL_HOME=$WLS_HOME
 export JAVA_HOME=/usr/java/jdk-11.0.6
-export PATH=\$JAVA_HOME/bin:\$PATH
+export PATH=$JAVA_HOME/bin:$PATH
 
 EOF
 
@@ -217,16 +215,16 @@ ps -ef | grep oracle
 
 # screen 1
 	Adminstrative Account
-		Name				      weblogic
-		Password			    ********
-		Confirm Password	********
+		Name				weblogic
+		Password			********
+		Confirm Password		********
 		
 	Advanced Configuration
 		Domain Parent Location:		/u01/app/oracle/Middleware/14.1.1/user_projects/domains		[Browse]
 		Administration Server Listen Address:	All Local Address
-		Administration Server Listen Port:		7001
-		SSL Listen Port:						7002
-		Coherence Listen Port:					7003
+		Administration Server Listen Port:	7001
+		SSL Listen Port:			7002
+		Coherence Listen Port:			7003
 
 # screen 2
 		100 %
@@ -240,17 +238,17 @@ ps -ef | grep oracle
 	Configuration Details
 		Domain Name:		wl_server
 		Domain Location:	/u01/app/oracle/Middleware/14.1.1/user_projects/domains/wl_server
-		Status:				Sucessful
+		Status:			Sucessful
 		Admin Server URL:	http://ol7wl1:7001/console
 		
 		Domain Name:		medrec
 		Domain Location:	/u01/app/oracle/Middleware/14.1.1/user_projects/domains/medrec
-		Status:				Sucessful
+		Status:			Sucessful
 		Admin Server URL:	http://ol7wl1:7001/console
 		
 		Domain Name:		medrec-spring
 		Domain Location:	/u01/app/oracle/Middleware/14.1.1/user_projects/domains/medrec-spring
-		Status:				Sucessful
+		Status:			Sucessful
 		Admin Server URL:	http://ol7wl1:7001/console
 		
 	Next Step
@@ -266,8 +264,8 @@ ORACLE WEBLOGIC SERVER Administration Console 14.1.1
 																			Efetue log-in para trabalhar no domínio do WebLogic Server
 
 																			Nome de usuário:	weblogic____________________
-																			Senha:				    ********____________________
-																											  [Efetuar Log-in]
+																			Senha:			********____________________
+																						  [Efetuar Log-in]
 
 Versão do WebLogic Server: 14.1.1.0.0
 Copyright (c) 1996,2020, Oracle e/ou suas empresas afiliadas. Todos os direitos reservados.
