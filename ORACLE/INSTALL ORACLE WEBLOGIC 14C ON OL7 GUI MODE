@@ -1,0 +1,276 @@
+###################################################
+#   INSTALL ORACLE WEBLOGIC 14C ON OL7 GUI MODE   #
+###################################################
+
+#ORACLE WEBLOGIC MACHINE
+IP 192.168.1.133
+Disk /dev/sda: 37.6 GB
+/dev/sda1 /boot 350 MB
+/dev/sda2 /		31  GB
+/dev/sda3 swap	4	GB	
+	
+#DISABLE SELINUX AND FIREWALLD
+sed -i 's/SELINUX=.*/SELINUX=disabled/' /etc/selinux/config && setenforce 0
+systemctl stop firewalld && systemctl disable firewalld
+
+#CONFIGURE STATIC NETWORK
+TYPE=Ethernet
+PROXY_METHOD=none
+BROWSER_ONLY=no
+BOOTPROTO=none
+DEFROUTE=yes
+IPV4_FAILURE_FATAL=no
+IPV6INIT=no
+IPV6_AUTOCONF=yes
+IPV6_DEFROUTE=yes
+IPV6_FAILURE_FATAL=no
+IPV6_ADDR_GEN_MODE=stable-privacy
+NAME=enp0s3
+UUID=49c279da-7065-40f5-b914-176973db2a0a
+DEVICE=enp0s3
+ONBOOT=yes
+IPADDR=192.168.1.133
+PREFIX=24
+GATEWAY=192.168.1.1
+DNS1=8.8.8.8
+
+#CONFIGURE HOSTNAME
+hostnamectl 
+hostnamectl set-hostname ol7wl1
+hostnamectl --static 
+
+#CONFIGURE HOSTS
+vim /etc/hosts
+192.168.1.133   ol7wl1
+
+#CREATE ORACLE_BASE AND ORACLE_HOME DIRECTORIES
+mkdir -p /u01/app/oracle/product/14.1.1
+mkdir -p /u01/app/oracle/oraInventory
+mkdir -p /u01/app/oracle/config/domains
+mkdir -p /u01/app/oracle/config/applications
+chown -R oracle:oinstall /u01
+chmod -R 775 /u01
+
+#INSTALL JDK
+wget https://download.oracle.com/otn/java/jdk/11.0.6+8/90eb79fb590d45c8971362673c5ab495/jdk-11.0.6_linux-x64_bin.rpm?AuthParam=1612646816_f5acd2ccdccec08b82644128af900ec3
+mv jdk-11.0.6_linux-x64_bin.rpm\?AuthParam\=1612646816_f5acd2ccdccec08b82644128af900ec3 jdk-11.0.6_linux-x64_bin.rpm
+yum install jdk-11.0.6_linux-x64_bin.rpm
+
+#CHECK JAVA
+alternatives --list
+java    auto    /usr/java/jdk-11.0.6/bin/java
+
+#CREATE USER AND GROUP ORACLE
+groupadd -g 54321 oinstall
+useradd -u 54321 -g oinstall oracle
+passwd oracle
+
+#CONFIGURE VARIABLES
+su - oracle
+mkdir /home/oracle/scripts
+
+cat > /home/oracle/scripts/setEnv.sh <<EOF
+# Oracle Settings
+export TMP=/tmp
+export TMPDIR=\$TMP
+
+export ORACLE_BASE=/u01/app/oracle
+export ORACLE_HOME=\$ORACLE_BASE/Middleware/14.1.1
+export MW_HOME=\$ORACLE_HOME
+export WLS_HOME=\$MW_HOME/wlserver
+export WL_HOME=\$WLS_HOME
+export DOMAIN_BASE=\$ORACLE_BASE/config/domains
+export DOMAIN_HOME=\$DOMAIN_BASE/mydomain
+export JAVA_HOME=/usr/java/jdk-11.0.6
+export PATH=\$JAVA_HOME/bin:\$PATH
+
+EOF
+
+echo ". /home/oracle/scripts/setEnv.sh" >> /home/oracle/.bash_profile
+
+#DOWNLOAD WEBLOGIC SFW
+wget https://download.oracle.com/otn/nt/middleware/14c/14110/fmw_14.1.1.0.0_wls_lite_Disk1_1of1.zip?AuthParam=1612374163_9d7d551a9e114b485b14856194fddf06
+mv fmw_14.1.1.0.0_wls_lite_Disk1_1of1.zip\?AuthParam\=1612374163_9d7d551a9e114b485b14856194fddf06 fmw_14.1.1.0.0_wls_lite_Disk1_1of1.zip
+mv fmw_14.1.1.0.0_wls_lite_Disk1_1of1.zip /u01/app/oracle/
+cd /u01/app/oracle/
+unzip fmw_14.1.1.0.0_wls_lite_Disk1_1of1.zip
+
+#INSTALL WEBLOGIC SFW
+#AS ROOT
+xhost +
+su – oracle
+cd /u01/app/oracle
+export DISPLAY=:0.0
+/usr/java/jdk-11.0.6/bin/java -jar fmw_14.1.1.0.0_wls_lite_generic.jar
+
+######################## FUSION MIDDLEWARE INSTALLATION WIZARD ########################
+
+# screen 1
+	INSTALL INVENTORY SETUP
+
+	Central Inventory Directory
+	Enter the Central inventory directory for all your oracle installations. 
+	The installer will create a new central inventory if it does not exist.
+	
+	Inventory Directory:	/u01/app/oracle/oraInventory		[Browse]
+	
+	Operating System Group:	oinstall							
+
+	Central Inventory Pointer File
+		Click Ok to create a script (createCentralInventory.sh) in the inventory directory. Run this script
+		to create a pointer file, which is used to identify the location of the central inventory for future
+		installations and administrative operations, such as patching and upgrade.
+
+
+# screen 2
+	Welcome to the Oracle Fusion Middleware 14.1.1 WebLogic Server and Coherence installer.
+	
+	Use this installer to create a new Oracle home that contains the Oracle WebLogic Server and
+	Oracle Coherence software. You can use this software to configure a WebLogic Server domain
+	for the deployment of java applications.
+	
+	For more informations, see Instal, Patch and Upgrade int the Oracle Fusion Middleware
+	documentation library.
+	
+	Context-sensitive online help is available from the Help button.
+	
+# screen 3
+	(*) Skip Auto Updates
+	
+	( ) Select patches from directory
+		Location: _____________________________________ [Browse]
+	
+	( ) Search My Oracle Support for Updates
+		Username: _____________________________________
+		Password: _____________________________________
+				  [Proxy Settings]		[Test Connection]
+				  
+	[Search]
+
+# screen 4
+	Oracle Home:
+	/u01/app/oracle/Middleware/14.1.1					[Browse]
+	
+	Feature Sets installed At Select Oracle Home: [View]
+
+# screen 5
+	( ) WebLogic Server
+	
+	( ) Coherence
+	
+	( ) Complete with Examples
+	
+ - Oracle Fusion Middleware 14.1.1 WebLogic Server and Coherence 14.1.1.0.0
+	- Core Server
+		Core Application Server 14.1.1.0.0
+		Coherence Product File 14.1.1.0.0
+		Web 2.0 HTTP Pub-Sub Server 14.1.1.0.0
+		WebLogic Client Jars 14.1.1.0.0
+	- Administrative Tools
+		Administrative Console Additional Language Help Files 14.1.1.0.0
+		CIE WLS Config 14.1.1.0.0
+	- Database Support
+		Third party JDBC Drivers 14.1.1.0.0
+		WebLogic Evaluation Database 14.1.1.0.0
+	- Open Source Components
+		Fusion Middleware Maven Support 14.1.1.0.0
+	- Examples
+		Server Examples 14.1.1.0.0
+		Coherence Examples 14.1.1.0.0
+	- Oracle Installation Infrastructure
+		Opatch 13.9.4.2.3
+	
+# screen 6
+		100 %
+		
+		OK Checking operationg system certification
+		OK Checking Java version used to launch the installer.
+		
+		[Stop] [Rerun] [Skip]		[v] View Successful Tasks		[View Log]
+		
+# screen 7
+		
+		[Save Response File]
+		
+		Install
+
+# screen 8
+		100 %
+		
+		OK Prepare
+		OK Copy
+		OK Generating Libraries
+		OK Performing String Substitutions
+		OK Linking
+		OK Setup
+		OK Saving the inventory
+		OK Post install scripts
+		
+		[Stop] [Rerun] [Skip]		[v] View Successful Tasks		[View Log]		
+		
+		
+#AFTER INSTALLATION, A UTILITY FOR DOMAIN CONFIGURATION WILL BE OPENED 		
+ps -ef | grep oracle
+/bin/sh /u01/app/oracle/Middleware/14.1.1/oracle_common/common/bin/config.sh -target=config-oneclick -log_priority=debug -log=/tmp/oneClicklog11995791184236104990.txt		
+
+######################## FUSION MIDDLEWARE CONFIGURATION WIZARD ########################
+
+# screen 1
+	Adminstrative Account
+		Name				      weblogic
+		Password			    ********
+		Confirm Password	********
+		
+	Advanced Configuration
+		Domain Parent Location:		/u01/app/oracle/Middleware/14.1.1/user_projects/domains		[Browse]
+		Administration Server Listen Address:	All Local Address
+		Administration Server Listen Port:		7001
+		SSL Listen Port:						7002
+		Coherence Listen Port:					7003
+
+# screen 2
+		100 %
+
+		OK Generating wl_server domain
+		OK Generating medrec domain
+		OK Generating medrec-spring domain
+		
+# screen 3
+		
+	Configuration Details
+		Domain Name:		wl_server
+		Domain Location:	/u01/app/oracle/Middleware/14.1.1/user_projects/domains/wl_server
+		Status:				Sucessful
+		Admin Server URL:	http://ol7wl1:7001/console
+		
+		Domain Name:		medrec
+		Domain Location:	/u01/app/oracle/Middleware/14.1.1/user_projects/domains/medrec
+		Status:				Sucessful
+		Admin Server URL:	http://ol7wl1:7001/console
+		
+		Domain Name:		medrec-spring
+		Domain Location:	/u01/app/oracle/Middleware/14.1.1/user_projects/domains/medrec-spring
+		Status:				Sucessful
+		Admin Server URL:	http://ol7wl1:7001/console
+		
+	Next Step
+	[*] Start Domain [wl_server]
+
+#ACCESS WEB PAGE
+http://192.168.1.133:7001/console/login/LoginForm.jsp
+
+ORACLE WEBLOGIC SERVER Administration Console 14.1.1
+
+
+																			Bem-vindo
+																			Efetue log-in para trabalhar no domínio do WebLogic Server
+
+																			Nome de usuário:	weblogic____________________
+																			Senha:				    ********____________________
+																											  [Efetuar Log-in]
+
+Versão do WebLogic Server: 14.1.1.0.0
+Copyright (c) 1996,2020, Oracle e/ou suas empresas afiliadas. Todos os direitos reservados.
+Oracle é uma marca comercial da Oracle Corporation e/ou de suas empresas afiliadas. 
+Outros nomes podem ser marcas comerciais de seus respectivos proprietários.
+	
