@@ -44,10 +44,8 @@ vim /etc/hosts
 192.168.1.133   ol7wl1
 
 #CREATE ORACLE_BASE AND ORACLE_HOME DIRECTORIES
-mkdir -p /u01/app/oracle/product/14.1.1
+mkdir -p /u01/app/oracle/Middleware/14.1.1
 mkdir -p /u01/app/oracle/oraInventory
-mkdir -p /u01/app/oracle/config/domains
-mkdir -p /u01/app/oracle/config/applications
 chown -R oracle:oinstall /u01
 chmod -R 775 /u01
 
