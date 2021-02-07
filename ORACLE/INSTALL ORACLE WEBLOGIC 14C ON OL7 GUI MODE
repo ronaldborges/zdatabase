@@ -45,7 +45,7 @@ vim /etc/hosts
 
 #CREATE ORACLE_BASE AND ORACLE_HOME DIRECTORIES
 mkdir -p /u01/app/oracle/Middleware/14.1.1
-mkdir -p /u01/app/oracle/oraInventory
+mkdir -p /u01/app/oraInventory
 chown -R oracle:oinstall /u01
 chmod -R 775 /u01
 
@@ -108,7 +108,7 @@ export DISPLAY=:0.0
 	Enter the Central inventory directory for all your oracle installations. 
 	The installer will create a new central inventory if it does not exist.
 	
-	Inventory Directory:	/u01/app/oracle/oraInventory		[Browse]
+	Inventory Directory:	/u01/app/oraInventory			[Browse]
 	
 	Operating System Group:	oinstall							
 
