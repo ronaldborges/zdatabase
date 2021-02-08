@@ -102,7 +102,7 @@ export DISPLAY=:0.0
 			
 			Service Manager Connection Details
 				Listening hostname/address				ol7db1
-				Listening port 							      7820
+				Listening port						7820
 
 #screen 2
 	Select Configuration Options
@@ -116,29 +116,29 @@ export DISPLAY=:0.0
 			
 			[ ] Enable Sharding
 			
-			Software Home		/u01/app/oracle/product/ggma/DeploymentOGGMA	[Browser...]
+			Software Home		/u01/app/oracle/product/ggma/DeploymentOGGMA		[Browser...]
 	
 #screen 4
 	Specify Deployment Directories
 		Deployment home:
-		/u01/app/oracle/product/ggma/ggmasm/DeploymentOGGMA________ 			  [Browse...]
+		/u01/app/oracle/product/ggma/ggmasm/DeploymentOGGMA________				[Browse...]
 		
 		[ ] Customize directories
 		
 		Configuration files
-		/u01/app/oracle/product/ggma/ggmasm/DeploymentOGGMA/etc					    [Browse...]
+		/u01/app/oracle/product/ggma/ggmasm/DeploymentOGGMA/etc					[Browse...]
 		
 		Configuration bootstrap files, process parameter files
-		/u01/app/oracle/product/ggma/ggmasm/DeploymentOGGMA/etc/conf			  [Browse...]
+		/u01/app/oracle/product/ggma/ggmasm/DeploymentOGGMA/etc/conf				[Browse...]
 		
 		Security configuration files
-		/u01/app/oracle/product/ggma/ggmasm/DeploymentOGGMA/etc/ssl				  [Browse...]
+		/u01/app/oracle/product/ggma/ggmasm/DeploymentOGGMA/etc/ssl				[Browse...]
 		
 		Runtime and support files
-		/u01/app/oracle/product/ggma/ggmasm/DeploymentOGGMA/var					    [Browse...]
+		/u01/app/oracle/product/ggma/ggmasm/DeploymentOGGMA/var					[Browse...]
 		
 		Trail files
-		/u01/app/oracle/product/ggma/ggmasm/DeploymentOGGMA/var/lib/data		[Browse...]
+		/u01/app/oracle/product/ggma/ggmasm/DeploymentOGGMA/var/lib/data			[Browse...]
 		
 #screen 5
 	Specify Environment Variables
@@ -147,18 +147,18 @@ export DISPLAY=:0.0
 		Name				Value
 		OGG_HOME			/u01/app/oracle/product/ggma
 		ORACLE_HOME			/u01/app/oracle/product/19.3.0/dbhome_1
-		LD_LIBRARY_PATH		{$ORACLE_HOME}/lib:/u01/app/oracle/product/19.3.0/dbhome_1/lib:/lib:/usr/lib
+		LD_LIBRARY_PATH			{$ORACLE_HOME}/lib:/u01/app/oracle/product/19.3.0/dbhome_1/lib:/lib:/usr/lib
 		TNS_ADMIN			/u01/app/oracle/product/19.3.0/dbhome_1/network/admin
 		ORACLE_SID			appscdb1
 	
 #screen 6
 	Specify Administrator Account
 		Administrator account
-			Username			    oggadmin	
+			Username			oggadmin	
 			
-			Password			    **************
+			Password			**************
 			
-			Confirm Password	**************
+			Confirm Password		**************
 	
 			[*] Enable strong password policity in the new deployment
 
@@ -186,18 +186,18 @@ export DISPLAY=:0.0
 	Specify Port Settings
 		Service Manager Details
 			listening hostname/address						Listening port	
-			ol7db1											          7820
+			ol7db1									7820
 		
 		Servers
 		[*] Enable Administration Server		Administration Server port		8001
-		[*] Enable Distribuition Server			Distribuition Server port		  8002
-		[*] Enable Reciever Server				  Reciever Server port			    8003
+		[*] Enable Distribuition Server			Distribuition Server port		8002
+		[*] Enable Reciever Server			Reciever Server port			8003
 	
 		Monitoring
 		[*] Enable Monitoring 					[ ] XAG Critical
-		Metrics Server port						  8004
-		Metrics Server UDP port (data)	8005
-		Metrics Server DataStore type		DBD
+		Metrics Server port					8004
+		Metrics Server UDP port (data)				8005
+		Metrics Server DataStore type				DBD
 		Metrics Server DataStore home			
 	
 #screen 9
@@ -251,8 +251,8 @@ http://localhost:7820/?root=account
 
 
 				Oracle GoldenGate Service Manager
-				User Name 	oggadmin
-				Password	  **************
+				User Name	oggadmin
+				Password	**************
 				
 #NOTE OPTION
 #IF YOU WANT CREATE A SERVICE MANAGER IN SILENT MODE IS POSSIBLE USING A RESPONSE FILE
@@ -355,5 +355,5 @@ http://localhost:7820/?root=account
 
 
 				Oracle GoldenGate Service Manager
-				User Name 	oggadmin
-				Password	  **************
+				User Name	oggadmin
+				Password	**************
