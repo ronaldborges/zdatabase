@@ -425,7 +425,7 @@ cat > /u01/app/oracle/product/19.3.0/dbhome_1/network/admin/tnsnames.ora <<EOF
 appspdb =
   (DESCRIPTION =
     (ADDRESS_LIST =
-      (ADDRESS = (PROTOCOL = TCP)(HOST = 10.5.150.188)(PORT = 1521))
+      (ADDRESS = (PROTOCOL = TCP)(HOST = 192.168.1.130)(PORT = 1521))
     )
     (CONNECT_DATA =
       (SERVICE_NAME = appspdb)
@@ -435,7 +435,7 @@ appspdb =
 appscdb =
   (DESCRIPTION =
     (ADDRESS_LIST =
-      (ADDRESS = (PROTOCOL = TCP)(HOST = 10.5.150.188)(PORT = 1521))
+      (ADDRESS = (PROTOCOL = TCP)(HOST = 192.168.1.130)(PORT = 1521))
     )
     (CONNECT_DATA =
       (SERVICE_NAME = appscdb)
