@@ -720,3 +720,523 @@ SQL> select dbms_metadata.get_ddl('TABLE','C1','ZDATABASE') from dual;
   TABLESPACE "TBS_C1"
 
 #WHERE THE CONSTRAINTS WENT ????????????????
+#ITS OK, BECAUSE ON TABLE ZDATABASE.P1 DONT HAVE 
+
+#ANOTHER TEST
+#TRY DROP TABLE ZDATABASE.C1
+#TRY RECOVER TABLE ZDATABASE.C1
+
+[oracle@ol7db1 ~]$ sqlplus / as sysdba
+
+SQL*Plus: Release 19.0.0.0.0 - Production on Mon Feb 8 10:31:22 2021
+Version 19.3.0.0.0
+
+Copyright (c) 1982, 2019, Oracle.  All rights reserved.
+
+
+Connected to:
+Oracle Database 19c Enterprise Edition Release 19.0.0.0.0 - Production
+Version 19.3.0.0.0
+
+SQL> conn zdatabase/oracle@appspdb
+Connected.
+
+SQL> insert into p1 values(1);
+
+1 row created.
+
+SQL> commit;
+
+Commit complete.
+
+SQL> drop table zdatabase.c1;
+
+SQL> exit
+Disconnected from Oracle Database 19c Enterprise Edition Release 19.0.0.0.0 - Production
+Version 19.3.0.0.0
+
+[oracle@ol7db1 ~]$ rman target /
+
+Recovery Manager: Release 19.0.0.0.0 - Production on Mon Feb 8 13:01:47 2021
+Version 19.3.0.0.0
+
+Copyright (c) 1982, 2019, Oracle and/or its affiliates.  All rights reserved.
+
+connected to target database: APPSCDB (DBID=3907443817)
+
+RMAN> RECOVER TABLE ZDATABASE.C1 OF PLUGGABLE DATABASE APPSPDB UNTIL TIME "TO_DATE('2021-FEB-08 11.30.57','YYYY-MON-DD HH24:MI:SS')" AUXILIARY DESTINATION '/u01/auxdest/';
+
+Starting recover at 2021-FEB-08 13:02:01
+using target database control file instead of recovery catalog
+allocated channel: ORA_DISK_1
+channel ORA_DISK_1: SID=77 device type=DISK
+RMAN-05026: warning: presuming following set of tablespaces applies to specified point-in-time
+
+List of tablespaces expected to have UNDO segments
+Tablespace APPSPDB:SYSTEM
+Tablespace SYSTEM
+Tablespace APPSPDB:UNDOTBS1
+Tablespace UNDOTBS1
+
+Creating automatic instance, with SID='bfra'
+
+initialization parameters used for automatic instance:
+db_name=APPSCDB
+db_unique_name=bfra_pitr_APPSPDB_APPSCDB
+compatible=19.0.0
+db_block_size=8192
+db_files=200
+diagnostic_dest=/u01/app/oracle
+_system_trig_enabled=FALSE
+sga_target=2048M
+processes=200
+db_create_file_dest=/u01/auxdest/
+log_archive_dest_1='location=/u01/auxdest/'
+enable_pluggable_database=true
+_clone_one_pdb_recovery=true
+#No auxiliary parameter file used
+
+
+starting up automatic instance APPSCDB
+
+Oracle instance started
+
+Total System Global Area    2147482144 bytes
+
+Fixed Size                     9136672 bytes
+Variable Size                486539264 bytes
+Database Buffers            1644167168 bytes
+Redo Buffers                   7639040 bytes
+Automatic instance created
+
+contents of Memory Script:
+{
+# set requested point in time
+set until  time "TO_DATE('2021-FEB-08 11.30.57','YYYY-MON-DD HH24:MI:SS')";
+# restore the controlfile
+restore clone controlfile;
+ 
+# mount the controlfile
+sql clone 'alter database mount clone database';
+ 
+# archive current online log 
+sql 'alter system archive log current';
+}
+executing Memory Script
+
+executing command: SET until clause
+
+Starting restore at 2021-FEB-08 13:02:18
+allocated channel: ORA_AUX_DISK_1
+channel ORA_AUX_DISK_1: SID=1 device type=DISK
+
+channel ORA_AUX_DISK_1: starting datafile backup set restore
+channel ORA_AUX_DISK_1: restoring control file
+channel ORA_AUX_DISK_1: reading from backup piece /u01/app/oracle/fast_recovery_area/APPSCDB/autobackup/2021_02_08/o1_mf_s_1063970916_j22lnnpd_.bkp
+channel ORA_AUX_DISK_1: piece handle=/u01/app/oracle/fast_recovery_area/APPSCDB/autobackup/2021_02_08/o1_mf_s_1063970916_j22lnnpd_.bkp tag=TAG20210208T112836
+channel ORA_AUX_DISK_1: restored backup piece 1
+channel ORA_AUX_DISK_1: restore complete, elapsed time: 00:00:01
+output file name=/u01/auxdest/APPSCDB/controlfile/o1_mf_j22r4c4o_.ctl
+Finished restore at 2021-FEB-08 13:02:20
+
+sql statement: alter database mount clone database
+
+sql statement: alter system archive log current
+
+contents of Memory Script:
+{
+# set requested point in time
+set until  time "TO_DATE('2021-FEB-08 11.30.57','YYYY-MON-DD HH24:MI:SS')";
+# set destinations for recovery set and auxiliary set datafiles
+set newname for clone datafile  9 to new;
+set newname for clone datafile  1 to new;
+set newname for clone datafile  11 to new;
+set newname for clone datafile  4 to new;
+set newname for clone datafile  3 to new;
+set newname for clone datafile  10 to new;
+set newname for clone tempfile  1 to new;
+set newname for clone tempfile  3 to new;
+# switch all tempfiles
+switch clone tempfile all;
+# restore the tablespaces in the recovery set and the auxiliary set
+restore clone datafile  9, 1, 11, 4, 3, 10;
+ 
+switch clone datafile all;
+}
+executing Memory Script
+
+executing command: SET until clause
+
+executing command: SET NEWNAME
+
+executing command: SET NEWNAME
+
+executing command: SET NEWNAME
+
+executing command: SET NEWNAME
+
+executing command: SET NEWNAME
+
+executing command: SET NEWNAME
+
+executing command: SET NEWNAME
+
+executing command: SET NEWNAME
+
+renamed tempfile 1 to /u01/auxdest/APPSCDB/datafile/o1_mf_temp_%u_.tmp in control file
+renamed tempfile 3 to /u01/auxdest/APPSCDB/BAD41B2A67FA41D2E053BC96050A6869/datafile/o1_mf_temp_%u_.tmp in control file
+
+Starting restore at 2021-FEB-08 13:02:25
+using channel ORA_AUX_DISK_1
+
+channel ORA_AUX_DISK_1: starting datafile backup set restore
+channel ORA_AUX_DISK_1: specifying datafile(s) to restore from backup set
+channel ORA_AUX_DISK_1: restoring datafile 00001 to /u01/auxdest/APPSCDB/datafile/o1_mf_system_%u_.dbf
+channel ORA_AUX_DISK_1: restoring datafile 00004 to /u01/auxdest/APPSCDB/datafile/o1_mf_undotbs1_%u_.dbf
+channel ORA_AUX_DISK_1: restoring datafile 00003 to /u01/auxdest/APPSCDB/datafile/o1_mf_sysaux_%u_.dbf
+channel ORA_AUX_DISK_1: reading from backup piece /u01/app/oracle/fast_recovery_area/APPSCDB/backupset/2021_02_08/o1_mf_nnndf_TAG20210208T112739_j22llvdz_.bkp
+channel ORA_AUX_DISK_1: piece handle=/u01/app/oracle/fast_recovery_area/APPSCDB/backupset/2021_02_08/o1_mf_nnndf_TAG20210208T112739_j22llvdz_.bkp tag=TAG20210208T112739
+channel ORA_AUX_DISK_1: restored backup piece 1
+channel ORA_AUX_DISK_1: restore complete, elapsed time: 00:00:35
+channel ORA_AUX_DISK_1: starting datafile backup set restore
+channel ORA_AUX_DISK_1: specifying datafile(s) to restore from backup set
+channel ORA_AUX_DISK_1: restoring datafile 00009 to /u01/auxdest/APPSCDB/BAD41B2A67FA41D2E053BC96050A6869/datafile/o1_mf_system_%u_.dbf
+channel ORA_AUX_DISK_1: restoring datafile 00011 to /u01/auxdest/APPSCDB/BAD41B2A67FA41D2E053BC96050A6869/datafile/o1_mf_undotbs1_%u_.dbf
+channel ORA_AUX_DISK_1: restoring datafile 00010 to /u01/auxdest/APPSCDB/BAD41B2A67FA41D2E053BC96050A6869/datafile/o1_mf_sysaux_%u_.dbf
+channel ORA_AUX_DISK_1: reading from backup piece /u01/app/oracle/fast_recovery_area/APPSCDB/BAD41B2A67FA41D2E053BC96050A6869/backupset/2021_02_08/o1_mf_nnndf_TAG20210208T112739_j22lmnpn_.bkp
+channel ORA_AUX_DISK_1: piece handle=/u01/app/oracle/fast_recovery_area/APPSCDB/BAD41B2A67FA41D2E053BC96050A6869/backupset/2021_02_08/o1_mf_nnndf_TAG20210208T112739_j22lmnpn_.bkp tag=TAG20210208T112739
+channel ORA_AUX_DISK_1: restored backup piece 1
+channel ORA_AUX_DISK_1: restore complete, elapsed time: 00:00:15
+Finished restore at 2021-FEB-08 13:03:15
+
+datafile 9 switched to datafile copy
+input datafile copy RECID=10 STAMP=1063976595 file name=/u01/auxdest/APPSCDB/BAD41B2A67FA41D2E053BC96050A6869/datafile/o1_mf_system_j22r5nk8_.dbf
+datafile 1 switched to datafile copy
+input datafile copy RECID=11 STAMP=1063976595 file name=/u01/auxdest/APPSCDB/datafile/o1_mf_system_j22r4kby_.dbf
+datafile 11 switched to datafile copy
+input datafile copy RECID=12 STAMP=1063976595 file name=/u01/auxdest/APPSCDB/BAD41B2A67FA41D2E053BC96050A6869/datafile/o1_mf_undotbs1_j22r5nl3_.dbf
+datafile 4 switched to datafile copy
+input datafile copy RECID=13 STAMP=1063976595 file name=/u01/auxdest/APPSCDB/datafile/o1_mf_undotbs1_j22r4kdj_.dbf
+datafile 3 switched to datafile copy
+input datafile copy RECID=14 STAMP=1063976595 file name=/u01/auxdest/APPSCDB/datafile/o1_mf_sysaux_j22r4kd3_.dbf
+datafile 10 switched to datafile copy
+input datafile copy RECID=15 STAMP=1063976595 file name=/u01/auxdest/APPSCDB/BAD41B2A67FA41D2E053BC96050A6869/datafile/o1_mf_sysaux_j22r5nk2_.dbf
+
+contents of Memory Script:
+{
+# set requested point in time
+set until  time "TO_DATE('2021-FEB-08 11.30.57','YYYY-MON-DD HH24:MI:SS')";
+# online the datafiles restored or switched
+sql clone 'APPSPDB' "alter database datafile 
+ 9 online";
+sql clone "alter database datafile  1 online";
+sql clone 'APPSPDB' "alter database datafile 
+ 11 online";
+sql clone "alter database datafile  4 online";
+sql clone "alter database datafile  3 online";
+sql clone 'APPSPDB' "alter database datafile 
+ 10 online";
+# recover and open database read only
+recover clone database tablespace  "APPSPDB":"SYSTEM", "SYSTEM", "APPSPDB":"UNDOTBS1", "UNDOTBS1", "SYSAUX", "APPSPDB":"SYSAUX";
+sql clone 'alter database open read only';
+}
+executing Memory Script
+
+executing command: SET until clause
+
+sql statement: alter database datafile  9 online
+
+sql statement: alter database datafile  1 online
+
+sql statement: alter database datafile  11 online
+
+sql statement: alter database datafile  4 online
+
+sql statement: alter database datafile  3 online
+
+sql statement: alter database datafile  10 online
+
+Starting recover at 2021-FEB-08 13:03:16
+using channel ORA_AUX_DISK_1
+
+starting media recovery
+
+archived log for thread 1 with sequence 10 is already on disk as file /u01/app/oracle/oradata/APPSCDB/archivelog/1_10_1063966191.arc
+channel ORA_AUX_DISK_1: starting archived log restore to default destination
+channel ORA_AUX_DISK_1: restoring archived log
+archived log thread=1 sequence=9
+channel ORA_AUX_DISK_1: reading from backup piece /u01/backup/APPSCDB_05vmlq33_1_1
+channel ORA_AUX_DISK_1: piece handle=/u01/backup/APPSCDB_05vmlq33_1_1 tag=TAG20210208T112835
+channel ORA_AUX_DISK_1: restored backup piece 1
+channel ORA_AUX_DISK_1: restore complete, elapsed time: 00:00:01
+archived log file name=/u01/auxdest/1_9_1063966191.dbf thread=1 sequence=9
+archived log file name=/u01/app/oracle/oradata/APPSCDB/archivelog/1_10_1063966191.arc thread=1 sequence=10
+media recovery complete, elapsed time: 00:00:01
+Finished recover at 2021-FEB-08 13:03:18
+
+sql statement: alter database open read only
+
+contents of Memory Script:
+{
+sql clone 'alter pluggable database  APPSPDB open read only';
+}
+executing Memory Script
+
+sql statement: alter pluggable database  APPSPDB open read only
+
+contents of Memory Script:
+{
+   sql clone "create spfile from memory";
+   shutdown clone immediate;
+   startup clone nomount;
+   sql clone "alter system set  control_files = 
+  ''/u01/auxdest/APPSCDB/controlfile/o1_mf_j22r4c4o_.ctl'' comment=
+ ''RMAN set'' scope=spfile";
+   shutdown clone immediate;
+   startup clone nomount;
+# mount database
+sql clone 'alter database mount clone database';
+}
+executing Memory Script
+
+sql statement: create spfile from memory
+
+database closed
+database dismounted
+Oracle instance shut down
+
+connected to auxiliary database (not started)
+Oracle instance started
+
+Total System Global Area    2147482144 bytes
+
+Fixed Size                     9136672 bytes
+Variable Size                486539264 bytes
+Database Buffers            1644167168 bytes
+Redo Buffers                   7639040 bytes
+
+sql statement: alter system set  control_files =   ''/u01/auxdest/APPSCDB/controlfile/o1_mf_j22r4c4o_.ctl'' comment= ''RMAN set'' scope=spfile
+
+Oracle instance shut down
+
+connected to auxiliary database (not started)
+Oracle instance started
+
+Total System Global Area    2147482144 bytes
+
+Fixed Size                     9136672 bytes
+Variable Size                486539264 bytes
+Database Buffers            1644167168 bytes
+Redo Buffers                   7639040 bytes
+
+sql statement: alter database mount clone database
+
+contents of Memory Script:
+{
+# set requested point in time
+set until  time "TO_DATE('2021-FEB-08 11.30.57','YYYY-MON-DD HH24:MI:SS')";
+# set destinations for recovery set and auxiliary set datafiles
+set newname for datafile  14 to new;
+# restore the tablespaces in the recovery set and the auxiliary set
+restore clone datafile  14;
+ 
+switch clone datafile all;
+}
+executing Memory Script
+
+executing command: SET until clause
+
+executing command: SET NEWNAME
+
+Starting restore at 2021-FEB-08 13:04:32
+allocated channel: ORA_AUX_DISK_1
+channel ORA_AUX_DISK_1: SID=38 device type=DISK
+
+channel ORA_AUX_DISK_1: starting datafile backup set restore
+channel ORA_AUX_DISK_1: specifying datafile(s) to restore from backup set
+channel ORA_AUX_DISK_1: restoring datafile 00014 to /u01/auxdest/BFRA_PITR_APPSPDB_APPSCDB/BAD41B2A67FA41D2E053BC96050A6869/datafile/o1_mf_tbs_c1_%u_.dbf
+channel ORA_AUX_DISK_1: reading from backup piece /u01/app/oracle/fast_recovery_area/APPSCDB/BAD41B2A67FA41D2E053BC96050A6869/backupset/2021_02_08/o1_mf_nnndf_TAG20210208T112739_j22lmnpn_.bkp
+channel ORA_AUX_DISK_1: piece handle=/u01/app/oracle/fast_recovery_area/APPSCDB/BAD41B2A67FA41D2E053BC96050A6869/backupset/2021_02_08/o1_mf_nnndf_TAG20210208T112739_j22lmnpn_.bkp tag=TAG20210208T112739
+channel ORA_AUX_DISK_1: restored backup piece 1
+channel ORA_AUX_DISK_1: restore complete, elapsed time: 00:00:01
+Finished restore at 2021-FEB-08 13:04:33
+
+datafile 14 switched to datafile copy
+input datafile copy RECID=17 STAMP=1063976674 file name=/u01/auxdest/BFRA_PITR_APPSPDB_APPSCDB/BAD41B2A67FA41D2E053BC96050A6869/datafile/o1_mf_tbs_c1_j22r8k1l_.dbf
+
+contents of Memory Script:
+{
+# set requested point in time
+set until  time "TO_DATE('2021-FEB-08 11.30.57','YYYY-MON-DD HH24:MI:SS')";
+# online the datafiles restored or switched
+sql clone 'APPSPDB' "alter database datafile 
+ 14 online";
+# recover and open resetlogs
+recover clone database tablespace  "APPSPDB":"TBS_C1", "APPSPDB":"SYSTEM", "SYSTEM", "APPSPDB":"UNDOTBS1", "UNDOTBS1", "SYSAUX", "APPSPDB":"SYSAUX" delete archivelog;
+alter clone database open resetlogs;
+}
+executing Memory Script
+
+executing command: SET until clause
+
+sql statement: alter database datafile  14 online
+
+Starting recover at 2021-FEB-08 13:04:34
+using channel ORA_AUX_DISK_1
+
+starting media recovery
+
+archived log for thread 1 with sequence 10 is already on disk as file /u01/app/oracle/oradata/APPSCDB/archivelog/1_10_1063966191.arc
+channel ORA_AUX_DISK_1: starting archived log restore to default destination
+channel ORA_AUX_DISK_1: restoring archived log
+archived log thread=1 sequence=9
+channel ORA_AUX_DISK_1: reading from backup piece /u01/backup/APPSCDB_05vmlq33_1_1
+channel ORA_AUX_DISK_1: piece handle=/u01/backup/APPSCDB_05vmlq33_1_1 tag=TAG20210208T112835
+channel ORA_AUX_DISK_1: restored backup piece 1
+channel ORA_AUX_DISK_1: restore complete, elapsed time: 00:00:01
+archived log file name=/u01/auxdest/1_9_1063966191.dbf thread=1 sequence=9
+channel clone_default: deleting archived log(s)
+archived log file name=/u01/auxdest/1_9_1063966191.dbf RECID=4 STAMP=1063976674
+archived log file name=/u01/app/oracle/oradata/APPSCDB/archivelog/1_10_1063966191.arc thread=1 sequence=10
+media recovery complete, elapsed time: 00:00:00
+Finished recover at 2021-FEB-08 13:04:35
+
+database opened
+
+contents of Memory Script:
+{
+sql clone 'alter pluggable database  APPSPDB open';
+}
+executing Memory Script
+
+sql statement: alter pluggable database  APPSPDB open
+
+contents of Memory Script:
+{
+# create directory for datapump import
+sql 'APPSPDB' "create or replace directory 
+TSPITR_DIROBJ_DPDIR as ''
+/u01/auxdest/''";
+# create directory for datapump export
+sql clone 'APPSPDB' "create or replace directory 
+TSPITR_DIROBJ_DPDIR as ''
+/u01/auxdest/''";
+}
+executing Memory Script
+
+sql statement: create or replace directory TSPITR_DIROBJ_DPDIR as ''/u01/auxdest/''
+
+sql statement: create or replace directory TSPITR_DIROBJ_DPDIR as ''/u01/auxdest/''
+
+Performing export of tables...
+   EXPDP> Starting "SYS"."TSPITR_EXP_bfra_aFmF":  
+   EXPDP> Processing object type TABLE_EXPORT/TABLE/TABLE_DATA
+   EXPDP> Processing object type TABLE_EXPORT/TABLE/INDEX/STATISTICS/INDEX_STATISTICS
+   EXPDP> Processing object type TABLE_EXPORT/TABLE/STATISTICS/TABLE_STATISTICS
+   EXPDP> Processing object type TABLE_EXPORT/TABLE/STATISTICS/MARKER
+   EXPDP> Processing object type TABLE_EXPORT/TABLE/TABLE
+   EXPDP> Processing object type TABLE_EXPORT/TABLE/CONSTRAINT/CONSTRAINT
+   EXPDP> Processing object type TABLE_EXPORT/TABLE/CONSTRAINT/REF_CONSTRAINT
+   EXPDP> . . exported "ZDATABASE"."C1"                            5.507 KB       1 rows
+   EXPDP> Master table "SYS"."TSPITR_EXP_bfra_aFmF" successfully loaded/unloaded
+   EXPDP> ******************************************************************************
+   EXPDP> Dump file set for SYS.TSPITR_EXP_bfra_aFmF is:
+   EXPDP>   /u01/auxdest/tspitr_bfra_48532.dmp
+   EXPDP> Job "SYS"."TSPITR_EXP_bfra_aFmF" successfully completed at Mon Feb 8 13:05:21 2021 elapsed 0 00:00:23
+Export completed
+
+
+contents of Memory Script:
+{
+# shutdown clone before import
+shutdown clone abort
+}
+executing Memory Script
+
+Oracle instance shut down
+
+Performing import of tables...
+   IMPDP> Master table "SYS"."TSPITR_IMP_bfra_dskx" successfully loaded/unloaded
+   IMPDP> Starting "SYS"."TSPITR_IMP_bfra_dskx":  
+   IMPDP> Processing object type TABLE_EXPORT/TABLE/TABLE
+   IMPDP> Processing object type TABLE_EXPORT/TABLE/TABLE_DATA
+   IMPDP> . . imported "ZDATABASE"."C1"                            5.507 KB       1 rows
+   IMPDP> Processing object type TABLE_EXPORT/TABLE/CONSTRAINT/CONSTRAINT
+   IMPDP> Processing object type TABLE_EXPORT/TABLE/INDEX/STATISTICS/INDEX_STATISTICS
+   IMPDP> Processing object type TABLE_EXPORT/TABLE/CONSTRAINT/REF_CONSTRAINT
+   IMPDP> Processing object type TABLE_EXPORT/TABLE/STATISTICS/TABLE_STATISTICS
+   IMPDP> Processing object type TABLE_EXPORT/TABLE/STATISTICS/MARKER
+   IMPDP> Job "SYS"."TSPITR_IMP_bfra_dskx" successfully completed at Mon Feb 8 13:05:39 2021 elapsed 0 00:00:13
+Import completed
+
+
+Removing automatic instance
+Automatic instance removed
+auxiliary instance file /u01/auxdest/APPSCDB/BAD41B2A67FA41D2E053BC96050A6869/datafile/o1_mf_temp_j22r693c_.tmp deleted
+auxiliary instance file /u01/auxdest/APPSCDB/datafile/o1_mf_temp_j22r66mm_.tmp deleted
+auxiliary instance file /u01/auxdest/BFRA_PITR_APPSPDB_APPSCDB/onlinelog/o1_mf_3_j22r8r46_.log deleted
+auxiliary instance file /u01/auxdest/BFRA_PITR_APPSPDB_APPSCDB/onlinelog/o1_mf_2_j22r8n1h_.log deleted
+auxiliary instance file /u01/auxdest/BFRA_PITR_APPSPDB_APPSCDB/onlinelog/o1_mf_1_j22r8n05_.log deleted
+auxiliary instance file /u01/auxdest/BFRA_PITR_APPSPDB_APPSCDB/BAD41B2A67FA41D2E053BC96050A6869/datafile/o1_mf_tbs_c1_j22r8k1l_.dbf deleted
+auxiliary instance file /u01/auxdest/APPSCDB/BAD41B2A67FA41D2E053BC96050A6869/datafile/o1_mf_sysaux_j22r5nk2_.dbf deleted
+auxiliary instance file /u01/auxdest/APPSCDB/datafile/o1_mf_sysaux_j22r4kd3_.dbf deleted
+auxiliary instance file /u01/auxdest/APPSCDB/datafile/o1_mf_undotbs1_j22r4kdj_.dbf deleted
+auxiliary instance file /u01/auxdest/APPSCDB/BAD41B2A67FA41D2E053BC96050A6869/datafile/o1_mf_undotbs1_j22r5nl3_.dbf deleted
+auxiliary instance file /u01/auxdest/APPSCDB/datafile/o1_mf_system_j22r4kby_.dbf deleted
+auxiliary instance file /u01/auxdest/APPSCDB/BAD41B2A67FA41D2E053BC96050A6869/datafile/o1_mf_system_j22r5nk8_.dbf deleted
+auxiliary instance file /u01/auxdest/APPSCDB/controlfile/o1_mf_j22r4c4o_.ctl deleted
+auxiliary instance file tspitr_bfra_48532.dmp deleted
+Finished recover at 2021-FEB-08 13:05:40
+
+RMAN> exit
+
+
+Recovery Manager complete.
+
+[oracle@ol7db1 ~]$ sqlplus / as sysdba
+
+SQL*Plus: Release 19.0.0.0.0 - Production on Mon Feb 8 12:52:41 2021
+Version 19.3.0.0.0
+
+Copyright (c) 1982, 2019, Oracle.  All rights reserved.
+
+
+Connected to:
+Oracle Database 19c Enterprise Edition Release 19.0.0.0.0 - Production
+Version 19.3.0.0.0
+
+SQL> conn zdatabase/oracle@appspdb
+Connected.
+SQL> select count(1) from  zdatabase.c1;
+
+  COUNT(1)
+----------
+	 1
+
+SQL> SET LONG 20000 LONGCHUNKSIZE 20000 PAGESIZE 0 LINESIZE 1000 FEEDBACK OFF VERIFY OFF TRIMSPOOL ON
+SQL> select dbms_metadata.get_ddl('TABLE','C1','ZDATABASE') from dual;
+
+  CREATE TABLE "ZDATABASE"."C1"
+   (	"C1" NUMBER(*,0),
+	"C2" NUMBER(*,0),
+	 PRIMARY KEY ("C1")
+  USING INDEX PCTFREE 10 INITRANS 2 MAXTRANS 255 COMPUTE STATISTICS
+  STORAGE(INITIAL 65536 NEXT 1048576 MINEXTENTS 1 MAXEXTENTS 2147483645
+  PCTINCREASE 0 FREELISTS 1 FREELIST GROUPS 1
+  BUFFER_POOL DEFAULT FLASH_CACHE DEFAULT CELL_FLASH_CACHE DEFAULT)
+  TABLESPACE "TBS_C1"  ENABLE,
+	 CONSTRAINT "FK1" FOREIGN KEY ("C2")
+	  REFERENCES "ZDATABASE"."P1" ("C1") ENABLE
+   ) SEGMENT CREATION IMMEDIATE
+  PCTFREE 10 PCTUSED 40 INITRANS 1 MAXTRANS 255
+ NOCOMPRESS LOGGING
+  STORAGE(INITIAL 65536 NEXT 1048576 MINEXTENTS 1 MAXEXTENTS 2147483645
+  PCTINCREASE 0 FREELISTS 1 FREELIST GROUPS 1
+  BUFFER_POOL DEFAULT FLASH_CACHE DEFAULT CELL_FLASH_CACHE DEFAULT)
+  TABLESPACE "TBS_C1"
+
+#RESTORE OK
+
+
+
+
