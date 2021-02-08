@@ -79,6 +79,30 @@ Successfully Setup Software.
 The installation of Oracle GoldenGate Services was successful.
 Please check '/u01/app/oraInventory/logs/silentInstall2021-02-07_06-57-43PM.log' for more details.
  
+#CONFIGURE TNSNAMES.ORA FILE 
+vim /u01/app/oracle/product/19.3.0/dbhome_1/network/admin/tnsnames.ora
+#alias for access pdb
+appspdb =
+  (DESCRIPTION =
+    (ADDRESS_LIST =
+      (ADDRESS = (PROTOCOL = TCP)(HOST = 192.168.1.130)(PORT = 1521))
+    )
+    (CONNECT_DATA =
+      (SERVICE_NAME = appspdb)
+    )
+  )
+
+#alias for access cdb$root
+appscdb =
+(DESCRIPTION =
+    (ADDRESS_LIST =
+      (ADDRESS = (PROTOCOL = TCP)(HOST = 192.168.1.130)(PORT = 1521))
+    )
+    (CONNECT_DATA =
+      (SERVICE_NAME = appscdb)
+    )
+  )
+
 #DEPLOYING ORACLE GOLDENGATE MICROSERVICES
 #AS ROOT
 xhost +
@@ -357,3 +381,5 @@ http://localhost:7820/?root=account
 				Oracle GoldenGate Service Manager
 				User Name	oggadmin
 				Password	**************
+				
+
