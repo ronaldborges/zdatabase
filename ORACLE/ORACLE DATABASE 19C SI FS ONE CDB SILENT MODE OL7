@@ -420,7 +420,31 @@ Service "appspdb" has 1 instance(s).
   Instance "appscdb1", status READY, has 1 handler(s) for this service...
 The command completed successfully
 
+#CONFIGURE TNSNAMES.ORA
+cat > /u01/app/oracle/product/19.3.0/dbhome_1/network/admin/tnsnames.ora <<EOF
+appspdb =
+  (DESCRIPTION =
+    (ADDRESS_LIST =
+      (ADDRESS = (PROTOCOL = TCP)(HOST = 10.5.150.188)(PORT = 1521))
+    )
+    (CONNECT_DATA =
+      (SERVICE_NAME = appspdb)
+    )
+  )
+
+appscdb =
+  (DESCRIPTION =
+    (ADDRESS_LIST =
+      (ADDRESS = (PROTOCOL = TCP)(HOST = 10.5.150.188)(PORT = 1521))
+    )
+    (CONNECT_DATA =
+      (SERVICE_NAME = appscdb)
+    )
+  )
+EOF  
+
 #AUTOMATIC START SERVICE ORACLE
+#AS ROOT
 vim /etc/oratab
 appscdb1:/u01/app/oracle/product/19.3.0/dbhome_1:Y
 
