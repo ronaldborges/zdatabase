@@ -1,0 +1,359 @@
+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
++   ORACLE DATABASE 19C GOLDENGATE 19C MICROSERVICES IN SILENT MODE ON OL7 +
+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+
+#NOTE
+Oracle GoldenGate is the industryâ€™s premier replication tool and this replication platform supports a wide range of Oracle and other heterogeneous platforms. 
+The addition of the Microservices Architecture allows this premier replication tool to scale out to the cloud and provide a secure, flexible and scalable replication platform.
+By using Oracle GoldenGate Microservices on Oracle Cloud Marketplace, replication from on-premises to cloud and cloud-to-cloud platforms can easily be established and managed.
+
+By using Oracle GoldenGate Microservices on Marketplace, you can deploy Oracle GoldenGate in an off-box architecture, 
+which means you can run and manage your Oracle GoldenGate deployment from a single location.
+Here are the prerequisites required to deploy Oracle GoldenGate Microservices:
+Oracle Cloud Account
+Access to assigned Oracle Cloud Tenant
+Compute node resources within Oracle Cloud Tenant
+Local SSH/RSA Key
+
+#CREATE DIRETORY FOR GOLDENGATE
+mkdir -p /u01/app/oracle/product/ggma
+
+#CREATE RESPONSE FILE TO INSTALL GOLDENGATE MICROSERVICES SOFTWARE IN SILENT MODE
+vi /home/oracle/oggcore.rsp
+oracle.install.responseFileVersion=/oracle/install/rspfmt_ogginstall_response_schema_v19_1_0
+INSTALL_OPTION=ORA19c
+SOFTWARE_LOCATION=/u01/app/oracle/product/ggma
+START_MANAGER=true
+MANAGER_PORT=7909
+DATABASE_LOCATION=/u01/app/oracle/product/19.3.0/dbhome_1
+INVENTORY_LOCATION=/u01/app/oraInventory/
+UNIX_GROUP_NAME=oinstall
+
+#ADD GOLDENGATE VARIABLES TO BASH_PROFILE
+cd /home/oracle/scripts
+vi setEnv.sh
+export GGATEMA=/u01/app/oracle/product/ggma
+
+#VALIDATE
+source .bash_profile
+echo $GGATEMA
+/u01/app/oracle/product/ggma
+
+#DOWNLOAD SOFTWARE GOLDENGATE
+mkdir -p
+cd /tmp/ggma
+wget https://download.oracle.com/otn/goldengate/191000/191004_fbo_ggs_Linux_x64_services_shiphome.zip?AuthParam=1612733154_aef318bf393584c79bb63b93fb231c36
+
+ls -ltr
+total 754160
+-rw-r--r--. 1 oracle oinstall 772255600 Feb  7 18:28 191004_fbo_ggs_Linux_x64_services_shiphome.zip
+
+#UNZIP FILE 
+unzip 191004_fbo_ggs_Linux_x64_services_shiphome.zip
+
+ls -ltr
+total 754496
+-rw-r--r--. 1 oracle oinstall      1413 May 29  2019 OGG-19.1.0.0-README.txt
+drwxr-xr-x. 3 oracle oinstall      4096 Oct 18  2019 fbo_ggs_Linux_x64_services_shiphome
+-rw-r--r--. 1 oracle oinstall    332523 Oct 21  2019 OGG_WinUnix_Rel_Notes_19.1.0.0.4.pdf
+-rw-r--r--. 1 oracle oinstall 772255600 Feb  7 18:28 191004_fbo_ggs_Linux_x64_services_shiphome.zip
+
+#NAVIGATE TO 
+cd tmp/ggma/fbo_ggs_Linux_x64_services_shiphome/Disk1
+ls -ltr 
+total 16
+drwxr-xr-x.  4 oracle oinstall 4096 Oct 18 10:20 install
+drwxr-xr-x. 12 oracle oinstall 4096 Oct 18 10:20 stage
+-rwxr-xr-x.  1 oracle oinstall  918 Oct 18 10:20 runInstaller
+drwxrwxr-x.  2 oracle oinstall 4096 Apr 16 23:59 response
+
+#RUN INSTALLER
+./runInstaller -silent -responseFile /home/oracle/oggcorema.rsp
+Starting Oracle Universal Installer...
+
+Checking Temp space: must be greater than 120 MB.   Actual 12250 MB    Passed
+Checking swap space: must be greater than 150 MB.   Actual 4087 MB    Passed
+Preparing to launch Oracle Universal Installer from /tmp/OraInstall2021-02-07_06-57-43PM. Please wait ...[oracle@ol7db2 Disk1]$ You can find the log of this install session at:
+ /u01/app/oraInventory/logs/installActions2021-02-07_06-57-43PM.log
+Successfully Setup Software.
+The installation of Oracle GoldenGate Services was successful.
+Please check '/u01/app/oraInventory/logs/silentInstall2021-02-07_06-57-43PM.log' for more details.
+ 
+#DEPLOYING ORACLE GOLDENGATE MICROSERVICES
+#AS ROOT
+xhost +
+su – oracle
+mkdir -p /u01/app/oracle/product/ggma/ggmasm
+export DISPLAY=:0.0
+/u01/app/oracle/product/ggma/bin/oggca.sh
+
+#screen 1
+	Select Service Manager Options
+		Service Manager Details
+			( ) Existing Service Manager
+				[ ] Integrated with XAG
+			
+			(*) Create New Service Manager
+				Service Manager Deployment Home
+				/u01/app/oracle/product/ggma/ggmasm________ [Browse...]
+
+				[*] Register Service Manager as a system service/daemon
+				[ ] Integrate with XAG
+			
+			Service Manager Connection Details
+				Listening hostname/address				ol7db1
+				Listening port 							      7820
+
+#screen 2
+	Select Configuration Options
+			Deployment Configuration Option
+				(*) Add new GoldenGate deployment
+				
+#screen 3
+	Select Deployment Details
+		Deployment Details
+			Deployment Name		DeploymentOGGMA
+			
+			[ ] Enable Sharding
+			
+			Software Home		/u01/app/oracle/product/ggma/DeploymentOGGMA	[Browser...]
+	
+#screen 4
+	Specify Deployment Directories
+		Deployment home:
+		/u01/app/oracle/product/ggma/ggmasm/DeploymentOGGMA________ 			  [Browse...]
+		
+		[ ] Customize directories
+		
+		Configuration files
+		/u01/app/oracle/product/ggma/ggmasm/DeploymentOGGMA/etc					    [Browse...]
+		
+		Configuration bootstrap files, process parameter files
+		/u01/app/oracle/product/ggma/ggmasm/DeploymentOGGMA/etc/conf			  [Browse...]
+		
+		Security configuration files
+		/u01/app/oracle/product/ggma/ggmasm/DeploymentOGGMA/etc/ssl				  [Browse...]
+		
+		Runtime and support files
+		/u01/app/oracle/product/ggma/ggmasm/DeploymentOGGMA/var					    [Browse...]
+		
+		Trail files
+		/u01/app/oracle/product/ggma/ggmasm/DeploymentOGGMA/var/lib/data		[Browse...]
+		
+#screen 5
+	Specify Environment Variables
+		Environment Variables
+		
+		Name				Value
+		OGG_HOME			/u01/app/oracle/product/ggma
+		ORACLE_HOME			/u01/app/oracle/product/19.3.0/dbhome_1
+		LD_LIBRARY_PATH		{$ORACLE_HOME}/lib:/u01/app/oracle/product/19.3.0/dbhome_1/lib:/lib:/usr/lib
+		TNS_ADMIN			/u01/app/oracle/product/19.3.0/dbhome_1/network/admin
+		ORACLE_SID			appscdb1
+	
+#screen 6
+	Specify Administrator Account
+		Administrator account
+			Username			    oggadmin	
+			
+			Password			    **************
+			
+			Confirm Password	**************
+	
+			[*] Enable strong password policity in the new deployment
+
+#screen 7
+	Specify Security Options
+		[ ] SSL/TLS security
+		
+			Server
+			
+			( )	Use existing Wallet
+			
+			( ) Select GoldenGate certificate
+				Private Key file
+				Pass Phrase
+				
+			Client
+			
+			( ) Use existing Wallet
+			
+			( ) Select GoldenGate certificate
+				Private Key file
+				Pass Phrase
+
+#screen 8
+	Specify Port Settings
+		Service Manager Details
+			listening hostname/address						Listening port	
+			ol7db1											          7820
+		
+		Servers
+		[*] Enable Administration Server		Administration Server port		8001
+		[*] Enable Distribuition Server			Distribuition Server port		  8002
+		[*] Enable Reciever Server				  Reciever Server port			    8003
+	
+		Monitoring
+		[*] Enable Monitoring 					[ ] XAG Critical
+		Metrics Server port						  8004
+		Metrics Server UDP port (data)	8005
+		Metrics Server DataStore type		DBD
+		Metrics Server DataStore home			
+	
+#screen 9
+	Specify OGG Replication Settings
+		Replication Options
+			Default Schema
+			ggadmin 
+	
+#screen 10
+	Execute Configuration Scripts
+		In order to register Service Manager as a system service/daemon, 
+		the following script needs to be executed as the "root" user
+	
+						script
+		/u01/app/oracle/product/ggma/ggmasm/bin/registerServiceManager.sh
+		
+		To execute the configuration script:
+		1. Open a terminal window
+		2. Login as "root"
+		3. Run the script
+		4. Return to this window and click "OK" to continue
+		
+	
+[root@ol7db1 ~]# /u01/app/oracle/product/ggma/ggmasm/bin/registerServiceManager.sh
+Copyright (c) 2017, Oracle and/or its affiliates. All rights reserved.
+----------------------------------------------------
+     Oracle GoldenGate Install As Service Script
+----------------------------------------------------
+OGG_HOME=/u01/app/oracle/product/ggma
+OGG_CONF_HOME=/u01/app/oracle/product/ggma/ggmasm/etc/conf
+OGG_VAR_HOME=/u01/app/oracle/product/ggma/ggmasm/var
+OGG_USER=oracle
+Running OracleGoldenGateInstall.sh...
+Created symlink from /etc/systemd/system/multi-user.target.wants/OracleGoldenGate.service to /etc/systemd/system/OracleGoldenGate.service.
+
+#screen 11	
+	The configuration of The Oracle GoldenGate Deployment was sucessful.
+	
+#CHECK ORACLE GOLDENGATE PROCESS	
+ps -ef | grep oracle
+oracle   10366     1  0 20:48 ?        00:00:01 /u01/app/oracle/product/ggma/bin/ServiceManager --config /u01/app/oracle/product/ggma/ggmasm/var/temp/ServiceManager-config.dat --force
+oracle   10392 10366  0 20:48 ?        00:00:01 /u01/app/oracle/product/ggma/bin/adminsrvr --config /u01/app/oracle/product/ggma/ggmasm/var/temp/DeploymentOGGMA-adminsrvr-config.dat --force --quiet
+oracle   10394 10366  0 20:48 ?        00:00:01 /u01/app/oracle/product/ggma/bin/distsrvr --config /u01/app/oracle/product/ggma/ggmasm/var/temp/DeploymentOGGMA-distsrvr-config.dat --force --quiet
+oracle   10396 10366  0 20:48 ?        00:00:01 /u01/app/oracle/product/ggma/bin/recvsrvr --config /u01/app/oracle/product/ggma/ggmasm/var/temp/DeploymentOGGMA-recvsrvr-config.dat --force --quiet
+oracle   10402 10366  1 20:48 ?        00:00:05 /u01/app/oracle/product/ggma/bin/pmsrvr --config /u01/app/oracle/product/ggma/ggmasm/var/temp/DeploymentOGGMA-pmsrvr-config.dat --force --quiet
+
+#AFTER INSTALL ACCESS THE SERVICE BY BROWSER (FIREFOX)
+http://192.168.1.130:7820/?root=account
+#OR
+http://localhost:7820/?root=account
+
+
+				Oracle GoldenGate Service Manager
+				User Name 	oggadmin
+				Password	  **************
+				
+#NOTE OPTION
+#IF YOU WANT CREATE A SERVICE MANAGER IN SILENT MODE IS POSSIBLE USING A RESPONSE FILE
+
+vim /home/oracle/oggcama.rsp
+oracle.install.responseFileVersion=/oracle/install/rspfmt_oggca_response_schema_v19_1_0
+CONFIGURATION_OPTION=ADD
+DEPLOYMENT_NAME=DeploymentOGGMA
+ADMINISTRATOR_USER=oggadmin
+ADMINISTRATOR_PASSWORD=**************
+SERVICEMANAGER_DEPLOYMENT_HOME=/u01/app/oracle/product/ggma/ggmasm
+HOST_SERVICEMANAGER=ol7db1
+PORT_SERVICEMANAGER=7820
+SECURITY_ENABLED=false
+STRONG_PWD_POLICY_ENABLED=true
+CREATE_NEW_SERVICEMANAGER=true
+REGISTER_SERVICEMANAGER_AS_A_SERVICE=true
+INTEGRATE_SERVICEMANAGER_WITH_XAG=false
+EXISTING_SERVICEMANAGER_IS_XAG_ENABLED=false
+OGG_SOFTWARE_HOME=/u01/app/oracle/product/ggma
+OGG_DEPLOYMENT_HOME=/u01/app/oracle/product/ggma/ggmasm/DeploymentOGGMA
+OGG_ETC_HOME=
+OGG_CONF_HOME=
+OGG_SSL_HOME=
+OGG_VAR_HOME=
+OGG_DATA_HOME=
+ENV_ORACLE_HOME=/u01/app/oracle/product/19.3.0/dbhome_1
+ENV_LD_LIBRARY_PATH=${ORACLE_HOME}/lib:/u01/app/oracle/product/19.3.0/dbhome_1/lib:/lib:/usr/lib
+ENV_TNS_ADMIN=/u01/app/oracle/product/19.3.0/network/admin
+ENV_ORACLE_SID=appscdb1
+ENV_STREAMS_POOL_SIZE=
+ENV_USER_VARS=
+CIPHER_SUITES=
+SERVER_WALLET=
+SERVER_CERTIFICATE=
+SERVER_CERTIFICATE_KEY_FILE=
+SERVER_CERTIFICATE_KEY_FILE_PWD=
+CLIENT_WALLET=
+CLIENT_CERTIFICATE=
+CLIENT_CERTIFICATE_KEY_FILE=
+CLIENT_CERTIFICATE_KEY_FILE_PWD=
+SHARDING_ENABLED=false
+SHARDING_USER=
+ADMINISTRATION_SERVER_ENABLED=true
+PORT_ADMINSRVR=8001
+DISTRIBUTION_SERVER_ENABLED=true
+PORT_DISTSRVR=8002
+NON_SECURE_DISTSRVR_CONNECTS_TO_SECURE_RCVRSRVR=false
+RECEIVER_SERVER_ENABLED=true
+PORT_RCVRSRVR=8003
+METRICS_SERVER_ENABLED=true
+METRICS_SERVER_IS_CRITICAL=false
+PORT_PMSRVR=8004
+UDP_PORT_PMSRVR=8005
+PMSRVR_DATASTORE_TYPE=BDB
+PMSRVR_DATASTORE_HOME=/u01/app/oracle/product/ggma/ggmasm/metrics
+OGG_SCHEMA=ggadmin
+REMOVE_DEPLOYMENT_FROM_DISK=				
+
+#DEPLOYING ORACLE GOLDENGATE MICROSERVICES IN SILENT MODE
+
+su - oracle
+mkdir -p /u01/app/oracle/product/ggma/ggmasm
+/u01/app/oracle/product/ggma/bin/oggca.sh -silent -responseFile /home/oracle/oggcama.rsp 	
+Oracle GoldenGate Service Manager for Oracle
+Version 19.1.0.0.4 OGGCORE_19.1.0.0.0_PLATFORMS_191017.1054
+
+Copyright (C) 1995, 2019, Oracle and/or its affiliates. All rights reserved.
+
+Linux, x64, 64bit (optimized) on Oct 17 2019 14:47:09
+Operating system character set identified as UTF-8.
+
+In order to register Service Manager as a system service/daemon, as a "root" user, execute the following script:
+        (1). /u01/app/oracle/product/ggma/ggmasm/bin/registerServiceManager.sh
+
+To execute the configuration scripts:
+  1.Open a terminal window
+  2.Login as "root"
+  3.Run the script
+
+
+Successfully Setup Software.
+
+[root@ol7db2 ~]# /u01/app/oracle/product/ggma/ggmasm/bin/registerServiceManager.sh
+Copyright (c) 2017, Oracle and/or its affiliates. All rights reserved.
+----------------------------------------------------
+     Oracle GoldenGate Install As Service Script
+----------------------------------------------------
+OGG_HOME=/u01/app/oracle/product/ggma
+OGG_CONF_HOME=/u01/app/oracle/product/ggma/ggmasm/etc/conf
+OGG_VAR_HOME=/u01/app/oracle/product/ggma/ggmasm/var
+OGG_USER=oracle
+Running OracleGoldenGateInstall.sh...
+Created symlink from /etc/systemd/system/multi-user.target.wants/OracleGoldenGate.service to /etc/systemd/system/OracleGoldenGate.service.
+
+#AFTER INSTALL ACCESS THE SERVICE BY BROWSER (FIREFOX)
+http://192.168.1.130:7820/?root=account
+#OR
+http://localhost:7820/?root=account
+
+
+				Oracle GoldenGate Service Manager
+				User Name 	oggadmin
+				Password	  **************
