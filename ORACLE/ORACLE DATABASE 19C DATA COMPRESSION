@@ -1,0 +1,390 @@
++++++++++++++++++++++++++++++++++++++++++++
++  ORACLE DATABASE 19C DATA COMPRESSION   +
++++++++++++++++++++++++++++++++++++++++++++
+
+#NOTE
+Compression is available for heap tables, 
+partitioned tables (named partitions may be excluded, LOBs, multi-column indexes, and SecureFile tablespaces).
+Advanced compression only kicks in if it believes the saving will exceed 20%. 
+This is done to avoid wasting CPU. Be sure to test compressibility before implementing this technology.
+The Advanced Compression license in 12cR1 includes not just block compression 
+but also unstructured data (files), network transmissions, and backups.
+Exadata Note: There are three technologies critical to understand with Exadata. 
+SmartScan, Hybrid Column Compression (HCC), and Storage Indexes. HCC is one of the three pillars.
+
+Data Dictionary Objects	
++---------------+-----------------------+-----------------------+
+| ALL_INDEXES	| DBA_INDEXES             | TAB$                  |
+| ALL_TABLES	| DBA_TABLES              | USER_INDEXES          |
+| CDB_INDEXES	| DBMS_COMPRESSION        | USER_TABLES           |
+| CDB_TABLES	| IND$                    |                       |	
++---------------+-----------------------+-----------------------+
+
+$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
+
+#TABLESPACE COMPRESSION
+
+#NOTE
+Should I enable compression at the Tablespace level?
+Regarding whether or not to compress at the Tablespace level: For custom applications, the oracle
+recommends compressing at the Tablespace level, but users should consider turning off
+compression on very high traffic tables, such as tables used as queues. For commercial
+packaged applications, where typically the number of objects can be very large, the
+recommended approach is object selection instead of exclusion. Often the largest tables and
+indexes consume the majority of the database space. Compressing those objects, while
+excluding high traffic objects like tables used as queues, will give the majority of the
+compression benefits. Other objects can be compressed over time as needed. 
+
+[oracle@ol7db1 ~]$ sqlplus / as sysdba
+
+SQL*Plus: Release 19.0.0.0.0 - Production on Mon Feb 8 14:45:00 2021
+Version 19.3.0.0.0
+
+Copyright (c) 1982, 2019, Oracle.  All rights reserved.
+
+
+Connected to:
+Oracle Database 19c Enterprise Edition Release 19.0.0.0.0 - Production
+Version 19.3.0.0.0
+
+SQL> select name from v$pdbs;
+
+NAME
+--------------------------------------------------------------------------------
+PDB$SEED
+APPSPDB
+
+SQL> alter session set container=APPSPDB;                
+
+Session altered.
+
+SQL> CREATE TABLESPACE tbscompress DATAFILE '/u01/app/oracle/oradata/APPSCDB/appspdb/tbscompress_01.dbf' SIZE 10M AUTOEXTEND ON NEXT 50M MAXSIZE 1G DEFAULT COMPRESS; 
+
+Tablespace created.
+
+SQL> CREATE TABLESPACE tbscompressall DATAFILE '/u01/app/oracle/oradata/APPSCDB/appspdb/tbscompressall_01.dbf' SIZE 10M AUTOEXTEND ON NEXT 50M MAXSIZE 1G DEFAULT COMPRESS FOR ALL OPERATIONS;
+
+Tablespace created.
+
+SQL> CREATE TABLESPACE tbscompressdir DATAFILE '/u01/app/oracle/oradata/APPSCDB/appspdb/tbscompressdir_01.dbf' SIZE 10M AUTOEXTEND ON NEXT 50M MAXSIZE 1G DEFAULT COMPRESS FOR DIRECT_LOAD OPERATIONS;
+
+Tablespace created.
+
+SQL> set lines 300 pages 100
+
+SQL> SELECT tablespace_name, def_tab_compression AS DEF_TAB_COMP, compress_for AS COMP_FOR,
+       def_inmemory_compression AS DEF_INMEM_COMP, def_index_compression AS DEF_IND_COMP,
+       index_compress_for AS IND_COMP
+FROM dba_tablespaces
+WHERE tablespace_name NOT LIKE 'APEX%'
+AND tablespace_name <> 'TEMP'
+ORDER BY 1;
+  2    3    4    5    6    7  
+TABLESPACE_NAME 	       DEF_TAB_ COMP_FOR		       DEF_INMEM_COMP	 DEF_IND_ IND_COMP
+------------------------------ -------- ------------------------------ ----------------- -------- -------------
+SYSAUX			       DISABLED 						 DISABLED
+SYSTEM			       DISABLED 						 DISABLED
+TBSCOMPRESS		       ENABLED	BASIC						 ENABLED  NONE
+TBSCOMPRESSALL		       ENABLED	ADVANCED					 ENABLED  ADVANCED LOW
+TBSCOMPRESSDIR		       ENABLED	BASIC						 ENABLED  NONE
+UNDOTBS1		       DISABLED 						 DISABLED
+USERS			       DISABLED 						 DISABLED
+
+7 rows selected.
+
+#ADVANCED OLTP COMPRESSION FOR TABLE
+DEFAULT [TABLE] COMPRESS FOR OLTP
+
+[oracle@ol7db1 ~]$ sqlplus / as sysdba
+
+SQL*Plus: Release 19.0.0.0.0 - Production on Mon Feb 8 16:22:44 2021
+Version 19.3.0.0.0
+
+Copyright (c) 1982, 2019, Oracle.  All rights reserved.
+
+
+Connected to:
+Oracle Database 19c Enterprise Edition Release 19.0.0.0.0 - Production
+Version 19.3.0.0.0
+
+SQL> CREATE TABLESPACE tbscompressoltp DATAFILE '/u01/app/oracle/oradata/APPSCDB/appspdb/tbscompressoltp_01.dbf' SIZE 10M AUTOEXTEND ON NEXT 50M MAXSIZE 1G DEFAULT COMPRESS FOR OLTP;
+
+Tablespace created.
+
+SQL> set lines 300 pages 100
+
+SQL> SELECT tablespace_name, def_tab_compression AS DEF_TAB_COMP, compress_for AS COMP_FOR,
+       def_inmemory_compression AS DEF_INMEM_COMP, def_index_compression AS DEF_IND_COMP,
+       index_compress_for AS IND_COMP
+FROM dba_tablespaces
+WHERE tablespace_name NOT LIKE 'APEX%'
+AND tablespace_name <> 'TEMP'
+ORDER BY 1;  2    3    4    5    6    7  
+
+TABLESPACE_NAME 	       DEF_TAB_ COMP_FOR		       DEF_INMEM_COMP	 DEF_IND_ IND_COMP
+------------------------------ -------- ------------------------------ ----------------- -------- -------------
+SYSAUX			       DISABLED 						 DISABLED
+SYSTEM			       DISABLED 						 DISABLED
+TBSCOMPRESS		       ENABLED	BASIC						 ENABLED  NONE
+TBSCOMPRESSALL		       ENABLED	ADVANCED					 ENABLED  ADVANCED LOW
+TBSCOMPRESSDIR		       ENABLED	BASIC						 ENABLED  NONE
+TBSCOMPRESSOLTP 	       ENABLED	ADVANCED					 ENABLED  ADVANCED LOW
+UNDOTBS1		       DISABLED 						 DISABLED
+USERS			       DISABLED 						 DISABLED
+
+8 rows selected.
+
+#ADVANCED QUERY COMPRESSION FOR TABLE
+DEFAULT [TABLE] COMPRESS FOR QUERY <LOW | HIGH>
+
+SQL> CREATE TABLESPACE tbscompressquery DATAFILE '/u01/app/oracle/oradata/APPSCDB/appspdb/tbscompressquery_01.dbf' SIZE 10M AUTOEXTEND ON NEXT 50M MAXSIZE 1G DEFAULT TABLE COMPRESS FOR QUERY HIGH;
+CREATE TABLESPACE tbscompressquery DATAFILE '/u01/app/oracle/oradata/APPSCDB/appspdb/tbscompressquery_01.dbf' SIZE 10M AUTOEXTEND ON NEXT 50M MAXSIZE 1G DEFAULT TABLE COMPRESS FOR QUERY HIGH
+*
+ERROR at line 1:
+ORA-64307:  Exadata Hybrid Columnar Compression is not supported for tablespaces on this storage type
+
+#ADVANCED ARCHIVE COMPRESSION FOR TABLE
+DEFAULT [TABLE] COMPRESS FOR ARCHIVE <LOW | HIGH>
+
+SQL> CREATE TABLESPACE tbscompressarch DATAFILE '/u01/app/oracle/oradata/APPSCDB/appspdb/tbscompressarch_01.dbf' SIZE 10M AUTOEXTEND ON NEXT 50M MAXSIZE 1G DEFAULT TABLE COMPRESS FOR QUERY LOW;
+CREATE TABLESPACE tbscompressarch DATAFILE '/u01/app/oracle/oradata/APPSCDB/appspdb/tbscompressarch_01.dbf' SIZE 10M AUTOEXTEND ON NEXT 50M MAXSIZE 1G DEFAULT TABLE COMPRESS FOR QUERY LOW
+*
+ERROR at line 1:
+ORA-64307:  Exadata Hybrid Columnar Compression is not supported for tablespaces on this storage type
+
+#ADVANCED COMPRESSION FOR INDEX
+DEFAULT INDEX COMPRESS ADVANCED <LOW | HIGH>
+
+SQL> CREATE TABLESPACE tbscompressidxa DATAFILE '/u01/app/oracle/oradata/APPSCDB/appspdb/tbscompressidxa_01.dbf' SIZE 10M AUTOEXTEND ON NEXT 50M MAXSIZE 1G DEFAULT INDEX COMPRESS ADVANCED HIGH;
+
+Tablespace created.
+
+SQL> SELECT tablespace_name, def_tab_compression AS DEF_TAB_COMP, compress_for AS COMP_FOR,
+       def_inmemory_compression AS DEF_INMEM_COMP, def_index_compression AS DEF_IND_COMP,
+       index_compress_for AS IND_COMP
+FROM dba_tablespaces
+WHERE tablespace_name NOT LIKE 'APEX%'
+AND tablespace_name <> 'TEMP'
+ORDER BY 1;  2    3    4    5    6    7  
+
+TABLESPACE_NAME 	       DEF_TAB_ COMP_FOR		       DEF_INMEM_COMP	 DEF_IND_ IND_COMP
+------------------------------ -------- ------------------------------ ----------------- -------- -------------
+SYSAUX			       DISABLED 						 DISABLED
+SYSTEM			       DISABLED 						 DISABLED
+TBSCOMPRESS		       ENABLED	BASIC						 ENABLED  NONE
+TBSCOMPRESSALL		       ENABLED	ADVANCED					 ENABLED  ADVANCED LOW
+TBSCOMPRESSDIR		       ENABLED	BASIC						 ENABLED  NONE
+TBSCOMPRESSIDXA 	       DISABLED 						 ENABLED  ADVANCED HIGH
+TBSCOMPRESSOLTP 	       ENABLED	ADVANCED					 ENABLED  ADVANCED LOW
+UNDOTBS1		       DISABLED 						 DISABLED
+USERS			       DISABLED 						 DISABLED
+
+9 rows selected.
+
+#IN-MEMORY COMPRESSION FOR DML
+DEFAULT INMEMORY MEMCOMPRESS FOR DML
+
+SQL> CREATE TABLESPACE tbscompressmemdml DATAFILE '/u01/app/oracle/oradata/APPSCDB/appspdb/tbscompressmemdml_01.dbf' SIZE 10M AUTOEXTEND ON NEXT 50M MAXSIZE 1G DEFAULT INMEMORY MEMCOMPRESS FOR DML;
+
+Tablespace created.
+
+SQL> SELECT tablespace_name, def_tab_compression AS DEF_TAB_COMP, compress_for AS COMP_FOR,
+       def_inmemory_compression AS DEF_INMEM_COMP, def_index_compression AS DEF_IND_COMP,
+       index_compress_for AS IND_COMP
+FROM dba_tablespaces
+WHERE tablespace_name NOT LIKE 'APEX%'
+AND tablespace_name <> 'TEMP'
+ORDER BY 1;  2    3    4    5    6    7  
+
+TABLESPACE_NAME 	       DEF_TAB_ COMP_FOR		       DEF_INMEM_COMP	 DEF_IND_ IND_COMP
+------------------------------ -------- ------------------------------ ----------------- -------- -------------
+SYSAUX			       DISABLED 						 DISABLED
+SYSTEM			       DISABLED 						 DISABLED
+TBSCOMPRESS		       ENABLED	BASIC						 ENABLED  NONE
+TBSCOMPRESSALL		       ENABLED	ADVANCED					 ENABLED  ADVANCED LOW
+TBSCOMPRESSDIR		       ENABLED	BASIC						 ENABLED  NONE
+TBSCOMPRESSIDXA 	       DISABLED 						 ENABLED  ADVANCED HIGH
+TBSCOMPRESSMEMDML	       DISABLED 			       FOR DML		 DISABLED
+TBSCOMPRESSOLTP 	       ENABLED	ADVANCED					 ENABLED  ADVANCED LOW
+UNDOTBS1		       DISABLED 						 DISABLED
+USERS			       DISABLED 						 DISABLED
+
+10 rows selected.
+
+SQL> SELECT tablespace_name, def_inmemory, def_inmemory_priority, def_inmemory_distribute,
+def_inmemory_compression, def_inmemory_duplicate
+FROM dba_tablespaces
+WHERE TABLESPACE_NAME NOT LIKE 'APEX%'
+AND TABLESPACE_NAME <> 'TEMP'
+ORDER BY tablespace_name;  2    3    4    5    6  
+
+TABLESPACE_NAME 	       DEF_INME DEF_INME DEF_INMEMORY_DI DEF_INMEMORY_COMP DEF_INMEMORY_
+------------------------------ -------- -------- --------------- ----------------- -------------
+SYSAUX			       DISABLED
+SYSTEM			       DISABLED
+TBSCOMPRESS		       DISABLED
+TBSCOMPRESSALL		       DISABLED
+TBSCOMPRESSDIR		       DISABLED
+TBSCOMPRESSIDXA 	       DISABLED
+TBSCOMPRESSMEMDML	       ENABLED	NONE	 AUTO		 FOR DML	   NO DUPLICATE
+TBSCOMPRESSOLTP 	       DISABLED
+UNDOTBS1		       DISABLED
+USERS			       DISABLED
+
+10 rows selected.
+
+#IN-MEMORY COMPRESSION FOR QUERY
+DEFAULT INMEMORY MEMCOMPRESS FOR QUERY <LOW | HIGH>
+
+SQL> CREATE TABLESPACE tbscompressmemqhigh DATAFILE '/u01/app/oracle/oradata/APPSCDB/appspdb/tbscompressmemqhigh_01.dbf' SIZE 10M AUTOEXTEND ON NEXT 50M MAXSIZE 1G DEFAULT INMEMORY MEMCOMPRESS FOR QUERY HIGH;
+
+Tablespace created.
+
+SQL> SELECT tablespace_name, def_tab_compression AS DEF_TAB_COMP, compress_for AS COMP_FOR,
+       def_inmemory_compression AS DEF_INMEM_COMP, def_index_compression AS DEF_IND_COMP,
+       index_compress_for AS IND_COMP
+FROM dba_tablespaces
+WHERE tablespace_name NOT LIKE 'APEX%'
+AND tablespace_name <> 'TEMP'
+ORDER BY 1;  2    3    4    5    6    7  
+
+TABLESPACE_NAME 	       DEF_TAB_ COMP_FOR		       DEF_INMEM_COMP	 DEF_IND_ IND_COMP
+------------------------------ -------- ------------------------------ ----------------- -------- -------------
+SYSAUX			       DISABLED 						 DISABLED
+SYSTEM			       DISABLED 						 DISABLED
+TBSCOMPRESS		       ENABLED	BASIC						 ENABLED  NONE
+TBSCOMPRESSALL		       ENABLED	ADVANCED					 ENABLED  ADVANCED LOW
+TBSCOMPRESSDIR		       ENABLED	BASIC						 ENABLED  NONE
+TBSCOMPRESSIDXA 	       DISABLED 						 ENABLED  ADVANCED HIGH
+TBSCOMPRESSMEMDML	       DISABLED 			       FOR DML		 DISABLED
+TBSCOMPRESSMEMQHIGH	       DISABLED 			       FOR QUERY HIGH	 DISABLED
+TBSCOMPRESSOLTP 	       ENABLED	ADVANCED					 ENABLED  ADVANCED LOW
+UNDOTBS1		       DISABLED 						 DISABLED
+USERS			       DISABLED 						 DISABLED
+
+11 rows selected.
+
+SQL> SELECT tablespace_name, def_inmemory, def_inmemory_priority, def_inmemory_distribute,
+def_inmemory_compression, def_inmemory_duplicate
+FROM dba_tablespaces
+WHERE TABLESPACE_NAME NOT LIKE 'APEX%'
+AND TABLESPACE_NAME <> 'TEMP'
+ORDER BY tablespace_name;
+  2    3    4    5    6  
+TABLESPACE_NAME 	       DEF_INME DEF_INME DEF_INMEMORY_DI DEF_INMEMORY_COMP DEF_INMEMORY_
+------------------------------ -------- -------- --------------- ----------------- -------------
+SYSAUX			       DISABLED
+SYSTEM			       DISABLED
+TBSCOMPRESS		       DISABLED
+TBSCOMPRESSALL		       DISABLED
+TBSCOMPRESSDIR		       DISABLED
+TBSCOMPRESSIDXA 	       DISABLED
+TBSCOMPRESSMEMDML	       ENABLED	NONE	 AUTO		 FOR DML	   NO DUPLICATE
+TBSCOMPRESSMEMQHIGH	       ENABLED	NONE	 AUTO		 FOR QUERY HIGH    NO DUPLICATE
+TBSCOMPRESSOLTP 	       DISABLED
+UNDOTBS1		       DISABLED
+USERS			       DISABLED
+
+11 rows selected.
+
+#IN-MEMORY COMPRESSION FOR CAPACITY
+DEFAULT INMEMORY MEMCOMPRESS FOR CAPACITY <LOW | HIGH>
+
+SQL> CREATE TABLESPACE tbscompressmemcap DATAFILE '/u01/app/oracle/oradata/APPSCDB/appspdb/tbscompressmemcap_01.dbf' SIZE 10M AUTOEXTEND ON NEXT 50M MAXSIZE 1G DEFAULT INMEMORY MEMCOMPRESS FOR CAPACITY LOW;
+
+Tablespace created.
+
+SQL> SELECT tablespace_name, def_tab_compression AS DEF_TAB_COMP, compress_for AS COMP_FOR,
+       def_inmemory_compression AS DEF_INMEM_COMP, def_index_compression AS DEF_IND_COMP,
+       index_compress_for AS IND_COMP
+FROM dba_tablespaces
+WHERE tablespace_name NOT LIKE 'APEX%'
+AND tablespace_name <> 'TEMP'
+ORDER BY 1;
+  2    3    4    5    6    7  
+TABLESPACE_NAME 	       DEF_TAB_ COMP_FOR		       DEF_INMEM_COMP	 DEF_IND_ IND_COMP
+------------------------------ -------- ------------------------------ ----------------- -------- -------------
+SYSAUX			       DISABLED 						 DISABLED
+SYSTEM			       DISABLED 						 DISABLED
+TBSCOMPRESS		       ENABLED	BASIC						 ENABLED  NONE
+TBSCOMPRESSALL		       ENABLED	ADVANCED					 ENABLED  ADVANCED LOW
+TBSCOMPRESSDIR		       ENABLED	BASIC						 ENABLED  NONE
+TBSCOMPRESSIDXA 	       DISABLED 						 ENABLED  ADVANCED HIGH
+TBSCOMPRESSMEMCAP	       DISABLED 			       FOR CAPACITY LOW  DISABLED
+TBSCOMPRESSMEMDML	       DISABLED 			       FOR DML		 DISABLED
+TBSCOMPRESSMEMQHIGH	       DISABLED 			       FOR QUERY HIGH	 DISABLED
+TBSCOMPRESSOLTP 	       ENABLED	ADVANCED					 ENABLED  ADVANCED LOW
+UNDOTBS1		       DISABLED 						 DISABLED
+USERS			       DISABLED 						 DISABLED
+
+14 rows selected.
+
+SQL> SELECT tablespace_name, def_inmemory, def_inmemory_priority, def_inmemory_distribute,
+def_inmemory_compression, def_inmemory_duplicate
+FROM dba_tablespaces
+WHERE TABLESPACE_NAME NOT LIKE 'APEX%'
+AND TABLESPACE_NAME <> 'TEMP'
+ORDER BY tablespace_name;  2    3    4    5    6  
+
+TABLESPACE_NAME 	       DEF_INME DEF_INME DEF_INMEMORY_DI DEF_INMEMORY_COMP DEF_INMEMORY_
+------------------------------ -------- -------- --------------- ----------------- -------------
+SYSAUX			       DISABLED
+SYSTEM			       DISABLED
+TBSCOMPRESS		       DISABLED
+TBSCOMPRESSALL		       DISABLED
+TBSCOMPRESSDIR		       DISABLED
+TBSCOMPRESSIDXA 	       DISABLED
+TBSCOMPRESSMEMCAP	       ENABLED	NONE	 AUTO		 FOR CAPACITY LOW  NO DUPLICATE
+TBSCOMPRESSMEMDML	       ENABLED	NONE	 AUTO		 FOR DML	   NO DUPLICATE
+TBSCOMPRESSMEMQHIGH	       ENABLED	NONE	 AUTO		 FOR QUERY HIGH    NO DUPLICATE
+TBSCOMPRESSOLTP 	       DISABLED
+UNDOTBS1		       DISABLED
+USERS			       DISABLED
+
+12 rows selected.
+
+$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
+
+#TABLE COMPRESSION
+
+#NOTE
+The table_compression clause is valid only for heap-organized tables. 
+Use this clause to instruct the database whether to compress data segments to reduce disk use. 
+This clause is especially useful in environments such as data warehouses, 
+where the amount of insert and update operations is small. 
+The COMPRESS keyword enables table compression. 
+The NOCOMPRESS keyword disables table compression. NOCOMPRESS is the default.
+When you enable table compression, 
+Oracle Database attempts to compress data during direct-path INSERT operations when it is productive to do so. 
+The original import utility (imp) does not support direct-path INSERT, 
+and therefore cannot import data in a compressed format. 
+You can specify table compression for the following portions of a heap-organized table.
+For an entire table, in the physical_properties clause of relational_table or object_table
+For a range partition, in the table_partition_description of the range_partitioning clause
+For a list partition, in the table_partition_description of the list_partitioning clause
+For the storage table of a nested table, in the nested_table_col_properties clause
+Table compression saves disk space and reduces memory use in the buffer cache, 
+and is completely transparent to applications. 
+Compression ratios as high as 3.5 : 1 can be achieved. 
+Table compression can also speed up query execution during reads. 
+There is, however, a cost in CPU overhead for DML.
+
+#BASIC
+CREATE TABLE ... COMPRESS;
+
+SQL> CREATE TABLE regtab TABLESPACE TBS_C1 AS SELECT * FROM all_objects;
+
+Table created.
+
+SQL> CREATE TABLE comptab TABLESPACE TBS_C1 COMPRESS AS SELECT * FROM all_objects;
+
+Table created.
+
+SQL> SELECT table_name, tablespace_name, compression
+FROM user_tables
+WHERE table_name IN ('REGTAB', 'COMPTAB');  2    3  
+
+TABLE_NAME															 TABLESPACE_NAME		COMPRESS
+-------------------------------------------------------------------------------------------------------------------------------- ------------------------------ --------
+COMPTAB 															 TBS_C1 			ENABLED
+REGTAB																 TBS_C1 			DISABLED
