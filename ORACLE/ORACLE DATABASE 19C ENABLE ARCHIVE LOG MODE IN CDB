@@ -49,6 +49,8 @@ drwxr-x--- 4 oracle oinstall     4096 Mar 12 16:06 archivelog
 -rw-r----- 1 oracle oinstall 18726912 Mar 12 16:26 control02.ctl
 
 #CONFIGURATION
+#CREATE DIRECTORY
+mkdir -p /u02/app/oracle/oradata/APPSCDB/archivelog; chown oracle:oinstall -R /u02/app/oracle/oradata/APPSCDB/archivelog
 #ENABLE ARCHIVELOG PARAMETERS
 ALTER SYSTEM SET log_archive_dest_1='LOCATION=/u02/app/oracle/oradata/APPSCDB/archivelog' SCOPE=spfile;
 ALTER SYSTEM SET log_archive_format='%t_%s_%r.arc' SCOPE=spfile;
