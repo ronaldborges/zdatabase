@@ -384,7 +384,216 @@ SQL> SELECT table_name, tablespace_name, compression
 FROM user_tables
 WHERE table_name IN ('REGTAB', 'COMPTAB');  2    3  
 
-TABLE_NAME															 TABLESPACE_NAME		COMPRESS
--------------------------------------------------------------------------------------------------------------------------------- ------------------------------ --------
-COMPTAB 															 TBS_C1 			ENABLED
-REGTAB																 TBS_C1 			DISABLED
+TABLE_NAME			       TABLESPACE_NAME		       COMPRESS
+---------------------------------- ---------------------------------- --------
+COMPTAB 				TBS_C1 			       ENABLED
+REGTAB					TBS_C1 			       DISABLED
+
+SQL> exec dbms_stats.gather_table_stats(USER, 'REGTAB');
+
+PL/SQL procedure successfully completed.
+
+SQL> exec dbms_stats.gather_table_stats(USER, 'COMPTAB');
+
+PL/SQL procedure successfully completed.
+
+SQL> SELECT table_name, blocks FROM user_tables WHERE table_name IN ('REGTAB', 'COMPTAB');
+
+TABLE_NAME				BLOCKS
+---------------------------------- -----------------
+COMPTAB 				435
+REGTAB					1421
+
+#ADVANCED COMPRESSION DEPRECATED DIRECT LOAD SYNTAX (But still valid in 19.3)
+CREATE TABLE ... COMPRESS FOR DIRECT_LOAD OPERATIONS;
+
+SQL> CREATE TABLE regtab TABLESPACE TBS_C1 AS SELECT /*+ APPEND */ * FROM all_objects;
+
+Table created.
+
+SQL> CREATE TABLE comptab TABLESPACE TBS_C1 COMPRESS FOR DIRECT_LOAD OPERATIONS AS SELECT /*+ APPEND */ * FROM all_objects;
+
+Table created.
+
+SQL> SELECT table_name, tablespace_name, compression FROM user_tables WHERE table_name IN ('REGTAB', 'COMPTAB');
+
+TABLE_NAME				TABLESPACE_NAME		       COMPRESS
+---------------------------------- ---------------------------------- --------
+COMPTAB 				TBS_C1 			       ENABLED
+REGTAB					TBS_C1 			       DISABLED
+
+SQL> exec dbms_stats.gather_table_stats(USER, 'REGTAB');
+
+PL/SQL procedure successfully completed.
+
+SQL> exec dbms_stats.gather_table_stats(USER, 'COMPTAB');
+
+PL/SQL procedure successfully completed.
+
+SELECT table_name, blocks FROM user_tables WHERE table_name IN ('REGTAB', 'COMPTAB');
+
+TABLE_NAME				BLOCKS
+---------------------------------- -----------------
+COMPTAB 				435
+REGTAB					1421
+
+#ADVANCED COMPRESSION COMPRESS
+CREATE TABLE ... COMPRESS [BASIC];
+
+SQL> CREATE TABLE sh_regular AS SELECT * FROM EMPLOYEES;
+
+Table created.
+
+SQL> CREATE TABLE sh_compressed COMPRESS AS SELECT * FROM EMPLOYEES;
+
+Table created.
+
+SQL> CREATE TABLE sh_compressed_append COMPRESS AS SELECT /*+ APPEND */ * FROM EMPLOYEES;
+
+Table created.
+
+SQL> exec dbms_stats.gather_table_stats(USER, 'EMPLOYEES');
+
+PL/SQL procedure successfully completed.
+
+SQL> exec dbms_stats.gather_table_stats(USER, 'SH_REGULAR');
+
+PL/SQL procedure successfully completed.
+
+SQL> exec dbms_stats.gather_table_stats(USER, 'SH_COMPRESSED');
+
+PL/SQL procedure successfully completed.
+
+SQL> exec dbms_stats.gather_table_stats(USER, 'SH_COMPRESSED_APPEND');
+
+PL/SQL procedure successfully completed.
+
+SQL> SELECT table_name, status, blocks, empty_blocks, instances, secondary, row_movement, compression, compress_for 
+FROM user_tables WHERE table_name IN ('SH_REGULAR','SH_COMPRESSED','SH_COMPRESSED_APPEND','EMPLOYEES');  2 
+
+TABLE_NAME					STATUS       BLOCKS   EMPTY_BLOCKS INSTANCES     S ROW_MOVE COMPRESS COMPRESS_FOR
+----------------------------------------- ------------ -------- ------------ ------------- - -------- -------- ------------------------------
+EMPLOYEES					VALID		   2		0	   1	       N DISABLED DISABLED
+SH_COMPRESSED					VALID		   1		0	   1		N DISABLED ENABLED  BASIC
+SH_COMPRESSED_APPEND				VALID		   1		0	   1		N DISABLED ENABLED  BASIC
+SH_REGULAR					VALID		   2		0	   1		N DISABLED DISABLED
+
+#ADVANCED COMPRESSION NEW 12cR1 SYNTAX
+CREATE TABLE ... ROW STORE COMPRESS ADVANCED;
+
+SQL> CREATE TABLE sh_regular AS SELECT * FROM EMPLOYEES;
+
+Table created.
+
+SQL> CREATE TABLE sh_adv_compressed_append ROW STORE COMPRESS ADVANCED AS SELECT * FROM EMPLOYEES; 
+
+Table created.
+
+SQL> CREATE TABLE sh_adv_compressed_empty(
+EMPLOYEE_ID NUMBER(6) NOT NULL, 
+FIRST_NAME VARCHAR2(20),
+LAST_NAME VARCHAR2(25) NOT NULL,
+EMAIL VARCHAR2(25) NOT NULL,
+PHONE_NUMBER VARCHAR2(20),
+HIRE_DATE DATE NOT NULL,
+JOB_ID VARCHAR2(10) NOT NULL,
+SALARY NUMBER(8,2),
+COMMISSION_PCT NUMBER(2,2),
+MANAGER_ID NUMBER(6),
+DEPARTMENT_ID NUMBER(4))
+ROW STORE COMPRESS ADVANCED;
+
+Table created.
+
+SQL> INSERT INTO sh_adv_compressed_empty SELECT /*+ APPEND */ * FROM EMPLOYEES; 
+
+107 rows created.
+
+SQL> COMMIT;
+
+Commit complete.
+
+SQL> exec dbms_stats.gather_table_stats(USER, 'SH_REGULAR');
+
+PL/SQL procedure successfully completed.
+
+SQL> exec dbms_stats.gather_table_stats(USER, 'SH_ADV_COMPRESSED_APPEND');
+
+PL/SQL procedure successfully completed.
+
+SQL> exec dbms_stats.gather_table_stats(USER, 'SH_ADV_COMPRESSED_EMPTY');
+
+PL/SQL procedure successfully completed.
+
+SQL> col compress_for format a15
+
+SQL> SELECT table_name, status, blocks, empty_blocks, instances, secondary, row_movement, compression, compress_for FROM user_tables
+WHERE table_name IN ('EMPLOYEES','SH_ADV_COMPRESSED_APPEND','SH_ADV_COMPRESSED_EMPTY','SH_REGULAR');  2  
+
+TABLE_NAME			              STATUS        BLOCKS        EMPTY_BLOCKS         INSTANCES     S ROW_MOVE COMPRESS COMPRESS_FOR
+----------------------------------------- ------------- ------------- -------------------- ------------- - -------- -------- ---------------
+EMPLOYEES			              VALID		   2          0	              1		N DISABLED DISABLED
+SH_ADV_COMPRESSED_APPEND			VALID		   1		0	              1		N DISABLED ENABLED  ADVANCED
+SH_ADV_COMPRESSED_EMPTY 			VALID		   1		0	              1		N DISABLED ENABLED  ADVANCED
+SH_REGULAR					VALID		   2		0	              1		N DISABLED DISABLED
+
+#COMPRESS FOR QUERY
+CREATE TABLE <table_name> (<column_data_type_definitions>) COMPRESS FOR QUERY [LOW | HIGH];
+
+SQL> CREATE TABLE hcc_query (
+asset_id   VARCHAR2(10),
+asset_desc VARCHAR2(30),
+trans_date TIMESTAMP)
+COMPRESS FOR QUERY LOW;  2    3    4    5  
+CREATE TABLE hcc_query (
+*
+ERROR at line 1:
+ORA-64307:  Exadata Hybrid Columnar Compression is not supported for tablespaces on this storage type
+
+SQL> CREATE TABLE hcc_query (
+asset_id   VARCHAR2(10),
+asset_desc VARCHAR2(30),
+trans_date TIMESTAMP)
+COMPRESS FOR QUERY HIGH;  2    3    4    5  
+CREATE TABLE hcc_query (
+*
+ERROR at line 1:
+ORA-64307:  Exadata Hybrid Columnar Compression is not supported for tablespaces on this storage type
+
+#COMPRESS FOR ARCHIVE
+CREATE TABLE <table_name> (<column_data_type_definitions>) COMPRESS FOR ARCHIVE [LOW | HIGH];
+
+SQL> CREATE TABLE hcc_query (
+asset_id   VARCHAR2(10),
+asset_desc VARCHAR2(30),
+trans_date TIMESTAMP)
+COMPRESS FOR ARCHIVE LOW;  2    3    4    5  
+CREATE TABLE hcc_query (
+*
+ERROR at line 1:
+ORA-64307:  Exadata Hybrid Columnar Compression is not supported for tablespaces on this storage type
+
+SQL> CREATE TABLE hcc_query (
+asset_id   VARCHAR2(10),
+asset_desc VARCHAR2(30),
+trans_date TIMESTAMP)
+COMPRESS FOR ARCHIVE HIGH;  2    3    4    5  
+CREATE TABLE hcc_query (
+*
+ERROR at line 1:
+ORA-64307:  Exadata Hybrid Columnar Compression is not supported for tablespaces on this storage type
+
+$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
+
+#INDEX COMPRESSION
+Create Prefix Compressed Index
+Note: Using ANALYZE INDEX creates locking. An alternative method suggested by Jonathan Lewis involves comparing DISTINCT_KEYS and NUM_ROWS in DBA_INDEXES. If DISTINCT_KEYS is far smaller than NUM_ROWS the index may be a good candidate for compression.
+Prefix Compression does not require additional licensing.
+
+
+
+
+
+
+
+
