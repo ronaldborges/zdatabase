@@ -13,12 +13,12 @@ Exadata Note: There are three technologies critical to understand with Exadata.
 SmartScan, Hybrid Column Compression (HCC), and Storage Indexes. HCC is one of the three pillars.
 
 Data Dictionary Objects	
-+---------------+-----------------------+-----------------------+
-| ALL_INDEXES	| DBA_INDEXES             | TAB$                  |
-| ALL_TABLES	| DBA_TABLES              | USER_INDEXES          |
-| CDB_INDEXES	| DBMS_COMPRESSION        | USER_TABLES           |
-| CDB_TABLES	| IND$                    |                       |	
-+---------------+-----------------------+-----------------------+
++---------------+-----------------------+----------------------+
+| ALL_INDEXES	| DBA_INDEXES             | TAB$                 |
+| ALL_TABLES	| DBA_TABLES              | USER_INDEXES         |
+| CDB_INDEXES	| DBMS_COMPRESSION        | USER_TABLES          |
+| CDB_TABLES	| IND$                    |                      |	
++---------------+-----------------------+----------------------+
 
 $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
 
