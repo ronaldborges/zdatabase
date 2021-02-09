@@ -586,9 +586,17 @@ ORA-64307:  Exadata Hybrid Columnar Compression is not supported for tablespaces
 $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
 
 #INDEX COMPRESSION
+#NOTE
 Create Prefix Compressed Index
-Note: Using ANALYZE INDEX creates locking. An alternative method suggested by Jonathan Lewis involves comparing DISTINCT_KEYS and NUM_ROWS in DBA_INDEXES. If DISTINCT_KEYS is far smaller than NUM_ROWS the index may be a good candidate for compression.
+Note: Using ANALYZE INDEX creates locking. An alternative method suggested by Jonathan Lewis involves 
+comparing DISTINCT_KEYS and NUM_ROWS in DBA_INDEXES. If DISTINCT_KEYS is far smaller than NUM_ROWS the index may be a good candidate for compression.
 Prefix Compression does not require additional licensing.
+
+CREATE INDEX <index_name> ON (<first_column>, <second_column>) PCTFREE <integer> TABLESPACE <tablespace_name> COMPRESS <integer *>;
+* Must be at least one less than the number of indexed columns
+
+
+
 
 
 
