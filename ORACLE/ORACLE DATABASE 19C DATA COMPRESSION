@@ -705,7 +705,91 @@ SQL> SELECT sum(bytes) FROM user_segments WHERE segment_name = 'IX_PCODES';
 SUM(BYTES)
 ----------
    2097152
-   
+
+SQL> drop index ix_pcodes;
+
+Index dropped.
+
+#ADVANCED INDEX COMPRESSION (new synax as of 12.2)  
+#COMPRESS ADVANCED <LOW | HIGH>
+
+SQL> CREATE INDEX ix_pcodes ON postal_code (state_abbrev, city_name, zip_code) COMPRESS ADVANCED HIGH;
+
+Index created.
+
+SQL> ANALYZE INDEX ix_pcodes VALIDATE STRUCTURE;
+
+Index analyzed.
+
+SQL> exec dbms_stats.gather_index_stats(USER, 'IX_PCODES');
+
+PL/SQL procedure successfully completed.
+
+SQL> SELECT opt_cmpr_count, opt_cmpr_pctsave FROM index_stats;
+
+OPT_CMPR_COUNT OPT_CMPR_PCTSAVE
+-------------- ----------------
+	     0		      0
+
+SQL> SELECT sum(bytes) FROM user_segments WHERE segment_name = 'IX_PCODES';
+
+SUM(BYTES)
+----------
+    786432
+
+SQL> drop index ix_pcodes;
+
+Index dropped.
+
+$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
+
+#UNDO COMPRESSION
+#UNDO SEGMENT COMPRESSION
+#UNDO SEGMENT COMPRESSION IS TRUE BY DEFAULT AS OF DATABASE 11GR1
+
+SQL> set linesize 121
+col NAME format a35
+col VALUE format a10
+col DESCRIPTION format a60SQL> SQL> SQL> 
+
+SQL> SELECT x.ksppinm NAME, y.ksppstvl VALUE, x.ksppdesc DESCRIPTION
+FROM x$ksppi x, x$ksppcv y
+WHERE x.inst_id = userenv('Instance')
+AND y.inst_id = userenv('Instance')
+AND x.indx = y.indx
+AND SUBSTR(x.ksppinm,1,1) = '_'
+AND x.ksppinm LIKE '%undo%compress%'
+ORDER BY 1;  2    3    4    5    6    7    8  
+
+NAME				    VALUE      DESCRIPTION
+----------------------------------- ---------- ------------------------------------------------------------
+_undo_block_compression 	    TRUE       enable undo block compression
+
+SQL> ALTER SYSTEM SET "_undo_block_compression"=FALSE;
+
+System altered.
+
+SQL> SELECT x.ksppinm NAME,
+y.ksppstvl VALUE,
+ksppdesc DESCRIPTION
+FROM x$ksppi x, x$ksppcv y
+WHERE x.inst_id = userenv('Instance')
+AND y.inst_id = userenv('Instance')
+AND x.indx = y.indx
+AND SUBSTR(x.ksppinm,1,1) = '_'
+AND x.ksppinm LIKE '%undo%compress%'
+ORDER BY 1;  2    3    4    5    6    7    8    9   10  
+
+NAME				    VALUE      DESCRIPTION
+----------------------------------- ---------- ------------------------------------------------------------
+_undo_block_compression 	    FALSE      enable undo block compression
+
+SQL> ALTER SYSTEM SET "_undo_block_compression"=TRUE;
+
+System altered.
+
+
+
    
 
 
