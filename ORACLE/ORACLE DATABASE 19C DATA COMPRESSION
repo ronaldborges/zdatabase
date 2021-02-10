@@ -788,10 +788,80 @@ SQL> ALTER SYSTEM SET "_undo_block_compression"=TRUE;
 
 System altered.
 
+$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
+#NET SERVICES COMPRESSION
+#NOTE
+In Oracle Database 12c, new underlying net services parameters enable data compression, 
+which reduces the size of the session data unit that is transmitted over a SQL TCP connection.
+The following new parameters for the sqlnet.ora file specify compression, and the preferred compression scheme:
+These parameters introduced with Oracle Database 12c are not supported in earlier releases. 
+They are only available in Oracle Database 12c, and later releases For more information about these sqlnet.ora compression parameters, 
+refer to Oracle Net Services Reference.
+If the Oracle Database that you are upgrading does not have a listener configured, 
+then before you run DBUA, you must run Oracle Net Configuration Assistant (NETCA) 
+to configure the listening protocol address and service information for the new release of Oracle Database, 
+including a listener.ora file. You must create a new version of the listener for releases of Oracle Database earlier than release 11.2. 
+The current listener is backward-compatible with earlier Oracle Database releases.
+When you upgrade an Oracle RAC database with DBUA, 
+it automatically migrates the listener from your old Oracle home to the new Oracle Grid Infrastructure home. 
+You must administer the listener by using the lsnrctl command in the Oracle Grid Infrastructure home. 
+Do not attempt to use the lsnrctl commands from Oracle home locations for earlier releases.
+
+	- SQLNET.COMPRESSION
+
+	- SQLNET.COMPRESSION_LEVELS
+
+	- SQLNET.COMPRESSION_THRESHOLD
+
+SQL> desc postal_code;
+ Name								   Null?    Type
+ ----------------------------------------------------------------- -------- ---------------------------------------------
+ ZIP_CODE							   NOT NULL VARCHAR2(5)
+ STATE_ABBREV							   NOT NULL VARCHAR2(2)
+ CITY_NAME							   NOT NULL VARCHAR2(30)
+
+SQL> SELECT COUNT(*) from postal_code;
+
+  COUNT(*)
+----------
+     42456
+
+SQL> set autotrace traceonly statistics
+
+SQL> SELECT * from postal_code;
+
+42456 rows selected.
+
+Statistics
+----------------------------------------------------------
+	  4  recursive calls
+	  0  db block gets
+       3051  consistent gets
+	  0  physical reads
+	  0  redo size
+    1549711  bytes sent via SQL*Net to client
+      31517  bytes received via SQL*Net from client
+       2832  SQL*Net roundtrips to/from client
+	  0  sorts (memory)
+	  0  sorts (disk)
+      42456  rows processed
+
+SQL> SELECT * FROM postal_code order by ZIP_CODE, CITY_NAME;  
+
+42456 rows selected.
 
 
-   
-
-
-
+Statistics
+----------------------------------------------------------
+	  4  recursive calls
+	  0  db block gets
+	227  consistent gets
+	  0  physical reads
+	  0  redo size
+    1307848  bytes sent via SQL*Net to client
+      31546  bytes received via SQL*Net from client
+       2832  SQL*Net roundtrips to/from client
+	  1  sorts (memory)
+	  0  sorts (disk)
+      42456  rows processed
 
