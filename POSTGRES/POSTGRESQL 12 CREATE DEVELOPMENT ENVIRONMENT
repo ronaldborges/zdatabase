@@ -1,0 +1,86 @@
++++++++++++++++++++++++++++++++++++++++++++++++++++++
++   POSTGRESQL 12 CREATE DEVELOPMENT ENVIRONMENT    +
++++++++++++++++++++++++++++++++++++++++++++++++++++++
+
+#NOTE
+This procedure aims to describe the steps for copying a production database for creating or updating a test environment using a physical backup
+
+#ON MASTER DATABASE (PRODUCTION)
+#ENABLE ACCESS FROM DEVELOPMENT MACHINE ON FILE /dados/data/pg_hba.conf
+host    replication     postgres        $IP_DEVELOPMENT/32          md5
+host    replication     replication     $IP_DEVELOPMENT/32          md5
+
+#RELOAD CONFIGURATION FILES
+su - postgres -c "/usr/local/pgsql-12.3/bin/pg_ctl reload -D /dados/data/"
+
+#ON DEVELOPMENT DATABASE (DEVELOPMENT)
+#CREATE THE DESTINATION DIRECTORY
+mkdir -p $DEVELOPMENT_DIRECTORY
+ex. mkdir -p /dados/data-dev/
+
+#RUN BACKUP/RESTORE WITH PG_BASEBACKUP
+/usr/local/pgsql-12.3/bin/pg_basebackup -h $IP_MASTER -U replication -p $PORT_MASTER -Fp -Xs -Pv -R -D $DEVELOPMENT_DIRECTORY
+Password: 
+pg_basebackup: initiating base backup, waiting for checkpoint to complete
+pg_basebackup: checkpoint completed
+pg_basebackup: write-ahead log start point: 72/FD000028 on timeline 1
+pg_basebackup: starting background WAL receiver
+pg_basebackup: created replication slot "segstandby"
+522345/522345 kB (100%), 1/1 tablespace                                         
+pg_basebackup: write-ahead log end point: 72/FD000100
+pg_basebackup: waiting for background process to finish streaming ...
+pg_basebackup: syncing data to disk ...
+pg_basebackup: base backup completed
+
+#CONFIGURE postgresql.conf AND pg_hba.conf TO GRANT ACCESS FOR DEVELOPERS
+
+#REMOVE FILE standby.signal
+ex. rm -vf /dados/data-dev/standby.signal
+
+#CONFIGURE SERVICE TO AUTOMATIC STARTUP ON OPERATIONAL SYSTEM
+vim /usr/lib/systemd/system/postgresql-dev.service
+
+[Unit]
+Description=PostgreSQL database server
+After=network.target
+
+[Service]
+Type=forking
+
+User=postgres
+Group=postgres
+
+# Port number for server to listen on
+Environment=PGPORT=5432
+
+# Location of database directory
+Environment=PGDATA=/dados/data-dev/
+
+# Disable OOM kill on the postmaster
+OOMScoreAdjust=-1000
+
+ExecStart=/usr/local/pgsql-12.3/bin/pg_ctl start -D ${PGDATA} -s -o "-p ${PGPORT}" -w -t 300
+ExecStop=/usr/local/pgsql-12.3/bin/pg_ctl stop -D ${PGDATA} -s -m fast
+ExecReload=/usr/local/pgsql-12.3/bin/pg_ctl reload -D ${PGDATA} -s
+
+# Give a reasonable amount of time for the server to start up/shut down
+TimeoutSec=300
+
+[Install]
+WantedBy=multi-user.target
+
+#RELOAD AND ENABLE DAEMON
+systemctl daemon-reload
+systemctl enable postgresql-dev.service
+
+#START DEVELOPMENT DATABASE
+systemctl start postgresql-dev.service
+
+#TEST ACCESS
+su - postgres
+/usr/local/pgsql-12.3/bin/psql -U postgres -p 5432
+psql (12.3)
+Type "help" for help.
+
+
+
