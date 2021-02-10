@@ -592,15 +592,121 @@ Note: Using ANALYZE INDEX creates locking. An alternative method suggested by Jo
 comparing DISTINCT_KEYS and NUM_ROWS in DBA_INDEXES. If DISTINCT_KEYS is far smaller than NUM_ROWS the index may be a good candidate for compression.
 Prefix Compression does not require additional licensing.
 
-CREATE INDEX <index_name> ON (<first_column>, <second_column>) PCTFREE <integer> TABLESPACE <tablespace_name> COMPRESS <integer *>;
-* Must be at least one less than the number of indexed columns
+@RUN SCRIPT TO CREATE TABLE POSTAL_CODE
+https://github.com/danilo19ee/zdatabase/blob/master/ORACLE/ORACLE%20SCRIPT%20TEST%20DATA%20LOAD
 
+SQL> CREATE INDEX ix_pcodes ON postal_code (state_abbrev, city_name, zip_code) PCTFREE 0 TABLESPACE uwdata;
 
+Index created.
 
+SQL> ANALYZE INDEX ix_pcodes VALIDATE STRUCTURE;
 
+Index analyzed.
 
+SQL> exec dbms_stats.gather_index_stats(USER, 'IX_PCODES');
 
+PL/SQL procedure successfully completed.
 
+SQL> SELECT opt_cmpr_count, opt_cmpr_pctsave FROM index_stats;
+
+OPT_CMPR_COUNT OPT_CMPR_PCTSAVE
+-------------- ----------------
+	     1		     10
+
+SQL> SELECT sum(bytes) FROM user_segments WHERE segment_name = 'IX_PCODES';
+
+SUM(BYTES)
+----------
+   1572864
+
+SQL> DROP INDEX ix_pcodes;
+
+Index dropped.
+
+SQL> CREATE INDEX ix_pcodes ON postal_code (state_abbrev, city_name, zip_code) PCTFREE 0 TABLESPACE uwdata COMPRESS 1;
+
+Index created.
+
+SQL> ANALYZE INDEX ix_pcodes VALIDATE STRUCTURE;
+
+Index analyzed.
+
+SQL> exec dbms_stats.gather_index_stats(USER, 'IX_PCODES');
+
+PL/SQL procedure successfully completed.
+
+SQL> SELECT opt_cmpr_count, opt_cmpr_pctsave FROM index_stats;
+
+OPT_CMPR_COUNT OPT_CMPR_PCTSAVE
+-------------- ----------------
+	     1		      0
+
+SQL> SELECT sum(bytes) FROM user_segments WHERE segment_name = 'IX_PCODES';
+
+SUM(BYTES)
+----------
+   1310720
+
+SQL> DROP INDEX ix_pcodes;
+
+Index dropped.
+
+SQL> CREATE INDEX ix_pcodes ON postal_code (state_abbrev, city_name, zip_code) PCTFREE 0 TABLESPACE uwdata COMPRESS 2;
+
+Index created.
+
+SQL> ANALYZE INDEX ix_pcodes VALIDATE STRUCTURE;
+
+Index analyzed.
+
+SQL> exec dbms_stats.gather_index_stats(USER, 'IX_PCODES');
+
+PL/SQL procedure successfully completed.
+
+SQL> SELECT opt_cmpr_count, opt_cmpr_pctsave FROM index_stats;
+
+OPT_CMPR_COUNT OPT_CMPR_PCTSAVE
+-------------- ----------------
+	     1		      8
+
+SQL> SELECT sum(bytes) FROM user_segments WHERE segment_name = 'IX_PCODES';
+
+SUM(BYTES)
+----------
+   1572864
+   
+SQL> drop index ix_pcodes;
+
+Index dropped.
+
+#ADVANCED INDEX COMPRESSION (new synax as of 12.1) 
+#COMPRESS ADVANCED LOW
+
+SQL> CREATE INDEX ix_pcodes ON postal_code (state_abbrev, city_name, zip_code) COMPRESS ADVANCED LOW;
+
+Index created.
+
+SQL> ANALYZE INDEX ix_pcodes VALIDATE STRUCTURE;
+
+Index analyzed.
+
+SQL> exec dbms_stats.gather_index_stats(USER, 'IX_PCODES');
+
+PL/SQL procedure successfully completed.
+
+SQL> SELECT opt_cmpr_count, opt_cmpr_pctsave FROM index_stats;
+
+OPT_CMPR_COUNT OPT_CMPR_PCTSAVE
+-------------- ----------------
+	     0		      0
+
+SQL> SELECT sum(bytes) FROM user_segments WHERE segment_name = 'IX_PCODES';
+
+SUM(BYTES)
+----------
+   2097152
+   
+   
 
 
 
