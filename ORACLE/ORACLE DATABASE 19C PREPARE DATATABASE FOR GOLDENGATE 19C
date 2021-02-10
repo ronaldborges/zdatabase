@@ -298,21 +298,21 @@ Services	|	Running 4	|	Failed 0	| Other 0
 
 	Deployment All
 
-+---------------------------------------------------------------------------------------------------------------------------------------------------+
-|	Deployment			|		Service						|	Port			|	Status			|	Action			|		Details				|
-|	DeploymentOGGMA		|	 	Administration Server		|	8001 <-Click 	|	Running			|	Action			|							|
-|	DeploymentOGGMA		|		Distribution Server			|	8002			|	Running			|	Action			|							|
-| 	DeploymentOGGMA		|		Performance Metrics Server	|	8003			|	Running			|	Action			|							|
-| 	DeploymentOGGMA		|		Receiver Server				|	8004			|	Running			|	Action			|							|
-+---------------------------------------------------------------------------------------------------------------------------------------------------+
++-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
+|	Deployment		|		Service				|	Port			|	Status			|	Action			|		Details				|
+|	DeploymentOGGMA		|	 	Administration Server		|	8001 <-Click 		|	Running			|	Action			|						|
+|	DeploymentOGGMA		|		Distribution Server		|	8002			|	Running			|	Action			|						|
+| 	DeploymentOGGMA		|		Performance Metrics Server	|	8003			|	Running			|	Action			|						|
+| 	DeploymentOGGMA		|		Receiver Server			|	8004			|	Running			|	Action			|						|
++-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
 
 	Deployments
 
-+---------------------------------------------------------------------------------------------------------------------------------------------------+
-|	Deployment			|		GoldenGate Home				|	Status			|	Running Service		|		Not Running Services	|	Action	|
-|	DeploymentOGGMA		|/u01/app/oracle/product/ggma		|	Running			|	4					|		0						|	Action	|
-|	ServiceManager		|/u01/app/oracle/product/ggma		|	Running			|	0					|		0						|	Action	|
-+---------------------------------------------------------------------------------------------------------------------------------------------------+
++-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
+|	Deployment		|		GoldenGate Home		|	Status			|	Running Service		|		Not Running Services	|	Action	|
+|	DeploymentOGGMA		|/u01/app/oracle/product/ggma		|	Running			|	4			|		0			|	Action	|
+|	ServiceManager		|/u01/app/oracle/product/ggma		|	Running			|	0			|		0			|	Action	|
++-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
 
 http://192.168.1.130:8001/
 
@@ -328,10 +328,10 @@ Extracts	|	Running 0	|	Failed 0	| Other 0				Click-> +		|	Replicats	|	Running 0	
 Critical Events
 ___________________ [Refresh]
 
-+-----------------------------------------------------------------------------------------------------------------------------------------------+
-|		Code			|	Date			|	Severity		|	Message																		|
-|		OGG-08100		| 2/7/21 9:13:45 PM	|	OK				|	Oracle GoldenGate Administration Server for Oracle: Service started.		|
-+-----------------------------------------------------------------------------------------------------------------------------------------------+
++-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
+|		Code			|	Date			|	Severity		|	Message										|								|
+|		OGG-08100		| 2/7/21 9:13:45 PM		|	OK			|	Oracle GoldenGate Administration Server for Oracle: Service started.		|
++-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
 
 http://192.168.1.130:8001/?root=status&process=addExtract
 
@@ -342,7 +342,7 @@ Overview > Add Extract
 
 	Add Extract
 
-	(1)____________________________________________(2)______________________________________________(3)
+	(1)____________________________________________________________________________(2)_____________________________________________________________________________(3)
 	Extract Type 									Extract Options									Parameter File
 
 	
@@ -369,31 +369,31 @@ Overview > Add Extract
 
 	Add Extract
 
-	(1)____________________________________________(2)______________________________________________(3)
+	(1)____________________________________________________________________________(2)_____________________________________________________________________________(3)
 	Extract Type 									Extract Options									Parameter File	
 	
 	Basic Information
 	
 				Process Name ?:				ggma19ci
 				Description ?:
-				Intent ?: 					Unidirectional
+				Intent ?: 				Unidirectional
 				Log Retention ?: 
 								
 									Create new credential
 
 				Credential Domain:			oggadmin
 				Credential Alias:			ggadmin
-				User ID:					ggadmin
-				Password:					<PASSWORD>
+				User ID:				ggadmin
+				Password:				<PASSWORD>
 				Verify Password:			<PASSWORD>
 				
 									Submit <-Click								
 									
 				Credential Domain:			oggadmin
 				Credential Alias:			ggadmin
-				Begin:						Now
+				Begin:					Now
 				Now
-				Trail Name:					gi
+				Trail Name:				gi
 				Trail Subdirectory:
 				Trail Size (MB):
 				Trail Sequence:
@@ -402,13 +402,13 @@ Overview > Add Extract
 	
 	 Encryption Profile
 	 
-				Profile Name:					LocalWallet (Default)
+				Profile Name:				LocalWallet (Default)
 				Encryption Profile Type:		Local Wallet
-				Masterkey Name:					OGG_DEFAULT_MASTERKEY
+				Masterkey Name:				OGG_DEFAULT_MASTERKEY
 	
 	Managed Options
 	
-				Profile Name:					Default (Default)
+				Profile Name:				Default (Default)
 				Critical to deployment health ?:
 				Auto Start ?:
 				Auto Restart ?:
@@ -416,9 +416,9 @@ Overview > Add Extract
 	Registration Information
 					
 				CSN ?:
-				Share ?: 							Automatic
+				Share ?: 				Automatic
 				Optimized ?:				
-				Register to PDBs:					APPSPDB
+				Register to PDBs:			APPSPDB
 				Downstream Capture:
 
 
@@ -432,7 +432,7 @@ Overview > Add Extract
 
 	Add Extract
 
-	(1)____________________________________________(2)______________________________________________(3)
+	(1)____________________________________________________________________________(2)_____________________________________________________________________________(3)
 	Extract Type 									Extract Options									Parameter File	
 
 	Parameter File 
