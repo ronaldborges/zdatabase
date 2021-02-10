@@ -81,6 +81,11 @@ su - postgres
 /usr/local/pgsql-12.3/bin/psql -U postgres -p 5432
 psql (12.3)
 Type "help" for help.
+postgres=# select pg_is_in_recovery();
+ pg_is_in_recovery 
+-------------------
+ f
+(1 row)
 
 
 
