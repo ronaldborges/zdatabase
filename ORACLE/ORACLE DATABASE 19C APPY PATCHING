@@ -8,8 +8,6 @@
 
 #DOWNLOAD PATCH 
 [oracle@ol7db1 ~]$ wget https://updates.oracle.com/Orion/Services/download/p29511771_190000_Linux-x86-64.zip?aru=22812571&patch_file=p29511771_190000_Linux-x86-64.zip
-[oracle@ol7db1 ~]$ wget https://updates.oracle.com/Orion/Services/download/p31301460_190000_Linux-x86-64.zip?aru=23652637&patch_file=p31301460_190000_Linux-x86-64.zip
-[oracle@ol7db1 ~]$ wget https://updates.oracle.com/Orion/Services/download/p6880880_190000_Linux-x86-64.zip?aru=23538458&patch_file=p6880880_190000_Linux-x86-64.zip
 
 #UNCOMPRESS
 [oracle@ol7db1 ~]$ unzip p29511771_190000_Linux-x86-64.zip
