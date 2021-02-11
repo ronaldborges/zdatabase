@@ -1,0 +1,566 @@
++++++++++++++++++++++++++++++++++++++++++
++   ORACLE DATABASE 19C APPY PATCHING   +
++++++++++++++++++++++++++++++++++++++++++
+
+#CREATE DIRECTORY TO PATCH APPLY
+
+[oracle@ol7db1 ~]$ mkdir -p /home/oracle/pa
+
+#DOWNLOAD PATCH 
+[oracle@ol7db1 ~]$ wget https://updates.oracle.com/Orion/Services/download/p29511771_190000_Linux-x86-64.zip?aru=22812571&patch_file=p29511771_190000_Linux-x86-64.zip
+[oracle@ol7db1 ~]$ wget https://updates.oracle.com/Orion/Services/download/p31301460_190000_Linux-x86-64.zip?aru=23652637&patch_file=p31301460_190000_Linux-x86-64.zip
+[oracle@ol7db1 ~]$ wget https://updates.oracle.com/Orion/Services/download/p6880880_190000_Linux-x86-64.zip?aru=23538458&patch_file=p6880880_190000_Linux-x86-64.zip
+
+#UNCOMPRESS
+[oracle@ol7db1 ~]$ unzip p29511771_190000_Linux-x86-64.zip
+
+[oracle@ol7db1 pa]$ ls -ltr
+total 26276
+drwxr-xr-x 4 oracle oinstall     4096 Mar 28  2019 29511771
+-rw-rw-r-- 1 oracle oinstall     2440 Apr 26  2019 PatchSearch.xml
+
+#CHECK PATCHES STATUS BEFORE APPLY USING BELLOW QUERY
+[oracle@ol7db1 ~]$ sqlplus / as sysdba
+
+SQL*Plus: Release 19.0.0.0.0 - Production on Wed Feb 10 15:15:26 2021
+Version 19.3.0.0.0
+
+Copyright (c) 1982, 2019, Oracle.  All rights reserved.
+
+
+Connected to:
+Oracle Database 19c Enterprise Edition Release 19.0.0.0.0 - Production
+Version 19.3.0.0.0
+
+SQL> SET LINESIZE 500
+SET PAGESIZE 1000
+SET SERVEROUT ON
+SET LONG 2000000
+COLUMN action_time FORMAT A12
+COLUMN action FORMAT A10
+COLUMN patch_type FORMAT A10
+COLUMN description FORMAT A32
+COLUMN status FORMAT A10
+COLUMN DESCRIPTION for a75
+COLUMN version FORMAT A10SQL> SQL> SQL> SQL> SQL> SQL> SQL> SQL> SQL> SQL>
+
+SQL> alter session set "_exclude_seed_cdb_view"=FALSE;
+
+Session altered.
+
+SQL> select CON_ID, TO_CHAR(action_time, 'YYYY-MM-DD') AS action_time, PATCH_ID, PATCH_TYPE, ACTION, DESCRIPTION, SOURCE_VERSION, TARGET_VERSION from CDB_REGISTRY_SQLPATCH order by CON_ID, action_time, patch_id;
+
+    CON_ID ACTION_TIME	  PATCH_ID PATCH_TYPE ACTION	 DESCRIPTION								     SOURCE_VERSION  TARGET_VERSION
+---------- ------------ ---------- ---------- ---------- --------------------------------------------------------------------------- --------------- ---------------
+	 1 2021-02-08	  29517242 RU	      APPLY	 Database Release Update : 19.3.0.0.190416 (29517242)			     19.1.0.0.0      19.3.0.0.0
+	 2 2021-02-08	  29517242 RU	      APPLY	 Database Release Update : 19.3.0.0.190416 (29517242)			     19.1.0.0.0      19.3.0.0.0
+	 3 2021-02-08	  29517242 RU	      APPLY	 Database Release Update : 19.3.0.0.190416 (29517242)			     19.1.0.0.0      19.3.0.0.0
+
+SQL> exit
+Disconnected from Oracle Database 19c Enterprise Edition Release 19.0.0.0.0 - Production
+Version 19.3.0.0.0
+
+#TAKE BACKUP OF ORACLE_HOME AND DATABASE (Rollback plan)
+
+[oracle@ol7db1 ~]$ mkdir -p /home/oracle/bkpap/
+[oracle@ol7db1 ~]$ tar -czvf /home/oracle/bkpap/oracle_home_19.3.0.0.0_before_patch.tar.gz /u01/app/oracle/product/19.3.0/dbhome_1
+[oracle@ol7db1 ~]$ ls -ltrh /home/oracle/bkpap/oracle_home_19.3.0.0.0_before_patch.tar.gz
+-rw-r--r-- 1 oracle oinstall 3.0G Feb 10 15:28 /home/oracle/bkpap/oracle_home_19.3.0.0.0_before_patch.tar.gz
+
+#SHUTDOWN DATABASE
+
+[oracle@ol7db1 ~]$ sqlplus / as sysdba
+
+SQL*Plus: Release 19.0.0.0.0 - Production on Wed Feb 10 15:49:51 2021
+Version 19.3.0.0.0
+
+Copyright (c) 1982, 2019, Oracle.  All rights reserved.
+
+
+Connected to:
+Oracle Database 19c Enterprise Edition Release 19.0.0.0.0 - Production
+Version 19.3.0.0.0
+
+SQL> select name,open_mode from v$database;
+
+NAME	  OPEN_MODE
+--------- --------------------
+APPSCDB   READ WRITE
+
+SQL> shu immediate;
+Database closed.
+Database dismounted.
+ORACLE instance shut down.
+SQL> exit
+Disconnected from Oracle Database 19c Enterprise Edition Release 19.0.0.0.0 - Production
+
+#STOP LISTENER
+
+[oracle@ol7db1 ~]$ lsnrctl status
+
+LSNRCTL for Linux: Version 19.0.0.0.0 - Production on 11-FEB-2021 10:09:31
+
+Copyright (c) 1991, 2019, Oracle.  All rights reserved.
+
+Connecting to (ADDRESS=(PROTOCOL=tcp)(HOST=)(PORT=1521))
+STATUS of the LISTENER
+------------------------
+Alias                     LISTENER
+Version                   TNSLSNR for Linux: Version 19.0.0.0.0 - Production
+Start Date                11-FEB-2021 10:05:59
+Uptime                    0 days 0 hr. 3 min. 31 sec
+Trace Level               off
+Security                  ON: Local OS Authentication
+SNMP                      OFF
+Listener Log File         /u01/app/oracle/diag/tnslsnr/ol7db1/listener/alert/log.xml
+Listening Endpoints Summary...
+  (DESCRIPTION=(ADDRESS=(PROTOCOL=tcp)(HOST=ol7db1)(PORT=1521)))
+The listener supports no services
+The command completed successfully
+[oracle@ol7db1 ~]$ lsnrctl stop
+
+LSNRCTL for Linux: Version 19.0.0.0.0 - Production on 11-FEB-2021 10:09:33
+
+Copyright (c) 1991, 2019, Oracle.  All rights reserved.
+
+Connecting to (ADDRESS=(PROTOCOL=tcp)(HOST=)(PORT=1521))
+The command completed successfully
+
+#NAVIGATE TO PATCH DIRECTORY
+
+[oracle@ol7db1 pa]$ cd /home/oracle/pa/29511771/
+[oracle@ol7db1 29511771]$ ls -ltr
+total 40
+-rwxr-x--- 1 oracle oinstall    18 Mar 28  2019 README.txt
+drwxr-x--- 4 oracle oinstall  4096 Mar 28  2019 files
+drwxr-x--- 3 oracle oinstall  4096 Mar 28  2019 etc
+-rw-rw-r-- 1 oracle oinstall 27399 Apr 24  2019 README.html
+ 
+#EXPORT ENVIRONMENT VARIABLES
+
+[oracle@ol7db1 29511771]$ export ORACLE_SID=appscdb1
+[oracle@ol7db1 29511771]$ export ORACLE_HOME=/u01/app/oracle/product/19.3.0/dbhome_1
+[oracle@ol7db1 29511771]$ export PATH=/u01/app/oracle/product/19.3.0/dbhome_1/OPatch/:$PATH
+
+#APPLY PATCH 
+
+[oracle@ol7db1 29511771]$ opatch apply
+Oracle Interim Patch Installer version 12.2.0.1.17
+Copyright (c) 2021, Oracle Corporation.  All rights reserved.
+
+
+Oracle Home       : /u01/app/oracle/product/19.3.0/dbhome_1
+Central Inventory : /u01/app/oraInventory
+   from           : /u01/app/oracle/product/19.3.0/dbhome_1/oraInst.loc
+OPatch version    : 12.2.0.1.17
+OUI version       : 12.2.0.7.0
+Log file location : /u01/app/oracle/product/19.3.0/dbhome_1/cfgtoollogs/opatch/opatch2021-02-11_10-19-28AM_1.log
+
+Verifying environment and performing prerequisite checks...
+OPatch continues with these patches:   29511771  
+
+Do you want to proceed? [y|n]
+y
+User Responded with: Y
+All checks passed.
+Backing up files...
+Applying interim patch '29511771' to OH '/u01/app/oracle/product/19.3.0/dbhome_1'
+
+Patching component oracle.perlint, 5.28.1.0.0...
+Patch 29511771 successfully applied.
+Log file location: /u01/app/oracle/product/19.3.0/dbhome_1/cfgtoollogs/opatch/opatch2021-02-11_10-19-28AM_1.log
+
+OPatch succeeded.
+
+#STARTUP DATABASE
+
+[oracle@ol7db1 29511771]$ sqlplus / as sysdba
+
+SQL*Plus: Release 19.0.0.0.0 - Production on Thu Feb 11 10:20:30 2021
+Version 19.3.0.0.0
+
+Copyright (c) 1982, 2019, Oracle.  All rights reserved.
+
+Connected to an idle instance.
+
+SQL> startup;
+ORACLE instance started.
+
+Total System Global Area 2147482944 bytes
+Fixed Size		    9137472 bytes
+Variable Size		  520093696 bytes
+Database Buffers	 1610612736 bytes
+Redo Buffers		    7639040 bytes
+Database mounted.
+Database opened.
+SQL> exit
+Disconnected from Oracle Database 19c Enterprise Edition Release 19.0.0.0.0 - Production
+Version 19.3.0.0.0
+
+#START LISTENER 
+
+[oracle@ol7db1 29511771]$ lsnrctl start
+
+LSNRCTL for Linux: Version 19.0.0.0.0 - Production on 11-FEB-2021 10:23:04
+
+Copyright (c) 1991, 2019, Oracle.  All rights reserved.
+
+Starting /u01/app/oracle/product/19.3.0/dbhome_1/bin/tnslsnr: please wait...
+
+TNSLSNR for Linux: Version 19.0.0.0.0 - Production
+Log messages written to /u01/app/oracle/diag/tnslsnr/ol7db1/listener/alert/log.xml
+Listening on: (DESCRIPTION=(ADDRESS=(PROTOCOL=tcp)(HOST=ol7db1)(PORT=1521)))
+
+Connecting to (ADDRESS=(PROTOCOL=tcp)(HOST=)(PORT=1521))
+STATUS of the LISTENER
+------------------------
+Alias                     LISTENER
+Version                   TNSLSNR for Linux: Version 19.0.0.0.0 - Production
+Start Date                11-FEB-2021 10:23:04
+Uptime                    0 days 0 hr. 0 min. 0 sec
+Trace Level               off
+Security                  ON: Local OS Authentication
+SNMP                      OFF
+Listener Log File         /u01/app/oracle/diag/tnslsnr/ol7db1/listener/alert/log.xml
+Listening Endpoints Summary...
+  (DESCRIPTION=(ADDRESS=(PROTOCOL=tcp)(HOST=ol7db1)(PORT=1521)))
+The listener supports no services
+The command completed successfully
+
+#EXECUTE POST PATCH STEPS AND RUN DATAPATCH COMMAND
+
+[oracle@ol7db1 29511771]$ cd $ORACLE_HOME/OPatch
+[oracle@ol7db1 OPatch]$ ./datapatch -verbose
+SQL Patching tool version 19.3.0.0.0 Production on Thu Feb 11 10:24:50 2021
+Copyright (c) 2012, 2019, Oracle.  All rights reserved.
+
+Log file for this invocation: /u01/app/oracle/cfgtoollogs/sqlpatch/sqlpatch_4045_2021_02_11_10_24_50/sqlpatch_invocation.log
+
+Connecting to database...OK
+Gathering database info...done
+
+Note:  Datapatch will only apply or rollback SQL fixes for PDBs
+       that are in an open state, no patches will be applied to closed PDBs.
+       Please refer to Note: Datapatch: Database 12c Post Patch SQL Automation
+       (Doc ID 1585822.1)
+
+Bootstrapping registry and package to current versions...done
+Determining current state...done
+
+Current state of interim SQL patches:
+  No interim patches found
+
+Current state of release update SQL patches:
+  Binary registry:
+    19.3.0.0.0 Release_Update 190410122720: Installed
+  PDB APPSPDB:
+    Applied 19.3.0.0.0 Release_Update 190410122720 successfully on 08-FEB-21 10.22.24.706527 AM
+  PDB CDB$ROOT:
+    Applied 19.3.0.0.0 Release_Update 190410122720 successfully on 08-FEB-21 10.15.20.716421 AM
+  PDB PDB$SEED:
+    Applied 19.3.0.0.0 Release_Update 190410122720 successfully on 08-FEB-21 10.22.24.706527 AM
+
+Adding patches to installation queue and performing prereq checks...done
+Installation queue:
+  For the following PDBs: CDB$ROOT PDB$SEED APPSPDB
+    No interim patches need to be rolled back
+    No release update patches need to be installed
+    No interim patches need to be applied
+
+SQL Patching tool complete on Thu Feb 11 10:25:32 2021
+
+#AFTER APPLYING RU PATCH,CHECK THE DBA_REGISTRY_SQLPATCH
+
+[oracle@ol7db1 OPatch]$ sqlplus / as sysdba
+
+SQL*Plus: Release 19.0.0.0.0 - Production on Thu Feb 11 10:26:46 2021
+Version 19.3.0.0.0
+
+Copyright (c) 1982, 2019, Oracle.  All rights reserved.
+
+
+Connected to:
+Oracle Database 19c Enterprise Edition Release 19.0.0.0.0 - Production
+Version 19.3.0.0.0
+
+SQL> SET LINESIZE 500
+SET PAGESIZE 1000
+SET SERVEROUT ON
+SET LONG 2000000
+COLUMN action_time FORMAT A12
+COLUMN action FORMAT A10
+COLUMN patch_type FORMAT A10
+COLUMN description FORMAT A32
+COLUMN status FORMAT A10
+COLUMN version FORMAT A10SQL> SQL> SQL> SQL> SQL> SQL> SQL> SQL> SQL> 
+SQL> alter session set "_exclude_seed_cdb_view"=FALSE;
+
+Session altered.
+
+SQL> select CON_ID, TO_CHAR(action_time, 'YYYY-MM-DD') AS action_time, PATCH_ID, PATCH_TYPE, ACTION, DESCRIPTION, SOURCE_VERSION, TARGET_VERSION from CDB_REGISTRY_SQLPATCH order by CON_ID, action_time, patch_id;
+
+    CON_ID ACTION_TIME	  PATCH_ID PATCH_TYPE ACTION	 DESCRIPTION			  					SOURCE_VERSION  TARGET_VERSION
+---------- ------------ ---------- ---------- ---------- ---------------------------------------------------------------------- --------------- ---------------
+	 1 2021-02-08	  29517242 RU	      APPLY	 Database Release Update : 19.3.0 19.1.0.0.0.0.190416 (29517242)	19.3.0.0.0
+	 2 2021-02-08	  29517242 RU	      APPLY	 Database Release Update : 19.3.0 19.1.0.0.0.0.190416 (29517242)	19.3.0.0.0
+	 3 2021-02-08	  29517242 RU	      APPLY	 Database Release Update : 19.3.0 19.1.0.0.0.0.190416 (29517242)	19.3.0.0.0
+
+#CHECK OPATCH LSINVENTORY AND LIST OF PATCHES APPLIED IN ORACLE_HOME
+
+[oracle@ol7db1 OPatch]$ opatch lsinventory
+Oracle Interim Patch Installer version 12.2.0.1.17
+Copyright (c) 2021, Oracle Corporation.  All rights reserved.
+
+
+Oracle Home       : /u01/app/oracle/product/19.3.0/dbhome_1
+Central Inventory : /u01/app/oraInventory
+   from           : /u01/app/oracle/product/19.3.0/dbhome_1/oraInst.loc
+OPatch version    : 12.2.0.1.17
+OUI version       : 12.2.0.7.0
+Log file location : /u01/app/oracle/product/19.3.0/dbhome_1/cfgtoollogs/opatch/opatch2021-02-11_10-33-57AM_1.log
+
+Lsinventory Output file location : /u01/app/oracle/product/19.3.0/dbhome_1/cfgtoollogs/opatch/lsinv/lsinventory2021-02-11_10-33-57AM.txt
+
+--------------------------------------------------------------------------------
+Local Machine Information::
+Hostname: ol7db1
+ARU platform id: 226
+ARU platform description:: Linux x86-64
+
+Installed Top-level Products (1): 
+
+Oracle Database 19c                                                  19.0.0.0.0
+There are 1 products installed in this Oracle Home.
+
+
+Interim patches (3) :
+
+Patch  29511771     : applied on Thu Feb 11 10:19:51 BRT 2021
+Unique Patch ID:  22812571
+Patch description:  "UPDATE PERL IN 19.3.0.0.0 DATABASE ORACLE HOME"
+   Created on 28 Mar 2019, 10:42:14 hrs PST8PDT
+   Bugs fixed:
+     29511771
+
+Patch  29585399     : applied on Thu Apr 18 04:21:33 BRT 2019
+Unique Patch ID:  22840393
+Patch description:  "OCW RELEASE UPDATE 19.3.0.0.0 (29585399)"
+   Created on 9 Apr 2019, 19:12:47 hrs PST8PDT
+   Bugs fixed:
+     27222128, 27572040, 27604329, 27760043, 27877830, 28302580, 28470673
+     28621543, 28642469, 28699321, 28710663, 28755846, 28772816, 28785321
+     28800508, 28808652, 28815557, 28847541, 28847572, 28870496, 28871040
+     28874416, 28877252, 28881191, 28881848, 28888083, 28911140, 28925250
+     28925460, 28935956, 28940472, 3, 28942694, 28951332, 28963036, 28968779
+     28980448, 28995287, 29003207, 29003617, 29016294, 29018680, 29024876
+     29026154, 29027933, 29047127, 29052850, 29058476, 29111631, 29112455
+     29117337, 29123444, 29125708, 29125786, 29129476, 29131772, 29132456
+     29139727, 29146157, 29147849, 29149170, 29152603, 29152752, 29154631
+     29154636, 29154829, 29159216, 29159661, 29160462, 29161923, 29169540
+     29169739, 29170717, 29173618, 29181568, 29182920, 29183298, 29186091
+     29191827, 29201143, 29201695, 29209545, 29210577, 29210610, 29210624
+     29210683, 29213641, 29219627, 29224294, 29225861, 29229839, 29235934
+     29242906, 29243749, 29244495, 29244766, 29244968, 29248723, 29249583
+     29251564, 29255616, 29260224, 29261695, 29271019, 29273360, 29282090
+     29282666, 29285453, 29285621, 29290235, 29292232, 29293806, 29294753
+     29299830, 29307090, 29307109, 29311336, 29329675, 29330791, 29339299
+     29357821, 29360467, 29360775, 29367971, 29368725, 29379299, 29379381
+     29380527, 29381000, 29382296, 29391301, 29393649, 29402110, 29411931
+     29413360, 29457319, 29465047
+
+Patch  29517242     : applied on Thu Apr 18 04:21:17 BRT 2019
+Unique Patch ID:  22862832
+Patch description:  "Database Release Update : 19.3.0.0.190416 (29517242)"
+   Created on 17 Apr 2019, 23:27:10 hrs PST8PDT
+   Bugs fixed:
+     29515240, 14735102, 19697993, 20313356, 21965541, 25806201, 25883179
+     25986062, 26476244, 26611353, 26872233, 27369515, 27423500, 27666312
+     27710072, 27846298, 27957203, 28064977, 28072567, 28129791, 28181021
+     28210681, 28279456, 28313275, 28350595, 28371123, 28379065, 28431445
+     28463226, 28489419, 28502773, 28513333, 28534475, 28561704, 28569897
+     28572533, 28572544, 28587723, 28593682, 28594086, 28597221, 28601957
+     28605066, 28606598, 28625862, 28627033, 28636532, 28643718, 28644549
+     28645570, 28646200, 28646939, 28649388, 28655209, 28663782, 28673945
+     28692275, 28694872, 28696373, 28705231, 28710385, 28710734, 28714461
+     28718469, 28730079, 28740708, 28760206, 28772390, 28774416, 28777214
+     28789531, 28791852, 28795551, 28802734, 28804517, 28810381, 28811560
+     28815123, 28815355, 28819640, 28824482, 28833912, 28835937, 28862532
+     28863432, 28873575, 28876253, 28876639, 28884931, 28888327, 28892794
+     28897512, 28899663, 28901126, 28905457, 28907196, 28912691, 28915561
+     28917080, 28918429, 28919145, 28922227, 28922532, 28922608, 28925634
+     28925880, 28933158, 28936114, 28937717, 28938698, 28940179, 28940281
+     28941901, 28942455, 28945421, 28945994, 28951533, 28952168, 28954762
+     28955606, 28957292, 28957723, 28962775, 28965231, 28966444, 28974083
+     28977322, 28983095, 28983486, 28986326, 28986481, 28988482, 28989306
+     28993295, 28994307, 28996376, 29000000, 29001888, 29002927, 29003738
+     29006318, 29006621, 29007321, 29007775, 29008035, 29011936, 29013475
+     29014076, 29015118, 29017265, 29018655, 29019121, 29021063, 29021352
+     29024552, 29026582, 29026606, 29027456, 29027694, 29027940, 29031575
+     29031600, 29032234, 29032457, 29032607, 29033052, 29033145, 29033200
+     29033280, 29034587, 29037290, 29038528, 29039089, 29039510, 29043554
+     29043651, 29043725, 29044763, 29044954, 29047850, 29048289, 29048498
+     29048605, 29050560, 29050765, 29051702, 29052726, 29053783, 29056024
+     29056270, 29056560, 29059011, 29061959, 29062692, 29062848, 29062860
+     29062868, 29110526, 29110783, 29110790, 29110797, 29110802, 29110805
+     29111598, 29113282, 29113305, 29117526, 29117642, 29119077, 29120223
+     29122224, 29122254, 29123297, 29123432, 29123482, 29124368, 29125380
+     29126345, 29127957, 29128935, 29129450, 29129497, 29129712, 29130219
+     29131539, 29132938, 29134447, 29136111, 29138641, 29141316, 29141341
+     29141685, 29142667, 29144995, 29145214, 29145730, 29149829, 29150338
+     29151520, 29152357, 29155099, 29157389, 29158680, 29158899, 29159909
+     29159936, 29160174, 29162095, 29163415, 29163437, 29163524, 29163567
+     29167111, 29167342, 29167374, 29167940, 29168219, 29168433, 29169073
+     29169215, 29171942, 29172618, 29172826, 29173140, 29173373, 29173817
+     29174004, 29176318, 29177466, 29177543, 29177886, 29178385, 29180313
+     29180455, 29180559, 29180893, 29181153, 29181231, 29181620, 29181743
+     29181923, 29182019, 29183912, 29184297, 29184666, 29185193, 29186456
+     29189302, 29189307, 29189889, 29190235, 29190474, 29190740, 29191541
+     29192419, 29192468, 29192685, 29193207, 29194205, 29194367, 29194493
+     29194827, 29195279, 29195337, 29195758, 29196725, 29199635, 29199733
+     29200316, 29200700, 29201494, 29201539, 29202104, 29202850, 29203122
+     29203166, 29203425, 29203443, 29203604, 29205281, 29205323, 29205419
+     29205463, 29205767, 29205918, 29206109, 29206605, 29207073, 29208260
+     29208732, 29211457, 29211724, 29212012, 29212433, 29212611, 29213351
+     29213775, 29213850, 29213879, 29214561, 29214960, 29216746, 29216984
+     29217294, 29217472, 29217828, 29217848, 29218570, 29219205, 29219273
+     29220079, 29221248, 29221891, 29222031, 29222784, 29223833, 29223859
+     29223967, 29224065, 29224605, 29225076, 29227602, 29228869, 29229164
+     29229754, 29229844, 29229955, 29230252, 29230565, 29231133, 29232117
+     29232154, 29234123, 29237538, 29240307, 29241345, 29242017, 29242884
+     29243958, 29245137, 29245160, 29246163, 29247415, 29247712, 29247906
+     29248552, 29248835, 29248858, 29249991, 29250059, 29251259, 29253184
+     29253871, 29254031, 29254930, 29255178, 29255273, 29255431, 29255435
+     29256426, 29259119, 29259320, 29261906, 29262512, 29262887, 29265448
+     29266248, 29266899, 29267292, 29268412, 29269171, 29270585, 29273539
+     29273735, 29273847, 29274428, 29274564, 29274627, 29275461, 29278218
+     29279658, 29279751, 29279854, 29282898, 29285503, 29285788, 29285956
+     29286037, 29287130, 29287705, 29292837, 29293072, 29297863, 29297915
+     29298220, 29299049, 29299082, 29299844, 29301566, 29302963, 29303918
+     29304781, 29311588, 29312310, 29312734, 29312753, 29313347, 29313417
+     29313525, 29314539, 29318410, 29319441, 29321489, 29323946, 29324568
+     29325087, 29325105, 29325257, 29325993, 29327044, 29329087, 29331209
+     29331380, 29331493, 29332771, 29333500, 29337310, 29338315, 29338453
+     29338780, 29338913, 29339155, 29341209, 29343086, 29346943, 29347620
+     29348176, 29350052, 29351386, 29351716, 29351749, 29352867, 29353271
+     29355654, 29356547, 29356752, 29358828, 29360672, 29361801, 29363151
+     29364171, 29364177, 29367019, 29367561, 29368253, 29373418, 29373588
+     29374179, 29377986, 29378029, 29379978, 29382784, 29385652, 29386502
+     29386635, 29386660, 29387274, 29388094, 29388524, 29388830, 29389889
+     29390435, 29394140, 29394749, 29397954, 29398863, 29399100, 29399121
+     29405012, 29405651, 29412066, 29412269, 29417884, 29423826, 29429264
+     29429566, 29431485, 29435652, 29438736, 29439522, 29450421, 29451386
+     29452576, 29452953, 29457807, 29460252, 29462957, 29486181, 29507616
+     29521748, 29530812, 29531654, 29557336, 29558975, 29601461
+
+
+
+--------------------------------------------------------------------------------
+
+OPatch succeeded.
+
+#ANY DATABASES THTAT HAVE INVALID OBJECTS AFTER THE EXECUTION OF DATAPATCH SHOULD HAVE utlrp.sql RUN TO REVALIDATE THOSE OBJECTS.
+
+[oracle@ol7db1 OPatch]$ cd $ORACLE_HOME/rdbms/admin
+[oracle@ol7db1 admin]$ sqlplus / as sysdba
+
+SQL*Plus: Release 19.0.0.0.0 - Production on Thu Feb 11 10:37:05 2021
+Version 19.3.0.0.0
+
+Copyright (c) 1982, 2019, Oracle.  All rights reserved.
+
+
+Connected to:
+Oracle Database 19c Enterprise Edition Release 19.0.0.0.0 - Production
+Version 19.3.0.0.0
+
+SQL> @utlrp.sql
+
+Session altered.
+
+
+TIMESTAMP
+--------------------------------------------------------------------------------
+COMP_TIMESTAMP UTLRP_BGN	      2021-02-11 10:37:10
+
+DOC>   The following PL/SQL block invokes UTL_RECOMP to recompile invalid
+DOC>   objects in the database. Recompilation time is proportional to the
+DOC>   number of invalid objects in the database, so this command may take
+DOC>   a long time to execute on a database with a large number of invalid
+DOC>   objects.
+DOC>
+DOC>   Use the following queries to track recompilation progress:
+DOC>
+DOC>   1. Query returning the number of invalid objects remaining. This
+DOC>	  number should decrease with time.
+DOC>	     SELECT COUNT(*) FROM obj$ WHERE status IN (4, 5, 6);
+DOC>
+DOC>   2. Query returning the number of objects compiled so far. This number
+DOC>	  should increase with time.
+DOC>	     SELECT COUNT(*) FROM UTL_RECOMP_COMPILED;
+DOC>
+DOC>   This script automatically chooses serial or parallel recompilation
+DOC>   based on the number of CPUs available (parameter cpu_count) multiplied
+DOC>   by the number of threads per CPU (parameter parallel_threads_per_cpu).
+DOC>   On RAC, this number is added across all RAC nodes.
+DOC>
+DOC>   UTL_RECOMP uses DBMS_SCHEDULER to create jobs for parallel
+DOC>   recompilation. Jobs are created without instance affinity so that they
+DOC>   can migrate across RAC nodes. Use the following queries to verify
+DOC>   whether UTL_RECOMP jobs are being created and run correctly:
+DOC>
+DOC>   1. Query showing jobs created by UTL_RECOMP
+DOC>	     SELECT job_name FROM dba_scheduler_jobs
+DOC>		WHERE job_name like 'UTL_RECOMP_SLAVE_%';
+DOC>
+DOC>   2. Query showing UTL_RECOMP jobs that are running
+DOC>	     SELECT job_name FROM dba_scheduler_running_jobs
+DOC>		WHERE job_name like 'UTL_RECOMP_SLAVE_%';
+DOC>#
+
+PL/SQL procedure successfully completed.
+
+
+TIMESTAMP
+--------------------------------------------------------------------------------
+COMP_TIMESTAMP UTLRP_END	      2021-02-11 10:37:11
+
+DOC> The following query reports the number of invalid objects.
+DOC>
+DOC> If the number is higher than expected, please examine the error
+DOC> messages reported with each object (using SHOW ERRORS) to see if they
+DOC> point to system misconfiguration or resource constraints that must be
+DOC> fixed before attempting to recompile these objects.
+DOC>#
+
+OBJECTS WITH ERRORS
+-------------------
+		  0
+
+DOC> The following query reports the number of exceptions caught during
+DOC> recompilation. If this number is non-zero, please query the error
+DOC> messages in the table UTL_RECOMP_ERRORS to see if any of these errors
+DOC> are due to misconfiguration or resource constraints that must be
+DOC> fixed before objects can compile successfully.
+DOC> Note: Typical compilation errors (due to coding errors) are not
+DOC>	   logged into this table: they go into DBA_ERRORS instead.
+DOC>#
+
+ERRORS DURING RECOMPILATION
+---------------------------
+			  0
+
+
+Function created.
+
+
+PL/SQL procedure successfully completed.
+
+
+Function dropped.
+
+
+PL/SQL procedure successfully completed.
+
+SQL> exit
+Disconnected from Oracle Database 19c Enterprise Edition Release 19.0.0.0.0 - Production
+Version 19.3.0.0.0
