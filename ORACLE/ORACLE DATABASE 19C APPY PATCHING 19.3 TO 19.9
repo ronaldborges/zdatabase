@@ -1,0 +1,684 @@
++++++++++++++++++++++++++++++++++++++++++++++++++++++
++   ORACLE DATABASE 19C APPY PATCHING 19.3 TO 19.9  +
++++++++++++++++++++++++++++++++++++++++++++++++++++++
+
+#CREATE DIRECTORY TO PATCH APPLY
+
+[oracle@ol7db1 ~]$ mkdir -p /home/oracle/pa
+
+#DOWNLOAD PATCH p6880880
+[oracle@ol7db1 ~]$ wget https://updates.oracle.com/Orion/Services/download/p6880880_190000_Linux-x86-64.zip?aru=23538458&patch_file=p6880880_190000_Linux-x86-64.zip
+[oracle@ol7db1 ~]$ wget https://updates.oracle.com/Orion/Services/download/p31771877_190000_Linux-x86-64.zip?aru=23869227&patch_file=p31771877_190000_Linux-x86-64.zip
+
+#UNCOMPRESS
+[oracle@ol7db1 ~]$ unzip p6880880_190000_Linux-x86-64.zip
+
+[oracle@ol7db1 pa]$ ls -ltr
+total 266532
+drwxr-x--- 15 oracle oinstall       4096 Nov  5 16:52 OPatch
+-rw-r--r--  1 oracle oinstall  122119435 Feb 10 15:15 p6880880_200000_Linux-x86-64.zip
+-rw-r--r--  1 oracle oinstall 1424692091 Feb 10 11:55 p31771877_190000_Linux-x86-64.zip
+
+[oracle@ol7db1 pa]$ cd OPatch
+[oracle@ol7db1 OPatch]$ ls -ltr
+total 200
+drwxr-x--- 6 oracle oinstall  4096 Sep  8 03:23 jre
+-rw-r----- 1 oracle oinstall    27 Nov  5 16:46 version.txt
+drwxr-x--- 2 oracle oinstall  4096 Nov  5 16:46 scripts
+-rw-r----- 1 oracle oinstall  2980 Nov  5 16:46 README.txt
+drwxr-xr-x 2 oracle oinstall  4096 Nov  5 16:46 private
+-rw-r----- 1 oracle oinstall  3177 Nov  5 16:46 operr_readme.txt
+-rwxr-x--- 1 oracle oinstall  4218 Nov  5 16:46 operr.bat
+-rwxr-x--- 1 oracle oinstall  3159 Nov  5 16:46 operr
+-rw-r----- 1 oracle oinstall  2551 Nov  5 16:46 opatch.pl
+-rwxr-x--- 1 oracle oinstall  4290 Nov  5 16:46 opatch_env.sh
+-rwxr-x--- 1 oracle oinstall 16433 Nov  5 16:46 opatch.bat
+-rwxr-x--- 1 oracle oinstall 49544 Nov  5 16:46 opatch
+drwxr-x--- 5 oracle oinstall  4096 Nov  5 16:46 ocm
+-rwxr-x--- 1 oracle oinstall 23550 Nov  5 16:46 emdpatch.pl
+-rwxr-x--- 1 oracle oinstall   627 Nov  5 16:46 datapatch.bat
+-rwxr-x--- 1 oracle oinstall   589 Nov  5 16:46 datapatch
+drwxr-x--- 2 oracle oinstall  4096 Nov  5 16:46 config
+drwxr-x--- 4 oracle oinstall  4096 Nov  5 16:46 opatchprereqs
+drwxr-x--- 2 oracle oinstall  4096 Nov  5 16:46 jlib
+drwxr-x--- 3 oracle oinstall  4096 Nov  5 16:52 plugins
+drwxr-x--- 3 oracle oinstall  4096 Nov  5 16:52 oracle_common
+drwxr-x--- 2 oracle oinstall  4096 Nov  5 16:52 oplan
+-rwxr-x--- 1 oracle oinstall   393 Nov  5 16:52 opatchauto.cmd
+-rwxr-x--- 1 oracle oinstall  1442 Nov  5 16:52 opatchauto
+drwxr-x--- 9 oracle oinstall  4096 Nov  5 16:52 modules
+drwxr-x--- 2 oracle oinstall  4096 Nov  5 16:52 docs
+drwxr-x--- 6 oracle oinstall  4096 Nov  5 16:52 auto
+
+#REVIEW README FILE ON PATCH p6880880
+[oracle@ol7db1 OPatch]$ vim README.txt
+
+[oracle@ol7db1 OPatch]$ cd
+[oracle@ol7db1 ~]$
+
+#CHECK PATCHES STATUS BEFORE APPLY USING BELLOW QUERY
+[oracle@ol7db1 ~]$ sqlplus / as sysdba
+
+SQL*Plus: Release 19.0.0.0.0 - Production on Wed Feb 10 15:15:26 2021
+Version 19.3.0.0.0
+
+Copyright (c) 1982, 2019, Oracle.  All rights reserved.
+
+
+Connected to:
+Oracle Database 19c Enterprise Edition Release 19.0.0.0.0 - Production
+Version 19.3.0.0.0
+
+SQL> SET LINESIZE 500
+SET PAGESIZE 1000
+SET SERVEROUT ON
+SET LONG 2000000
+COLUMN action_time FORMAT A12
+COLUMN action FORMAT A10
+COLUMN patch_type FORMAT A10
+COLUMN description FORMAT A32
+COLUMN status FORMAT A10
+COLUMN DESCRIPTION for a75
+COLUMN version FORMAT A10SQL> SQL> SQL> SQL> SQL> SQL> SQL> SQL> SQL> SQL>
+
+SQL> alter session set "_exclude_seed_cdb_view"=FALSE;
+
+Session altered.
+
+SQL> select CON_ID, TO_CHAR(action_time, 'YYYY-MM-DD') AS action_time, PATCH_ID, PATCH_TYPE, ACTION, DESCRIPTION, SOURCE_VERSION, TARGET_VERSION from CDB_REGISTRY_SQLPATCH order by CON_ID, action_time, patch_id;
+
+    CON_ID ACTION_TIME	  PATCH_ID PATCH_TYPE ACTION	 DESCRIPTION								     SOURCE_VERSION  TARGET_VERSION
+---------- ------------ ---------- ---------- ---------- --------------------------------------------------------------------------- --------------- ---------------
+	 1 2021-02-08	  29517242 RU	      APPLY	 Database Release Update : 19.3.0.0.190416 (29517242)			     19.1.0.0.0      19.3.0.0.0
+	 2 2021-02-08	  29517242 RU	      APPLY	 Database Release Update : 19.3.0.0.190416 (29517242)			     19.1.0.0.0      19.3.0.0.0
+	 3 2021-02-08	  29517242 RU	      APPLY	 Database Release Update : 19.3.0.0.190416 (29517242)			     19.1.0.0.0      19.3.0.0.0
+
+SQL> SET LINESIZE 500
+SET PAGESIZE 1000
+SET SERVEROUT ON
+SET LONG 2000000
+COLUMN action_time FORMAT A12
+COLUMN action FORMAT A10
+COLUMN comments FORMAT A30
+COLUMN description FORMAT A60
+COLUMN namespace FORMAT A20
+COLUMN status FORMAT A10SQL> SQL> SQL> SQL> SQL> SQL> SQL> SQL> SQL> 
+SQL> SELECT TO_CHAR(action_time, 'YYYY-MM-DD') AS action_time,action,status, description,patch_id FROM sys.dba_registry_sqlpatch ORDER by action_time;
+
+ACTION_TIME  ACTION	STATUS	   DESCRIPTION							  PATCH_ID
+------------ ---------- ---------- ------------------------------------------------------------ ----------
+2021-02-08   APPLY	SUCCESS    Database Release Update : 19.3.0.0.190416 (29517242) 	  29517242
+
+SQL> col comp_id for a10
+col version for a11
+col status for a10
+col comp_name for a37SQL> SQL> SQL> 
+SQL> select comp_id,comp_name,version,status from dba_registry;
+
+COMP_ID    COMP_NAME				 VERSION     STATUS
+---------- ------------------------------------- ----------- ----------
+CATALOG    Oracle Database Catalog Views	 19.0.0.0.0  VALID
+CATPROC    Oracle Database Packages and Types	 19.0.0.0.0  VALID
+RAC	   Oracle Real Application Clusters	 19.0.0.0.0  OPTION OFF
+JAVAVM	   JServer JAVA Virtual Machine 	 19.0.0.0.0  VALID
+XML	   Oracle XDK				 19.0.0.0.0  VALID
+CATJAVA    Oracle Database Java Packages	 19.0.0.0.0  VALID
+APS	   OLAP Analytic Workspace		 19.0.0.0.0  VALID
+XDB	   Oracle XML Database			 19.0.0.0.0  VALID
+OWM	   Oracle Workspace Manager		 19.0.0.0.0  VALID
+CONTEXT    Oracle Text				 19.0.0.0.0  VALID
+ORDIM	   Oracle Multimedia			 19.0.0.0.0  VALID
+SDO	   Spatial				 19.0.0.0.0  VALID
+XOQ	   Oracle OLAP API			 19.0.0.0.0  VALID
+OLS	   Oracle Label Security		 19.0.0.0.0  VALID
+DV	   Oracle Database Vault		 19.0.0.0.0  VALID
+
+15 rows selected.
+
+SQL> COLUMN object_name FORMAT A30
+SQL> SELECT owner, object_type, object_name, status FROM dba_objects WHERE status = 'INVALID' ORDER BY owner, object_type, object_name;
+
+no rows selected
+
+SQL> exit
+Disconnected from Oracle Database 19c Enterprise Edition Release 19.0.0.0.0 - Production
+Version 19.3.0.0.0
+
+#TAKE BACKUP OF ORACLE_HOME AND DATABASE (Rollback plan)
+
+[oracle@ol7db1 ~]$ mkdir -p /home/oracle/bkpap/
+[oracle@ol7db1 ~]$ tar -czvf /home/oracle/bkpap/oracle_home_19.3.0.0.0_before_patch.tar.gz /u01/app/oracle/product/19.3.0/dbhome_1
+[oracle@ol7db1 ~]$ ls -ltrh /home/oracle/bkpap/oracle_home_19.3.0.0.0_before_patch.tar.gz
+-rw-r--r-- 1 oracle oinstall 3.0G Feb 10 15:28 /home/oracle/bkpap/oracle_home_19.3.0.0.0_before_patch.tar.gz
+
+#SHUTDOWN DATABASE
+
+[oracle@ol7db1 ~]$ sqlplus / as sysdba
+
+SQL*Plus: Release 19.0.0.0.0 - Production on Wed Feb 10 15:49:51 2021
+Version 19.3.0.0.0
+
+Copyright (c) 1982, 2019, Oracle.  All rights reserved.
+
+
+Connected to:
+Oracle Database 19c Enterprise Edition Release 19.0.0.0.0 - Production
+Version 19.3.0.0.0
+
+SQL> select name,open_mode from v$database;
+
+NAME	  OPEN_MODE
+--------- --------------------
+APPSCDB   READ WRITE
+
+SQL> shu immediate;
+Database closed.
+Database dismounted.
+ORACLE instance shut down.
+SQL> exit
+Disconnected from Oracle Database 19c Enterprise Edition Release 19.0.0.0.0 - Production
+
+#STOP LISTENER
+
+[oracle@ol7db1 ~]$ lsnrctl status
+
+LSNRCTL for Linux: Version 19.0.0.0.0 - Production on 11-FEB-2021 10:09:31
+
+Copyright (c) 1991, 2019, Oracle.  All rights reserved.
+
+Connecting to (ADDRESS=(PROTOCOL=tcp)(HOST=)(PORT=1521))
+STATUS of the LISTENER
+------------------------
+Alias                     LISTENER
+Version                   TNSLSNR for Linux: Version 19.0.0.0.0 - Production
+Start Date                11-FEB-2021 10:05:59
+Uptime                    0 days 0 hr. 3 min. 31 sec
+Trace Level               off
+Security                  ON: Local OS Authentication
+SNMP                      OFF
+Listener Log File         /u01/app/oracle/diag/tnslsnr/ol7db1/listener/alert/log.xml
+Listening Endpoints Summary...
+  (DESCRIPTION=(ADDRESS=(PROTOCOL=tcp)(HOST=ol7db1)(PORT=1521)))
+The listener supports no services
+The command completed successfully
+
+[oracle@ol7db1 ~]$ lsnrctl stop
+
+LSNRCTL for Linux: Version 19.0.0.0.0 - Production on 11-FEB-2021 10:09:33
+
+Copyright (c) 1991, 2019, Oracle.  All rights reserved.
+
+Connecting to (ADDRESS=(PROTOCOL=tcp)(HOST=)(PORT=1521))
+The command completed successfully
+
+#TAKE BACKUP OF ORACLE_HOME AND DATABASE (Rollback plan)
+
+[oracle@ol7db1 ~]$ mkdir -p /home/oracle/bkpap/
+[oracle@ol7db1 ~]$ tar -czvf /home/oracle/bkpap/oracle_home_19.3.0.0.0_before_patch.tar.gz /u01/app/oracle/product/19.3.0/dbhome_1
+[oracle@ol7db1 ~]$ ls -ltrh /home/oracle/bkpap/oracle_home_19.3.0.0.0_before_patch.tar.gz
+-rw-r--r-- 1 oracle oinstall 3.0G Feb 10 15:28 /home/oracle/bkpap/oracle_home_19.3.0.0.0_before_patch.tar.gz
+
+#UPGRADE OPATCH TOOL FROM 12.2.0.1.17 to 12.2.0.1.23
+
+[oracle@ol7db1 ~]$ cd /home/oracle/pa/OPatch/
+[oracle@ol7db1 OPatch]$ export ORACLE_SID=appscdb1
+[oracle@ol7db1 OPatch]$ export ORACLE_HOME=/u01/app/oracle/product/19.3.0/dbhome_1
+[oracle@ol7db1 OPatch]$ export PATH=/u01/app/oracle/product/19.3.0/dbhome_1/OPatch/:$PATH
+[oracle@ol7db1 OPatch]$ opatch version
+OPatch Version: 12.2.0.1.17
+
+OPatch succeeded.
+
+[oracle@ol7db1 OPatch]$ ./opatch version
+OPatch Version: 12.2.0.1.23
+
+OPatch succeeded.
+
+[oracle@ol7db1 ~]$ mv /u01/app/oracle/product/19.3.0/dbhome_1/OPatch /u01/app/oracle/product/19.3.0/dbhome_1/OPatch-bkp-12.2.0.1.17
+[oracle@ol7db1 ~]$ mv /home/oracle/pa/OPatch /u01/app/oracle/product/19.3.0/dbhome_1/OPatch
+
+#UNCOMPRESS PATCH
+
+[oracle@ol7db1 OPatch]$ cd ..
+[oracle@ol7db1 pa]$ ls -ltr
+total 1657840
+-rw-r--r--  1 oracle oinstall   26897577 Feb 10 15:09 p29511771_190000_Linux-x86-64.zip
+-rw-r--r--  1 oracle oinstall  123900743 Feb 10 15:14 p31301460_190000_Linux-x86-64.zip
+-rw-r--r--  1 oracle oinstall  122119435 Feb 10 15:15 p6880880_200000_Linux-x86-64.zip
+drwxr-x--- 15 oracle oinstall       4096 Feb 11 10:56 OPatch
+-rw-r--r--  1 root   root     1424692091 Feb 11 14:30 p31771877_190000_Linux-x86-64.zip
+
+[oracle@ol7db1 pa]$ unzip p31771877_190000_Linux-x86-64.zip
+
+[oracle@ol7db1 pa]$ ls -ltr
+total 1658312
+drwxr-xr-x  5 oracle oinstall       4096 Oct  8 01:34 31771877
+-rw-rw-r--  1 oracle oinstall     475361 Oct 20 16:54 PatchSearch.xml
+-rw-r--r--  1 oracle oinstall  122119435 Feb 10 15:15 p6880880_200000_Linux-x86-64.zip
+drwxr-x--- 15 oracle oinstall       4096 Feb 11 10:56 OPatch
+-rw-r--r--  1 root   root     1424692091 Feb 11 14:30 p31771877_190000_Linux-x86-64.zip
+
+[oracle@ol7db1 pa]$ cd 31771877
+
+#APPY PATCH 31771877
+
+[oracle@ol7db1 31771877]$ opatch apply
+Oracle Interim Patch Installer version 12.2.0.1.23
+Copyright (c) 2021, Oracle Corporation.  All rights reserved.
+
+
+Oracle Home       : /u01/app/oracle/product/19.3.0/dbhome_1
+Central Inventory : /u01/app/oraInventory
+   from           : /u01/app/oracle/product/19.3.0/dbhome_1/oraInst.loc
+OPatch version    : 12.2.0.1.23
+OUI version       : 12.2.0.7.0
+Log file location : /u01/app/oracle/product/19.3.0/dbhome_1/cfgtoollogs/opatch/opatch2021-02-11_14-52-46PM_1.log
+
+Verifying environment and performing prerequisite checks...
+OPatch continues with these patches:   31771877  
+
+Do you want to proceed? [y|n]
+y
+User Responded with: Y
+All checks passed.
+
+Please shutdown Oracle instances running out of this ORACLE_HOME on the local system.
+(Oracle Home = '/u01/app/oracle/product/19.3.0/dbhome_1')
+
+
+Is the local system ready for patching? [y|n]
+y
+User Responded with: Y
+Backing up files...
+Applying interim patch '31771877' to OH '/u01/app/oracle/product/19.3.0/dbhome_1'
+ApplySession: Optional component(s) [ oracle.network.gsm, 19.0.0.0.0 ] , [ oracle.rdbms.ic, 19.0.0.0.0 ] , [ oracle.rdbms.tg4db2, 19.0.0.0.0 ] , [ oracle.tfa, 19.0.0.0.0 ] , [ oracle.options.olap.awm, 19.0.0.0.0 ] , [ oracle.net.cman, 19.0.0.0.0 ] , [ oracle.xdk.companion, 19.0.0.0.0 ] , [ oracle.oraolap.mgmt, 19.0.0.0.0 ] , [ oracle.network.cman, 19.0.0.0.0 ] , [ oracle.options.olap, 19.0.0.0.0 ] , [ oracle.assistants.usm, 19.0.0.0.0 ] , [ oracle.assistants.asm, 19.0.0.0.0 ] , [ oracle.sqlj, 19.0.0.0.0 ] , [ oracle.jdk, 1.8.0.191.0 ]  not present in the Oracle Home or a higher version is found.
+
+Patching component oracle.rdbms.rsf, 19.0.0.0.0...
+
+Patching component oracle.rdbms, 19.0.0.0.0...
+
+Patching component oracle.rdbms.util, 19.0.0.0.0...
+
+Patching component oracle.assistants.acf, 19.0.0.0.0...
+
+Patching component oracle.assistants.deconfig, 19.0.0.0.0...
+
+Patching component oracle.assistants.server, 19.0.0.0.0...
+
+Patching component oracle.buildtools.rsf, 19.0.0.0.0...
+
+Patching component oracle.ctx, 19.0.0.0.0...
+
+Patching component oracle.dbjava.ic, 19.0.0.0.0...
+
+Patching component oracle.dbjava.jdbc, 19.0.0.0.0...
+
+Patching component oracle.dbjava.ucp, 19.0.0.0.0...
+
+Patching component oracle.dbtoolslistener, 19.0.0.0.0...
+
+Patching component oracle.ldap.rsf, 19.0.0.0.0...
+
+Patching component oracle.network.rsf, 19.0.0.0.0...
+
+Patching component oracle.oracore.rsf, 19.0.0.0.0...
+
+Patching component oracle.rdbms.dbscripts, 19.0.0.0.0...
+
+Patching component oracle.rdbms.deconfig, 19.0.0.0.0...
+
+Patching component oracle.sdo, 19.0.0.0.0...
+
+Patching component oracle.sdo.locator.jrf, 19.0.0.0.0...
+
+Patching component oracle.sqlplus, 19.0.0.0.0...
+
+Patching component oracle.usm.deconfig, 19.0.0.0.0...
+
+Patching component oracle.rdbms.crs, 19.0.0.0.0...
+
+Patching component oracle.oraolap, 19.0.0.0.0...
+
+Patching component oracle.precomp.rsf, 19.0.0.0.0...
+
+Patching component oracle.javavm.client, 19.0.0.0.0...
+
+Patching component oracle.precomp.common.core, 19.0.0.0.0...
+
+Patching component oracle.network.client, 19.0.0.0.0...
+
+Patching component oracle.rdbms.scheduler, 19.0.0.0.0...
+
+Patching component oracle.ctx.atg, 19.0.0.0.0...
+
+Patching component oracle.marvel, 19.0.0.0.0...
+
+Patching component oracle.oraolap.dbscripts, 19.0.0.0.0...
+
+Patching component oracle.ovm, 19.0.0.0.0...
+
+Patching component oracle.bali.ice, 11.1.1.7.0...
+
+Patching component oracle.ctx.rsf, 19.0.0.0.0...
+
+Patching component oracle.rdbms.lbac, 19.0.0.0.0...
+
+Patching component oracle.rdbms.oci, 19.0.0.0.0...
+
+Patching component oracle.odbc, 19.0.0.0.0...
+
+Patching component oracle.rdbms.rman, 19.0.0.0.0...
+
+Patching component oracle.nlsrtl.rsf, 19.0.0.0.0...
+
+Patching component oracle.rdbms.install.plugins, 19.0.0.0.0...
+
+Patching component oracle.rdbms.drdaas, 19.0.0.0.0...
+
+Patching component oracle.ldap.rsf.ic, 19.0.0.0.0...
+
+Patching component oracle.ldap.security.osdt, 19.0.0.0.0...
+
+Patching component oracle.network.listener, 19.0.0.0.0...
+
+Patching component oracle.ons, 19.0.0.0.0...
+
+Patching component oracle.rdbms.dv, 19.0.0.0.0...
+
+Patching component oracle.javavm.server, 19.0.0.0.0...
+
+Patching component oracle.xdk, 19.0.0.0.0...
+
+Patching component oracle.ldap.owm, 19.0.0.0.0...
+
+Patching component oracle.dbdev, 19.0.0.0.0...
+
+Patching component oracle.rdbms.install.common, 19.0.0.0.0...
+
+Patching component oracle.sdo.locator, 19.0.0.0.0...
+
+Patching component oracle.duma, 19.0.0.0.0...
+
+Patching component oracle.sqlplus.ic, 19.0.0.0.0...
+
+Patching component oracle.xdk.rsf, 19.0.0.0.0...
+
+Patching component oracle.xdk.parser.java, 19.0.0.0.0...
+
+Patching component oracle.rdbms.rsf.ic, 19.0.0.0.0...
+
+Patching component oracle.precomp.common, 19.0.0.0.0...
+
+Patching component oracle.precomp.lang, 19.0.0.0.0...
+
+Patching component oracle.jdk, 1.8.0.201.0...
+Patch 31771877 successfully applied.
+Sub-set patch [31301460] has become inactive due to the application of a super-set patch [31771877].
+Sub-set patch [29517242] has become inactive due to the application of a super-set patch [31771877].
+Please refer to Doc ID 2161861.1 for any possible further required actions.
+Log file location: /u01/app/oracle/product/19.3.0/dbhome_1/cfgtoollogs/opatch/opatch2021-02-11_14-52-46PM_1.log
+
+OPatch succeeded.
+
+[oracle@ol7db1 31771877]$ cd
+
+#STARTUP DATABASE
+
+[oracle@ol7db1 ~]$ sqlplus / as sysdba
+
+SQL*Plus: Release 19.0.0.0.0 - Production on Thu Feb 11 14:58:24 2021
+Version 19.9.0.0.0
+
+Copyright (c) 1982, 2020, Oracle.  All rights reserved.
+
+Connected to an idle instance.
+
+SQL> startup;
+ORACLE instance started.
+
+Total System Global Area 2147482944 bytes
+Fixed Size		    9137472 bytes
+Variable Size		  536870912 bytes
+Database Buffers	 1593835520 bytes
+Redo Buffers		    7639040 bytes
+Database mounted.
+Database opened.
+SQL> exit
+Disconnected from Oracle Database 19c Enterprise Edition Release 19.0.0.0.0 - Production
+Version 19.9.0.0.0
+
+#START LISTENER
+
+[oracle@ol7db1 ~]$ lsnrctl start
+
+LSNRCTL for Linux: Version 19.0.0.0.0 - Production on 11-FEB-2021 14:59:07
+
+Copyright (c) 1991, 2020, Oracle.  All rights reserved.
+
+Starting /u01/app/oracle/product/19.3.0/dbhome_1/bin/tnslsnr: please wait...
+
+TNSLSNR for Linux: Version 19.0.0.0.0 - Production
+Log messages written to /u01/app/oracle/diag/tnslsnr/ol7db1/listener/alert/log.xml
+Listening on: (DESCRIPTION=(ADDRESS=(PROTOCOL=tcp)(HOST=ol7db1)(PORT=1521)))
+
+Connecting to (ADDRESS=(PROTOCOL=tcp)(HOST=)(PORT=1521))
+STATUS of the LISTENER
+------------------------
+Alias                     LISTENER
+Version                   TNSLSNR for Linux: Version 19.0.0.0.0 - Production
+Start Date                11-FEB-2021 14:59:07
+Uptime                    0 days 0 hr. 0 min. 0 sec
+Trace Level               off
+Security                  ON: Local OS Authentication
+SNMP                      OFF
+Listener Log File         /u01/app/oracle/diag/tnslsnr/ol7db1/listener/alert/log.xml
+Listening Endpoints Summary...
+  (DESCRIPTION=(ADDRESS=(PROTOCOL=tcp)(HOST=ol7db1)(PORT=1521)))
+The listener supports no services
+The command completed successfully
+
+#EXECUTE POST PATCH STEPS AND RUN DATAPATCH COMMAND
+
+[oracle@ol7db1 ~]$ datapatch -verbose
+SQL Patching tool version 19.9.0.0.0 Production on Thu Feb 11 15:00:28 2021
+Copyright (c) 2012, 2020, Oracle.  All rights reserved.
+
+Log file for this invocation: /u01/app/oracle/cfgtoollogs/sqlpatch/sqlpatch_25654_2021_02_11_15_00_28/sqlpatch_invocation.log
+
+Connecting to database...OK
+Gathering database info...done
+
+Note:  Datapatch will only apply or rollback SQL fixes for PDBs
+       that are in an open state, no patches will be applied to closed PDBs.
+       Please refer to Note: Datapatch: Database 12c Post Patch SQL Automation
+       (Doc ID 1585822.1)
+
+Bootstrapping registry and package to current versions...done
+Determining current state...done
+
+Current state of interim SQL patches:
+  No interim patches found
+
+Current state of release update SQL patches:
+  Binary registry:
+    19.9.0.0.0 Release_Update 200930183249: Installed
+  PDB APPSPDB:
+    Applied 19.3.0.0.0 Release_Update 190410122720 successfully on 08-FEB-21 10.22.24.706527 AM
+  PDB CDB$ROOT:
+    Applied 19.3.0.0.0 Release_Update 190410122720 successfully on 08-FEB-21 10.15.20.716421 AM
+  PDB PDB$SEED:
+    Applied 19.3.0.0.0 Release_Update 190410122720 successfully on 08-FEB-21 10.22.24.706527 AM
+
+Adding patches to installation queue and performing prereq checks...done
+Installation queue:
+  For the following PDBs: CDB$ROOT PDB$SEED APPSPDB
+    No interim patches need to be rolled back
+    Patch 31771877 (Database Release Update : 19.9.0.0.201020 (31771877)):
+      Apply from 19.3.0.0.0 Release_Update 190410122720 to 19.9.0.0.0 Release_Update 200930183249
+    No interim patches need to be applied
+
+Installing patches...
+Patch installation complete.  Total patches installed: 3
+
+Validating logfiles...done
+Patch 31771877 apply (pdb CDB$ROOT): SUCCESS
+  logfile: /u01/app/oracle/cfgtoollogs/sqlpatch/31771877/23869227/31771877_apply_APPSCDB_CDBROOT_2021Feb11_15_01_11.log (no errors)
+Patch 31771877 apply (pdb PDB$SEED): SUCCESS
+  logfile: /u01/app/oracle/cfgtoollogs/sqlpatch/31771877/23869227/31771877_apply_APPSCDB_PDBSEED_2021Feb11_15_08_45.log (no errors)
+Patch 31771877 apply (pdb APPSPDB): SUCCESS
+  logfile: /u01/app/oracle/cfgtoollogs/sqlpatch/31771877/23869227/31771877_apply_APPSCDB_APPSPDB_2021Feb11_15_08_45.log (no errors)
+SQL Patching tool complete on Thu Feb 11 15:20:32 2021
+
+[oracle@ol7db1 ~]$ sqlplus / as sysdba
+
+SQL*Plus: Release 19.0.0.0.0 - Production on Wed Feb 10 15:15:26 2021
+Version 19.3.0.0.0
+
+Copyright (c) 1982, 2019, Oracle.  All rights reserved.
+
+
+Connected to:
+Oracle Database 19c Enterprise Edition Release 19.0.0.0.0 - Production
+Version 19.3.0.0.0
+
+SQL> SET LINESIZE 500
+SET PAGESIZE 1000
+SET SERVEROUT ON
+SET LONG 2000000
+COLUMN action_time FORMAT A12
+COLUMN action FORMAT A10
+COLUMN patch_type FORMAT A10
+COLUMN description FORMAT A32
+COLUMN status FORMAT A10
+COLUMN version FORMAT A10
+COLUMN DESCRIPTION for a70
+
+SQL> select CON_ID, TO_CHAR(action_time, 'YYYY-MM-DD') AS action_time, PATCH_ID, PATCH_TYPE, ACTION, DESCRIPTION, SOURCE_VERSION, TARGET_VERSION from CDB_REGISTRY_SQLPATCH order by CON_ID, action_time, patch_id;
+
+    CON_ID ACTION_TIME	  PATCH_ID PATCH_TYPE ACTION	 DESCRIPTION								SOURCE_VERSION	TARGET_VERSION
+---------- ------------ ---------- ---------- ---------- ---------------------------------------------------------------------- --------------- ---------------
+	 1 2021-02-08	  29517242 RU	      APPLY	 Database Release Update : 19.3.0.0.190416 (29517242)			19.1.0.0.0	19.3.0.0.0
+	 1 2021-02-11	  31771877 RU	      APPLY	 Database Release Update : 19.9.0.0.201020 (31771877)			19.3.0.0.0	19.9.0.0.0
+	 3 2021-02-08	  29517242 RU	      APPLY	 Database Release Update : 19.3.0.0.190416 (29517242)			19.1.0.0.0	19.3.0.0.0
+	 3 2021-02-11	  31771877 RU	      APPLY	 Database Release Update : 19.9.0.0.201020 (31771877)			19.3.0.0.0	19.9.0.0.0
+
+SQL> exit
+Disconnected from Oracle Database 19c Enterprise Edition Release 19.0.0.0.0 - Production
+Version 19.9.0.0.0
+
+#CHECK OPATCH LSINVENTORY AND LIST OF PATCHES APPLIED IN ORACLE_HOME
+
+[oracle@ol7db1 ~]$ opatch lspatches
+31771877;Database Release Update : 19.9.0.0.201020 (31771877)
+29511771;UPDATE PERL IN 19.3.0.0.0 DATABASE ORACLE HOME
+29585399;OCW RELEASE UPDATE 19.3.0.0.0 (29585399)
+
+#COMPILE INVALID OBJECTS
+
+[oracle@ol7db1 ~]$ sqlplus / as sysdba
+
+SQL*Plus: Release 19.0.0.0.0 - Production on Thu Feb 11 15:35:28 2021
+Version 19.9.0.0.0
+
+Copyright (c) 1982, 2020, Oracle.  All rights reserved.
+
+
+Connected to:
+Oracle Database 19c Enterprise Edition Release 19.0.0.0.0 - Production
+Version 19.9.0.0.0
+
+SQL> select owner, count(*) count from all_objects where status = 'INVALID' group by owner;
+
+no rows selected
+
+SQL> @?/rdbms/admin/utlrp.sql
+
+Session altered.
+
+
+TIMESTAMP
+--------------------------------------------------------------------------------
+COMP_TIMESTAMP UTLRP_BGN	      2021-02-11 15:35:43
+
+DOC>   The following PL/SQL block invokes UTL_RECOMP to recompile invalid
+DOC>   objects in the database. Recompilation time is proportional to the
+DOC>   number of invalid objects in the database, so this command may take
+DOC>   a long time to execute on a database with a large number of invalid
+DOC>   objects.
+DOC>
+DOC>   Use the following queries to track recompilation progress:
+DOC>
+DOC>   1. Query returning the number of invalid objects remaining. This
+DOC>	  number should decrease with time.
+DOC>	     SELECT COUNT(*) FROM obj$ WHERE status IN (4, 5, 6);
+DOC>
+DOC>   2. Query returning the number of objects compiled so far. This number
+DOC>	  should increase with time.
+DOC>	     SELECT COUNT(*) FROM UTL_RECOMP_COMPILED;
+DOC>
+DOC>   This script automatically chooses serial or parallel recompilation
+DOC>   based on the number of CPUs available (parameter cpu_count) multiplied
+DOC>   by the number of threads per CPU (parameter parallel_threads_per_cpu).
+DOC>   On RAC, this number is added across all RAC nodes.
+DOC>
+DOC>   UTL_RECOMP uses DBMS_SCHEDULER to create jobs for parallel
+DOC>   recompilation. Jobs are created without instance affinity so that they
+DOC>   can migrate across RAC nodes. Use the following queries to verify
+DOC>   whether UTL_RECOMP jobs are being created and run correctly:
+DOC>
+DOC>   1. Query showing jobs created by UTL_RECOMP
+DOC>	     SELECT job_name FROM dba_scheduler_jobs
+DOC>		WHERE job_name like 'UTL_RECOMP_SLAVE_%';
+DOC>
+DOC>   2. Query showing UTL_RECOMP jobs that are running
+DOC>	     SELECT job_name FROM dba_scheduler_running_jobs
+DOC>		WHERE job_name like 'UTL_RECOMP_SLAVE_%';
+DOC>#
+
+PL/SQL procedure successfully completed.
+
+
+TIMESTAMP
+--------------------------------------------------------------------------------
+COMP_TIMESTAMP UTLRP_END	      2021-02-11 15:35:44
+
+DOC> The following query reports the number of invalid objects.
+DOC>
+DOC> If the number is higher than expected, please examine the error
+DOC> messages reported with each object (using SHOW ERRORS) to see if they
+DOC> point to system misconfiguration or resource constraints that must be
+DOC> fixed before attempting to recompile these objects.
+DOC>#
+
+OBJECTS WITH ERRORS
+-------------------
+		  0
+
+DOC> The following query reports the number of exceptions caught during
+DOC> recompilation. If this number is non-zero, please query the error
+DOC> messages in the table UTL_RECOMP_ERRORS to see if any of these errors
+DOC> are due to misconfiguration or resource constraints that must be
+DOC> fixed before objects can compile successfully.
+DOC> Note: Typical compilation errors (due to coding errors) are not
+DOC>	   logged into this table: they go into DBA_ERRORS instead.
+DOC>#
+
+ERRORS DURING RECOMPILATION
+---------------------------
+			  0
+
+
+Function created.
+
+
+PL/SQL procedure successfully completed.
+
+
+Function dropped.
+
+
+PL/SQL procedure successfully completed.
+
+SQL> exit
+Disconnected from Oracle Database 19c Enterprise Edition Release 19.0.0.0.0 - Production
+Version 19.9.0.0.0
