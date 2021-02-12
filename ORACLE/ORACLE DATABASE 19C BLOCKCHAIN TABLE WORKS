@@ -19,7 +19,7 @@ $ORACLE_HOME/OPatch/opatch lsinventory -bugs_fixed |grep 32431413
 #TEST CREATE BLOCKCHAIN TABLE 
 sqlplus / as sysdba
 
-SQL*Plus: Release 19.0.0.0.0 - Production on Sat Jan 30 12:19:49 2021
+SQL*Plus: Release 19.0.0.0.0 - Production on Thu Fev 04 12:19:49 2021
 Version 19.10.0.0.0
 
 Copyright (c) 1982, 2020, Oracle.  All rights reserved.
