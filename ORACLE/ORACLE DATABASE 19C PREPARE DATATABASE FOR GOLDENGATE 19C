@@ -13,6 +13,29 @@
 #NOTE
 The parameter enable_goldengate_replication is not present in the Oracle 12c database and hence it has thrown the erro. Please ignore it.
 
+[oracle@ol7db1 ~]$ sqlplus / as sysdba
+
+SQL*Plus: Release 19.0.0.0.0 - Production on Fri Feb 12 09:35:45 2021
+Version 19.3.0.0.0
+
+Copyright (c) 1982, 2019, Oracle.  All rights reserved.
+
+
+Connected to:
+Oracle Database 19c Enterprise Edition Release 19.0.0.0.0 - Production
+Version 19.3.0.0.0
+
+SQL> show parameter streams_pool_size
+
+NAME                                 TYPE        VALUE
+------------------------------------ ----------- ------------------------------
+streams_pool_size                    big integer 0
+SQL>
+
+SQL> alter system set streams_pool_size=1G scope=spfile;
+
+System altered.
+
 SQL> select supplemental_log_data_min, force_logging, log_mode, cdb from v$database;
 
 SUPPLEME FORCE_LOGGING                           LOG_MODE     CDB
