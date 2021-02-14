@@ -464,7 +464,8 @@ Overview > Add Extract
 	useridalias ggadmin domain oggadmin
 	exttrail gi
 	sourcecatalog appspdb
-	table source.*;
+	ddl include mapped
+	table appspdb.source.*;
 
 									Register Extract in the background?
 									
