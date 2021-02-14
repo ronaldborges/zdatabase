@@ -535,14 +535,14 @@ Overview > Add Path
 				Description:
 				Reverse proxy enabled?
 				Use Basic Authentication:
-				Source:				Extract		
+				Source:				GGMA19CI		
 						Trail Name	gi
-				Generated Source URI: 		trail://192.168.1.130:8002/services/v2/sources?trail=<trail_name>
+				Generated Source URI: 		trail://192.168.1.130:8002/services/v2/sources?trail=gi
 				Target: ?			ogg		
 						Target Host	192.168.1.130
 						Port Number	8003
 						Trail Name	ri
-				Generated Source URI: 		wss://<host_name>:<port_num>/services/v2/targets?trail=<trail_name>
+				Generated Source URI: 		ogg://192.168.1.130:8003/services/v2/targets?trail=ri
 				Target Encryption Algorithm: 	NONE
 				Enable Network Compression:
 				Sequence Length:		9
