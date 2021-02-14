@@ -325,8 +325,8 @@ Services	|	Running 4	|	Failed 0	| Other 0
 |	Deployment		|		Service				|	Port			|	Status			|	Action			|		Details				|
 |	DeploymentOGGMA		|	 	Administration Server		|	8001 <-Click 		|	Running			|	Action			|						|
 |	DeploymentOGGMA		|		Distribution Server		|	8002			|	Running			|	Action			|						|
-| 	DeploymentOGGMA		|		Performance Metrics Server	|	8003			|	Running			|	Action			|						|
-| 	DeploymentOGGMA		|		Receiver Server			|	8004			|	Running			|	Action			|						|
+| 	DeploymentOGGMA		|		Performance Metrics Server	|	8004			|	Running			|	Action			|						|
+| 	DeploymentOGGMA		|		Receiver Server			|	8003			|	Running			|	Action			|						|
 +-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
 
 	Deployments
@@ -471,16 +471,6 @@ Overview > Add Extract
 				[Back]															[Create]	[Create and Run] <-Click
 
 
-Extracts	|	Running 1	|	Failed 0	| Other 0			Click-> +		|	Replicats	|	Running 0	|	Failed 0	| Other 0				+
-	 ___
-	|___|
-	|___| --- ! - GGMA19CI			INTEGRATED   Action 
-	|___|	      Lag 0 sec						
-	
-Critical Events
-___________________ [Refresh]
-
-
 #ADD DISTRIBUITION SERVER
 #NOTE
 In the Service Manager console, click the Distribuition Server
@@ -495,7 +485,7 @@ http://localhost:7820/?root=account
 				User Name	oggadmin
 				Password	**************
 
-#CLICK ON ADMINISTRATION SERVER TO CONFIGURE EXTRACT/REPLICAT PROCESS
+#CLICK ON DISTRIBUITION SERVER
 
 Services	|	Running 4	|	Failed 0	| Other 0
 
@@ -503,10 +493,10 @@ Services	|	Running 4	|	Failed 0	| Other 0
 
 +-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
 |	Deployment		|		Service				|	Port			|	Status			|	Action			|		Details				|
-|	DeploymentOGGMA		|	 	Administration Server		|	8001 <-Click 		|	Running			|	Action			|						|
-|	DeploymentOGGMA		|		Distribution Server		|	8002			|	Running			|	Action			|						|
-| 	DeploymentOGGMA		|		Performance Metrics Server	|	8003			|	Running			|	Action			|						|
-| 	DeploymentOGGMA		|		Receiver Server			|	8004			|	Running			|	Action			|						|
+|	DeploymentOGGMA		|	 	Administration Server		|	8001 	 		|	Running			|	Action			|						|
+|	DeploymentOGGMA		|		Distribution Server		|	8002 <- Click		| 	Running			|	Action			|						|
+| 	DeploymentOGGMA		|		Performance Metrics Server	|	8004			|	Running			|	Action			|						|
+| 	DeploymentOGGMA		|		Receiver Server			|	8003			|	Running			|	Action			|						|
 +-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
 
 	Deployments
@@ -585,8 +575,134 @@ Overview > Add Path
 				
 				[Cancel]	[Create Path]		[Create and Run]
 				
-#				
-				
+#NOTE
+Now the pump is added and it will be received by Receiver server running on port 8003
+Now you are going to add the replicat process.
+
+#OPEN THE SERVICE CONSOLE MANAGER
+
+http://192.168.1.130:7820/?root=account
+#OR
+http://localhost:7820/?root=account
+
+				Oracle GoldenGate Service Manager
+				User Name	oggadmin
+				Password	**************
+
+#CLICK ON ADMINISTRATION SERVER TO CONFIGURE EXTRACT/REPLICAT PROCESS
+
+Services	|	Running 4	|	Failed 0	| Other 0
+
+	Deployment All
+
++-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
+|	Deployment		|		Service				|	Port			|	Status			|	Action			|		Details				|
+|	DeploymentOGGMA		|	 	Administration Server		|	8001 <-Click 		|	Running			|	Action			|						|
+|	DeploymentOGGMA		|		Distribution Server		|	8002			|	Running			|	Action			|						|
+| 	DeploymentOGGMA		|		Performance Metrics Server	|	8004			|	Running			|	Action			|						|
+| 	DeploymentOGGMA		|		Receiver Server			|	8003			|	Running			|	Action			|						|
++-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
+
+	Deployments
+
++-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
+|	Deployment		|		GoldenGate Home		|	Status			|	Running Service		|		Not Running Services	|	Action	|
+|	DeploymentOGGMA		|/u01/app/oracle/product/ggma		|	Running			|	4			|		0			|	Action	|
+|	ServiceManager		|/u01/app/oracle/product/ggma		|	Running			|	0			|		0			|	Action	|
++-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
+
+http://192.168.1.130:8001/
+
+				Oracle GoldenGate Service Manager
+				User Name	oggadmin
+				Password	**************
+#NOTE
+In my test environment I defined port 8001 but the default port is 7001
+#CLICK ON THE + SYMBOL TO ADD REPLICAT PROCESS.
+
+Extracts	|	Running 1	|	Failed 0	| Other 0			+		|	Replicats	|	Running 0	|	Failed 0	| Other 0		+ <- Click
+
+Critical Events
+___________________ [Refresh]
+
+http://192.168.1.130:8001/?root=status&process=addReplicat
+
+Overview > Add Replicat
+
+	Add Replicat
+
+	(1)____________________________________________________________________________(2)_____________________________________________________________________________(3)
+	Replicat Type 									Replicat Options								Parameter File
+
+	
+	(*) Integrated Replicat
+	( ) Nonintegrated Replicat
+	( ) Coordinated Replicat
+	( ) Parallel Replicat
+
+Overview > Add Extract
+
+	Add Extract
+
+	(1)____________________________________________________________________________(2)_____________________________________________________________________________(3)
+	Replicat Type 									Replicat Options								Parameter File
+	
+	Basic Information				
+	
+				Process Name: ?				ggma19ri
+				Description: ?
+				Intent: ? 				Unidirectional
+	
+				Create new credential
+	
+				Credential Domain: ?			oggadmin
+				Credential Alias: ?			ggadmin
+				Begin: ? 				Position in Log
+				Transaction Log Sequence Number ?	0
+				Transaction Log RBA Offset ?		0
+				Source: ?				Trail
+				Trail Name: ?				ri
+				Trail Subdirectory: ?
+				Checkpoint Table: ?			No Checkpoint Table
+	
+	Encryption Profile
+
+				Profile Name:				LocalWallet (Default)
+				Encryption Profile Type: 		LocalWallet
+				Masterkey Name:				OGG_DEFAULT_MASTERKEY
+	
+	Managed Options
+
+				Profile Name:				Default (Default)
+				Critical to deployment health:
+				Auto Start: ?
+				Auto Restart: ?		
+	
+		[Back]							[Next] <- Click
+		
+Overview > Add Extract
+
+	Add Extract
+
+	(1)____________________________________________________________________________(2)_____________________________________________________________________________(3)
+	Replicat Type 									Replicat Options								Parameter File
+	
+	Parameter File 
+	
+	replicat ggma19ri
+	useridalias ggadmin domain oggadmin
+	sourcecatalog appspdb
+	MAP source.*, TARGET target.*;
+
+	-- If performing precise instantiation after an Initial Load as of a SCN
+	-- Run the replicat with a start option to only start apply after the SCN at which the initial load was performed.
+	-- Example Replicat->Start Option->After CSN with SCN value used for the Initial Load.
+	-- See start options for running a replicat for more details.
+
+									Register Extract in the background?
+									
+				[Back]															[Create]	[Create and Run] <-Click
+
 
 
 
