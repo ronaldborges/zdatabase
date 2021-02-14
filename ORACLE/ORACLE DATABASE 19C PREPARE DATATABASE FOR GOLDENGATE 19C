@@ -471,16 +471,122 @@ Overview > Add Extract
 				[Back]															[Create]	[Create and Run] <-Click
 
 
+Extracts	|	Running 1	|	Failed 0	| Other 0			Click-> +		|	Replicats	|	Running 0	|	Failed 0	| Other 0				+
+	 ___
+	|___|
+	|___| --- ! - GGMA19CI			INTEGRATED   Action 
+	|___|	      Lag 0 sec						
+	
+Critical Events
+___________________ [Refresh]
 
 
+#ADD DISTRIBUITION SERVER
+#NOTE
+In the Service Manager console, click the Distribuition Server
 
+#OPEN THE SERVICE CONSOLE MANAGER
 
+http://192.168.1.130:7820/?root=account
+#OR
+http://localhost:7820/?root=account
 
+				Oracle GoldenGate Service Manager
+				User Name	oggadmin
+				Password	**************
 
+#CLICK ON ADMINISTRATION SERVER TO CONFIGURE EXTRACT/REPLICAT PROCESS
 
+Services	|	Running 4	|	Failed 0	| Other 0
 
+	Deployment All
 
++-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
+|	Deployment		|		Service				|	Port			|	Status			|	Action			|		Details				|
+|	DeploymentOGGMA		|	 	Administration Server		|	8001 <-Click 		|	Running			|	Action			|						|
+|	DeploymentOGGMA		|		Distribution Server		|	8002			|	Running			|	Action			|						|
+| 	DeploymentOGGMA		|		Performance Metrics Server	|	8003			|	Running			|	Action			|						|
+| 	DeploymentOGGMA		|		Receiver Server			|	8004			|	Running			|	Action			|						|
++-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
 
+	Deployments
+
++-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
+|	Deployment		|		GoldenGate Home		|	Status			|	Running Service		|		Not Running Services	|	Action	|
+|	DeploymentOGGMA		|/u01/app/oracle/product/ggma		|	Running			|	4			|		0			|	Action	|
+|	ServiceManager		|/u01/app/oracle/product/ggma		|	Running			|	0			|		0			|	Action	|
++-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
+
+http://192.168.1.130:8002/
+
+				Oracle GoldenGate Service Manager
+				User Name	oggadmin
+				Password	**************
+
+Paths	|	Running 0	|	Failed 0	| Other 0				Click-> +
+
+http://192.168.1.130:8002/?root=status&path=addPath
+
+Overview > Add Path
+
+	Add Path
+	
+				Path Name:			EXPUMP
+				Description:
+				Reverse proxy enabled?
+				Use Basic Authentication:
+				Source:				Extract		
+						Trail Name	gi
+				Generated Source URI: 		trail://192.168.1.130:8002/services/v2/sources?trail=<trail_name>
+				Target: ?			ogg		
+						Target Host	192.168.1.130
+						Port Number	8003
+						Trail Name	ri
+				Generated Source URI: 		wss://<host_name>:<port_num>/services/v2/targets?trail=<trail_name>
+				Target Encryption Algorithm: 	NONE
+				Enable Network Compression:
+				Sequence Length:		9
+				Trail Size (MB):		500
+								
+								Encryption Profile
+				Profile Name:			LocalWallet (Default)
+				Encryption Profile Type:	Local Wallet
+				Masterkey Name:			OGG_DEFAULT_MASTERKEY
+				Target Type:			( ) Manager	( ) Collector	(*) Receiver Server
+				Begin: ?			Position in Log
+				Source Sequence Number:		0
+				Source RBA Offset:		0
+				Critical: ?
+				Auto Restart: ?
+				
+	Rule-set Configuration
+	
+				Filtering ? 
+				
+	More Options
+	
+				EOF Delay (centiseconds): ? 	100
+				
+	App Options		
+				
+				TCP Flush Bytes: ? 
+				TCP Flush Seconds: ?
+				
+	TCP Options
+			
+				DSCP: ?				DEFAULT
+				TOS: ?				DEFAULT
+				TCP_NODELAY: ? 
+				Quick ACK: ?
+				TCP_CORK: ?
+				System Send Buffer Size: ? 
+				System Recieve Buffer Size: ?
+				Keep Alive: ? 
+				
+				[Cancel]	[Create Path]		[Create and Run]
+				
+#				
+				
 
 
 
