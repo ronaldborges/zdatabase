@@ -537,7 +537,7 @@ Overview > Add Path
 				Target Encryption Algorithm: 	NONE
 				Enable Network Compression:
 				Sequence Length:		9
-				Trail Size (MB):		500
+				Trail Size (MB):		50
 								
 								Encryption Profile
 				Profile Name:			LocalWallet (Default)
