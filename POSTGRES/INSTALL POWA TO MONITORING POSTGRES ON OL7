@@ -29,6 +29,7 @@ cd pg_qualstats-2.0.2
 vi Makefile
 PG_CONFIG ?= /usr/local/pgsql-<$version>/bin/pg_config
 make
+make install
 cp pg_qualstats.so /usr/local/pgsql-<$version>/lib/
 cp pg_qualstats.control pg_qualstats.c pg_qualstats--2.0.2.sql /usr/local/pgsql-<$version>/share/extension/
 
