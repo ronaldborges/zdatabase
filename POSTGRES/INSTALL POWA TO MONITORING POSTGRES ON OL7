@@ -41,6 +41,7 @@ cd pg_stat_kcache-REL2_1_1
 vi Makefile
 PG_CONFIG ?= /usr/local/pgsql-<$version>/bin/pg_config
 make
+make install
 cp pg_stat_kcache.so /usr/local/pgsql-<$version>/lib/
 cp pg_stat_kcache.control pg_stat_kcache.c pg_stat_kcache--2.1.1.sql pg_stat_kcache--2.1.0.sql pg_stat_kcache--2.1.0--2.1.1.sql /usr/local/pgsql-<$version>/share/extension/
 
