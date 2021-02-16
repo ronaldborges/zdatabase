@@ -16,12 +16,14 @@ log_directory = 'pg_log'
 log_filename = 'postgresql-%Y-%m-%d_%H%M%S.log'
 
 ## enable wals and backup via pg_basebackup
+## change file postgresql.conf
 wal_level = hot_standby or wal_level = logical          #static, and depending on version can be replication
 max_wal_senders = 5                                     #static
 wal_keep_segments = 32                                  #dynamic
 archive_mode = on                                       #static
 archive_command = 'gzip -c %p > /$path/wals/%f.gz'      #static
 archive_timeout = 600
+restore_command = 'gunzip -c /$path/STDB/%f > %p'
 
 ## enable lines in pg_hab.conf
 host    replication     postgres        127.0.0.1/32            trust
