@@ -173,3 +173,9 @@ nohup gunzip < database.sql.gz | /usr/local/pgsql-9.2.24/bin/psql -U postgres -d
 
 #ANALYZE DATABASE BEFORE RESTORE
 "/usr/local/pgsql-9.2.24/bin/vacuumdb" --all --analyze-only
+
+#NOTE 
+#COMAND VARIATION
+/usr/local/pgsql-13.2/bin/pg_upgrade --old-bindir=/usr/local/pgsql-11.4/bin --new-bindir=/usr/local/pgsql-13.2/bin --old-datadir=/dados/data --new-datadir=/dados/data-new --old-options '-c config_file=/dados/data/postgresql.conf' --new-options '-c config_file=/dados/data-new/postgresql.conf' --check  
+/usr/local/pgsql-13.2/bin/pg_upgrade --old-bindir=/usr/local/pgsql-11.4/bin --new-bindir=/usr/local/pgsql-13.2/bin --old-datadir=/dados/data --new-datadir=/dados/data-new --old-options '-c config_file=/dados/data/postgresql.conf' --new-options '-c config_file=/dados/data-new/postgresql.conf' --link
+
