@@ -110,7 +110,8 @@ cd /etc/yum.repos.d
 wget https://yum.oracle.com/public-yum-ol7.repo
 wget http://public-yum.oracle.com/RPM-GPG-KEY-oracle-ol7 -O /etc/pki/rpm-gpg/RPM-GPG-KEY-oracle
 yum install -y oracle-database-preinstall-19c.x86_64
-yum install -y kmod-oracleasm.x86_64 oracleasm-support.x86_64 oracleasmlib.x86_64
+yum install -y kmod-oracleasm.x86_64 oracleasm-support.x86_64
+yum install -y https://download.oracle.com/otn_software/asmlib/oracleasmlib-2.0.12-1.el7.x86_64.rpm
 vi /etc/pam.d/su
 vi /etc/pam.d/system-auth
 vi /etc/pam.d/sshd
