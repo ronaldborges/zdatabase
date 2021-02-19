@@ -88,6 +88,9 @@ pg_basebackup: waiting for background process to finish streaming ...
 pg_basebackup: syncing data to disk ...
 pg_basebackup: base backup completed
 
+#GRANT 700 ON DIRECTORY DATA ON SLAVE DATABASE MACHINE
+chmod 700 -R /dados/data
+
 #START SLAVE DATABASE!
 $path/pg_ctl -D /dados/data -p 5432 start -l logstart
 
