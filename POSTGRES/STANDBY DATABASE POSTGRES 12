@@ -92,7 +92,7 @@ pg_basebackup: base backup completed
 chmod 700 -R /dados/data
 
 #START SLAVE DATABASE!
-$path/pg_ctl -D /dados/data -p 5432 start -l logstart
+$path/pg_ctl -D /dados/data start -l logstart
 
 #CHECK REPLICATION STATUS ON MASTER
 $path/psql -U postgres
