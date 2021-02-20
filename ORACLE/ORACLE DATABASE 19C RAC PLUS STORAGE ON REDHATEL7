@@ -216,7 +216,7 @@ fi
 # User specific environment and startup programs
 
 PATH=$PATH:$HOME/.local/bin:$HOME/bin
-export ORACLE_SID=oradbc
+export ORACLE_SID=oradbc1
 export ORACLE_BASE=/u01/app/oracle
 export ORACLE_HOME=$ORACLE_BASE/product/19.3
 export PATH=$ORACLE_HOME/bin:$ORACLE_HOME/OPatch:$PATH
