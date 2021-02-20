@@ -326,7 +326,7 @@ KERNEL=="sd?1", SUBSYSTEM=="block", PROGRAM=="/usr/lib/udev/scsi_id -g -u -d /de
 KERNEL=="sd?1", SUBSYSTEM=="block", PROGRAM=="/usr/lib/udev/scsi_id -g -u -d /dev/$parent", RESULT=="3600140567db30c9e3f145f790af9ea1d", SYMLINK+="asm-disk2", OWNER="grid", GROUP="asmadmin", MODE="0660"
 KERNEL=="sd?1", SUBSYSTEM=="block", PROGRAM=="/usr/lib/udev/scsi_id -g -u -d /dev/$parent", RESULT=="360014053fc37454e61b4fef9ea8e5f61", SYMLINK+="asm-disk3", OWNER="grid", GROUP="asmadmin", MODE="0660"
 KERNEL=="sd?1", SUBSYSTEM=="block", PROGRAM=="/usr/lib/udev/scsi_id -g -u -d /dev/$parent", RESULT=="36001405427af582ba504c1aae66cb23d", SYMLINK+="asm-disk4", OWNER="grid", GROUP="asmadmin", MODE="0660"
-KERNEL=="sd?1", SUBSYSTEM=="block", PROGRAM=="/usr/lib/udev/scsi_id -g -u -d /dev/$parent", RESULT=="36001405427bf581ba504c1aae66cb22e", SYMLINK+="asm-disk4", OWNER="grid", GROUP="asmadmin", MODE="0660"
+KERNEL=="sd?1", SUBSYSTEM=="block", PROGRAM=="/usr/lib/udev/scsi_id -g -u -d /dev/$parent", RESULT=="36001405427bf581ba504c1aae66cb22e", SYMLINK+="asm-disk5", OWNER="grid", GROUP="asmadmin", MODE="0660"
 
 udevadm test /block/sdb/sdb1
 udevadm control --reload-rules
