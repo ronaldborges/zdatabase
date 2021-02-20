@@ -234,7 +234,7 @@ fi
 # User specific environment and startup programs
 
 PATH=$PATH:$HOME/bin
-export ORACLE_HOME=/u01/app/19.2/grid
+export ORACLE_HOME=/u01/app/19.3/grid
 export PATH=$ORACLE_HOME/bin:$ORACLE_HOME/OPatch:$PATH
 export PATH
 
