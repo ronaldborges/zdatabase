@@ -180,6 +180,8 @@ addn-hosts=/etc/racdns
 vi /etc/resolv.conf
 nameserver 127.0.0.1
 search appsdba.info
+nameserver 192.168.1.1
+
 chattr +i /etc/resolv.conf
 
 systemctl start dnsmasq
