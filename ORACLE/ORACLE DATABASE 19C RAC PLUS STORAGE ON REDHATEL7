@@ -346,6 +346,7 @@ LINUX.X64_193000_grid_home.zip
 
 cd /u01/app/19.3/grid
 unzip ./LINUX.X64_193000_grid_home.zip
+rpm -ivh /u01/app/19.3/grid/cv/rpm/cvuqdisk-1.0.10-1.rpm
 
 -- ssh key exchange
 su - root -c "ssh-keygen -t rsa"
