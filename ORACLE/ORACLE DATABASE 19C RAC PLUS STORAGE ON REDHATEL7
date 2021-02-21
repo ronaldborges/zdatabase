@@ -377,7 +377,7 @@ ssh grid@oraclerac19cn2
 -- run check pre requires cluster
 su - grid
 cd /u01/app/19.3/grid/
-./runcluvfy.sh stage -pre crsinst -n oraclerac19cn1,oraclerac19cn2 -fixup -verbose -method root
+./runcluvfy.sh stage -pre crsinst -n oraclerac19cn1,oraclerac19cn2 -verbose -method root
 exit
 
 -- run installer oracle rac 19c
