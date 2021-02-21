@@ -386,7 +386,7 @@ xhost +
 su – grid
 export DISPLAY=:0.0
 cd /u01/app/19.3/grid
-./grid_Setup.sh
+./gridSetup.sh
 
 -- After starting or installing follow the steps below always advancing the screens
 
