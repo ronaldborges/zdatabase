@@ -619,9 +619,20 @@ cd /u01/app/19.3/grid
 ./runcluvfy.sh stage -post crsinst -n oraclerac19cn1,oraclerac19cn2 -verbose -method root
 
 #Status Cluster
-
 crsctl check cluster -all
+**************************************************************
+oraclerac19cn1:
+CRS-4537: Cluster Ready Services is online
+CRS-4529: Cluster Synchronization Services is online
+CRS-4533: Event Manager is online
+**************************************************************
+oraclerac19cn2:
+CRS-4537: Cluster Ready Services is online
+CRS-4529: Cluster Synchronization Services is online
+CRS-4533: Event Manager is online
+**************************************************************
 
+#as root
 export ORACLE_HOME=/u01/app/19.3/grid
 export PATH=$PATH:$ORACLE_HOME/bin
 crsctl status resource
