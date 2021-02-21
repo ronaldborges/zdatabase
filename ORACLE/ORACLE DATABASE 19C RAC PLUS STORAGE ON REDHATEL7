@@ -590,7 +590,7 @@ oraInventory Group Name: oinstall
 # screen 17
 
 During the software configuration, certain operations have to be perform as "root" user. You can choose to have the installer perform these operations automatically by specifying inputs for one the options below. The input specified will also be used by the installer to perform additional prerequisite checks.
-[ ] Automatically run configuration scripts
+[x] Automatically run configuration scripts
         (@) Use "root" user credential
                 Password: oracle
         ( ) Use sudo
