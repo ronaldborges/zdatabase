@@ -945,8 +945,7 @@ su –
 xhost +
 su - oracle
 export DISPLAY=:0.0
-cd /u01/app/oracle/product/19.3/dbhome_1
-./runInstaller
+dbca
 
 # screen 1
 
