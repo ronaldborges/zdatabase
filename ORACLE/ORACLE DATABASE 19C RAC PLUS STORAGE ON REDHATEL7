@@ -613,6 +613,11 @@ Install
 
 # instaltion sucessfully
 
+#POST INSTALL CHECK
+su - grid
+cd /u01/app/19.3/grid
+./runcluvfy.sh stage -post crsinst -n oraclerac19cn1,oraclerac19cn2 -verbose -method root
+
 #Status Cluster
 
 crsctl check cluster -all
